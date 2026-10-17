@@ -1,10 +1,13 @@
 /**
  * Unified Session Hook
- * 
+ *
  * REPLACES: useEnhancedSession + useSessionFlow + multiple session hooks
- * 
+ *
  * Provides a clean, simple interface for session management
  * backed by the unified session store.
+ *
+ * Timing ownership: only the consumer that passes `manageTiming: true`
+ * drives the session clock ticks. Other instances subscribe and control.
  */
 
 import { useEffect, useCallback, useRef } from 'react';
@@ -24,17 +27,17 @@ export interface UseSessionOptions {
   enableVision?: boolean;
   targetFPS?: number;
   videoElement?: React.RefObject<HTMLVideoElement | null>;
+  manageTiming?: boolean;
 }
 
 export const useSession = (options: UseSessionOptions = {}) => {
   const {
     autoStart = false,
     enableVision = false,
-    targetFPS = 2,
+    manageTiming = false,
     videoElement,
   } = options;
 
-  // Store actions
   const {
     initializeSession,
     setSessionReady,
@@ -43,8 +46,6 @@ export const useSession = (options: UseSessionOptions = {}) => {
     resumeSession,
     completeSession,
     resetSession,
-    updateBreathPhase,
-    incrementCycle,
     setCameraStream,
     setCameraPermission,
     toggleAudio,
@@ -56,317 +57,225 @@ export const useSession = (options: UseSessionOptions = {}) => {
     getSessionId,
   } = useSessionStore();
 
-  // Store state
   const phase = useSessionPhase();
   const metrics = useSessionMetrics();
   const config = useSessionConfig();
 
-  // Selectors for optimized re-renders
   const isActive = sessionSelectors.isActive();
   const isPaused = sessionSelectors.isPaused();
   const isComplete = sessionSelectors.isComplete();
   const audioEnabled = useSessionStore((state) => state.audioEnabled);
+  // The session store's accepted stream — NOT the camera store's pending
+  // stream, so a late getUserMedia resolution can't mount vision after a
+  // camera-free start.
   const cameraStream = useSessionStore((state) => state.cameraStream);
   const sessionVisionMetrics = useSessionStore((state) => state.visionMetrics);
 
-  // Camera context
-  const {
-    stream: cameraContextStream,
-    status: cameraStatus,
-    error: cameraError,
-    requestStream: requestCameraStream,
-    releaseStream: releaseCameraStream,
-    hasPermission: cameraPermission
-  } = useCameraStore();
+  const { requestStream: requestCameraStream } = useCameraStore();
 
-  // Vision processing (conditional) - use vision store
   const visionStore = useVisionStore();
   const isVisionActive = visionSelectors.isActive();
   const visionMetrics = visionSelectors.hasMetrics() ? visionStore.metrics : null;
 
-  // Breathing phase timer
-  const phaseTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const cycleTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-
   // ========================================================================
-  // CAMERA MANAGEMENT - Clean, unified
+  // CAMERA OWNERSHIP — scoped to the hook instance that acquired the stream
   // ========================================================================
 
-  const requestCamera = useCallback(async () => {
-    try {
-      console.log('📷 useSession: Requesting camera access through CameraContext...');
+  const mountedRef = useRef(false);
+  const generationRef = useRef(0);
+  const ownedStreamRef = useRef<MediaStream | null>(null);
+  const inFlightRef = useRef<Promise<MediaStream | null> | null>(null);
 
-      const stream = await requestCameraStream();
-
-      if (stream) {
-        console.log('✅ useSession: Camera access granted through CameraContext');
-        setCameraStream(stream);
-        setCameraPermission(true);
-
-        // Attach stream to video element if provided
-        // Video element handling is now managed by VideoFeed component.
-        // The stream is stored in CameraContext and consumed by VideoFeed,
-        // so we only need to request the stream and update the store.
-
-        // Start vision if enabled
-        if (enableVision && visionStore.isReady && videoElement?.current) {
-          console.log('🔍 useSession: Starting vision processing with video element');
-          try {
-            await visionStore.start(videoElement.current);
-            setVisionActive(true);
-          } catch (error) {
-            console.warn('⚠️ useSession: Failed to start vision processing:', error);
-            setError(`Vision processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-
-        return stream;
-      } else {
-        // Handle case where stream request failed
-        setCameraPermission(false);
-        const errorMessage = cameraError || 'Camera access failed';
-        setError(errorMessage);
-        return null;
+  const releaseOwnedCamera = useCallback(() => {
+    generationRef.current += 1;
+    const owned = ownedStreamRef.current;
+    ownedStreamRef.current = null;
+    if (owned) {
+      const state = useSessionStore.getState();
+      if (state.cameraStream === owned) {
+        state.setCameraStream(null);
+        state.setCameraPermission(false);
       }
-    } catch (error) {
-      console.warn('❌ useSession: Camera access failed:', error);
-      setCameraPermission(false);
-
-      // Provide more specific error messages
-      let errorMessage = 'Camera access was denied. Continuing without camera tracking.';
-
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMessage = 'Camera access denied. Please allow camera permissions in your browser settings.';
-        } else if (error.name === 'NotFoundError') {
-          errorMessage = 'No camera found. Please connect a camera and try again.';
-        } else if (error.name === 'NotReadableError') {
-          errorMessage = 'Camera is already in use by another application.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Camera access timed out. Please check permissions and try again.';
-        }
-      }
-
-      setError(errorMessage);
-      return null;
-    }
-    
-    // CRITICAL FIX: Ensure no return value that could be interpreted as cleanup function
-    return undefined;
-  }, [requestCameraStream, setCameraStream, setCameraPermission, setVisionActive, setError, videoElement, enableVision, visionStore, cameraError]);
-
-  // ========================================================================
-  // BREATHING CYCLE MANAGEMENT - Clean timing
-  // ========================================================================
-
-  const startBreathingCycle = useCallback(() => {
-    if (!config?.pattern) {
-      console.warn('🚫 startBreathingCycle: No pattern config available');
-      return;
-    }
-
-    // Clear any existing timer first
-    if (phaseTimerRef.current) {
-      console.log('🔄 startBreathingCycle: Clearing existing timer');
-      clearInterval(phaseTimerRef.current);
-      phaseTimerRef.current = undefined;
-    }
-
-    const { pattern } = config;
-    const phases = [
-      { name: 'inhale' as const, duration: typeof pattern.inhale === 'number' && pattern.inhale >= 0 ? pattern.inhale : 4 },
-      ...(typeof pattern.hold === 'number' && pattern.hold != null && pattern.hold > 0 ? [{ name: 'hold' as const, duration: pattern.hold }] : []),
-      { name: 'exhale' as const, duration: typeof pattern.exhale === 'number' && pattern.exhale >= 0 ? pattern.exhale : 4 },
-      ...(typeof pattern.hold_after_exhale === 'number' && pattern.hold_after_exhale != null && pattern.hold_after_exhale > 0 ? [{ name: 'pause' as const, duration: pattern.hold_after_exhale }] : []),
-    ];
-
-    console.log('🫁 startBreathingCycle: Starting with phases:', phases);
-
-    let currentPhaseIndex = 0;
-    let phaseStartTime = Date.now();
-
-    const updatePhase = () => {
-      try {
-        // CRITICAL SAFETY CHECK: Stop timer if session is no longer active
-        const currentState = useSessionStore.getState();
-        if (currentState.phase === 'complete' || currentState.phase === 'setup') {
-          console.log('🚨 SAFETY: Session not active, stopping breathing cycle timer');
-          if (phaseTimerRef.current) {
-            clearInterval(phaseTimerRef.current);
-            phaseTimerRef.current = undefined;
-          }
-          return;
-        }
-
-        const now = Date.now();
-        const currentPhase = phases[currentPhaseIndex];
-        const phaseElapsed = (now - phaseStartTime) / 1000;
-        const progress = Math.min((phaseElapsed / currentPhase.duration) * 100, 100);
-
-        // CRITICAL DEBUG: Always log first few updates to see if timer is working
-        if (phaseElapsed < 2) {
-          console.log(`🫑 TIMER WORKING - Phase: ${currentPhase.name}, Progress: ${progress.toFixed(1)}%, Elapsed: ${phaseElapsed.toFixed(1)}s`);
-        }
-
-        // Debug logging every 2 seconds to avoid spam
-        if (Math.floor(phaseElapsed) % 2 === 0 && progress < 5) {
-          console.log(`🫑 Phase: ${currentPhase.name}, Progress: ${progress.toFixed(1)}%, Elapsed: ${phaseElapsed.toFixed(1)}s`);
-        }
-
-        console.log(`🔄 Calling updateBreathPhase with: ${currentPhase.name}, ${progress.toFixed(1)}%`);
-        updateBreathPhase(currentPhase.name, progress);
-
-        // Move to next phase
-        if (phaseElapsed >= currentPhase.duration) {
-          console.log(`✅ Phase ${currentPhase.name} completed, moving to next phase`);
-          currentPhaseIndex = (currentPhaseIndex + 1) % phases.length;
-          phaseStartTime = now;
-
-          // Increment cycle when returning to inhale
-          if (currentPhaseIndex === 0) {
-            console.log('🔄 Cycle completed, incrementing cycle count');
-            incrementCycle();
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error in updatePhase:', error);
-      }
-    };
-
-    // Start immediately
-    updatePhase();
-    
-    // Update every 100ms for smooth progress
-    phaseTimerRef.current = setInterval(updatePhase, 100);
-    console.log('⏰ Breathing cycle timer started');
-  }, [config, updateBreathPhase, incrementCycle]);
-
-  const stopBreathingCycle = useCallback(() => {
-    if (phaseTimerRef.current) {
-      console.log('⏹️ Stopping breathing cycle timer:', phaseTimerRef.current);
-      clearInterval(phaseTimerRef.current);
-      phaseTimerRef.current = undefined;
-      console.log('✅ Breathing cycle timer stopped and cleared');
-    } else {
-      console.log('⚠️ stopBreathingCycle called but no timer was running');
+      useCameraStore.getState().releaseStream();
     }
   }, []);
 
+  const requestCamera = useCallback(async (): Promise<MediaStream | null> => {
+    if (ownedStreamRef.current) return ownedStreamRef.current;
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const generation = generationRef.current;
+    const pending = (async () => {
+      try {
+        const stream = await requestCameraStream();
+        // A camera-free start or unmount during the pending request
+        // invalidates this acquisition — release it without adopting it
+        // and without touching session error/media state.
+        if (!mountedRef.current || generation !== generationRef.current) {
+          if (stream) useCameraStore.getState().releaseStream();
+          return null;
+        }
+        if (!stream) {
+          setError('Camera access failed');
+          return null;
+        }
+        ownedStreamRef.current = stream;
+        setCameraStream(stream);
+        setCameraPermission(true);
+        return stream;
+      } catch (error) {
+        // A stale or unmounted requester must not surface errors on a
+        // session that already chose camera-free or a new session.
+        if (!mountedRef.current || generation !== generationRef.current) {
+          return null;
+        }
+        let errorMessage = 'Camera access was denied. Continuing without camera tracking.';
+        if (error instanceof Error) {
+          if (error.name === 'NotAllowedError') {
+            errorMessage = 'Camera access denied. You can still practise without it.';
+          } else if (error.name === 'NotFoundError') {
+            errorMessage = 'No camera found. Please connect a camera and try again.';
+          } else if (error.name === 'NotReadableError') {
+            errorMessage = 'Camera is already in use by another application.';
+          }
+        }
+        setError(errorMessage);
+        return null;
+      } finally {
+        inFlightRef.current = null;
+      }
+    })();
+    inFlightRef.current = pending;
+    return pending;
+  }, [requestCameraStream, setCameraStream, setCameraPermission, setError]);
+
   // ========================================================================
-  // SESSION LIFECYCLE - Simplified, clean
+  // SESSION LIFECYCLE
   // ========================================================================
 
+  // Initialize stores config only — never requests camera, never starts
+  // vision. VisionManager is the sole vision runner after an explicitly
+  // acquired stream.
   const initialize = useCallback(async (sessionConfig: SessionConfig) => {
     initializeSession(sessionConfig);
-
-    // Initialize vision store if vision is enabled
-    if (enableVision && sessionConfig.enableCamera) {
-      console.log('🔍 useSession: Initializing vision store');
-      try {
-        // Use the stable session ID from the session store
-        const sessionId = getSessionId();
-        if (sessionId) {
-          await visionStore.initialize({
-            sessionId,
-            targetFPS: targetFPS,
-            silentMode: false,
-            features: {
-              detectFace: true,
-              analyzePosture: true,
-              trackMovement: true,
-            },
-          });
-        } else {
-          console.warn('⚠️ useSession: No session ID available for vision initialization');
-        }
-      } catch (error) {
-        console.warn('⚠️ useSession: Failed to initialize vision store:', error);
-        setError(`Vision initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+    if (autoStart) {
+      setSessionReady();
+      startSession();
     }
-
-    // Request camera if needed
-    if (sessionConfig.enableCamera) {
-      await requestCamera();
-    }
-
-    // CLEAN: Don't auto-advance to ready - let preparation flow handle it
-    // Session stays in 'setup' phase until user completes preparation
-    console.log('🔧 Session initialized in setup phase, waiting for preparation flow');
-
-    // Auto-start if enabled (only for classic mode or when preparation is disabled)
-    if (autoStart && !sessionConfig.enableCamera) {
-      setTimeout(() => {
-        setSessionReady();
-        startSession();
-      }, 1000);
-    }
-    
-    // CRITICAL FIX: Ensure no return value that could be interpreted as cleanup function
     return undefined;
-  }, [initializeSession, requestCamera, setSessionReady, autoStart, enableVision, visionStore, targetFPS, setError, getSessionId]);
+  }, [initializeSession, setSessionReady, startSession, autoStart]);
 
-  const start = useCallback(() => {
-    // Check if session is properly initialized by checking the store directly
+  const start = useCallback((cameraEnabled = false) => {
     const currentState = useSessionStore.getState();
-    if (!currentState.config) {
-      console.error('❌ Session not properly initialized');
-      setError('Session not properly initialized');
+    if (!currentState.config || !['setup', 'ready'].includes(currentState.phase)) {
       return;
     }
 
-    console.log('🚀 Starting session, current phase:', currentState.phase);
+    if (!cameraEnabled) {
+      // Camera-free start: invalidate any pending request and release an
+      // owned stream — a late getUserMedia must not mount vision.
+      releaseOwnedCamera();
+      const fresh = useSessionStore.getState();
+      fresh.setCameraStream(null);
+      fresh.setCameraPermission(false);
+    }
 
-    // CRITICAL FIX: Simplified session start to prevent React Error #310
-    // Always set ready first, then start immediately
-    setSessionReady();
+    const stream = cameraEnabled ? useSessionStore.getState().cameraStream : null;
+    const actualCamera = cameraEnabled && !!stream;
+    useSessionStore.getState().updatePatternMetrics({
+      cameraUsed: actualCamera,
+    });
+    useSessionStore.setState({
+      config: { ...currentState.config, enableCamera: actualCamera },
+    });
+
+    // startSession permits setup|ready and validates the pattern before
+    // entering active — an invalid pattern stays in setup, not a black
+    // screen.
     startSession();
-    
-    // Start breathing cycle after a minimal delay to ensure state is updated
-    setTimeout(() => {
-      startBreathingCycle();
-    }, 50);
-    
-    // Note: No return value from useCallback - cleanup is handled in useEffect
-  }, [startSession, setError, startBreathingCycle, setSessionReady]);
+  }, [releaseOwnedCamera, startSession]);
 
   const pause = useCallback(() => {
     pauseSession();
-    stopBreathingCycle();
-  }, [pauseSession, stopBreathingCycle]);
+  }, [pauseSession]);
 
   const resume = useCallback(() => {
     resumeSession();
-    startBreathingCycle();
-  }, [resumeSession, startBreathingCycle]);
+  }, [resumeSession]);
+
+  const stopOwnedVision = useCallback(() => {
+    // Read fresh — the zustand hook object is a new identity every update.
+    const vision = useVisionStore.getState();
+    const session = useSessionStore.getState();
+    if (vision.isActive && vision.config?.sessionId === session.sessionId) {
+      vision.stop();
+      session.setVisionActive(false);
+    }
+  }, []);
 
   const complete = useCallback(() => {
+    // Snapshot final timing before release — consumers read final metrics.
     completeSession();
-    stopBreathingCycle();
+    releaseOwnedCamera();
+    if (manageTiming) stopOwnedVision();
+  }, [completeSession, releaseOwnedCamera, manageTiming, stopOwnedVision]);
 
-    // Only cleanup camera on actual completion, not during phase transitions
-    // Camera cleanup is now handled by CameraContext
-    console.log('🛑 useSession: Session completed, releasing camera reference');
-    releaseCameraStream();
-
-    // Stop vision
-    if (visionStore.isActive) {
-      visionStore.stop();
-      setVisionActive(false);
+  // Controls consumers can complete the session; only the timing owner
+  // then releases the owned camera stream and stops its vision.
+  useEffect(() => {
+    if (manageTiming && phase === 'complete') {
+      stopOwnedVision();
+      releaseOwnedCamera();
     }
-  }, [completeSession, releaseCameraStream, visionStore, setVisionActive]);
+  }, [manageTiming, phase, stopOwnedVision, releaseOwnedCamera]);
 
   const reset = useCallback(() => {
-    stopBreathingCycle();
+    releaseOwnedCamera();
     resetSession();
-
-    if (visionStore.isActive) {
+    if (manageTiming && visionStore.isActive) {
       visionStore.reset();
     }
-  }, [resetSession, visionStore]);
+  }, [releaseOwnedCamera, resetSession, manageTiming, visionStore]);
 
   // ========================================================================
-  // VISION INTEGRATION - Clean, optional
+  // TIMING — single interval owned by the manageTiming instance
+  // ========================================================================
+
+  useEffect(() => {
+    if (!manageTiming || phase !== 'active') return;
+    useSessionStore.getState().tickSession();
+    const interval = setInterval(
+      () => useSessionStore.getState().tickSession(),
+      100,
+    );
+    return () => clearInterval(interval);
+  }, [manageTiming, phase]);
+
+  // ========================================================================
+  // OWNER CLEANUP — pause on owner unmount, release owned resources only
+  // ========================================================================
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (manageTiming) {
+        const state = useSessionStore.getState();
+        if (state.phase === 'active') {
+          state.pauseSession();
+        }
+        const vision = useVisionStore.getState();
+        if (vision.isActive && vision.config?.sessionId === state.sessionId) {
+          vision.stop();
+          state.setVisionActive(false);
+        }
+      }
+      releaseOwnedCamera();
+    };
+  }, [manageTiming, releaseOwnedCamera]);
+
+  // ========================================================================
+  // VISION METRICS PROPAGATION (unchanged behavior)
   // ========================================================================
 
   const previousVisionMetricsRef = useRef<string>('');
@@ -374,8 +283,6 @@ export const useSession = (options: UseSessionOptions = {}) => {
   useEffect(() => {
     if (enableVision && visionMetrics) {
       const { stillness, presence, posture, restlessnessScore, faceLandmarks } = visionMetrics;
-
-      // Create a hash to detect actual changes in metrics (include faceLandmarks)
       const metricsHash = JSON.stringify({
         stillness,
         presence,
@@ -383,11 +290,8 @@ export const useSession = (options: UseSessionOptions = {}) => {
         restlessnessScore,
         faceLandmarksCount: faceLandmarks?.length || 0
       });
-
-      // Only update if metrics actually changed
       if (metricsHash !== previousVisionMetricsRef.current) {
         previousVisionMetricsRef.current = metricsHash;
-
         updateVisionMetrics({
           stillness,
           presence,
@@ -400,34 +304,7 @@ export const useSession = (options: UseSessionOptions = {}) => {
   }, [enableVision, visionMetrics, updateVisionMetrics]);
 
   // ========================================================================
-  // CRITICAL FIX: Stop breathing cycle when session completes
-  // ========================================================================
-  
-  useEffect(() => {
-    // CRITICAL: Stop breathing cycle when session phase changes to complete
-    if (phase === 'complete') {
-      console.log('🚨 Session phase is complete, force stopping breathing cycle');
-      stopBreathingCycle();
-    }
-  }, [phase, stopBreathingCycle]);
-
-  // ========================================================================
-  // CLEANUP - Proper resource management (FIXED: Prevent React Error #310)
-  // ========================================================================
-
-  useEffect(() => {
-    return () => {
-      // CRITICAL FIX: Use refs to avoid stale closure issues that cause React Error #310
-      if (phaseTimerRef.current) {
-        clearInterval(phaseTimerRef.current);
-        phaseTimerRef.current = undefined;
-      }
-      // Camera cleanup is handled by CameraContext - don't duplicate here
-    };
-  }, []); // CLEAN: Only cleanup timers on unmount, avoid stale closures
-
-  // ========================================================================
-  // PUBLIC API - Clean, simple interface
+  // PUBLIC API
   // ========================================================================
 
   return {
@@ -459,9 +336,9 @@ export const useSession = (options: UseSessionOptions = {}) => {
     getCompletionPercentage,
     getSessionId,
 
-    // Camera state
-    cameraStream: cameraContextStream,
-    cameraPermissionGranted: cameraPermission,
+    // Camera state — the accepted session stream, not the raw camera store
+    cameraStream,
+    cameraPermissionGranted: useSessionStore((state) => state.cameraPermissionGranted),
   };
 };
 

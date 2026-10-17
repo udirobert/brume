@@ -13,6 +13,13 @@ import { BreathingPattern } from '../lib/breathingPatterns';
 import { errorReporter } from '../lib/errors/error-reporter';
 import { trackSessionCompleted } from '../lib/notifications/oneSignal';
 import type { SessionPhase, BreathPhase, SessionMode, SessionMetrics, PerformanceMode, VisionMetrics } from '../types/metrics';
+import {
+  createSessionClock,
+  pauseSessionClock,
+  resumeSessionClock,
+  sampleSessionTiming,
+  type SessionClock,
+} from '../lib/utils/session-timing';
 
 // ============================================================================
 // SESSION-SPECIFIC TYPES - Session store specific interfaces
@@ -48,6 +55,9 @@ export interface SessionState {
   // Session outcome (set on completion; cleared on reset)
   lastSessionVerified: boolean;
 
+  // Monotonic active-time clock driving duration/rhythm/cycles
+  clock: SessionClock;
+
   // Error and warning state
   error: string | null;
   warnings: string[];
@@ -69,6 +79,7 @@ export interface SessionActions {
   resumeSession: () => void;
   completeSession: () => void;
   resetSession: () => void;
+  tickSession: () => void;
 
   // Phase management
   updateBreathPhase: (phase: BreathPhase, progress: number) => void;
@@ -125,6 +136,7 @@ const initialState: SessionState = {
   visionActive: false,
   visionMetrics: null,
   lastSessionVerified: false,
+  clock: createSessionClock(),
   error: null,
   warnings: [],
   performanceMode: 'optimal',
@@ -145,7 +157,8 @@ export const useSessionStore = create<SessionState & SessionActions>()(
         config,
         sessionId,
         phase: 'setup',
-        metrics: { ...initialMetrics, startTime: new Date() },
+        metrics: { ...initialMetrics },
+        clock: createSessionClock(),
         error: null,
         warnings: [],
       });
@@ -162,53 +175,91 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     },
 
     setSessionReady: () => {
-      set({
-        phase: 'ready',
-        error: null,
-      });
+      set((state) => (
+        ['setup', 'preparation', 'camera_setup'].includes(state.phase)
+          ? { phase: 'ready' as SessionPhase, error: null }
+          : state
+      ));
     },
 
     startSession: () => {
       const state = get();
-      if (state.config) {
-        const startTime = new Date();
+      if (!state.config || !['setup', 'ready'].includes(state.phase)) return;
+      const now = performance.now();
+      const clock = resumeSessionClock(createSessionClock(), now);
+      try {
+        const timing = sampleSessionTiming(clock, state.config.pattern, now);
         set({
           phase: 'active',
+          clock,
           metrics: {
             ...state.metrics,
-            startTime,
-            currentPhase: 'inhale', // Ensure we start with inhale
-            phaseProgress: 0,
-            cycleCount: 0,
+            ...timing,
+            startTime: new Date(),
           },
           error: null,
         });
-        console.log('🚀 Session started with timestamp:', startTime);
+      } catch {
+        set({ error: 'This breathing pattern is unavailable. Choose another rhythm.' });
       }
     },
 
     pauseSession: () => {
-      set((state) => ({
-        phase: state.phase === 'active' ? 'paused' : state.phase,
-      }));
+      set((state) => {
+        if (state.phase !== 'active' || !state.config) return state;
+        const now = performance.now();
+        const clock = pauseSessionClock(state.clock, now);
+        return {
+          phase: 'paused' as SessionPhase,
+          clock,
+          metrics: {
+            ...state.metrics,
+            ...sampleSessionTiming(clock, state.config.pattern, now),
+          },
+        };
+      });
     },
 
     resumeSession: () => {
-      set((state) => ({
-        phase: state.phase === 'paused' ? 'active' : state.phase,
-      }));
+      set((state) => {
+        if (state.phase !== 'paused' || !state.config) return state;
+        return {
+          phase: 'active' as SessionPhase,
+          clock: resumeSessionClock(state.clock, performance.now()),
+        };
+      });
     },
 
     completeSession: () => {
+      const state = get();
+      if (!state.config || !['active', 'paused'].includes(state.phase)) return;
+      const now = performance.now();
+      const clock = pauseSessionClock(state.clock, now);
+      const timing = sampleSessionTiming(clock, state.config.pattern, now);
       // Capture before reset: vision active during the session is our
       // "verified practice" signal for notification journey tags (Brume v1)
-      const verified = get().visionActive;
+      const verified = state.visionActive;
       set({
         phase: 'complete',
+        clock,
+        metrics: { ...state.metrics, ...timing },
         visionActive: false,
         lastSessionVerified: verified,
       });
       trackSessionCompleted({ verified });
+    },
+
+    tickSession: () => {
+      set((state) => {
+        if (state.phase !== 'active' || !state.config) return state;
+        const now = performance.now();
+        return {
+          metrics: {
+            ...state.metrics,
+            ...sampleSessionTiming(state.clock, state.config.pattern, now),
+          },
+        };
+      });
     },
 
     resetSession: () => {
@@ -226,9 +277,10 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     // Phase management
     updateBreathPhase: (phase, progress) => {
       set((state) => {
-        const currentDuration = state.metrics.startTime ?
-          Math.floor((Date.now() - state.metrics.startTime.getTime()) / 1000) :
-          state.metrics.duration;
+        if (state.phase !== 'active') return state;
+        const currentDuration = state.config
+          ? sampleSessionTiming(state.clock, state.config.pattern, performance.now()).duration
+          : state.metrics.duration;
 
         const roundedProgress = Math.round(progress);
 

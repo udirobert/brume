@@ -29,6 +29,10 @@ interface SessionPreviewProps {
   onStart: (cameraEnabled: boolean) => void;
   onCancel?: () => void;
   enableCamera: boolean;
+  /** Session-level error (e.g. unavailable pattern) — rendered as an alert, distinct from camera request errors. */
+  sessionError?: string | null;
+  /** Parent-owned camera acquisition (useSession.requestCamera). Falls back to the raw camera-store request for standalone/SSR use. */
+  onEnableCamera?: () => Promise<MediaStream | null>;
   /** Live camera + face-mesh capture, owned by the parent so the video element survives into the session. */
   capture?: React.ReactNode;
 }
@@ -39,6 +43,8 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   onStart,
   onCancel,
   enableCamera,
+  sessionError,
+  onEnableCamera,
   capture,
 }) => {
   const location = useLocation();
@@ -65,7 +71,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
     try {
       setIsInitializing(true);
       setErrorState(null);
-      const stream = await requestCameraStream();
+      const stream = await (onEnableCamera ?? requestCameraStream)();
       if (!stream) throw new Error("Camera stream not available");
     } catch (error) {
       let message = "Camera setup failed.";
@@ -92,6 +98,16 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
         <h2 className="text-3xl font-light tracking-tight text-foreground">{patternName}</h2>
         <p className="text-sm text-muted-foreground font-mono">{phases}</p>
       </div>
+
+      {sessionError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 text-sm text-destructive max-w-sm"
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{sessionError}</span>
+        </div>
+      )}
 
       {(reason || reasonDetail) && (
         <ContextCards
@@ -158,7 +174,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
         )}
 
         <Button
-          onClick={() => onStart(!!cameraStream)}
+          onClick={() => onStart(enableCamera && !!cameraStream)}
           size="lg"
           className="w-full rounded-full btn-premium py-6"
           variant={enableCamera && !cameraStream ? "outline" : "default"}

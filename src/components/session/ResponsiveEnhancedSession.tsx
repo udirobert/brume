@@ -11,7 +11,6 @@
 
 import React, { useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-mobile';
-import { useCameraStore } from '../../stores/cameraStore';
 import { useStableMetrics } from '../../hooks/useStableMetrics';
 import { useSession } from '../../hooks/useSession';
 import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
@@ -26,6 +25,7 @@ import { SessionPreview } from './SessionPreview';
 interface ResponsiveEnhancedSessionProps {
   config: {
     pattern: {
+      id?: string;
       name: string;
       phases: {
         inhale: number;
@@ -58,38 +58,53 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   
   // Session phase state - SINGLE SOURCE OF TRUTH
   const sessionPhase = useSessionPhase();
-  
-  // Camera and vision state
-  const { stream: cameraStream } = useCameraStore();
+
+  // Camera and vision state — the session store's accepted stream only,
+  // not the camera store's pending stream.
   const stableMetrics = useStableMetrics();
   const session = useSession({
     autoStart: false,
     enableVision: modeConfig.enableVision,
     targetFPS: isMobile ? 0.5 : 1, // Slower FPS on mobile for performance
     videoElement: videoRef,
+    manageTiming: true,
   });
+  const cameraStream = session.cameraStream;
+  const sessionError = useSessionStore((state) => state.error);
 
   // DRY: Single source of truth for session ID
   const sessionId = session.getSessionId();
 
+  // Normalize the nested-mode pattern into the flat BreathingPattern the
+  // store requires — inhale/exhale plus hold and hold_after_exhale.
+  const flatPattern = React.useMemo(() => ({
+    id: config.pattern.id ?? 'custom',
+    name: config.pattern.name,
+    description: config.pattern.description ?? '',
+    benefits: config.pattern.benefits ?? [],
+    inhale: config.pattern.phases.inhale,
+    hold: config.pattern.phases.hold ?? 0,
+    exhale: config.pattern.phases.exhale,
+    hold_after_exhale: config.pattern.phases.pause ?? 0,
+  }), [config.pattern]);
+
   // ENHANCEMENT FIRST: Initialize session with proper config
   React.useEffect(() => {
-    if (!session.config) {
-      console.log('🔧 Initializing enhanced session with config:', { 
-        pattern: config.pattern.name, 
+    if (!useSessionStore.getState().config) {
+      console.log('🔧 Initializing enhanced session with config:', {
+        pattern: flatPattern.name,
         mode: config.mode,
-        enableCamera: modeConfig.enableCamera,
-        enableVision: modeConfig.enableVision 
+        enableVision: modeConfig.enableVision
       });
       session.initialize({
-        mode: config.mode as any,
-        pattern: config.pattern as any,
-        enableCamera: modeConfig.enableCamera,
+        mode: config.mode,
+        pattern: flatPattern,
+        enableCamera: false, // actual acquired state, not feature availability
         enableAudio: true,
         enableAI: modeConfig.enableVision,
       });
     }
-  }, [session, config, modeConfig]);
+  }, [session, config, modeConfig, flatPattern]);
 
   // Debug session phase changes
   React.useEffect(() => {
@@ -114,7 +129,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     }
     
     // Always call session.start() - it handles the ready transition internally
-    session.start();
+    session.start(cameraEnabled);
     
     // CRITICAL FIX: Ensure no return value that could be interpreted as cleanup function
     return undefined;
@@ -178,7 +193,9 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
           : session.metrics?.currentPhase) || "inhale"
       }
       pattern={config.pattern}
-      isActive={session.isActive}
+      isActive={session.phase === 'active'}
+      isPaused={session.phase === 'paused'}
+      text={session.phase === 'paused' ? 'Paused' : undefined}
       cycleCount={session.metrics?.cycleCount || 0}
       phaseProgress={session.metrics?.phaseProgress || 0}
       breathSignal={breathSignal}
@@ -193,7 +210,11 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const controls = (
     <SessionControls
       onEndSession={() => {
-        const durationSeconds = useSessionStore.getState().metrics.duration || 0;
+        // Complete first: the store freezes the monotonic clock and writes
+        // the final timing snapshot before we read it.
+        session.complete();
+        const finalMetrics = useSessionStore.getState().metrics;
+        const durationSeconds = finalMetrics.duration || 0;
         const lastStillness =
           session.visionMetrics?.stillness != null
             ? Math.round(session.visionMetrics.stillness)
@@ -205,17 +226,17 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
           duration: durationSeconds,
           sessionDuration: durationSeconds,
           elapsedTime: durationSeconds * 1000,
-          cycleCount: session.metrics?.cycleCount || 0,
+          cycleCount: finalMetrics.cycleCount || 0,
+          startTime: finalMetrics.startTime,
           breathHoldTime: 0,
           stillnessScore: lastStillness,
           restlessnessScore: lastStillness != null ? 100 - lastStillness : null,
-          cameraUsed: !!cameraStream,
+          cameraUsed: finalMetrics.cameraUsed,
           sessionType: config.mode === "classic" ? "classic" : "enhanced",
           visionSessionId: sessionId,
           patternName: config.pattern.name,
         };
 
-        session.complete();
         onSessionComplete(sessionMetrics);
       }}
     />
@@ -238,7 +259,9 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
             description: config.pattern.description || `Experience the ${config.pattern.name} breathing technique with enhanced AI feedback.`
           }}
           enableCamera={modeConfig.enableCamera}
+          sessionError={sessionError}
           capture={videoFeed}
+          onEnableCamera={session.requestCamera}
           onStart={handleSessionStart}
           onCancel={onSessionExit}
         />

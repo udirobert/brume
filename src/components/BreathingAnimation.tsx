@@ -41,6 +41,8 @@ interface BreathingAnimationProps {
     };
   };
   isActive?: boolean;
+  /** Session paused — overlay still shows the frozen time, orb stays inactive. */
+  isPaused?: boolean;
   countdownValue?: number;
   phaseProgress?: number;
   showTimer?: boolean;
@@ -240,6 +242,7 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
     text,
     pattern,
     isActive = false,
+    isPaused = false,
     countdownValue,
     phaseProgress = 0,
     showTimer = false,
@@ -292,7 +295,7 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
 
     // The orb owns the screen. Phase word only — no pep.
     const SessionOverlay = () => {
-      if (!sessionInfo || !isActive) return null;
+      if (!sessionInfo || (!isActive && !isPaused)) return null;
 
       return (
         <div className="absolute -top-2 -right-2 flex flex-col items-end gap-0.5 text-[10px] font-mono text-slate-400/70 dark:text-slate-500/70 pointer-events-none select-none">

@@ -69,8 +69,7 @@ migration. Those remain a separate pass and are **not verified here**.
 
 - Camera feedback is optional: JPEG frames go to the backend for MediaPipe
   landmark/movement estimates — **not** on-device processing and **not**
-  breathing verification. The session preview currently auto-prompts for
-  camera on mount (known issue, separate fix).
+  breathing verification. Camera use requires an explicit opt-in click.
 - "Try hands-free preview" on the session setup screen is a labeled
   **simulation** — no camera, no model, no live gesture detection yet.
 - Post-session and share cards show recorded duration ("practice time") —
@@ -78,9 +77,18 @@ migration. Those remain a separate pass and are **not verified here**.
   exposed from the post-session flow; legacy Flow/Lens plumbing remains in
   the codebase but is not user-facing there.
 - Pause/resume control fixed (paused check now wins over lifecycle
-  `isActive`). **Known issue:** the on-screen session timer keeps counting
-  wall-clock time while paused — do not treat displayed time as
-  active-practice time.
+  `isActive`). The session timer runs on a monotonic active-time clock:
+  duration, rhythm phase, and cycle count all exclude paused wall-clock
+  time. Unit-verified via the frozen-clock fixtures; in browser smoke the
+  paused overlay showed a frozen "Paused" + MM:SS display and the
+  post-session screen reported active-floor seconds only.
+- **Foundation update (2026-10-17):** camera is now truly opt-in —
+  `useSession.initialize` no longer requests camera or starts vision;
+  `getUserMedia` is only invoked by the explicit "Enable camera" button
+  (verified: 0 camera requests on mount, demo open, and camera-free
+  start). Nested mode patterns are normalized to the flat
+  `BreathingPattern` the store requires (real 4/4/4/4 Box phases, no
+  silent defaults).
 
 ## Verification status
 
@@ -88,7 +96,17 @@ Recorded during the migration (logs on the migration machine only, not
 repo artifacts): unit tests pass (75-test baseline suite plus a later
 focused 8-test run — overlapping, not additive); `tsc --noEmit
 --skipLibCheck` clean; `eslint .` 0 errors / 176 warnings; production
-build passes; `--frozen-lockfile` install coherent. Browser smoke covered
+build passes; `--frozen-lockfile` install coherent.
+
+Foundation slice (2026-10-17, separate round — not additive with the
+above): full suite **111 tests** passed at the mid-round gate; a later
+focused rework added 15 monotonic-clock, hook-ownership, camera opt-in,
+and completion-payload regression tests (all passing) plus the vision-
+teardown fix. `tsc` 0 errors; `eslint .` 0 errors / 182 warnings;
+production build passes. Browser smoke this round verified zero
+getUserMedia on mount/demo/camera-free start, a frozen "Paused" timer
+display, resume continuing the phase, and an active-time-only post-session
+result. Browser smoke covered
 settled desktop/mobile home, sign-in page, camera-free session start, the
 hands-free demo, and pause/resume button state. **Not covered:** signed-in
 wallet transactions, purchases, live camera, full-routine E2E, native

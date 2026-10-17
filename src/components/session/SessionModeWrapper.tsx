@@ -44,6 +44,7 @@ const useSessionCompletion = () => {
       aiUsed?: boolean;
       visionSessionId?: string;
       stillnessScore?: number | null;
+      startTime?: Date;
     }) => {
       const {
         pattern,
@@ -68,10 +69,15 @@ const useSessionCompletion = () => {
 
       const elapsedMs = Math.max(0, durationSeconds * 1000);
 
+      const sessionStart =
+        sessionData.startTime instanceof Date && !Number.isNaN(sessionData.startTime.getTime())
+          ? sessionData.startTime
+          : new Date(Date.now() - elapsedMs); // legacy payloads without a real start date
+
       const sessionId = saveSession({
         patternId: pattern.id || "custom",
         patternName: pattern.name,
-        startTime: new Date(Date.now() - elapsedMs),
+        startTime: sessionStart,
         endTime: new Date(),
         duration: durationSeconds,
         cycleCount,
@@ -145,6 +151,7 @@ export const SessionModeWrapper: React.FC = () => {
   const sessionConfig = useMemo(
     () => ({
       pattern: {
+        id: initialPattern.id,
         name: initialPattern.name,
         phases: {
           inhale: initialPattern.inhale,
@@ -176,6 +183,7 @@ export const SessionModeWrapper: React.FC = () => {
 
   const responsiveConfig = {
     pattern: {
+      id: sessionConfig.pattern.id,
       name: sessionConfig.pattern.name,
       phases: sessionConfig.pattern.phases,
       benefits: sessionConfig.pattern.benefits,

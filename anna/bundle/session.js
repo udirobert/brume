@@ -13,6 +13,18 @@ export const PATTERN = {
 
 export const TARGET_SECONDS = 90;
 
+// Mid-session pace control (co-breathing). Uniform tempo factors scale
+// every phase duration (see timing.js tempo section): slower stretches,
+// faster compresses. "normal" is the identity factor. Ordered so the
+// Slower/Faster buttons step one level in the named direction.
+export const PACE_LEVELS = ["slow", "normal", "fast"];
+export const PACE_TEMPO = { slow: 1.25, normal: 1.0, fast: 0.8 };
+export const PACE_LABEL = {
+  slow: "slower pace",
+  normal: "",
+  fast: "faster pace",
+};
+
 export const PHASE_WORDS = {
   inhale: "Breathe in",
   hold: "Hold",

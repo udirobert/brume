@@ -36,12 +36,18 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 TOOL_ID = "tool-dev-brume"
 
-PATTERN_NAME = "Reset · 4s in, 6s out"
-INHALE_S = 4
-EXHALE_S = 6
+# Paces are gentle, non-medical cadences. "normal" is the default Reset
+# rhythm; "slow"/"fast" are what the skill re-invokes with when the user
+# asks to adjust mid-break.
+PACES: dict[str, tuple[int, int]] = {
+    "slow": (5, 7),
+    "normal": (4, 6),
+    "fast": (3, 5),
+}
+DEFAULT_PACE = "normal"
 DEFAULT_CYCLES, MIN_CYCLES, MAX_CYCLES = 9, 3, 12
 
 FALLBACK_CLOSING_LINE = "Take a moment before you begin again."
@@ -58,7 +64,10 @@ MANIFEST: dict[str, Any] = {
     "description": (
         "A quiet ~90-second guided breathing break, delivered inline in "
         "chat. brume_reset renders the pacing script verbatim; "
-        "brume_complete records the finished break and closes it out."
+        "brume_complete records the finished break and closes it out. "
+        "brume_reset accepts an optional pace — if the user asks to "
+        "adjust pace mid-break, invoke again with the new pace and the "
+        "remaining cadence (remaining_seconds) rather than restarting."
     ),
     "author": "Brume",
     "category": "productivity",
@@ -68,19 +77,38 @@ MANIFEST: dict[str, Any] = {
         {
             "name": "brume_reset",
             "description": (
-                "Start a guided breathing break (~90s, 4s in / 6s out). Returns the "
-                "full pacing script as verbatim display blocks — do not restate or "
-                "paraphrase them. When the user later signals they finished, call "
+                "Start (or continue) a guided breathing break (~90s, 4s in / 6s out). "
+                "Returns the full pacing script as verbatim display blocks — do not "
+                "restate or paraphrase them. If the user asks to adjust pace "
+                "mid-break, invoke again with the new pace and the remaining "
+                "cadence via remaining_seconds; the returned script covers only "
+                "that remainder. When the user later signals they finished, call "
                 "brume_complete."
             ),
             "timeout": 30,
-            "parameters": [{
-                "name": "cycles",
-                "type": "integer",
-                "description": "Breath cycles at 10s each. Default 9 (~90s); 3–12 accepted.",
-                "required": False,
-                "default": DEFAULT_CYCLES,
-            }],
+            "parameters": [
+                {
+                    "name": "cycles",
+                    "type": "integer",
+                    "description": "Breath cycles (10s each at normal pace). Default 9 (~90s); 3–12 accepted. Ignored when remaining_seconds is set.",
+                    "required": False,
+                    "default": DEFAULT_CYCLES,
+                },
+                {
+                    "name": "pace",
+                    "type": "string",
+                    "enum": ["slow", "normal", "fast"],
+                    "description": "Breathing cadence: slow = 5s in / 7s out, normal = 4s in / 6s out, fast = 3s in / 5s out. Default normal.",
+                    "required": False,
+                    "default": DEFAULT_PACE,
+                },
+                {
+                    "name": "remaining_seconds",
+                    "type": "integer",
+                    "description": "Deliver only roughly this many more seconds — use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides cycles.",
+                    "required": False,
+                },
+            ],
         },
         {
             "name": "brume_complete",
@@ -101,7 +129,11 @@ MANIFEST: dict[str, Any] = {
 _IN_Q: "queue.Queue[str | None]" = queue.Queue()
 _STDIN_EOF = False
 REVERSE_RPC_TIMEOUT_S = 20.0  # < the 60s invoke timeout
-_LAST_RESET: dict[str, Any] = {}  # last issued reset, for the record
+# Delivered reset segments, in order, for the completion record. A
+# mid-break pace change is a re-invocation that appends a segment, so
+# brume_complete can record what was actually delivered (seconds and
+# cycles summed across paces), not just the last invocation.
+_RESET_SEGMENTS: list[dict[str, Any]] = []
 
 
 def _stdin_reader() -> None:
@@ -168,13 +200,15 @@ def _reverse_rpc(method: str, params: dict[str, Any], invoke_id: str | None) -> 
         _dispatch(env)
 
 
-def _sample_closing(invoke_id: str | None, cycles: int) -> str | None:
+def _sample_closing(
+    invoke_id: str | None, cycles: int, seconds: int, pattern_name: str
+) -> str | None:
     """One closing line via host sampling. None on any failure."""
     prompt = "\n".join([
         "You are writing the closing line shown after a guided breathing break.",
         "Session facts:",
-        f"- Routine: {PATTERN_NAME}",
-        f"- Active practice time: {cycles * (INHALE_S + EXHALE_S)} seconds",
+        f"- Routine: {pattern_name}",
+        f"- Active practice time: {seconds} seconds",
         f"- Breathing cycles completed: {cycles}",
         "- Ended early: no",
         "Write one calm closing line or next-action suggestion.",
@@ -218,40 +252,84 @@ def _count_line(n: int) -> str:
 
 
 def invoke_reset(args: dict[str, Any]) -> dict[str, Any]:
-    try:
-        cycles = int(args.get("cycles", DEFAULT_CYCLES) or DEFAULT_CYCLES)
-    except (TypeError, ValueError):
-        cycles = DEFAULT_CYCLES
-    cycles = max(MIN_CYCLES, min(MAX_CYCLES, cycles))
-    seconds = cycles * (INHALE_S + EXHALE_S)
-    _LAST_RESET.clear()
-    _LAST_RESET.update({"cycles": cycles, "issued_at": _utc_now_iso()})
+    pace = str(args.get("pace") or DEFAULT_PACE).strip().lower()
+    if pace not in PACES:
+        pace = DEFAULT_PACE
+    inhale, exhale = PACES[pace]
+    pattern_name = f"Reset · {inhale}s in, {exhale}s out"
+    cycle_s = inhale + exhale
 
+    # remaining_seconds (a mid-break pace change's remainder) takes
+    # precedence over cycles and may resolve to a partial short run.
+    try:
+        remaining = float(args.get("remaining_seconds"))
+    except (TypeError, ValueError):
+        remaining = None
+    if remaining is not None:
+        cycles = max(1, min(MAX_CYCLES, round(remaining / cycle_s)))
+    else:
+        try:
+            cycles = int(args.get("cycles", DEFAULT_CYCLES) or DEFAULT_CYCLES)
+        except (TypeError, ValueError):
+            cycles = DEFAULT_CYCLES
+        cycles = max(MIN_CYCLES, min(MAX_CYCLES, cycles))
+    seconds = cycles * cycle_s
+
+    continuation = bool(_RESET_SEGMENTS)
+    _RESET_SEGMENTS.append({
+        "pace": pace,
+        "inhale_s": inhale,
+        "exhale_s": exhale,
+        "cycles": cycles,
+        "seconds": seconds,
+        "issued_at": _utc_now_iso(),
+    })
+
+    pace_word = {"slow": "slower", "fast": "faster"}.get(pace, "")
+    if continuation:
+        intro = (
+            f"**Brume Reset** — continuing at a {pace_word or 'normal'} pace.\n\n"
+            f"Breathe **in** through the nose for {inhale} counts, then **out** "
+            f"slowly for {exhale}. Follow the lines below — about {seconds} "
+            f"seconds, {cycles} cycle{'s' if cycles != 1 else ''}."
+        )
+    else:
+        intro = (
+            "**Brume Reset** — take this minute for yourself.\n\n"
+            "Sit comfortably, shoulders soft, jaw loose. Breathe **in** "
+            f"through the nose for {inhale} counts, then **out** slowly for "
+            f"{exhale}. Follow the lines below — about {seconds} seconds, "
+            f"{cycles} cycle{'s' if cycles != 1 else ''}."
+        )
     cycle_lines = "\n".join(
-        f"**{i}** — in · {_count_line(INHALE_S)} — out · {_count_line(EXHALE_S)}"
+        f"**{i}** — in · {_count_line(inhale)} — out · {_count_line(exhale)}"
         for i in range(1, cycles + 1)
     )
     blocks = [
-        {"type": "markdown", "text": (
-            "**Brume Reset** — take this minute for yourself.\n\n"
-            "Sit comfortably, shoulders soft, jaw loose. Breathe **in** "
-            "through the nose for 4 counts, then **out** slowly for 6. "
-            f"Follow the lines below — about {seconds} seconds, {cycles} cycles."
-        )},
+        {"type": "markdown", "text": intro},
         {"type": "markdown", "text": cycle_lines},
         {"type": "markdown", "text": (
             "After the last cycle, take one natural breath — then "
             "reply **done** when you're back.\n\n"
-            "_Stop whenever you like; stopping early is fine too._"
+            "_Stop whenever you like; stopping early is fine too. "
+            "Say **slower** or **faster** anytime to adjust the pace._"
         )},
     ]
     return {
         "success": True,
         "data": {
-            "routine": PATTERN_NAME,
+            "routine": pattern_name,
+            "pace": pace,
             "cycles": cycles,
+            "cycle_seconds": cycle_s,
             "guided_seconds": seconds,
+            "continuation": continuation,
             "note": "The guided script was rendered verbatim to the user — do not restate it.",
+            "pace_changes": (
+                "If the user asks to adjust pace mid-break, invoke "
+                "brume_reset again with the new pace and "
+                "remaining_seconds set to the un-delivered remainder."
+            ),
             "when_the_user_is_done": (
                 "When the user signals completion (e.g. 'done', 'finished', "
                 "'back'), call brume_complete. Do not call it for an "
@@ -264,18 +342,44 @@ def invoke_reset(args: dict[str, Any]) -> dict[str, Any]:
 
 def invoke_complete(context: dict[str, Any]) -> dict[str, Any]:
     invoke_id = context.get("invoke_id")
-    cycles = int(_LAST_RESET.get("cycles") or DEFAULT_CYCLES)
+    if _RESET_SEGMENTS:
+        segments = list(_RESET_SEGMENTS)
+    else:
+        # complete without a reset this session — record the default run
+        inhale, exhale = PACES[DEFAULT_PACE]
+        segments = [{
+            "pace": DEFAULT_PACE,
+            "inhale_s": inhale,
+            "exhale_s": exhale,
+            "cycles": DEFAULT_CYCLES,
+            "seconds": DEFAULT_CYCLES * (inhale + exhale),
+            "issued_at": None,
+        }]
+    cycles = sum(s["cycles"] for s in segments)
+    seconds = sum(s["seconds"] for s in segments)
+    paces = sorted({s["pace"] for s in segments})
+    pattern_name = (
+        f"Reset · {segments[0]['inhale_s']}s in, {segments[0]['exhale_s']}s out"
+        if len(paces) == 1
+        else "Reset · mixed pace"
+    )
     record = {
-        "pattern": PATTERN_NAME,
-        "activeSeconds": cycles * (INHALE_S + EXHALE_S),
+        "pattern": pattern_name,
+        "activeSeconds": seconds,
         "cycles": cycles,
         "completedAt": _utc_now_iso(),
         "interrupted": False,
         "user_reported": "done",
         "source": "executa.chat",
     }
+    if len(paces) > 1:
+        record["paces"] = paces
+        record["segments"] = [
+            {"pace": s["pace"], "cycles": s["cycles"], "seconds": s["seconds"]}
+            for s in segments
+        ]
     record_key, storage_error = _write_record(invoke_id, record)
-    closing = _sample_closing(invoke_id, cycles)
+    closing = _sample_closing(invoke_id, cycles, seconds, pattern_name)
     line = closing or FALLBACK_CLOSING_LINE
     return {
         "success": True,

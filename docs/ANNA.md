@@ -230,9 +230,24 @@ interruption would break pillar 3.
   `manifest.required_executas` under the dev `tool_id` `tool-dev-brume`;
   not yet published to the Executa catalogue.
 - `SKILL.md` Skill -> agent offers contextually from learned cues.
+  **Built locally:** `anna/skills/brume-reset-offer/SKILL.md` (Skill
+  Executa, `execution_mode: "prompt"`; offer rules mirror the settled
+  product line — once per session, dismissible, never auto-starts,
+  observable cues only). Not yet in `manifest.required_executas`: a
+  Skill is `executa_type="skill"` and its platform `skill-…` tool_id is
+  only issued at publish — add it (likely `optional_executas`,
+  `visibility: app_bundled`) once published, per
+  anna.partners/developers/skills/skill-publish + apps/app-bundling.
 - `scope=user` APS ritual memory -> cue learning, repeat history.
 - Pacing adaptation in chat-driven sessions (co-breathing: user says
-  "slower"/"stop" mid-run).
+  "slower"/"stop" mid-run). **Built locally:** `brume_reset` now takes
+  `pace` (slow 5/7, normal 4/6, fast 3/5) + `remaining_seconds` — a
+  mid-break pace ask is a re-invocation covering the remainder, and
+  `brume_complete` records summed segments (mixed-pace runs get
+  `"pattern": "Reset · mixed pace"`). In the iframe, Slower/Faster
+  buttons step a uniform tempo factor over pattern-time
+  (`bundle/timing.js`), preserving phase progress without touching the
+  monotonic clock; disabled while paused.
 
 ## 7. Retention loop
 

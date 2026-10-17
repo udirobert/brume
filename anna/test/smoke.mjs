@@ -58,6 +58,60 @@ snap = timing.sampleSessionTiming(clock, pattern, 100_000);
 ok("cycleCount counts full cycles only", snap.cycleCount === 2);
 ok("offset 2s into cycle 3 is inhale", snap.currentPhase === "inhale");
 
+// --- 1b. Tempo: mid-session pace change (progress-preserving apply) -------
+//
+// The SessionClock keeps real active elapsed; a tempo factor stretches
+// pattern-time. Switching tempo mid-phase must keep the phase and its
+// progress fraction continuous, and must not corrupt duration/cycleCount.
+
+clock = timing.createSessionClock();
+clock = timing.resumeSessionClock(clock, 1_000);
+let tracker = timing.createTempoTracker();
+
+// 7s in: 3s into the 6s exhale of cycle 0 (50% progress) at tempo 1.
+tracker = timing.syncTempoTracker(tracker, clock, 8_000);
+snap = timing.sampleSessionTimingWithTempo(clock, tracker, pattern, 8_000);
+ok("tempo 1 matches base sampling", snap.currentPhase === "exhale"
+  && Math.abs(snap.phaseProgress - 50) < 1e-9 && snap.duration === 7);
+
+// Switch to 1.25x (slower) at the same instant: phase + progress hold.
+tracker = timing.setTempo(tracker, clock, 8_000, 1.25);
+snap = timing.sampleSessionTimingWithTempo(clock, tracker, pattern, 8_000);
+ok("tempo switch preserves phase", snap.currentPhase === "exhale");
+ok("tempo switch preserves phase progress", Math.abs(snap.phaseProgress - 50) < 1e-9);
+ok("tempo switch does not change duration", snap.duration === 7);
+ok("tempo switch does not change cycleCount", snap.cycleCount === 0);
+
+// 3 real seconds later at 1.25x: pattern-time advanced 3/1.25 = 2.4s,
+// so exhale ended after 3 real s of the remaining 3 -> 5.4s into
+// pattern-time exhale offset... verify phase boundary lands later:
+// remaining exhale was 3s of pattern-time = 3.75 real seconds.
+snap = timing.sampleSessionTimingWithTempo(clock, tracker, pattern, 9_000);
+ok("slower tempo keeps exhale going past base boundary", snap.currentPhase === "exhale");
+snap = timing.sampleSessionTimingWithTempo(clock, tracker, pattern, 12_000);
+// at t=12s real, tau = 7 + 4/1.25 = 10.2s -> just into cycle 1 inhale
+ok("exhale ends at stretched boundary", snap.currentPhase === "inhale");
+ok("cycleCount advanced exactly once", snap.cycleCount === 1);
+ok("duration is real elapsed seconds", snap.duration === 11);
+
+// Faster tempo 0.8x: phases end sooner in real time.
+tracker = timing.setTempo(tracker, clock, 12_000, 0.8);
+snap = timing.sampleSessionTimingWithTempo(clock, tracker, pattern, 12_000);
+ok("faster switch preserves phase + progress", snap.currentPhase === "inhale"
+  && Math.abs(snap.phaseProgress - 5) < 1e-9);
+
+// Paused clock freezes pattern-time too (elapsed is constant while paused).
+const pausedClock = timing.pauseSessionClock(clock, 12_000);
+tracker = timing.syncTempoTracker(tracker, pausedClock, 40_000);
+snap = timing.sampleSessionTimingWithTempo(pausedClock, tracker, pattern, 40_000);
+ok("paused tempo session does not accrue pattern-time", snap.currentPhase === "inhale"
+  && Math.abs(snap.phaseProgress - 5) < 1e-9 && snap.duration === 11);
+
+// Invalid tempo rejected.
+assert.throws(() => timing.setTempo(tracker, clock, 13_000, 0), RangeError);
+passed += 1;
+console.log(`ok ${passed} - zero/invalid tempo rejected`);
+
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------
 
 const harness = await mountBundle({ manifest });

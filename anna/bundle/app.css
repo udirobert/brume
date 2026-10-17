@@ -72,6 +72,21 @@ h1 {
 
 .row { display: flex; gap: 12px; justify-content: center; }
 
+/* Mid-session pace control: intentionally quieter than Pause/End. */
+.pace-row {
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.pace {
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  border-color: color-mix(in srgb, var(--muted) 55%, transparent);
+  color: var(--muted);
+}
+.pace:disabled { opacity: 0.35; cursor: default; }
+.pace-hint { font-size: 0.78rem; min-width: 5.5em; }
+
 button {
   font: inherit;
   padding: 10px 22px;

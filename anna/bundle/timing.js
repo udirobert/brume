@@ -83,3 +83,65 @@ export function cycleDurationSeconds(pattern) {
     (pattern.holdAfterExhale || 0)
   );
 }
+
+// --- Tempo (mid-session pace control) ---------------------------------------
+//
+// A tempo factor scales phase durations uniformly: tempo 1.25 = 25%
+// slower, 0.8 = 25% faster. The SessionClock is untouched — it keeps
+// tracking absolute active elapsed in real milliseconds.
+//
+// Chosen recalibration semantics: progress-preserving immediate apply.
+// Rather than waiting for the next phase boundary, a tempo change takes
+// effect at once while the current phase keeps its progress percentage.
+// This is implemented via "pattern time" tau: inside each tempo segment,
+// tau advances at 1/tempo of real elapsed time, and the base pattern is
+// sampled at tau. Because tau is continuous across tempo changes, the
+// phase and its progress fraction cannot jump — only the remaining real
+// duration of the phase stretches or shrinks. duration (floored active
+// seconds) and cycleCount therefore keep their monotonic-clock meaning.
+
+export function createTempoTracker() {
+  return { tauMs: 0, tempo: 1, syncedElapsedMs: 0 };
+}
+
+// Advance pattern-time to the clock's current elapsed. Pure — returns a
+// new tracker. Call before sampling and before changing tempo.
+export function syncTempoTracker(tracker, clock, nowMs) {
+  if (!Number.isFinite(tracker.tempo) || tracker.tempo <= 0) {
+    throw new RangeError("Invalid tempo factor");
+  }
+  const elapsedMs = readSessionElapsedMs(clock, nowMs);
+  const deltaMs = Math.max(0, elapsedMs - tracker.syncedElapsedMs);
+  return {
+    tauMs: tracker.tauMs + deltaMs / tracker.tempo,
+    tempo: tracker.tempo,
+    syncedElapsedMs: elapsedMs,
+  };
+}
+
+// Change the tempo, preserving the current phase + progress. Sync first
+// so time already accrued lands under the old tempo.
+export function setTempo(tracker, clock, nowMs, tempo) {
+  const synced = syncTempoTracker(tracker, clock, nowMs);
+  if (!Number.isFinite(tempo) || tempo <= 0) {
+    throw new RangeError("Invalid tempo factor");
+  }
+  return { ...synced, tempo };
+}
+
+// Sample phase/cycleCount from pattern-time while duration stays real
+// active elapsed. Mirrors sampleSessionTiming's shape exactly.
+export function sampleSessionTimingWithTempo(clock, tracker, pattern, nowMs) {
+  const synced = syncTempoTracker(tracker, clock, nowMs);
+  const snap = sampleSessionTiming(
+    { elapsedMs: synced.tauMs, runningSince: null },
+    pattern,
+    0,
+  );
+  return {
+    duration: Math.floor(readSessionElapsedMs(clock, nowMs) / 1000),
+    cycleCount: snap.cycleCount,
+    currentPhase: snap.currentPhase,
+    phaseProgress: snap.phaseProgress,
+  };
+}

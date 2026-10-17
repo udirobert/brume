@@ -7,13 +7,19 @@ import {
   pauseSessionClock,
   resumeSessionClock,
   isClockRunning,
-  sampleSessionTiming,
+  createTempoTracker,
+  syncTempoTracker,
+  setTempo,
+  sampleSessionTimingWithTempo,
   cycleDurationSeconds,
 } from "./timing.js";
 import {
   PATTERN,
   TARGET_SECONDS,
   PHASE_WORDS,
+  PACE_LEVELS,
+  PACE_TEMPO,
+  PACE_LABEL,
   buildCompletionRecord,
   saveCompletionRecord,
   loadLastRecord,
@@ -38,6 +44,9 @@ const els = {
   begin: $("#btn-begin"),
   pause: $("#btn-pause"),
   end: $("#btn-end"),
+  slower: $("#btn-slower"),
+  faster: $("#btn-faster"),
+  paceHint: $("#pace-hint"),
   again: $("#btn-again"),
   phase: $("#phase-word"),
   elapsed: $("#elapsed"),
@@ -86,6 +95,8 @@ function now() {
 
 let anna = null;
 let clock = null;
+let tracker = null; // tempo state: pattern-time + current pace factor
+let paceIdx = 1; // index into PACE_LEVELS; 1 = "normal"
 let timer = null;
 let finishing = false;
 
@@ -100,9 +111,29 @@ function updateBreathDot(snap) {
   els.dot.style.transform = `scale(${scale.toFixed(3)})`;
 }
 
+// Pace buttons are only meaningful while the session is running — they
+// are disabled while paused, finished, or at the tempo extreme.
+function updatePaceUI() {
+  const running = clock !== null && isClockRunning(clock);
+  if (els.slower) els.slower.disabled = !running || paceIdx <= 0;
+  if (els.faster)
+    els.faster.disabled = !running || paceIdx >= PACE_LEVELS.length - 1;
+  if (els.paceHint) els.paceHint.textContent = PACE_LABEL[PACE_LEVELS[paceIdx]];
+}
+
+function setPaceLevel(idx) {
+  if (!clock || !isClockRunning(clock)) return;
+  paceIdx = Math.max(0, Math.min(PACE_LEVELS.length - 1, idx));
+  // Tempo applies immediately, preserving the current phase + progress
+  // (see timing.js tempo section).
+  tracker = setTempo(tracker, clock, now(), PACE_TEMPO[PACE_LEVELS[paceIdx]]);
+  updatePaceUI();
+}
+
 function tick() {
   if (!clock) return;
-  const snap = sampleSessionTiming(clock, PATTERN, now());
+  tracker = syncTempoTracker(tracker, clock, now());
+  const snap = sampleSessionTimingWithTempo(clock, tracker, PATTERN, now());
   els.phase.textContent = isClockRunning(clock)
     ? PHASE_WORDS[snap.currentPhase] || snap.currentPhase
     : "Paused";
@@ -118,11 +149,13 @@ async function finish(interrupted) {
   clearInterval(timer);
   timer = null;
   const snap = clock
-    ? sampleSessionTiming(clock, PATTERN, now())
+    ? sampleSessionTimingWithTempo(clock, tracker, PATTERN, now())
     : { duration: 0, cycleCount: 0 };
   const activeSeconds = snap.duration;
   const cycles = snap.cycleCount;
   clock = null;
+  tracker = null;
+  updatePaceUI();
 
   // Issue llm.complete before showing the result — the successful call is
   // what makes the run server-observable. It is raced against a ~4s cap
@@ -173,9 +206,12 @@ async function finish(interrupted) {
 
 function begin() {
   clock = resumeSessionClock(createSessionClock(), now());
+  tracker = createTempoTracker();
+  paceIdx = 1; // "normal"
   finishing = false;
   els.pause.textContent = "Pause";
   els.target.textContent = fmtSeconds(TARGET_SECONDS);
+  updatePaceUI();
   show(els.session);
   tick();
   timer = setInterval(tick, TICK_MS);
@@ -204,6 +240,8 @@ async function main() {
   els.begin.addEventListener("click", begin);
   els.again.addEventListener("click", () => show(els.start));
   els.end.addEventListener("click", () => finish(true));
+  els.slower.addEventListener("click", () => setPaceLevel(paceIdx - 1));
+  els.faster.addEventListener("click", () => setPaceLevel(paceIdx + 1));
   els.pause.addEventListener("click", () => {
     if (!clock) return;
     if (isClockRunning(clock)) {
@@ -214,6 +252,7 @@ async function main() {
       clock = resumeSessionClock(clock, now());
       els.pause.textContent = "Pause";
     }
+    updatePaceUI();
   });
 }
 

@@ -28,6 +28,43 @@ bundle:
 
 No audio, no getUserMedia, no external network calls.
 
+## Mid-session pacing (co-breathing)
+
+- **Chat**: `brume_reset` accepts `pace` (`slow`/`normal`/`fast`) and
+  `remaining_seconds`; a mid-break "slower" is a re-invocation covering
+  the remainder — see `executas/brume/README.md`.
+- **Bundle**: `Slower`/`Faster` buttons step through three tempo levels
+  (0.8× / 1× / 1.25×). The SessionClock is untouched — a tempo factor
+  stretches *pattern-time* (see `bundle/timing.js` tempo section), so a
+  tempo change applies immediately while preserving the current phase
+  and its progress fraction; the elapsed clock never jumps. Buttons are
+  disabled while paused.
+
+## Proactive offer skill
+
+`skills/brume-reset-offer/SKILL.md` is a **Skill Executa**
+(`execution_mode: "prompt"`) that teaches the agent when/how to *offer*
+a reset — suggestion only, never auto-starts, dismissible, one offer per
+session max. Per
+[skill-publish](https://anna.partners/developers/skills/skill-publish)
+a Skill is `executa_type="skill"` with the same draft → version →
+visibility pipeline as a tool; the publish wizard returns a platform
+`tool_id` like `skill-{author}-{slug}-{uniq}` that *can* then be copied
+into the app manifest's `required_executas` / `optional_executas`
+([app-bundling](https://anna.partners/developers/apps/app-bundling) —
+bundling is a `tool_id` list, and `visibility: "app_bundled"` exists for
+exactly this). It is **not declared in `manifest.json` yet** because the
+`tool_id` must already exist in the Executa catalogue at
+submission/publish and ours is unpublished — publish the skill first
+(`POST /api/v1/executas/my/drafts` → commit → `visibility` → version),
+then add its `skill-…` id, likely under `optional_executas` (suggestion
+surface, not required for the app to function).
+
+For local testing, point the skill loader at it:
+`MATRIX_SKILLS_DIR=$PWD/skills` or copy the folder into
+`<workspace>/skills/` per
+[skill-local](https://anna.partners/developers/skills/skill-local).
+
 Layout:
 
 - `manifest.json` — schema 3, `host_capabilities: ["llm.complete",
@@ -39,7 +76,10 @@ Layout:
   own README) + `sampling-fixture.jsonl` for `--mock-sampling`
 - `bundle/index.html`, `app.css`, `app.js` — UI
 - `bundle/timing.js` — monotonic active-time clock (port of
-  `src/lib/utils/session-timing.ts` semantics)
+  `src/lib/utils/session-timing.ts` semantics) + tempo tracker
+  (`createTempoTracker` / `setTempo` / `sampleSessionTimingWithTempo`)
+- `skills/brume-reset-offer/SKILL.md` — proactive-offer Skill Executa
+  (unpublished; see "Proactive offer skill" above)
 - `bundle/session.js` — pattern definition, completion record, closing
   line (`buildClosingPrompt` / `fetchClosingLine` / `FALLBACK_CLOSING_LINE`)
 - `test/smoke.mjs` — `mountBundle` smoke test (plain node, not vitest);

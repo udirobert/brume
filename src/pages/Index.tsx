@@ -4,10 +4,18 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
+import { Button } from "@/components/ui/button";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
 
+/**
+ * Home — reset-first.
+ *
+ * One obvious action: a ~90-second Reset (in 4, out 6). No check-in
+ * required, camera optional. The mood check-in stays available below
+ * as the secondary path for anyone who wants a matched pattern.
+ */
 export default function Index() {
   const { user } = useAuth();
   const { streak } = useSessionHistory();
@@ -21,8 +29,8 @@ export default function Index() {
     }
     if (isGuest) {
       return [
-        "Tap how you feel. Brume picks the ",
-        { text: "breath.", className: "text-gradient" },
+        "A breathing break between thinking and ",
+        { text: "doing.", className: "text-gradient" },
       ];
     }
     return ["Welcome back."];
@@ -47,11 +55,36 @@ export default function Index() {
         </motion.p>
       </div>
 
+      {/* Primary: the ~90-second Reset. No check-in, camera optional. */}
       <motion.div
-        className="mt-10 flex justify-center w-full"
+        className="mt-10 flex flex-col items-center w-full max-w-xs"
         initial={reduceMotion ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.48, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Button asChild size="lg" className="w-full rounded-full btn-premium py-6 text-base">
+          <Link
+            to="/session?pattern=reset"
+            state={{
+              reason: "Reset · about 90 seconds",
+              reasonDetail: "In for 4, out for 6. A moment between tasks.",
+              source: "Your reset",
+            }}
+          >
+            Take a reset
+          </Link>
+        </Button>
+        <p className="mt-3 text-sm text-muted-foreground">
+          About 90 seconds · camera optional
+        </p>
+      </motion.div>
+
+      {/* Secondary: the check-in path — still here, just not the lead. */}
+      <motion.div
+        className="mt-12 flex justify-center w-full"
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.62 }}
       >
         <TodayCard />
       </motion.div>
@@ -71,9 +104,6 @@ export default function Index() {
             >
               Sign in
             </Link>
-          </p>
-          <p className="text-xs text-muted-foreground/60">
-            Camera optional
           </p>
         </motion.div>
       )}

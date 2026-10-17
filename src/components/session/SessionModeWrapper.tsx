@@ -91,6 +91,7 @@ const useSessionCompletion = () => {
           breathHoldTime,
           restlessnessScore: restlessnessScore ?? null,
           stillnessScore: sessionData.stillnessScore,
+          patternId: pattern.id || "custom",
           patternName: patternName || pattern.name,
           sessionDuration: durationSeconds,
           sessionId,

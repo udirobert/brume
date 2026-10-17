@@ -48,6 +48,9 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   capture,
 }) => {
   const location = useLocation();
+  // Cosmetic only: `?via=invite` means someone handed this break to you.
+  // No tracking — the flag just explains how you got here.
+  const isInvite = new URLSearchParams(location.search).get("via") === "invite";
   const reason = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reason;
   const reasonDetail = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reasonDetail;
   const source =
@@ -95,6 +98,9 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   return (
     <div className="flex-grow flex flex-col items-center justify-center p-6 space-y-8">
       <div className="text-center space-y-2 max-w-md">
+        {isInvite && (
+          <p className="text-sm text-muted-foreground/80">Someone passed you a break.</p>
+        )}
         <h2 className="text-3xl font-light tracking-tight text-foreground">{patternName}</h2>
         <p className="text-sm text-muted-foreground font-mono">{phases}</p>
       </div>

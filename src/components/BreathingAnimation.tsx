@@ -328,6 +328,13 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
           <RhythmIndicator />
         )}
 
+        {/* Paused: the orb stays dim and still; a soft line replaces pep. */}
+        {isPaused && (
+          <p className="text-sm text-muted-foreground/80 font-light">
+            Take your time
+          </p>
+        )}
+
         {/* Only show pattern name when not active and no session info */}
         {!isActive && pattern && phase !== "countdown" && !sessionInfo && (
           <p className="text-sm text-muted-foreground opacity-80 font-medium">

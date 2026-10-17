@@ -28,6 +28,17 @@ export interface BreathingPattern {
 }
 
 export const BREATHING_PATTERNS: Record<string, BreathingPattern> = {
+  reset: {
+    id: 'reset',
+    name: 'Reset',
+    description: 'A short, comfortable rhythm to settle between one thing and the next',
+    inhale: 4,
+    hold: 0,
+    exhale: 6,
+    hold_after_exhale: 0,
+    benefits: ['A moment between tasks', 'Settle before you continue']
+  },
+
   box: {
     id: 'box',
     name: 'Box Breathing',

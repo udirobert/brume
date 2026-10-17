@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { trackCredentialShared } from "@/lib/notifications/oneSignal";
 import { shareProofCard } from "@/lib/proofCard";
+import { shareInvitation } from "@/lib/invitation";
+import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
 
 interface PostSessionCelebrationProps {
@@ -15,6 +17,8 @@ interface PostSessionCelebrationProps {
     isFirstSession?: boolean;
     streak?: number;
   };
+  /** Registry id of the pattern just practised — enables the invite link. */
+  patternId?: string;
   insight?: string;
   isGuest?: boolean;
   onContinue?: () => void;
@@ -25,6 +29,7 @@ interface PostSessionCelebrationProps {
 
 export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   metrics,
+  patternId,
   insight,
   isGuest = false,
   onContinue,
@@ -32,6 +37,23 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   onSaveProgress,
 }) => {
   const reduceMotion = useReducedMotion();
+
+  // "Pass this break on" — the useful share: a bare /session?pattern=<id>&via=invite
+  // link. No mood, history, camera data, or reflection in the URL.
+  const invitePattern = patternId ? getPattern(patternId) : undefined;
+  const handleInvite = async () => {
+    if (!patternId) return;
+    try {
+      const result = await shareInvitation(patternId, invitePattern);
+      if (result === "shared") {
+        toast.success("Break passed on");
+      } else {
+        toast.success("Invite link copied — send it to someone");
+      }
+    } catch {
+      /* share sheet dismissed */
+    }
+  };
   const handleShare = async () => {
     try {
       const result = await shareProofCard({
@@ -117,6 +139,16 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         >
           Done
         </Button>
+        {patternId && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleInvite()}
+            className="w-full rounded-full py-6 text-base"
+          >
+            Pass this break on
+          </Button>
+        )}
         <div className="flex items-center gap-3 text-sm">
           <button
             type="button"

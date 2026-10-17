@@ -120,12 +120,12 @@ export const SessionControls = ({
         </Button>
       )}
 
-      {/* Play/Pause Button */}
+      {/* Play/Pause Button — while paused, Resume is the primary control */}
       <Button
-        variant="ghost"
+        variant={isPaused ? "default" : "ghost"}
         size={config.buttonSize}
         onClick={handlePlayPause}
-        className={config.buttonClass}
+        className={`${config.buttonClass} ${isPaused ? "btn-premium" : ""}`}
         disabled={disabled || isLoading || (!isActive && !isPaused)}
         aria-label={
           isLoading

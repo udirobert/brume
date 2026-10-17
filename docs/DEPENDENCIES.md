@@ -154,5 +154,6 @@ denial/failure/timeout likely does not qualify.
 `anna/executas/brume/` is a stdlib-only Python Executa plugin
 (`brume_reset` + `brume_complete`, published `tool_id` `tool-papa-brume-htcxvfcr`,
 auto-discovered by `anna-app dev`); run it with `uv run --project
-anna/executas/brume` or `cd anna && anna-app executa dev
---dir executas/brume --invoke brume_reset`.
+`cd anna && anna-app executa dev --dir executas/brume --invoke
+brume_reset`. CLI pinned at `@anna-ai/cli` 0.1.59 (app-schema 0.27.0) -
+current as of the beta.186-190 changelog.

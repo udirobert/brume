@@ -253,7 +253,21 @@ immutable version 0.1.0 (id 1435) is pinned in `pending_review` -
 executa frozen at v0.2.0 (executa_version 766), skill at v1.0.0 (767),
 bundle staged (5 files). Still unverified until a real signed-in account
 runs it: production `llm.complete`/`sampling`, `scope=user` APS
-persistence, whether runs register as qualified, iframe CSP. **Built locally:** `brume_reset` now takes
+persistence, whether runs register as qualified, iframe CSP.
+
+**Platform sync (beta.186-190, checked 2026-10-17):** CLI already at
+0.1.59 / schema 0.27.0; all changes additive, nothing to fix for the
+pending review. Watch-outs and options:
+- Tool sets are now intersected with executas the user has *Learned*;
+  our `required_executas` auto-install should ride through, but if
+  `#brume` doesn't surface for a real user, this is the first suspect.
+- Review-queue pagination fix (beta.190) un-stuck apps beyond the first
+  100 - our review should be reachable.
+- `anna.audio.session()` (realtime voice: streaming ASR + TTS + `say()`)
+  is a strong future path for hands-free co-breathing - spoken "slower"
+  mid-break, eyes-closed pacing cues - without camera or local MediaPipe.
+  Costs are per-second/per-char; requires `ui.host_api.audio:["session"]`
+  and a user grant. Roadmap, not v1. **Built locally:** `brume_reset` now takes
   `pace` (slow 5/7, normal 4/6, fast 3/5) + `remaining_seconds` — a
   mid-break pace ask is a re-invocation covering the remainder, and
   `brume_complete` records summed segments (mixed-pace runs get

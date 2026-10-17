@@ -7,7 +7,7 @@ import { queryClient } from "./lib/query/config";
 import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
-import "./polyfills.ts";
+import "./polyfills";
 
 // Sentry initialization for production error tracking
 if (import.meta.env.PROD) {

@@ -73,7 +73,7 @@ export default function Index() {
             </Link>
           </p>
           <p className="text-xs text-muted-foreground/60">
-            Video never leaves your phone
+            Camera optional
           </p>
         </motion.div>
       )}

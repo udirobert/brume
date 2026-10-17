@@ -51,42 +51,42 @@ export interface PremiumBadgeProps {
 // PREMIUM: Luxury color schemes and styling
 const PREMIUM_VARIANTS = {
   perfect: {
-    className: "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg",
+    className: "bg-linear-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg",
     icon: Star,
     iconClassName: "text-white"
   },
   excellent: {
-    className: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 shadow-md",
+    className: "bg-linear-to-r from-emerald-500 to-teal-500 text-white border-0 shadow-md",
     icon: Award,
     iconClassName: "text-white"
   },
   great: {
-    className: "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-0 shadow-md",
+    className: "bg-linear-to-r from-blue-500 to-indigo-500 text-white border-0 shadow-md",
     icon: Target,
     iconClassName: "text-white"
   },
   good: {
-    className: "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-sm",
+    className: "bg-linear-to-r from-purple-500 to-pink-500 text-white border-0 shadow-sm",
     icon: CheckCircle,
     iconClassName: "text-white"
   },
   contextual: {
-    className: "bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0",
+    className: "bg-linear-to-r from-slate-600 to-slate-700 text-white border-0",
     icon: Sparkles,
     iconClassName: "text-white"
   },
   premium: {
-    className: "bg-gradient-to-r from-yellow-400 to-amber-500 text-black border-0 shadow-lg font-semibold",
+    className: "bg-linear-to-r from-yellow-400 to-amber-500 text-black border-0 shadow-lg font-semibold",
     icon: Crown,
     iconClassName: "text-black"
   },
   featured: {
-    className: "bg-gradient-to-r from-rose-500 to-pink-500 text-white border-0 shadow-md",
+    className: "bg-linear-to-r from-rose-500 to-pink-500 text-white border-0 shadow-md",
     icon: Star,
     iconClassName: "text-white"
   },
   recommended: {
-    className: "bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0",
+    className: "bg-linear-to-r from-gray-500 to-gray-600 text-white border-0",
     icon: Heart,
     iconClassName: "text-white"
   }
@@ -95,42 +95,42 @@ const PREMIUM_VARIANTS = {
 // CONTEXTUAL: Context-specific styling
 const CONTEXTUAL_VARIANTS = {
   morning: {
-    className: "bg-gradient-to-r from-orange-400 to-yellow-500 text-white border-0",
+    className: "bg-linear-to-r from-orange-400 to-yellow-500 text-white border-0",
     icon: Sun,
     iconClassName: "text-white"
   },
   evening: {
-    className: "bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0",
+    className: "bg-linear-to-r from-indigo-500 to-purple-600 text-white border-0",
     icon: Moon,
     iconClassName: "text-white"
   },
   stress: {
-    className: "bg-gradient-to-r from-red-500 to-pink-500 text-white border-0",
+    className: "bg-linear-to-r from-red-500 to-pink-500 text-white border-0",
     icon: Heart,
     iconClassName: "text-white"
   },
   energy: {
-    className: "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0",
+    className: "bg-linear-to-r from-green-500 to-emerald-500 text-white border-0",
     icon: Zap,
     iconClassName: "text-white"
   },
   sleep: {
-    className: "bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0",
+    className: "bg-linear-to-r from-blue-600 to-indigo-700 text-white border-0",
     icon: Moon,
     iconClassName: "text-white"
   },
   work: {
-    className: "bg-gradient-to-r from-gray-600 to-slate-700 text-white border-0",
+    className: "bg-linear-to-r from-gray-600 to-slate-700 text-white border-0",
     icon: Coffee,
     iconClassName: "text-white"
   },
   focus: {
-    className: "bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0",
+    className: "bg-linear-to-r from-cyan-500 to-blue-500 text-white border-0",
     icon: Target,
     iconClassName: "text-white"
   },
   recovery: {
-    className: "bg-gradient-to-r from-teal-500 to-green-600 text-white border-0",
+    className: "bg-linear-to-r from-teal-500 to-green-600 text-white border-0",
     icon: Heart,
     iconClassName: "text-white"
   }

@@ -447,7 +447,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                       className={cn(
                         "w-full",
                         tier.id === "premium_annual" &&
-                          "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800",
+                          "bg-linear-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800",
                       )}
                       onClick={() => handlePurchaseSubscription(tier)}
                       disabled={isPurchasing}

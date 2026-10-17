@@ -1,12 +1,12 @@
 [build]
-  command = "rm -rf node_modules package-lock.json && pnpm install --include=dev && pnpm run build"
+  command = "pnpm install --frozen-lockfile && pnpm run build"
   publish = "dist"
 
 [build.environment]
   # Prevent Netlify from failing on RevenueCat publishable keys (these are public by design)
   SECRETS_SCAN_OMIT_KEYS = "VITE_REVENUECAT_ANDROID_KEY"
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NODE_VERSION = "24"
+  PNPM_VERSION = "12.14.0"
   VITE_APP_ENV = "production"
 
 # Note: API calls go directly to Hetzner server

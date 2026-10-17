@@ -1,6 +1,6 @@
 # Imperfect Breath
 
-> A decentralized wellness platform combining AI-powered breathing analysis with Web3 technology
+> A wellness platform for guided breathing with optional AI coaching and camera feedback
 
 **Live Demo**: [Try Now](https://imperfectbreath.netlify.app) | **API**: [api.imperfectform.fun](https://api.imperfectform.fun)
 
@@ -10,7 +10,7 @@ A wellness platform combining ancient breathing wisdom with modern technology:
 
 - **🫁 Ancient Techniques** - Traditional patterns from around the world
 - **🤖 AI Coaching** - Real-time personalized guidance with Zen AI agent
-- **📱 Computer Vision** - Camera-based biometric feedback
+- **📱 Camera Feedback** - Optional camera-based movement feedback (not biometric validation)
 - **⛓️ Web3 Integration** - NFTs, social features, and community
 - **👥 Social Platform** - Connect with practitioners worldwide
 
@@ -23,14 +23,18 @@ A wellness platform combining ancient breathing wisdom with modern technology:
 
 ### For Developers
 
+Prerequisites: **Node.js `>=24.15.0 <25`** (see `.nvmrc`) and **pnpm 12.14.0** (`corepack enable` reads `packageManager`).
+
+> **Install policy:** `pnpm-workspace.yaml` is tracked and applies pnpm 12's default `minimumReleaseAge` gate for all packages, with exact-pin `minimumReleaseAgeExclude` exceptions only for the two latest-pinned releases (`eslint@10.13.0`, `lucide-react@1.58.0`). The lockfile is multi-document; always install with `pnpm install --frozen-lockfile`.
+
 ```bash
 # Clone and install
-git clone https://github.com/your-username/imperfect-breath.git
-cd imperfect-breath
-npm install
+git clone https://github.com/udirobert/brume.git
+cd brume
+pnpm install --frozen-lockfile
 
 # Start development (includes fallback AI)
-npm run dev  # Opens http://localhost:4556
+pnpm dev  # Opens http://localhost:4556
 
 # Optional: Enable full AI & vision features
 cd backend/vision-service
@@ -49,7 +53,7 @@ MODEL_DOWNLOAD_ON_START=false python3 main.py &
 ## 🌟 Key Features
 
 ### 🤖 AI-Powered Coaching
-- **Real-time analysis** via camera-based biometrics
+- **Optional camera feedback** — image frames are sent to Brume's backend and processed with MediaPipe for face-landmark and movement estimates (not a clinical or breath-quality measurement)
 - **Personalized insights** powered by Cerebras & Llama AI models
 - **Zen AI agent** for adaptive guidance and encouragement
 - **Session intelligence** - Detailed metrics and progress tracking
@@ -60,23 +64,14 @@ MODEL_DOWNLOAD_ON_START=false python3 main.py &
 - Camera integration for vision features
 
 ### ⛓️ Trust layer (quiet by design)
-- **Flow Blockchain** — `PracticeCredential`: non-transferable records of camera-verified practice, minted user-initiated and only valid when co-signed by Brume's authorized verifier
-- **Lens Protocol** — quiet attestation infrastructure (session signing), not a social destination
-- **Wallet connect** — used for credentials; nothing else asks for it
+- **Flow Blockchain / Lens Protocol** — legacy credential plumbing exists in the codebase, but camera presence does not verify breathing and post-session credential minting is currently not user-facing. Don't treat it as proof of practice.
+- **Wallet connect** — reserved for credentials; nothing else asks for it
 
 ## 🔒 Privacy & Security
 
-**We Never Store:**
-- ❌ Raw video footage or camera data
-- ❌ Facial recognition information
-- ❌ Personal health data
-- ❌ Private keys or wallet information
+**Camera Processing:** Optional camera feedback captures JPEG image frames and sends them to Brume's backend, where MediaPipe estimates face landmarks and movement. It is not breathing verification or a clinical measurement — sessions work fully without a camera.
 
-**We Do Store:**
-- ✅ Session metrics (breathing rate, duration, score)
-- ✅ User preferences and settings (with consent)
-- ✅ Achievement progress
-- ✅ Social interactions (with consent)
+**Retention:** Session metrics, preferences, and history may persist (local device and Supabase when signed in). Exact retention/ownership policy needs a backend review — see [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the current dependency and privacy posture.
 
 ## 🤝 Contributing
 
@@ -84,11 +79,13 @@ We welcome contributions from developers, breathing instructors, and wellness pr
 
 ### Quick Development Commands
 ```bash
-npm run dev          # Start development server
-npm run build        # Production build
-npm run test         # Run tests
-npm run lint         # Code quality checks
+pnpm dev            # Start development server
+pnpm run build      # Production build
+pnpm test           # Run tests
+pnpm run lint       # Code quality checks
 ```
+
+Frontend startup requires the public Supabase values in `.env.local`, including for guest use (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — publishable anon key only, never service keys). Provider/service keys stay backend-side; do not add `VITE_*` secret keys.
 
 ### Contribution Types
 - **Breathing Patterns** - Share traditional techniques

@@ -37,6 +37,7 @@ const useSessionCompletion = () => {
       phaseAccuracy?: number;
       rhythmConsistency?: number;
       sessionDuration?: number;
+      duration?: number;
       patternName?: string;
       sessionType?: string;
       cameraUsed?: boolean;

@@ -1,5 +1,5 @@
 /**
- * Proof Card — canvas-rendered shareable image for verified sessions.
+ * Proof Card — canvas-rendered shareable image for completed sessions.
  *
  * Generates a 1080×1920 vertical image (stories/phone share format) that
  * users can share via navigator.share (Web Share API with files) or
@@ -8,16 +8,15 @@
  * text.
  *
  * The visual language mirrors the mist orb: layered radial gradients on a
- * deep dark background, with the verification seal as the hero element.
+ * deep dark background, with the practice duration as the hero element.
  */
+import { formatPracticeDuration } from "./utils/practice-duration";
 
 export interface ProofCardData {
   patternName: string;
   duration: number;       // seconds
-  score: number;          // 0-100
   cycles?: number;
   streak?: number;
-  verified: boolean;      // camera-verified
   date?: Date;
 }
 
@@ -32,11 +31,9 @@ const MIST_BLUE_DIM = "rgba(147, 197, 253, 0.12)";
 const TEXT_PRIMARY = "#f0f4ff";
 const TEXT_SECONDARY = "rgba(240, 244, 255, 0.55)";
 const ACCENT = "#93c5fd";
-const VERIFIED_GREEN = "#34d399";
-const AMBER = "#fbbf24";
 
 /**
- * Render the proof card to a canvas and return a Blob (image/png).
+ * Render the share card to a canvas and return a Blob (image/png).
  */
 export async function renderProofCard(data: ProofCardData): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
@@ -78,77 +75,34 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
   // Tagline
   ctx.fillStyle = TEXT_SECONDARY;
   ctx.font = "300 24px system-ui, -apple-system, sans-serif";
-  ctx.fillText("breathwork that can see you", W / 2, 160);
+  ctx.fillText("a quiet moment to breathe", W / 2, 160);
 
-  // --- Verification seal — the hero element ---
-  if (data.verified) {
-    // Pulsing ring effect (static render)
-    ctx.strokeStyle = `rgba(52, 211, 153, 0.2)`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(W / 2, 500, 180, 0, Math.PI * 2);
-    ctx.stroke();
+  // --- Session mark — simple ring, no verification claims ---
+  ctx.strokeStyle = `rgba(147, 197, 253, 0.3)`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(W / 2, 500, 120, 0, Math.PI * 2);
+  ctx.stroke();
 
-    ctx.strokeStyle = `rgba(52, 211, 153, 0.4)`;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(W / 2, 500, 140, 0, Math.PI * 2);
-    ctx.stroke();
+  ctx.fillStyle = TEXT_SECONDARY;
+  ctx.font = "400 22px system-ui, -apple-system, sans-serif";
+  ctx.fillText("SESSION COMPLETE", W / 2, 620);
 
-    // Seal background
-    const sealGrad = ctx.createRadialGradient(W / 2, 500, 0, W / 2, 500, 120);
-    sealGrad.addColorStop(0, "rgba(52, 211, 153, 0.15)");
-    sealGrad.addColorStop(1, "transparent");
-    ctx.fillStyle = sealGrad;
-    ctx.beginPath();
-    ctx.arc(W / 2, 500, 120, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Checkmark
-    ctx.strokeStyle = VERIFIED_GREEN;
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(W / 2 - 35, 500);
-    ctx.lineTo(W / 2 - 10, 525);
-    ctx.lineTo(W / 2 + 40, 470);
-    ctx.stroke();
-
-    // "VERIFIED" label
-    ctx.fillStyle = VERIFIED_GREEN;
-    ctx.font = "600 22px system-ui, -apple-system, sans-serif";
-    ctx.fillText("SEEN", W / 2, 620);
-  } else {
-    // Unverified: simpler mark
-    ctx.strokeStyle = `rgba(147, 197, 253, 0.3)`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(W / 2, 500, 120, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = TEXT_SECONDARY;
-    ctx.font = "400 22px system-ui, -apple-system, sans-serif";
-    ctx.fillText("SESSION COMPLETE", W / 2, 620);
-  }
-
-  // --- Score — large, centered ---
+  // --- Duration — large, centered ---
   ctx.fillStyle = TEXT_PRIMARY;
   ctx.font = "700 120px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(String(data.score), W / 2, 820);
+  ctx.fillText(formatPracticeDuration(data.duration), W / 2, 820);
 
   ctx.fillStyle = TEXT_SECONDARY;
   ctx.font = "400 28px system-ui, -apple-system, sans-serif";
-  ctx.fillText("stillness", W / 2, 870);
+  ctx.fillText("practice time", W / 2, 870);
 
   // --- Stats row ---
-  const stats = [
-    { label: "PATTERN", value: data.patternName },
-    { label: "DURATION", value: formatDuration(data.duration) },
-    { label: "CYCLES", value: String(data.cycles || 0) },
-  ];
-
+  const stats = [{ label: "PATTERN", value: data.patternName }];
+  if (data.cycles != null) {
+    stats.push({ label: "CYCLES", value: String(data.cycles) });
+  }
   if (data.streak && data.streak > 0) {
     stats.push({ label: "STREAK", value: `${data.streak}d` });
   }
@@ -208,7 +162,7 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
 
   ctx.fillStyle = TEXT_SECONDARY;
   ctx.font = "300 20px system-ui, -apple-system, sans-serif";
-  ctx.fillText("the session watches you back", W / 2, H - 80);
+  ctx.fillText("progress over perfection", W / 2, H - 80);
 
   // --- Convert to blob ---
   return new Promise((resolve) => {
@@ -257,7 +211,7 @@ export async function shareProofCard(data: ProofCardData): Promise<"shared" | "d
 function shareText(data: ProofCardData): string {
   const parts = [
     `A session on Brume`,
-    `Score ${data.score}`,
+    `${data.patternName} · ${formatPracticeDuration(data.duration)}`,
     data.streak ? `${data.streak}-day streak` : "",
   ].filter(Boolean);
   return parts.join(" · ") + " 🌫️";
@@ -270,11 +224,4 @@ async function copyTextFallback(data: ProofCardData): Promise<void> {
   } catch {
     // silent fail
   }
-}
-
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  if (mins === 0) return `${secs}s`;
-  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }

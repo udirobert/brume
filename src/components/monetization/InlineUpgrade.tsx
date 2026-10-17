@@ -148,7 +148,7 @@ export const InlineUpgrade: React.FC<InlineUpgradeProps> = ({
   // Banner variant - full width alert-style
   if (variant === "banner") {
     return (
-      <Alert className={cn("border-l-4 border-l-primary bg-gradient-to-r from-background to-muted/20", className)}>
+      <Alert className={cn("border-l-4 border-l-primary bg-linear-to-r from-background to-muted/20", className)}>
         <Icon className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between w-full">
           <div>
@@ -182,14 +182,14 @@ export const InlineUpgrade: React.FC<InlineUpgradeProps> = ({
       {/* Premium gradient overlay */}
       <div 
         className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-5",
+          "absolute inset-0 bg-linear-to-br opacity-5",
           meta.gradient
         )} 
       />
       
       {/* Required tier badge */}
       <div className="absolute top-3 right-3">
-        <Badge className="bg-gradient-to-r from-purple-600 to-purple-700">
+        <Badge className="bg-linear-to-r from-purple-600 to-purple-700">
           <Star className="h-3 w-3 mr-1" />
           {requiredTier.name}
         </Badge>
@@ -198,7 +198,7 @@ export const InlineUpgrade: React.FC<InlineUpgradeProps> = ({
       <CardHeader className="relative">
         <div className="flex items-start gap-3">
           <div className={cn(
-            "p-2 rounded-lg text-white bg-gradient-to-br",
+            "p-2 rounded-lg text-white bg-linear-to-br",
             meta.gradient
           )}>
             <Icon className="h-5 w-5" />
@@ -225,7 +225,7 @@ export const InlineUpgrade: React.FC<InlineUpgradeProps> = ({
             {meta.benefits.map((benefit, index) => (
               <li key={index} className="flex items-center gap-2 text-sm">
                 <div className={cn(
-                  "h-1.5 w-1.5 rounded-full bg-gradient-to-r",
+                  "h-1.5 w-1.5 rounded-full bg-linear-to-r",
                   meta.gradient
                 )} />
                 {benefit}
@@ -252,7 +252,7 @@ export const InlineUpgrade: React.FC<InlineUpgradeProps> = ({
           <DialogTrigger asChild>
             <Button 
               className={cn(
-                "w-full bg-gradient-to-r text-white font-medium",
+                "w-full bg-linear-to-r text-white font-medium",
                 meta.gradient,
                 "hover:opacity-90 transition-opacity"
               )}

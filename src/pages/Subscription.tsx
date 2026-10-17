@@ -47,7 +47,7 @@ const BENEFITS = [
 
 const Subscription: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/50">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-blue-50/50">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4">
@@ -72,10 +72,10 @@ const Subscription: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl">
+            <div className="p-3 bg-linear-to-br from-purple-500 to-blue-500 rounded-2xl">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Breathwork that can see you.
             </h2>
           </div>
@@ -152,7 +152,7 @@ const Subscription: React.FC = () => {
 
         {/* Support Section */}
         <div className="mt-12 text-center">
-          <div className="p-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100">
+          <div className="p-8 bg-linear-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100">
             <h3 className="text-xl font-semibold mb-2">Need a hand?</h3>
             <p className="text-muted-foreground mb-4">
               Write us and we'll help you get back to the breath.

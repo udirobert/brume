@@ -18,7 +18,7 @@ export function checkReactEnvironment() {
   }
 
   // Check for React and ReactDOM availability using dynamic property access
-  const globalObj = typeof window !== 'undefined' ? window : global;
+  const globalObj = typeof window !== 'undefined' ? window : globalThis;
   const hasReact = !!(globalObj as Record<string, unknown>).React;
   const hasReactDOM = !!(globalObj as Record<string, unknown>).ReactDOM;
 
@@ -48,10 +48,15 @@ export function checkWalletEnvironment() {
 
   // Log wallet provider state
   if (window.ethereum) {
+    const ethereum = window.ethereum as typeof window.ethereum & {
+      isMetaMask?: boolean;
+      chainId?: string;
+      selectedAddress?: string;
+    };
     console.log('Wallet provider detected:', {
-      isMetaMask: window.ethereum.isMetaMask,
-      chainId: window.ethereum.chainId,
-      selectedAddress: window.ethereum.selectedAddress,
+      isMetaMask: ethereum.isMetaMask,
+      chainId: ethereum.chainId,
+      selectedAddress: ethereum.selectedAddress,
       // Log any other properties that might be useful for debugging
     });
   } else {

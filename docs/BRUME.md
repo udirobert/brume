@@ -1,31 +1,42 @@
 # Brume — Product Brief
 
-> **Brume** (French: *mist*) — camera-verified breathwork. *Progress you can prove.*
+> **Brume** (French: *mist*) — guided breathwork with optional camera feedback.
 > Shipaton 2026 entry · bundle `fun.imperfectform.brume` · flagship client of the
 > Proof-of-Practice primitive (see `docs/STRATEGY.md`).
 
 ## One-liner
 
-Brume watches you breathe (on-device camera ML — raw video never leaves the phone),
-coaches you through your actual state, and issues portable **proof of practice**.
-Every other breathwork app is a timer with audio. Brume *knows* you practiced.
+Brume coaches you through your actual state and offers optional camera feedback
+(image frames are sent to Brume's backend for movement estimates — practice works
+without it).
+Every other breathwork app is a timer with audio. Brume makes practice visible.
+
+> **Status note (milestone 1):** the original "camera-verified proof" concept is
+> not established — face presence in frames does not verify practice. Results now
+> report recorded practice time with no score or verification marks, and
+> credentials are not minted or shown from the post-session flow.
+>
+> **Tech migration (2026-10-17):** frontend moved to exact pinned versions —
+> React 19, Vite 8, Tailwind 4, wagmi 3, Capacitor 8 — see
+> [DEPENDENCIES.md](./DEPENDENCIES.md) for pins, exceptions, and verification
+> status.
 
 ## Core loop (retention engine)
 
 1. Open → 10-second state check (camera or tap) → **"here's your breath for today"**
-2. Guided session with live verification overlay (breath rate, depth, pacing)
-3. Post-session: emotional-shift insight + **verified credential** → share card
+2. Guided session with optional camera feedback (face/movement estimates)
+3. Post-session: factual summary (practice time) → share card
 4. Streak + accountability buddy loop → tomorrow's nudge
 
 ## Screens (v1 scope — 6, nothing more)
 
 | Screen | Notes |
 |---|---|
-| Onboarding | Emotional check-in + camera permission framed as "let Brume see your breath" |
+| Onboarding | Emotional check-in + camera permission framed as optional camera feedback |
 | Home | "What do you need today?" — pattern recommended from detected state |
-| Session | Breathing animation + verification overlay; works without camera (unverified) |
-| Post-session | Insight card + credential + share (Lens optional, off by default) |
-| Progress | Streaks, credential gallery, verified-vs-total sessions |
+| Session | Breathing animation + optional camera feedback; works without camera |
+| Post-session | Practice-time summary + share (no score or verification marks) |
+| Progress | Streaks and session history |
 | Paywall | RevenueCat; see below |
 
 ## Monetization (HAMM evidence)

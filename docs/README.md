@@ -3,24 +3,26 @@
 ## 🎯 **Quick Start**
 
 ### **Development**
+Requires **Node.js 24** (`>=24.15.0 <25`, see `.nvmrc`) and **pnpm 12.14.0** (`corepack enable` reads `packageManager`).
 ```bash
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
+See [Dependencies & Toolchain](./DEPENDENCIES.md) for pinned versions, exceptions, and install policy.
 
 ### **Production Deployment**
 ```bash
 # Check deployment status
-npm run deploy
+pnpm run deploy
 
 # Deploy vision service
-npm run deploy:vision
+pnpm run deploy:vision
 
 # Configure domain & SSL
-npm run deploy:domain
+pnpm run deploy:domain
 
 # Configure firewall
-npm run deploy:firewall
+pnpm run deploy:firewall
 ```
 
 ## 📚 **Documentation**
@@ -45,20 +47,20 @@ Frontend (React/TypeScript) → API (api.imperfectform.fun) → Vision Service (
 
 ## 🚀 **Core Features**
 
-- **Vision Processing**: Real-time face detection and breathing analysis
+- **Vision Processing**: Optional camera feedback (face-landmark/movement estimates via backend MediaPipe; not proof of practice)
 - **AI Analysis**: Advanced breathing pattern insights
 - **Web3 Integration**: Flow blockchain and Lens Protocol
 - **Professional API**: SSL-secured domain with rate limiting
-- **Automated CI/CD**: GitHub Actions deployment pipeline
+- **CI**: GitHub Actions validates lint/typecheck/tests/build; Netlify deploys separately
 
 ## 🔧 **Development Commands**
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run deploy` | Check deployment status |
-| `npm run setup` | Install dependencies |
+| `pnpm dev` | Start development server |
+| `pnpm run build` | Build for production |
+| `pnpm run deploy` | Check deployment status |
+| `pnpm run setup` | Install dependencies |
 
 ## 🌐 **Production URLs**
 
@@ -68,7 +70,7 @@ Frontend (React/TypeScript) → API (api.imperfectform.fun) → Vision Service (
 
 ## 📋 **Prerequisites**
 
-- Node.js 18+
+- Node.js 24 (`>=24.15.0 <25`, see `.nvmrc`) and pnpm 12.14.0
 - Docker (for local vision service)
 - Hetzner Cloud account
 - GoDaddy domain management
@@ -86,7 +88,7 @@ Frontend (React/TypeScript) → API (api.imperfectform.fun) → Vision Service (
 
 For issues or questions:
 1. Check the documentation in `/docs/`
-2. Run `npm run deploy` for diagnostics
+2. Run `pnpm run deploy` for diagnostics
 3. Review GitHub Actions logs
 4. Check server logs via SSH
 

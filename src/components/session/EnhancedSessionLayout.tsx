@@ -63,7 +63,7 @@ export const EnhancedSessionLayout: React.FC<EnhancedSessionLayoutProps> = ({
           aria-label={seen ? "Camera can see you" : "Looking for your face"}
         >
           {videoFeed}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-1.5 pb-1.5 pt-4 pointer-events-none">
+          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-1.5 pb-1.5 pt-4 pointer-events-none">
             <div className="flex items-center gap-1">
               <span
                 className={cn(

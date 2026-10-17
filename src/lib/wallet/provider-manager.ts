@@ -1,3 +1,5 @@
+import "viem/window";
+
 /**
  * Unified Wallet Provider Manager
  * 
@@ -141,7 +143,14 @@ class WalletProviderManager {
             return false;
           }
         },
-        request: async (method, params) => ethereum.request({ method, params }),
+        request: async (method, params) => {
+          // Dynamic RPC method dispatch — widen EIP-1193's typed request surface.
+          const request = ethereum.request as (args: {
+            method: string;
+            params?: unknown[];
+          }) => Promise<unknown>;
+          return request.call(ethereum, { method, params });
+        },
       });
     }
 

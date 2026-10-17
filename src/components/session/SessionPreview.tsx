@@ -9,6 +9,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ContextCards } from "@/components/primitives/ContextCard";
+import { HandsFreeDemo } from "./HandsFreeDemo";
 import { useCameraStore } from "../../stores/cameraStore";
 import { Camera, Loader2, AlertCircle } from "lucide-react";
 
@@ -120,7 +121,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
                 <p className="mt-2 text-sm">
                   {cameraStatus === "permission-denied"
                     ? "Camera access denied"
-                    : "Let Brume see your breath"}
+                    : "Optional camera feedback"}
                 </p>
               </div>
             )}
@@ -135,6 +136,12 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
       )}
 
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+        {enableCamera && !cameraStream && (
+          <p className="text-xs text-muted-foreground/70 text-center px-2">
+            Optional camera feedback sends image frames to Brume's backend for
+            processing. You can practise without it.
+          </p>
+        )}
         {enableCamera && !cameraStream && (
           <Button
             onClick={handleRequestCamera}
@@ -168,6 +175,8 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
             Not now
           </button>
         )}
+
+        <HandsFreeDemo />
       </div>
     </div>
   );

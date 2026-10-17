@@ -18,10 +18,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
         with:
-          version: 10
+          version: 12.14.0
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm eslint . --max-warnings=500
@@ -33,10 +33,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
         with:
-          version: 10
+          version: 12.14.0
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm tsc --noEmit --skipLibCheck
@@ -48,10 +48,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
         with:
-          version: 10
+          version: 12.14.0
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm vitest run
@@ -85,10 +85,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
         with:
-          version: 10
+          version: 12.14.0
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build

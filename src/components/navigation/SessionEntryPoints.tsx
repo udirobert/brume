@@ -35,10 +35,10 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
       icon: Heart,
       to: "/session/classic",
       buttonClass: isMobile
-        ? "w-full text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100"
-        : "px-6 py-4 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100",
+        ? "w-full text-sm bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100"
+        : "px-6 py-4 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100",
       badgeClass:
-        "absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-md",
+        "absolute -top-2 -right-2 bg-linear-to-r from-blue-500 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-md",
       features: [
         "4-4-4-4 box breathing pattern",
         "No camera or signup required",
@@ -54,10 +54,10 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
       icon: Camera,
       to: "/session/enhanced",
       buttonClass: isMobile
-        ? "w-full text-sm bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100"
-        : "px-6 py-4 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100",
+        ? "w-full text-sm bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100"
+        : "px-6 py-4 text-base rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100",
       badgeClass:
-        "absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white border-0 text-xs px-3 py-1 shadow-md",
+        "absolute -top-2 -right-2 bg-linear-to-r from-purple-500 to-pink-600 text-white border-0 text-xs px-3 py-1 shadow-md",
       features: [
         "Real-time posture feedback",
         "AI coaching insights",
@@ -111,7 +111,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
             <div key={session.key} className="w-full max-w-md">
               <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
                 <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-gray-50 to-gray-100 mb-4">
                     <Icon className="w-8 h-8 text-gray-600" />
                   </div>
                   <h3 className="text-2xl font-bold mb-2">{session.title}</h3>
@@ -144,7 +144,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
 
       {/* Post-session pattern discovery hint */}
       <div className="mt-12 text-center">
-        <p className="text-sm text-muted-foreground bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg inline-block">
+        <p className="text-sm text-muted-foreground bg-linear-to-r from-blue-50 to-purple-50 p-4 rounded-lg inline-block">
           ✨ Complete your first session to unlock 6+ breathing patterns
           including Wim Hof, 4-7-8, and more
         </p>

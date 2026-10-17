@@ -2,6 +2,15 @@
 
 Comprehensive testing approach for Imperfect Breath.
 
+> **Verification status (2026-10-17, post dependency migration):**
+> currently installed: **Vitest 5.0.5** + `react-dom`/`act` + **jsdom 30**.
+> React Testing Library and MSW are **not** installed — examples below
+> referencing them are conceptual, not executed coverage. E2E tests live in
+> root `e2e/` (not `src/`) and their fixtures predate current routes
+> (e.g. login vs `/auth`) — not a release gate. Recorded at migration:
+> unit suite passing, `tsc` clean, eslint 0 errors, production build
+> passing. See [DEPENDENCIES.md](./DEPENDENCIES.md) for details.
+
 ## Overview
 
 The testing strategy includes:
@@ -14,18 +23,16 @@ The testing strategy includes:
 ## Test Structure
 
 ```
-src/
-├── __tests__/              # Unit tests
-├── integration/__tests__/  # Integration tests
-└── e2e/tests/             # E2E tests
+src/**/__tests__/           # Unit tests (vitest + jsdom)
+e2e/                        # Playwright E2E (root-level, stale fixtures)
 ```
 
 ## Unit Testing
 
 ### Framework
 - **Vitest**: Fast unit testing framework
-- **React Testing Library**: Component testing utilities
-- **Mock Service Worker**: API mocking
+- **React DOM / React `act`**: Component rendering and interaction
+- **jsdom / Vitest mocks**: Browser-like test environment and isolated adapters
 
 ### Coverage
 - Authentication services
@@ -35,6 +42,8 @@ src/
 - UI components
 
 ### Examples
+
+These historical examples illustrate intended coverage; they are not the executed migration tests.
 
 ```typescript
 // Example unit test for authentication

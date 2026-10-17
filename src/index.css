@@ -1,7 +1,17 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* v4 removed the container theme options — keep the v3 behavior explicitly */
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 2rem;
+
+  @media (min-width: 1400px) {
+    max-width: 1400px;
+  }
+}
 
 @layer base {
   :root {
@@ -161,7 +171,7 @@
 
   /* Premium Gradients */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70;
+    @apply bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/70;
   }
   
   /* Mobile-specific utilities */

@@ -504,7 +504,7 @@ export class UnifiedAPIClient {
         // Create a readable stream with enhanced error handling
         const stream = new ReadableStream<string>({
           async start(controller) {
-            let timeoutId: NodeJS.Timeout | null = null;
+            let timeoutId: ReturnType<typeof setTimeout> | null = null;
             let abortController: AbortController | null = null;
             
             try {

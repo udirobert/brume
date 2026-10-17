@@ -4,7 +4,7 @@ import { ArrowLeft, Shield, Eye, Database, Users, Lock, Globe } from 'lucide-rea
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
             How Brume protects your privacy and handles your data
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: October 16, 2026
           </p>
         </div>
 
@@ -38,7 +38,7 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-green-700 dark:text-green-300 mb-2">✅ What We DO</h3>
                 <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                  <li>• Process video locally on your device</li>
+                  <li>• Process optional camera frames on our backend to estimate movement</li>
                   <li>• Store breathing session metrics</li>
                   <li>• Sync preferences across devices</li>
                   <li>• Enable social features (with consent)</li>
@@ -47,7 +47,7 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-red-700 dark:text-red-300 mb-2">❌ What We NEVER Do</h3>
                 <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                  <li>• Store raw video footage</li>
+                  <li>• Measure clinical or medical breath quality</li>
                   <li>• Track you across other websites</li>
                   <li>• Sell your personal data</li>
                   <li>• Access your private keys</li>
@@ -135,41 +135,35 @@ const PrivacyPolicy = () => {
             </h2>
             <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 mb-4">
               <p className="text-green-800 dark:text-green-200 font-medium">
-                🛡️ Your Privacy is Protected: All video processing happens locally on your device
+                🛡️ Camera feedback is optional — you can practise fully without it
               </p>
             </div>
             <div className="space-y-4 text-gray-600 dark:text-gray-300">
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Camera Access</h3>
-                <p>We request camera access only to provide real-time breathing guidance and biometric feedback during sessions. Camera access is:</p>
+                <p>We request camera access only to provide optional camera feedback during sessions. Camera access is:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Always optional and requires your explicit permission</li>
-                  <li>Used only during active breathing sessions</li>
-                  <li>Processed entirely on your device using TensorFlow.js and MediaPipe</li>
-                  <li>Never transmitted to our servers or stored anywhere</li>
+                  <li>Used when you enable camera feedback, including during session setup</li>
+                  <li>Captured as image (JPEG) frames and sent to Brume's backend for processing</li>
+                  <li>Processed with MediaPipe to estimate face landmarks and movement</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Face and Pose Detection</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Face Landmark and Movement Estimates</h3>
                 <p>When enabled, we use computer vision to:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Detect breathing patterns through chest movement</li>
-                  <li>Provide visual feedback overlays</li>
-                  <li>Calculate breathing rate and rhythm metrics</li>
-                  <li>Generate anonymized session statistics only</li>
+                  <li>Estimate face landmarks and movement from camera frames</li>
+                  <li>Provide visual feedback during the session</li>
+                  <li>Produce session summary metrics for your history</li>
                 </ul>
+                <p className="mt-2">Camera feedback is not a clinical measurement and does not measure breath quality.</p>
               </div>
 
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Data Processing</h3>
-                <p>All video analysis occurs in real-time on your device. We only store:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Aggregated metrics (breathing rate, session score)</li>
-                  <li>No facial recognition data or biometric identifiers</li>
-                  <li>No raw video frames or footage</li>
-                  <li>No personally identifiable visual information</li>
-                </ul>
+                <p>Camera frames contain your face and are processed on our backend during the session. Session landmarks and movement metrics are held temporarily in backend memory; session summary metrics may be kept so they appear in your history.</p>
               </div>
             </div>
           </section>

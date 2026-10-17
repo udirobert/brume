@@ -1,66 +1,44 @@
 import React from "react";
 import { Button } from "../ui/button";
-import { ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { trackCredentialShared } from "@/lib/notifications/oneSignal";
-import { useAttestation } from "@/hooks/useAttestation";
 import { shareProofCard } from "@/lib/proofCard";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { formatPracticeDuration } from "@/lib/utils/practice-duration";
 
 interface PostSessionCelebrationProps {
   metrics: {
     patternName: string;
     duration: number;
-    score: number;
     cycles?: number;
     sessionType?: string;
     isFirstSession?: boolean;
     streak?: number;
   };
-  /** Quiet mark only — verification is not the landing job. */
-  verified?: boolean;
   insight?: string;
   isGuest?: boolean;
   onContinue?: () => void;
   onSeeProgress?: () => void;
   onSaveProgress?: () => void;
-  onConnectWallet?: () => void;
   onClose?: () => void;
-}
-
-function sessionLength(seconds: number): string {
-  if (seconds < 60) return `${Math.max(1, Math.round(seconds))}s`;
-  const minutes = Math.round(seconds / 60);
-  return minutes === 1 ? "1 min" : `${minutes} min`;
 }
 
 export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   metrics,
-  verified = false,
   insight,
   isGuest = false,
   onContinue,
   onSeeProgress,
   onSaveProgress,
-  onConnectWallet,
 }) => {
   const reduceMotion = useReducedMotion();
-  const streak = metrics.streak || 1;
-
   const handleShare = async () => {
     try {
       const result = await shareProofCard({
         patternName: metrics.patternName,
         duration: metrics.duration,
-        score: metrics.score,
         cycles: metrics.cycles,
         streak: metrics.streak,
-        verified,
       });
 
       if (result === "shared") {
@@ -87,9 +65,10 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         };
 
   const meta = [
-    sessionLength(metrics.duration),
-    `Day ${streak}`,
-    verified ? "Seen" : null,
+    typeof metrics.streak === "number" && metrics.streak > 0
+      ? `Day ${metrics.streak}`
+      : null,
+    metrics.cycles != null ? `${metrics.cycles} cycles` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -105,10 +84,10 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
 
       <motion.div className="mt-14 space-y-3" {...fade(0.12)}>
         <p className="text-7xl md:text-8xl font-light tabular-nums tracking-tight leading-none">
-          {metrics.score}
+          {formatPracticeDuration(metrics.duration)}
         </p>
         <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-          stillness
+          practice time
         </p>
         <p className="text-sm text-muted-foreground pt-1">
           {meta.join(" · ")}
@@ -156,76 +135,6 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
           </button>
         </div>
       </motion.div>
-
-      {verified && (
-        <motion.div className="mt-10 w-full max-w-xs" {...fade(0.38)}>
-          <Collapsible>
-            <CollapsibleTrigger className="group mx-auto flex items-center gap-1 text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors">
-              Record
-              <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4">
-              <CredentialPanel
-                score={metrics.score}
-                onConnectWallet={onConnectWallet}
-              />
-            </CollapsibleContent>
-          </Collapsible>
-        </motion.div>
-      )}
     </div>
   );
 };
-
-function CredentialPanel({
-  score,
-  onConnectWallet,
-}: {
-  score: number;
-  onConnectWallet?: () => void;
-}) {
-  const attestation = useAttestation(true, { score });
-
-  return (
-    <div className="space-y-2 text-center">
-      {attestation.status === "done" && (
-        <p className="text-xs text-muted-foreground">
-          Issued{attestation.meta ? ` · ${attestation.meta}` : ""}
-        </p>
-      )}
-      {attestation.status === "idle" && (
-        <Button
-          onClick={() => void attestation.attest()}
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-        >
-          Mint credential
-        </Button>
-      )}
-      {attestation.status === "needs-wallet" && (
-        <Button
-          onClick={onConnectWallet}
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-        >
-          Connect wallet to mint
-        </Button>
-      )}
-      {attestation.status === "loading" && (
-        <p className="text-xs text-muted-foreground">Issuing…</p>
-      )}
-      {attestation.status === "failed" && (
-        <Button
-          onClick={() => void attestation.retry()}
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-        >
-          Retry mint
-        </Button>
-      )}
-    </div>
-  );
-}

@@ -1,0 +1,9 @@
+# pnpm minimumReleaseAge policy
+#
+# The default release-age gate applies to all packages. The only exceptions
+# are the explicitly pinned releases below — needed so the
+# audited latest-stable manifest installs cleanly (e.g. in CI). Exact pins
+# only; do not relax this list with wildcards or broader ranges.
+minimumReleaseAgeExclude:
+  - eslint@10.13.0
+  - lucide-react@1.58.0

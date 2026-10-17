@@ -71,11 +71,13 @@ export const SessionControls = ({
 
   const handlePlayPause = () => {
     if (disabled || isLoading) return;
-    
-    if (isActive) {
-      pause();
-    } else if (isPaused) {
+
+    // isActive is lifecycle (phase !== 'setup') and stays true while paused,
+    // so check paused first or resume is unreachable.
+    if (isPaused) {
       resume();
+    } else if (isActive) {
+      pause();
     }
   };
 
@@ -103,6 +105,7 @@ export const SessionControls = ({
           onClick={handleToggleAudio}
           className={config.buttonClass}
           disabled={disabled || isLoading}
+          aria-label={isAudioEnabled ? "Mute audio" : "Unmute audio"}
         >
           {isAudioEnabled ? (
             <Volume2 size={config.iconSize} />
@@ -124,17 +127,32 @@ export const SessionControls = ({
         onClick={handlePlayPause}
         className={config.buttonClass}
         disabled={disabled || isLoading || (!isActive && !isPaused)}
+        aria-label={
+          isLoading
+            ? "Loading session"
+            : isPaused
+              ? "Resume session"
+              : isActive
+                ? "Pause session"
+                : "Play session"
+        }
       >
         {isLoading ? (
           <Loader2 size={config.iconSize} className="animate-spin" />
-        ) : isActive ? (
+        ) : isActive && !isPaused ? (
           <Pause size={config.iconSize} />
         ) : (
           <Play size={config.iconSize} />
         )}
         {config.showLabels && (
           <span className="ml-2">
-            {isLoading ? "Loading..." : isActive ? "Pause" : "Play"}
+            {isLoading
+              ? "Loading"
+              : isPaused
+                ? "Resume"
+                : isActive
+                  ? "Pause"
+                  : "Play"}
           </span>
         )}
       </Button>
@@ -147,6 +165,7 @@ export const SessionControls = ({
           onClick={handleStop}
           className={`${config.buttonClass} bg-red-400 hover:bg-red-500`}
           disabled={disabled || isLoading}
+          aria-label="End session"
         >
           <StopCircle size={config.iconSize} />
           {config.showLabels && <span className="ml-2">Stop</span>}

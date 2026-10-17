@@ -12,7 +12,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { PostSessionCelebration } from "@/components/session/PostSessionCelebration";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
-import { useSessionStore } from "@/stores/sessionStore";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Sheet,
@@ -23,23 +22,15 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
-function buildInsight(score: number): string {
-  if (score >= 80) return "Your stillness held. Sessions like this are settling you.";
-  if (score >= 60) return "Good practice. Shorter and stiller usually beats heroic.";
-  return "Take a moment to notice how you feel. Showing up again is the whole point.";
-}
-
 export default function PostSession() {
   const location = useLocation();
   const navigate = useNavigate();
   const { streak, saveSession } = useSessionHistory();
   const { user } = useAuth();
-  const lastSessionVerified = useSessionStore((s) => s.lastSessionVerified);
   const hasSavedRef = useRef(false);
   const [saveOpen, setSaveOpen] = useState(false);
 
   const sessionData = useMemo(() => location.state || {}, [location.state]);
-  const verified = lastSessionVerified || !!sessionData.cameraUsed;
 
   // Save once on mount. Guests are already persisted by SessionModeWrapper.
   useEffect(() => {
@@ -61,22 +52,6 @@ export default function PostSession() {
     }
   }, [sessionData, saveSession, user]);
 
-  // Compute score — same logic as the old Results.tsx
-  const score = useMemo(() => {
-    const sessionType = sessionData.sessionType || "enhanced";
-    if (sessionType === "classic") {
-      return Math.min(100, Math.max(50, (sessionData.cycleCount || 1) * 10));
-    }
-    // Enhanced: use stillness score if available, else derive from restlessness
-    if (sessionData.stillnessScore != null) {
-      return sessionData.stillnessScore;
-    }
-    if (sessionData.restlessnessScore != null) {
-      return Math.max(0, 100 - sessionData.restlessnessScore);
-    }
-    return 75;
-  }, [sessionData]);
-
   if (!sessionData.patternName) {
     // No session data — redirect home
     return <NavigateFallback />;
@@ -89,17 +64,14 @@ export default function PostSession() {
           metrics={{
             patternName: sessionData.patternName,
             duration: sessionData.sessionDuration || 0,
-            score,
             cycles: sessionData.cycleCount,
             streak,
           }}
-          verified={verified}
-          insight={buildInsight(score)}
+          insight={`You practised ${sessionData.patternName}.`}
           isGuest={!user}
           onContinue={() => navigate("/")}
           onSeeProgress={() => navigate("/progress")}
           onSaveProgress={() => setSaveOpen(true)}
-          onConnectWallet={() => navigate("/profile")}
           onClose={() => navigate("/")}
         />
       </div>

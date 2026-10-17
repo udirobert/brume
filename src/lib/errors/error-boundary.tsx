@@ -203,7 +203,7 @@ export const CameraErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>>
       {...props}
       category={ErrorCategory.CAMERA}
       fallback={(error, retry) => (
-        <div className="aspect-video bg-gradient-to-br from-red-50 to-orange-50 rounded-lg flex items-center justify-center border-2 border-red-200 shadow-inner">
+        <div className="aspect-video bg-linear-to-br from-red-50 to-orange-50 rounded-lg flex items-center justify-center border-2 border-red-200 shadow-inner">
           <div className="text-center p-6 max-w-md">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,7 +383,7 @@ export const SessionStartupErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'cat
       category={ErrorCategory.SESSION}
       isolate={true} // Prevent session errors from crashing the whole app
       fallback={(error, retry) => (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
           <div className="max-w-lg w-full bg-white shadow-2xl rounded-2xl p-8 mx-4">
             <div className="text-center">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -426,7 +426,7 @@ export const SessionStartupErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'cat
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="mt-8 p-6 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
                 <div className="flex items-start space-x-4">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mt-1">
                     <span className="text-white text-sm">ℹ</span>
@@ -498,7 +498,7 @@ export const VisionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>>
       {...props}
       category={ErrorCategory.AI}
       fallback={(error, retry) => (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-purple-50 to-blue-50">
           <div className="max-w-sm w-full bg-white shadow-xl rounded-lg p-6 mx-4 border border-purple-200">
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -565,7 +565,7 @@ export const EnhancedSessionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'ca
       {...props}
       category={ErrorCategory.SESSION}
       fallback={(error, retry) => (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-green-50 to-blue-100">
           <div className="max-w-lg w-full bg-white shadow-2xl rounded-2xl p-8 mx-4">
             <div className="text-center">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">

@@ -5,36 +5,39 @@ Complete development guide for Imperfect Breath - setup, roadmap, implementation
 ## Quick Start
 
 ### Development
+Requires **Node.js 24** (`>=24.15.0 <25`) and **pnpm 12.14.0** (`packageManager` field).
 ```bash
-npm install
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 ### Production Deployment
 ```bash
 # Check deployment status
-npm run deploy
+pnpm run deploy
 
 # Deploy vision service
-npm run deploy:vision
+pnpm run deploy:vision
 
 # Configure domain & SSL
-npm run deploy:domain
+pnpm run deploy:domain
 
 # Configure firewall
-npm run deploy:firewall
+pnpm run deploy:firewall
 ```
 
 ## Development Environment
 
 ### Frontend Only (Recommended)
 ```bash
-npm run dev
+pnpm dev
 # Opens http://localhost:4556
 # Works with all core features + fallback AI
 ```
 
 ### Full Stack (Optional)
+The Python vision-service requirements are unchanged and predate the
+current security posture — refresh them before any production use.
 ```bash
 # Terminal 1: Backend services
 cd backend/vision-service
@@ -42,46 +45,50 @@ pip install -r requirements.txt
 MODEL_DOWNLOAD_ON_START=false python3 main.py
 
 # Terminal 2: Frontend
-npm run dev
+pnpm dev
 ```
 
 ## Environment Variables
 
-### Required (None)
-The app works immediately without any configuration.
+Frontend startup, including guest use, requires the **public** Supabase
+values in `.env.local` (`src/config/environment.ts` validates them at startup):
 
-### Optional Enhancements
 ```bash
-# .env.local
+# .env.local — publishable values only
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_key
-VITE_GEMINI_API_KEY=your_gemini_key
-VITE_HETZNER_SERVICE_URL=https://api.imperfectform.fun
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+Optional: `VITE_HETZNER_SERVICE_URL`. Never put provider/service secret
+keys in `VITE_*` variables — anything prefixed ships to the client bundle;
+those keys belong to the backend.
 
 ## Development Commands
 
 ```bash
 # Development
-npm run dev           # Start dev server
-npm run dev:full      # Start with backend
-npm run preview       # Preview production build
+pnpm dev            # Start dev server
+pnpm run preview    # Preview production build
 
 # Building
-npm run build         # Production build
-npm run build:analyze # Bundle analysis
+pnpm run build      # Production build
 
 # Quality
-npm run lint          # ESLint
-npm run lint:fix      # Auto-fix issues
-npm run format        # Prettier formatting
-npm run type-check    # TypeScript check
+pnpm run lint                            # ESLint
+pnpm exec eslint . --max-warnings=500    # CI lint invocation
+pnpm exec tsc --noEmit --skipLibCheck    # TypeScript check
 
 # Testing
-npm test              # Run tests
-npm run test:watch    # Watch mode
-npm run test:coverage # Coverage report
+pnpm test             # Run tests (vitest run)
+pnpm exec vitest      # Watch mode
+pnpm test:e2e         # Playwright E2E (fixtures predate current routes)
+
+# Security
+pnpm run security     # Security check script
 ```
+
+See [DEPENDENCIES.md](./DEPENDENCIES.md) for the pinned toolchain and
+current verification status.
 
 ## Project Structure
 
@@ -109,10 +116,14 @@ imperfect-breath/
 
 - Never commit API keys
 - Use environment variables for secrets
-- Run security scan: `npm run security-check`
+- Run security scan: `pnpm run security`
 - Report issues via GitHub Issues
 
 ## AI Analysis System Roadmap
+
+> **Historical planning document** — describes the roadmap as originally
+> designed, not validated current feature status. See
+> [DEPENDENCIES.md](./DEPENDENCIES.md) for what's actually shipping.
 
 ### Phase 1: Enhanced Prompt Engineering (✅ Complete)
 

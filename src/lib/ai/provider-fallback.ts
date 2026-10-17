@@ -31,7 +31,7 @@ export interface FallbackConfig {
 export class ProviderFallbackManager {
   private providerHealth: Map<SecureAIProvider, ProviderHealth> = new Map();
   private config: FallbackConfig;
-  private healthCheckTimer?: NodeJS.Timeout;
+  private healthCheckTimer?: ReturnType<typeof setTimeout>;
 
   constructor(config?: Partial<FallbackConfig>) {
     this.config = {

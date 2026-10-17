@@ -280,7 +280,7 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
       <div className="w-40 h-2 bg-blue-100/40 rounded-full mx-auto">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-100 ease-linear bg-gradient-to-r",
+            "h-full rounded-full transition-all duration-100 ease-linear bg-linear-to-r",
             phaseConfig.rhythmGradient
           )}
           style={{

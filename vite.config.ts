@@ -1,41 +1,14 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+import tailwindcss from "@tailwindcss/vite";
+import { resolve } from "node:path";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 /**
- * Production-Safe Chunking Strategy
- * 
- * CORE PRINCIPLE: React must NEVER be separated from main bundle
- * to prevent "Cannot read properties of undefined (reading 'createContext')" errors
- */
-const getChunkName = (id: string): string | undefined => {
-  // CRITICAL: React ecosystem stays in main bundle for stability
-  if (id.includes('react') || 
-      id.includes('scheduler') || 
-      id.includes('jsx') ||
-      id.includes('React') ||
-      id.includes('@types/react')) {
-    return undefined; // Keep in main bundle
-  }
-  
-  // Safe independent libraries that can be chunked
-  if (id.includes('date-fns') || 
-      id.includes('uuid') || 
-      id.includes('lodash')) {
-    return 'vendor-utils';
-  }
-  
-  // Conservative default: keep everything else in main bundle
-  return undefined;
-};
-
-/**
  * Vite Configuration - Production Optimized
- * 
+ *
  * Key principles:
- * - React stability: Never separate React from main bundle
- * - Performance: Optimized chunking and minification
+ * - Performance: Rolldown default code splitting and minification
  * - Security: Clean path aliases and disabled source maps in production
  * - Compatibility: Node.js polyfills for blockchain libraries
  */
@@ -46,13 +19,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      // Configure React plugin with simpler settings to avoid dependency issues
       react({
-        // Force React to be bundled properly and prevent ReactCurrentOwner errors
-        jsxRuntime: "automatic",
-        // Include all React packages to ensure proper initialization
         include: "**/*.{jsx,tsx}",
       }),
+      tailwindcss(),
 
       // Add Node.js polyfills for browser compatibility
       nodePolyfills({
@@ -69,16 +39,16 @@ export default defineConfig(({ mode }) => {
     // Configure path aliases to match tsconfig
     resolve: {
       alias: {
-        "@": resolve(__dirname, "./src"),
-        components: resolve(__dirname, "./src/components"),
-        hooks: resolve(__dirname, "./src/hooks"),
-        lib: resolve(__dirname, "./src/lib"),
-        integrations: resolve(__dirname, "./src/integrations"),
-        types: resolve(__dirname, "./src/types"),
-        pages: resolve(__dirname, "./src/pages"),
-        utils: resolve(__dirname, "./src/utils"),
-        wagmi: resolve(__dirname, "./node_modules/wagmi"),
-        viem: resolve(__dirname, "./node_modules/viem"),
+        "@": resolve(import.meta.dirname, "./src"),
+        components: resolve(import.meta.dirname, "./src/components"),
+        hooks: resolve(import.meta.dirname, "./src/hooks"),
+        lib: resolve(import.meta.dirname, "./src/lib"),
+        integrations: resolve(import.meta.dirname, "./src/integrations"),
+        types: resolve(import.meta.dirname, "./src/types"),
+        pages: resolve(import.meta.dirname, "./src/pages"),
+        utils: resolve(import.meta.dirname, "./src/utils"),
+        wagmi: resolve(import.meta.dirname, "./node_modules/wagmi"),
+        viem: resolve(import.meta.dirname, "./node_modules/viem"),
       },
       dedupe: [
         "react",
@@ -107,71 +77,22 @@ export default defineConfig(({ mode }) => {
           }
         : {}),
 
-      // Chunking configuration to prevent bundle splitting issues
       chunkSizeWarningLimit: 10000,
       target: 'esnext',
 
-      // Rollup options for build optimization
-      rollupOptions: {
-        // Ensure nothing gets externalized - everything should be bundled
-        external: [],
-        onwarn(warning, warn) {
-          // Suppress "INVALID_ANNOTATION" warnings from node_modules
-          if (warning.code === 'INVALID_ANNOTATION') {
-            return;
-          }
-          warn(warning);
-        },
+      // Rolldown options — default code splitting handles the module graph
+      rolldownOptions: {
         output: {
-          // Simplified chunking strategy to prevent module loading issues
-          manualChunks: {
-            // Keep React ecosystem together in vendor chunk
-            vendor: [
-              'react',
-              'react-dom',
-              'react-dom/client',
-              'react/jsx-runtime',
-              'react-router-dom',
-              'scheduler'
-            ],
-            // UI libraries in separate chunk
-            ui: [
-              '@radix-ui/react-slot',
-              '@radix-ui/react-dialog',
-              '@radix-ui/react-dropdown-menu',
-              'class-variance-authority',
-              'clsx',
-              'tailwind-merge'
-            ],
-            // Web3 / Wallet dependencies — keep in vendor to prevent provider errors
-            // web3: [
-            //   'wagmi',
-            //   'viem',
-            //   '@wagmi/core',
-            //   'connectkit'
-            // ],
-            // Lens Protocol SDK — only loaded on Lens pages
-            lens: [
-              '@lens-protocol/client',
-              '@lens-protocol/metadata'
-            ],
-            // Flow blockchain SDK — keep in main bundle to prevent circular deps
-            // flow: [
-            //   '@onflow/fcl',
-            //   '@onflow/types'
-            // ]
-          },
-          
           // Configure chunk file naming with better cache busting
           chunkFileNames: 'js/[name]-[hash:8].js',
           entryFileNames: 'js/[name]-[hash:8].js',
-          
+
           // Configure asset file naming
           assetFileNames: (assetInfo) => {
             if (!assetInfo.name) {
               return 'assets/[name]-[hash:8][extname]';
             }
-            
+
             const info = assetInfo.name.split('.');
             const ext = info[info.length - 1];
             if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
@@ -213,7 +134,6 @@ export default defineConfig(({ mode }) => {
       plugins: () => [
         // Apply the same plugins to workers
         react({
-          jsxRuntime: "automatic",
           include: "**/*.{jsx,tsx}",
         }),
       ],
@@ -225,17 +145,15 @@ export default defineConfig(({ mode }) => {
       open: true,
     },
 
-    // React-specific optimizations - ensure React is always in main bundle
+    // React-specific optimizations
     optimizeDeps: {
-      // Force React and related dependencies to be properly optimized
-      force: true,
       include: [
         "react",
         "react-dom",
         "react-dom/client",
         "react/jsx-runtime",
         "react-router-dom",
-        "scheduler", // React scheduler should also be optimized
+        "scheduler",
         "zustand",
         "@tanstack/react-query"
       ],

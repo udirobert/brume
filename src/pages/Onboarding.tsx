@@ -48,8 +48,8 @@ export default function Onboarding() {
             <span className="text-gradient">with us.</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            Brume sees you breathe. No wearable, no signup — just your
-            camera and 60 seconds.
+            Guided breathing with optional camera feedback. No wearable,
+            no signup — just 60 seconds.
           </p>
         </div>
 
@@ -57,11 +57,11 @@ export default function Onboarding() {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Camera className="w-3.5 h-3.5" />
-            Uses your camera
+            Camera optional
           </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Video never leaves your phone
+            No signup needed
           </span>
         </div>
 

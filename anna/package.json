@@ -1,0 +1,13 @@
+{
+  "name": "brume-anna-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Brume Reset — Anna App (bundle-only). Isolated from the root app toolchain.",
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "devDependencies": {
+    "@anna-ai/cli": "^0.1.59"
+  }
+}

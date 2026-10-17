@@ -1,0 +1,1 @@
+{"ns":"llm","method":"complete","result":{"role":"assistant","content":{"type":"text","text":"Carry this quiet into whatever comes next."},"model":"mock-model","stopReason":"endTurn","usage":{"inputTokens":40,"outputTokens":9,"totalTokens":49}}}

@@ -1,0 +1,49 @@
+{
+  "schema": 3,
+  "tags": ["breathing", "reset", "break"],
+  "storage": {
+    "kv": true,
+    "files": false,
+    "scopes": { "user": "rw" }
+  },
+  "host_capabilities": ["llm.complete"],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "Brume Reset",
+        "default": true,
+        "default_size": { "w": 420, "h": 520 },
+        "min_size": { "w": 320, "h": 360 },
+        "single_instance": true,
+        "summary_template": "Reset breathing break"
+      }
+    ],
+    "host_api": {
+      "storage": ["get", "set"],
+      "llm": ["complete"]
+    },
+    "state_merge": "last_writer_wins"
+  },
+  "dev": {
+    "mocks": {
+      "llm.complete": {
+        "result": {
+          "role": "assistant",
+          "content": {
+            "type": "text",
+            "text": "Carry this quiet into whatever comes next."
+          },
+          "model": "mock-model",
+          "stopReason": "endTurn",
+          "usage": { "inputTokens": 40, "outputTokens": 9, "totalTokens": 49 }
+        }
+      }
+    }
+  }
+}

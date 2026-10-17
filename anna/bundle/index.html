@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brume Reset</title>
+    <link rel="stylesheet" href="./app.css" />
+    <script src="./app.js" type="module"></script>
+  </head>
+  <body>
+    <main id="root">
+      <section id="screen-start" class="screen">
+        <h1>Brume</h1>
+        <p class="pattern-name" data-pattern-name></p>
+        <p class="hint">
+          A short breathing break — about a minute and a half. Sit comfortably;
+          you can pause or stop at any time.
+        </p>
+        <p class="last-session" data-last-session hidden></p>
+        <button id="btn-begin" class="primary" type="button">Begin</button>
+      </section>
+
+      <section id="screen-session" class="screen" hidden>
+        <p class="pattern-name" data-pattern-name></p>
+        <div class="breath-stage" aria-live="polite">
+          <div id="breath-dot" aria-hidden="true"></div>
+          <p id="phase-word" class="phase-word"></p>
+        </div>
+        <p class="timer">
+          <span id="elapsed">0:00</span>
+          <span class="muted">/ <span id="target"></span></span>
+        </p>
+        <p id="cycle-label" class="muted"></p>
+        <div class="row">
+          <button id="btn-pause" type="button">Pause</button>
+          <button id="btn-end" type="button">End</button>
+        </div>
+      </section>
+
+      <section id="screen-result" class="screen" hidden>
+        <h1 id="result-heading"></h1>
+        <dl class="facts">
+          <div><dt>Pattern</dt><dd id="result-pattern"></dd></div>
+          <div><dt>Active practice time</dt><dd id="result-time"></dd></div>
+          <div><dt>Cycles</dt><dd id="result-cycles"></dd></div>
+        </dl>
+        <p id="closing-line" class="closing-line" hidden></p>
+        <p id="save-note" class="muted" hidden></p>
+        <button id="btn-again" class="primary" type="button">Again</button>
+      </section>
+    </main>
+  </body>
+</html>

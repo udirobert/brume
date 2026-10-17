@@ -1,7 +1,9 @@
 # Brume on Anna: Product and Adoption Plan
 
 > **Status:** 2026-10-17. This is a plan - nothing here is implemented
-> feature proof, and no Anna platform capability has been verified live.
+> feature proof. The local CLI contract (schema-3 bundle-only manifest,
+> `validate --strict`, `dev` harness, storage round-trip) has been
+> verified live; production behavior and qualified-run semantics have not.
 > For the actually-implemented baseline see
 > [DEPENDENCIES.md](./DEPENDENCIES.md).
 
@@ -54,7 +56,9 @@ What exists today in this repo:
 - Post-session and share surfaces show recorded duration and factual
   session details, with no score or verification marks. The pause/resume
   control bug is fixed.
-- No Anna adapter is implemented in this repo, and no approved, published
+- A minimal bundle-only Anna adapter now exists under `anna/` (Reset
+  breathing slice; `validate --strict` passes; verified end-to-end in the
+  local `anna-app dev` harness). It is local-only - no approved, published
   Anna release has been established.
 
 Known blockers carried into this plan:
@@ -148,16 +152,44 @@ Checked against https://anna.partners/developers (all pages are Markdown):
   `llm.audio.transcribe`, `aps.kv`, `aps.scope.user.read/write`, etc. The
   old plan's `llm.sample`/`aps.kv`/`required_executas`/`plugin.py` guesses
   were directionally right - they are now confirmed names, not hypotheses.
-- **Still unverified:** what Anna counts as a "Qualified App Run" for a
-  bundle-only app (app open vs. declared-function execution record); CSP /
-  permissions-policy on `getUserMedia` inside the iframe (camera stays
-  excluded regardless); whether the local `dev` harness's in-memory store
-  differs from production APS in ways that matter.
+- **Qualified-run semantics CONFIRMED (forum staff, topic 351, Oct 2026).**
+  A bundle-only app qualifies without an Executa IF the run is started by
+  a signed-in user, completes the declared primary function, returns a
+  meaningful result, and is verifiable through server-side records.
+  **A `storage.set` alone does NOT count; a successful `llm.complete`
+  that produces the app's meaningful result can.** There is no single
+  universal "mark complete" call - declared function + server-observable
+  execution are considered together. BYOK and free/paid credits all count.
+- **Design consequence (settled):** the completion path must end in a
+  server-observable meaningful step - `llm.complete` generating the
+  closing/next-action line, declared in `host_capabilities` +
+  `ui.host_api.llm` - or a bundled executa. The non-AI fallback stays for
+  UX but a fallback-only run will likely not count toward MAU.
+- **Grant economics (official rules, confirmed).** Tiers: 200 MAU $80
+  launch/$50 monthly ... 20,000+ $6,000/$5,000; highest tier only.
+  Qualification window Sep 1-Nov 30 2026; since Oct 2026 grants computed
+  per-builder-portfolio (one grant/builder/month, users deduped across a
+  builder's apps). Revenue share separate: 70% of eligible usage profit,
+  $50 minimum.
+- **Store landscape confirmed:** 35 apps total, install counts single
+  digits to ~48. Zero breathwork/meditation/calm/sleep apps. Store browse
+  will not deliver 200 MAU - invitations/external traffic are the only
+  realistic channel.
+- **APS confirmed:** durable per-user KV hosted by Anna, cross-device.
+  `scope=user` reachable via `aps.scope.user.*` / schema-3
+  `storage.scopes.user` (our manifest matches). Caveat: user-scope keys
+  are visible to any granted plugin - keep ritual state namespaced and
+  non-sensitive.
+- **Still unverified:** CSP/permissions-policy on `getUserMedia` in the
+  iframe (camera stays excluded regardless); production APS vs harness
+  behavior differences at scale.
 
-**Adapter design (settled):** bundle the session engine (monotonic clock,
+**Adapter design (revised):** bundle the session engine (monotonic clock,
 camera-free Reset) as the iframe SPA; on completion write the factual
-session record via `anna.storage` (user scope). AI wording only via
-`anna.llm.complete` later, never in the happy path.
+record via `anna.storage` (user scope) AND issue an `llm.complete` call
+that produces the result's closing/next-action line so the run is
+server-observable and qualifies. Non-AI fallback remains the UX default
+for resilience, clearly noted as likely non-qualifying.
 
 ## 7. Retention loop
 
@@ -258,5 +290,7 @@ not invented metric goals.
 
 1. Verify the Anna docs/links above.
 2. Fix camera auto-prompt and the paused-timer issue.
-3. Build the minimal Anna Reset adapter (after contract confirmation).
+3. ~~Build the minimal Anna Reset adapter (after contract confirmation).~~
+   Done locally in `anna/` (2026-10-17); not yet exercised against
+   production Anna.
 4. Observe actual first completions.

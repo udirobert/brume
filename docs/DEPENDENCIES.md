@@ -125,3 +125,28 @@ pnpm test:e2e                                 # playwright (stale fixtures)
 
 Tests use Vitest + `react-dom`/`act` + jsdom; React Testing Library and
 MSW are **not** installed — don't assume their APIs in new tests.
+
+## Anna App (`anna/`)
+
+`anna/` is a standalone **Anna App** project (see `docs/ANNA.md`): a
+bundle-only static SPA (`manifest.json` schema 3 + `bundle/`) with its
+own `package.json`/lockfile and `node_modules` — deliberately isolated
+from the root pnpm toolchain; root `package.json`/`pnpm-lock.yaml` are
+untouched. Toolchain: `npm i -g @anna-ai/cli` (needs Node 22+ and `uv`).
+
+```bash
+cd anna
+anna-app validate --strict     # schema + host_api ACL checks
+anna-app dev --no-llm          # local harness on :5180 (no PAT needed offline)
+npm install && npm test        # mountBundle smoke test (node, not vitest)
+```
+
+`anna-app dev` requires `--no-llm` (or a `anna-app login` PAT; a canned
+`llm.complete` can be served via `--mock-llm test/mock-llm.jsonl`) and the
+harness storage backend is in-memory `runtime_state`. Verified locally
+(2026-10-17): `validate --strict` passes; the harness served the bundle
+and round-tripped a `scope:"user"` completion record via `storage.*`, and
+session completion issues `anna.llm.complete` for the result's closing
+line — the server-observable step that makes a run count as qualified
+(forum-confirmed); the fixed fallback line shown on llm
+denial/failure/timeout likely does not qualify.

@@ -52,6 +52,9 @@
       ],
       "llm": [
         "complete"
+      ],
+      "window": [
+        "set_title"
       ]
     },
     "state_merge": "last_writer_wins"

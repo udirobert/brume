@@ -228,7 +228,7 @@ interruption would break pillar 3.
   factual record via `storage/set` scope `user` and asks the host for a
   closing line via `sampling/createMessage`). Declared in
   `manifest.required_executas` under the dev `tool_id` `tool-dev-brume`;
-  not yet published to the Executa catalogue.
+  published to the catalogue as `tool-papa-brume-htcxvfcr`.
 - `SKILL.md` Skill -> agent offers contextually from learned cues.
   **Built locally:** `anna/skills/brume-reset-offer/SKILL.md` (Skill
   Executa, `execution_mode: "prompt"`; offer rules mirror the settled
@@ -246,8 +246,14 @@ interruption would break pillar 3.
 (required_executas) and Skill `skill-u3f06a4c-brume-reset-offer-62gn2cgc`
 (optional_executas, visibility=app_bundled) are live in the catalogue;
 manifest.json references the real IDs. Local harness maps via
-executas/brume/.anna/executa.json. Remaining pre-submit: app version
-upload + listing, real-account qualifying run. **Built locally:** `brume_reset` now takes
+executas/brume/.anna/executa.json.
+
+**Submitted for review (2026-10-17):** Anna App id 582, slug `brume`,
+immutable version 0.1.0 (id 1435) is pinned in `pending_review` -
+executa frozen at v0.2.0 (executa_version 766), skill at v1.0.0 (767),
+bundle staged (5 files). Still unverified until a real signed-in account
+runs it: production `llm.complete`/`sampling`, `scope=user` APS
+persistence, whether runs register as qualified, iframe CSP. **Built locally:** `brume_reset` now takes
   `pace` (slow 5/7, normal 4/6, fast 3/5) + `remaining_seconds` — a
   mid-break pace ask is a re-invocation covering the remainder, and
   `brume_complete` records summed segments (mixed-pace runs get

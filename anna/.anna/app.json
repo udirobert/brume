@@ -1,0 +1,8 @@
+{
+  "$schema": "anna-app-identity/v1",
+  "host": "https://anna.partners",
+  "app_id": 582,
+  "slug": "brume",
+  "handle": "papa",
+  "first_published_at": "2026-10-17T13:54:11.776Z"
+}

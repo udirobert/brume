@@ -1,14 +1,27 @@
 {
   "schema": 3,
-  "tags": ["breathing", "reset", "break"],
+  "tags": [
+    "breathing",
+    "reset",
+    "break"
+  ],
   "storage": {
     "kv": true,
     "files": false,
-    "scopes": { "user": "rw" }
+    "scopes": {
+      "user": "rw"
+    }
   },
-  "host_capabilities": ["llm.complete", "llm.sample"],
-  "required_executas": [{ "tool_id": "tool-dev-brume" }],
-  "system_prompt_addendum": "Brume offers one quiet guided breathing break. When the user asks for a break or reset (e.g. '#brume reset'), call brume_reset once and let its guided text stand — it is rendered verbatim, so do not restate or paraphrase it. When the user signals they finished (e.g. 'done'), call brume_complete. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
+  "host_capabilities": [
+    "llm.complete",
+    "llm.sample"
+  ],
+  "required_executas": [
+    {
+      "tool_id": "tool-papa-brume-htcxvfcr"
+    }
+  ],
+  "system_prompt_addendum": "Brume offers one quiet guided breathing break. When the user asks for a break or reset (e.g. '#brume reset'), call brume_reset once and let its guided text stand \u2014 it is rendered verbatim, so do not restate or paraphrase it. When the user signals they finished (e.g. 'done'), call brume_complete. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
   "ui": {
     "bundle": {
       "format": "static-spa",
@@ -20,15 +33,26 @@
         "name": "main",
         "title": "Brume Reset",
         "default": true,
-        "default_size": { "w": 420, "h": 520 },
-        "min_size": { "w": 320, "h": 360 },
+        "default_size": {
+          "w": 420,
+          "h": 520
+        },
+        "min_size": {
+          "w": 320,
+          "h": 360
+        },
         "single_instance": true,
         "summary_template": "Reset breathing break"
       }
     ],
     "host_api": {
-      "storage": ["get", "set"],
-      "llm": ["complete"]
+      "storage": [
+        "get",
+        "set"
+      ],
+      "llm": [
+        "complete"
+      ]
     },
     "state_merge": "last_writer_wins"
   },
@@ -43,9 +67,18 @@
           },
           "model": "mock-model",
           "stopReason": "endTurn",
-          "usage": { "inputTokens": 40, "outputTokens": 9, "totalTokens": 49 }
+          "usage": {
+            "inputTokens": 40,
+            "outputTokens": 9,
+            "totalTokens": 49
+          }
         }
       }
     }
-  }
+  },
+  "optional_executas": [
+    {
+      "tool_id": "skill-u3f06a4c-brume-reset-offer-62gn2cgc"
+    }
+  ]
 }

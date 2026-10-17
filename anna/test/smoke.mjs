@@ -121,7 +121,7 @@ ok("acl grants llm.complete", harness.acl.allowed.has("llm.complete"));
 // required_executas now declares the bundled plugin, so tools.invoke is
 // ACL-granted — but only for the declared tool_id.
 ok("acl grants tools.invoke via required_executas", harness.acl.allowed.has("tools.invoke"));
-ok("acl allows the bundled tool_id", harness.acl.allowedTools.has("tool-dev-brume"));
+ok("acl allows the bundled tool_id", harness.acl.allowedTools.has("tool-papa-brume-htcxvfcr"));
 await assert.rejects(
   () => harness.runtime.call("tools", "invoke", { tool_id: "tool-dev-other", method: "x", args: {} }),
   (e) => e instanceof HostApiError && e.code === "DENIED",

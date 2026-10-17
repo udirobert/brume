@@ -2,7 +2,7 @@
 
 Anna App: `manifest.json` (schema 3) + static SPA in `bundle/` + a
 chat-native Executa plugin in `executas/brume/` (dev `tool_id`
-`tool-dev-brume`, declared under `required_executas`). One camera-free
+`tool-papa-brume-htcxvfcr`, declared under `required_executas`). One camera-free
 Reset breathing routine (~90 s, 4 s in / 6 s out × 9 cycles), offered
 two ways: the iframe app below, and `#brume reset` in chat, where
 `brume_reset` renders the guided break as verbatim `_display` blocks and
@@ -68,7 +68,7 @@ For local testing, point the skill loader at it:
 Layout:
 
 - `manifest.json` — schema 3, `host_capabilities: ["llm.complete",
-  "llm.sample"]`, `required_executas: ["tool-dev-brume"]`,
+  "llm.sample"]`, `required_executas: ["tool-papa-brume-htcxvfcr"]`,
   `ui.host_api.storage: ["get","set"]` + `ui.host_api.llm: ["complete"]`,
   structured `storage` declaration, `dev.mocks` stub
 - `app.json` — listing metadata (name/tagline/description)

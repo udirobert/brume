@@ -25,7 +25,7 @@ Executa plugin, stdlib-only Python (3.10+), no dependencies.
   write nothing. Mixed-pace runs record `"pattern": "Reset · mixed pace"`
   with a `paces` list and per-segment detail.
 
-`tool_id` is `tool-dev-brume` (local dev identity from `executa.json` /
+`tool_id` is `tool-papa-brume-htcxvfcr` (local dev identity from `executa.json` /
 `[project.scripts]`); the app manifest references it under
 `required_executas`.
 
@@ -41,5 +41,5 @@ anna-app executa dev --dir executas/brume \
 
 # raw protocol:
 echo '{"jsonrpc":"2.0","method":"describe","id":1}' \
-  | uv run --project executas/brume tool-dev-brume
+  | uv run --project executas/brume tool-papa-brume-htcxvfcr
 ```

@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 VERSION = "0.2.0"
-TOOL_ID = "tool-dev-brume"
+TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # Paces are gentle, non-medical cadences. "normal" is the default Reset
 # rhythm; "slow"/"fast" are what the skill re-invokes with when the user

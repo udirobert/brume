@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1233,
+  "tool_id": "tool-papa-brume-htcxvfcr",
+  "slug": "brume",
+  "executa_type": "tool",
+  "first_published_at": "2026-10-17T13:38:43.721Z"
+}

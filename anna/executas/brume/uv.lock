@@ -2,6 +2,6 @@ version = 1
 requires-python = ">=3.10"
 
 [[package]]
-name = "tool-dev-brume"
+name = "tool-papa-brume-htcxvfcr"
 version = "0.2.0"
 source = { editable = "." }

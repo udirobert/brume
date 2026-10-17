@@ -240,7 +240,14 @@ interruption would break pillar 3.
   anna.partners/developers/skills/skill-publish + apps/app-bundling.
 - `scope=user` APS ritual memory -> cue learning, repeat history.
 - Pacing adaptation in chat-driven sessions (co-breathing: user says
-  "slower"/"stop" mid-run). **Built locally:** `brume_reset` now takes
+  "slower"/"stop" mid-run).
+
+**Published identities (2026-10-17):** Executa `tool-papa-brume-htcxvfcr`
+(required_executas) and Skill `skill-u3f06a4c-brume-reset-offer-62gn2cgc`
+(optional_executas, visibility=app_bundled) are live in the catalogue;
+manifest.json references the real IDs. Local harness maps via
+executas/brume/.anna/executa.json. Remaining pre-submit: app version
+upload + listing, real-account qualifying run. **Built locally:** `brume_reset` now takes
   `pace` (slow 5/7, normal 4/6, fast 3/5) + `remaining_seconds` — a
   mid-break pace ask is a re-invocation covering the remainder, and
   `brume_complete` records summed segments (mixed-pace runs get

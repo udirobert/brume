@@ -227,7 +227,7 @@ interruption would break pillar 3.
   script as verbatim `_display` blocks; `brume_complete` writes the
   factual record via `storage/set` scope `user` and asks the host for a
   closing line via `sampling/createMessage`). Declared in
-  `manifest.required_executas` under the dev `tool_id` `tool-dev-brume`;
+  `manifest.required_executas` under the dev `tool_id` `tool-papa-brume-htcxvfcr`;
   published to the catalogue as `tool-papa-brume-htcxvfcr`.
 - `SKILL.md` Skill -> agent offers contextually from learned cues.
   **Built locally:** `anna/skills/brume-reset-offer/SKILL.md` (Skill

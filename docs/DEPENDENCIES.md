@@ -152,7 +152,7 @@ line — the server-observable step that makes a run count as qualified
 denial/failure/timeout likely does not qualify.
 
 `anna/executas/brume/` is a stdlib-only Python Executa plugin
-(`brume_reset` + `brume_complete`, dev `tool_id` `tool-dev-brume`,
+(`brume_reset` + `brume_complete`, published `tool_id` `tool-papa-brume-htcxvfcr`,
 auto-discovered by `anna-app dev`); run it with `uv run --project
-anna/executas/brume tool-dev-brume` or `cd anna && anna-app executa dev
+anna/executas/brume` or `cd anna && anna-app executa dev
 --dir executas/brume --invoke brume_reset`.

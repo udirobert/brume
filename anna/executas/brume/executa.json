@@ -1,0 +1,9 @@
+{
+  "slug": "brume",
+  "name": "brume",
+  "version": "0.1.0",
+  "executa_type": "tool",
+  "description": "Guided ~90s breathing reset, delivered inline in chat.",
+  "tool_id": "tool-dev-brume",
+  "type": "python"
+}

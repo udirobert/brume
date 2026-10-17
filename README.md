@@ -2,7 +2,7 @@
 
 > A wellness platform for guided breathing with optional AI coaching and camera feedback
 
-**Live Demo**: [Try Now](https://imperfectbreath.netlify.app) | **API**: [api.imperfectform.fun](https://api.imperfectform.fun)
+**Live Demo**: [Try Now](https://brumeapp.netlify.app) | **API**: [api.imperfectform.fun](https://api.imperfectform.fun)
 
 ## 🎯 What is Imperfect Breath?
 
@@ -19,7 +19,7 @@ A wellness platform combining ancient breathing wisdom with modern technology:
 ## 🚀 Quick Start
 
 ### For Users
-**[🌐 Live Demo](https://imperfectbreath.netlify.app)** - Start breathing immediately, no signup required!
+**[🌐 Live Demo](https://brumeapp.netlify.app)** - Start breathing immediately, no signup required!
 
 ### For Developers
 
@@ -124,4 +124,4 @@ Built with respect for ancient breathing traditions and the open source communit
 
 **Start your breathing journey today** - No signup required, just breathe. 🌬️
 
-[Live Demo](https://imperfectbreath.netlify.app) | [Documentation](docs/) | [Community](https://lens.xyz/u/imperfectbreath)
+[Live Demo](https://brumeapp.netlify.app) | [Documentation](docs/) | [Community](https://lens.xyz/u/imperfectbreath)

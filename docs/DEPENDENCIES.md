@@ -150,3 +150,9 @@ session completion issues `anna.llm.complete` for the result's closing
 line — the server-observable step that makes a run count as qualified
 (forum-confirmed); the fixed fallback line shown on llm
 denial/failure/timeout likely does not qualify.
+
+`anna/executas/brume/` is a stdlib-only Python Executa plugin
+(`brume_reset` + `brume_complete`, dev `tool_id` `tool-dev-brume`,
+auto-discovered by `anna-app dev`); run it with `uv run --project
+anna/executas/brume tool-dev-brume` or `cd anna && anna-app executa dev
+--dir executas/brume --invoke brume_reset`.

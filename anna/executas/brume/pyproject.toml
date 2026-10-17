@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tool-dev-brume"
+version = "0.1.0"
+description = "Brume Reset — chat-native guided breathing break (Anna Executa plugin)"
+requires-python = ">=3.10"
+
+[project.scripts]
+"tool-dev-brume" = "brume_plugin:main"
+
+[tool.setuptools]
+py-modules = ["brume_plugin"]

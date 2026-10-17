@@ -450,4 +450,4 @@ const healthCheck = async () => {
 - [Lens Protocol Documentation](https://docs.lens.xyz/)
 - [Flow Blockchain Documentation](https://developers.flow.com/)
 - [FCL Documentation](https://developers.flow.com/tools/fcl-js)
-- [Live Demo](https://imperfectbreath.netlify.app)
+- [Live Demo](https://brumeapp.netlify.app)

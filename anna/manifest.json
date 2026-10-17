@@ -6,7 +6,9 @@
     "files": false,
     "scopes": { "user": "rw" }
   },
-  "host_capabilities": ["llm.complete"],
+  "host_capabilities": ["llm.complete", "llm.sample"],
+  "required_executas": [{ "tool_id": "tool-dev-brume" }],
+  "system_prompt_addendum": "Brume offers one quiet guided breathing break. When the user asks for a break or reset (e.g. '#brume reset'), call brume_reset once and let its guided text stand — it is rendered verbatim, so do not restate or paraphrase it. When the user signals they finished (e.g. 'done'), call brume_complete. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
   "ui": {
     "bundle": {
       "format": "static-spa",

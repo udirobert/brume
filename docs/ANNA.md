@@ -180,6 +180,16 @@ Checked against https://anna.partners/developers (all pages are Markdown):
   `storage.scopes.user` (our manifest matches). Caveat: user-scope keys
   are visible to any granted plugin - keep ritual state namespaced and
   non-sensitive.
+- **Local-harness Executa note (verified 2026-10-17):** `anna-app dev`
+  (`uvx anna-app-runtime-local@0.2.0a28`) auto-discovers `executas/` and
+  answers `storage/*` + `sampling/createMessage` reverse RPCs, but its
+  plugin pool never sends `initialize` — the lifecycle doc's "the Agent
+  always tries v2 first" describes production, not the dev harness.
+  Plugins must therefore treat reverse-RPC availability as
+  try-and-degrade, not negotiation-gated. Chat-path `#brume reset` is
+  not exercised by the harness (it exposes `tools.invoke` to the iframe
+  only); the full chat surface is verified only at runtime on the real
+  Agent.
 - **Still unverified:** CSP/permissions-policy on `getUserMedia` in the
   iframe (camera stays excluded regardless); production APS vs harness
   behavior differences at scale.
@@ -190,6 +200,39 @@ record via `anna.storage` (user scope) AND issue an `llm.complete` call
 that produces the result's closing/next-action line so the run is
 server-observable and qualifies. Non-AI fallback remains the UX default
 for resilience, clearly noted as likely non-qualifying.
+
+## 6a. Differentiation pillars (team-confirmed, 2026-10-17)
+
+Brume's positioning vs Calm/Headspace (content libraries you visit):
+
+1. **Zero-friction recovery** - inside the existing workflow, not another
+   app to open.
+2. **Responsive, not prescriptive** - "slower" adjusts the pace; the
+   experience adapts to the user.
+3. **Wellbeing without gamification** - no streaks, scores, guilt, or
+   camera. Recovery is not another metric to optimize.
+
+**Product answer (settled): hybrid, proactive in suggestion only.** The
+agent may *offer* a reset using learned cues (APS `scope=user` ritual
+memory - e.g. "you usually pause before writing"), but never auto-starts
+or interrupts. `#brume reset` stays the always-on reactive path. An offer
+must be dismissible ("not now") and the product works fully without ever
+accepting one. Proactive suggestion is the differentiator; unsolicited
+interruption would break pillar 3.
+
+**Build surface (settled before submission):**
+- `reset` Executa tool -> `#brume reset` guided break inline in chat
+  (stronger qualifying evidence than iframe activity alone). **Built
+  locally:** `anna/executas/brume/` (`brume_reset` returns the pacing
+  script as verbatim `_display` blocks; `brume_complete` writes the
+  factual record via `storage/set` scope `user` and asks the host for a
+  closing line via `sampling/createMessage`). Declared in
+  `manifest.required_executas` under the dev `tool_id` `tool-dev-brume`;
+  not yet published to the Executa catalogue.
+- `SKILL.md` Skill -> agent offers contextually from learned cues.
+- `scope=user` APS ritual memory -> cue learning, repeat history.
+- Pacing adaptation in chat-driven sessions (co-breathing: user says
+  "slower"/"stop" mid-run).
 
 ## 7. Retention loop
 

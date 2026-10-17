@@ -64,7 +64,16 @@ const harness = await mountBundle({ manifest });
 ok("acl grants storage.set", harness.acl.allowed.has("storage.set"));
 ok("acl grants storage.get", harness.acl.allowed.has("storage.get"));
 ok("acl grants llm.complete", harness.acl.allowed.has("llm.complete"));
-ok("acl does not grant tools.invoke", !harness.acl.allowed.has("tools.invoke"));
+// required_executas now declares the bundled plugin, so tools.invoke is
+// ACL-granted — but only for the declared tool_id.
+ok("acl grants tools.invoke via required_executas", harness.acl.allowed.has("tools.invoke"));
+ok("acl allows the bundled tool_id", harness.acl.allowedTools.has("tool-dev-brume"));
+await assert.rejects(
+  () => harness.runtime.call("tools", "invoke", { tool_id: "tool-dev-other", method: "x", args: {} }),
+  (e) => e instanceof HostApiError && e.code === "DENIED",
+);
+passed += 1;
+console.log(`ok ${passed} - undeclared tool_id denied by ACL`);
 
 // Adapt the mock runtime to the real SDK call shape used by the bundle:
 // anna.storage.set({key, value, scope}) -> runtime.call("storage","set",args),

@@ -1,9 +1,17 @@
 # Brume — Anna App (Reset)
 
-Bundle-only Anna App: `manifest.json` (schema 3) + static SPA in
-`bundle/`. No executas. One camera-free Reset breathing routine (~90 s,
-4 s in / 6 s out × 9 cycles). On completion (natural end or ended early
-with ≥1 active second) the bundle:
+Anna App: `manifest.json` (schema 3) + static SPA in `bundle/` + a
+chat-native Executa plugin in `executas/brume/` (dev `tool_id`
+`tool-dev-brume`, declared under `required_executas`). One camera-free
+Reset breathing routine (~90 s, 4 s in / 6 s out × 9 cycles), offered
+two ways: the iframe app below, and `#brume reset` in chat, where
+`brume_reset` renders the guided break as verbatim `_display` blocks and
+`brume_complete` writes the session record (`storage/set`, `scope:
+"user"`, same `reset/...` namespace as the bundle) plus a
+`sampling/createMessage` closing line — falling back to a fixed line
+when sampling is unavailable. Abandoned chat runs write nothing. On
+iframe completion (natural end or ended early with ≥1 active second) the
+bundle:
 
 1. calls `anna.llm.complete` — a short prompt built **only** from session
    facts (pattern name, active seconds, cycles, interrupted flag) asks the
@@ -22,10 +30,13 @@ No audio, no getUserMedia, no external network calls.
 
 Layout:
 
-- `manifest.json` — schema 3, `host_capabilities: ["llm.complete"]`,
+- `manifest.json` — schema 3, `host_capabilities: ["llm.complete",
+  "llm.sample"]`, `required_executas: ["tool-dev-brume"]`,
   `ui.host_api.storage: ["get","set"]` + `ui.host_api.llm: ["complete"]`,
   structured `storage` declaration, `dev.mocks` stub
 - `app.json` — listing metadata (name/tagline/description)
+- `executas/brume/` — Python stdio Executa plugin (stdlib only; see its
+  own README) + `sampling-fixture.jsonl` for `--mock-sampling`
 - `bundle/index.html`, `app.css`, `app.js` — UI
 - `bundle/timing.js` — monotonic active-time clock (port of
   `src/lib/utils/session-timing.ts` semantics)

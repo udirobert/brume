@@ -62,27 +62,27 @@ const CANNED = {
     title: "A steadying pause",
     opening:
       "Two short sips of air, then one long out-breath — a way to settle before what's next.",
-    cues: ["Shoulders soft", "Slow the out-breath", "Unclench your jaw"],
+    cues: ["Shoulders soft", "Unclench your jaw", "Let your gaze rest"],
     why: "The double inhale and long exhale suits the minutes before something tense.",
   },
   "long-exhale": {
     title: "A quiet reset",
     opening:
       "A gentle rhythm — four counts in, six counts out — between one thing and the next.",
-    cues: ["Easy in-breath", "Long slow out-breath"],
+    cues: ["Let your gaze rest", "Relax your hands"],
     why: "A simple longer exhale makes a gentle break between tasks.",
   },
   box: {
     title: "A square breath",
     opening:
       "Four even sides — in, hold, out, hold — to gather your attention.",
-    cues: ["Follow the four sides", "Even counts, no rush"],
+    cues: ["Notice your feet on the floor", "Sit tall, stay easy"],
     why: "Its even structure suits getting ready for focused work.",
   },
   steady: {
     title: "An easy rhythm",
     opening: "An unhurried five and a half counts in, the same back out.",
-    cues: ["No hurry", "Let the pace carry you"],
+    cues: ["Let your shoulders drop", "Settle into the chair"],
     why: "An even, slow rhythm suits winding down.",
   },
 };
@@ -91,6 +91,12 @@ const CANNED = {
 
 // Emoji-ish and control characters the model may add despite instructions.
 // Keep the set deliberately conservative so it stays identical in Python.
+// Cues must never narrate the breath phases or counts — they contradict
+// the phase words when the model slips. Violating cues are dropped and
+// refilled from the pattern's canned cues.
+export const CUE_FORBIDDEN_RE =
+  /\b(in|out|hold|inhale|exhale|breathe|breath|count|counts|second|seconds|\d+)\b/i;
+
 const STRIP_RE =
   /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2060\uFEFF\uFE0F\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu;
 
@@ -126,7 +132,7 @@ const PLAN_LIBRARY_BLOCK = `You plan one short guided breathing break for a pers
 Allowed lengths in seconds: 60, 90, 120, 180. Use 60 if they mention having little time.`;
 
 const PLAN_FORMAT_BLOCK = `Reply with ONLY a JSON object, no prose and no code fences:
-{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
+{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) about posture or attention to show during the break — never counts, timings, or the words in, out, hold, inhale or exhale, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
 Never describe effects on the body, brain, nerves, hormones, sleep quality, stress or anxiety; describe only the rhythm and how it fits their moment. Do not diagnose and do not use emoji.`;
 
 // personalization: string like "cyclic-sigh: calmer 3 of 4; box: calmer 1
@@ -218,7 +224,8 @@ export function parseModelPlan(raw) {
         .map((c) => {
           const t = cleanText(c, 60);
           // Offending cue -> an unused canned cue (never leave a claim in).
-          if (!t || HEALTH_CLAIM_RE.test(t)) return cannedCues.shift() || null;
+          if (!t || HEALTH_CLAIM_RE.test(t) || CUE_FORBIDDEN_RE.test(t))
+            return cannedCues.shift() || null;
           if (cannedCues.includes(t)) cannedCues.splice(cannedCues.indexOf(t), 1);
           return t;
         })
@@ -395,4 +402,27 @@ export function personalizationFromSummary(summary) {
     parts.push(`${id}: ${label} ${count} of ${ratings}`);
   }
   return parts.length ? parts.join("; ") : null;
+}
+
+// Session length is snapped to whole cycles: effective = max(1,
+// round(seconds / cycleSeconds)) * cycleSeconds — the session always ends
+// at the end of a full cycle, so timer target, "Cycle N of M", recorded
+// cycles and chat count lines all agree.
+export function effectiveLengthSeconds(patternId, seconds) {
+  const p = PATTERNS[patternId];
+  const cyc =
+    (p.inhale || 0) + (p.topup || 0) + (p.hold || 0) +
+    (p.exhale || 0) + (p.holdAfterExhale || 0);
+  const cycles = Math.max(1, Math.round(seconds / cyc));
+  return { cycles, effectiveSeconds: cycles * cyc };
+}
+
+// Phase word for the post-exhale phase: "Hold" inside box's square,
+// "Rest" elsewhere.
+export function phaseWord(patternId, phase) {
+  if (phase === "pause" && patternId === "box") return "Hold";
+  return {
+    inhale: "Breathe in", topup: "Top up", hold: "Hold",
+    exhale: "Breathe out", pause: "Rest",
+  }[phase] || phase;
 }

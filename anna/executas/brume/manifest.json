@@ -1,13 +1,12 @@
 {
   "name": "tool-papa-brume-htcxvfcr",
   "display_name": "Brume Reset",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "An AI-planned guided breathing break, delivered inline in chat. brume_reset picks a pattern and length for the user's moment (or honours an explicit `pattern`), renders the pacing script verbatim, and remembers the plan; brume_complete records the finished break \u2014 including an optional `felt` check-in \u2014 and writes a short session reflection. If the user asks to adjust pace mid-break, invoke brume_reset again with `pace` and `remaining_seconds` rather than restarting.",
   "author": "Brume",
   "category": "productivity",
   "license": "MIT",
   "host_capabilities": [
-    "llm.sample",
     "aps.kv",
     "aps.scope.user.read",
     "aps.scope.user.write"
@@ -15,14 +14,14 @@
   "tools": [
     {
       "name": "brume_reset",
-      "description": "Plan and start (or continue) a guided breathing break. Pass a short `context` summarizing what the user said they are doing or about to do (never invent one); the pattern and length are chosen for that moment unless `pattern` is given. Returns the pacing script as verbatim display blocks \u2014 do not restate or paraphrase them. If the user asks to adjust pace mid-break, invoke again with the new `pace` and `remaining_seconds` set to the un-delivered remainder. When the user later signals they finished, call brume_complete.",
+      "description": "Start (or continue) a short guided breathing break, rendered verbatim to the user. Before calling, plan it yourself from what the user said: choose `pattern` (cyclic-sigh: 2s in, 1s top-up, 6s out \u2014 right before something tense or when keyed up; long-exhale: 4s in, 6s out \u2014 a gentle reset between tasks; box: 4s in, 4s hold, 4s out, 4s hold \u2014 getting ready for focused work; steady: 5.5s in, 5.5s out \u2014 winding down) and `seconds` (60, 90, 120 or 180; 60 if they have little time), and write `title`, `opening`, `cues` and `why`. Describe only the rhythm and how it fits their moment \u2014 never effects on the body, brain, stress, sleep or health. The returned script is shown verbatim; do not restate it. If the user asks to change pace mid-break, call again with `pace` and `remaining_seconds` (the plan is kept). When the user says they are done, call brume_complete.",
       "timeout": 30,
       "parameters": [
         {
           "name": "context",
           "type": "string",
-          "description": "What the user said they are doing or about to do, in a few words (e.g. 'before my 3pm call'). Used to pick the pattern and personalize the plan; optional.",
-          "required": false
+          "required": false,
+          "description": "What the user said they are doing or about to do, as a short phrase. Never invent one."
         },
         {
           "name": "pattern",
@@ -33,8 +32,45 @@
             "box",
             "steady"
           ],
-          "description": "Force a specific pattern id, skipping the AI plan. Use only when the user names a pattern.",
-          "required": false
+          "required": false,
+          "description": "Breathing pattern you chose."
+        },
+        {
+          "name": "seconds",
+          "type": "integer",
+          "enum": [
+            60,
+            90,
+            120,
+            180
+          ],
+          "required": false,
+          "description": "Length you chose."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": false,
+          "description": "Up to 6 words naming this break."
+        },
+        {
+          "name": "opening",
+          "type": "string",
+          "required": false,
+          "description": "One or two calm sentences (max 30 words) responding to what they said."
+        },
+        {
+          "name": "cues",
+          "type": "array",
+          "items_type": "string",
+          "required": false,
+          "description": "2\u20133 short phrases (max 8 words each) about posture or attention, shown during the break. Never counts, timings, or the words in, out, hold, inhale, exhale."
+        },
+        {
+          "name": "why",
+          "type": "string",
+          "required": false,
+          "description": "One sentence (max 20 words): which part of their note this rhythm fits, describing only the rhythm."
         },
         {
           "name": "pace",
@@ -44,27 +80,27 @@
             "normal",
             "fast"
           ],
-          "description": "Tempo factor: slow = 1.25x phase length, normal = 1x, fast = 0.8x. Default normal.",
           "required": false,
-          "default": "normal"
+          "default": "normal",
+          "description": "Tempo factor: slow = 1.25x phase length, normal = 1x, fast = 0.8x. Default normal."
         },
         {
           "name": "remaining_seconds",
           "type": "integer",
-          "description": "Deliver only roughly this many more seconds \u2014 use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length.",
-          "required": false
+          "required": false,
+          "description": "Deliver only roughly this many more seconds \u2014 use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length."
         },
         {
           "name": "cycles",
           "type": "integer",
-          "description": "Legacy override: exact breath cycles to deliver. When omitted, cycles are derived from the planned length (or remaining_seconds).",
-          "required": false
+          "required": false,
+          "description": "Legacy override: exact breath cycles to deliver. Ignored when seconds is given."
         }
       ]
     },
     {
       "name": "brume_complete",
-      "description": "Close out a guided break after the user says they are done (e.g. 'done', 'finished', 'back'). Writes a factual session record, updates the user's rolling summary, and returns a short reflection line. Pass `felt` only if the user said how they feel; do not quiz them. Do not call for abandoned or interrupted breaks.",
+      "description": "Close out a guided break after the user says they are done. Write `reflection` yourself: at most 2 sentences and 35 words \u2014 first acknowledge how it went in plain words (matter-of-fact if they ended early or still feel wired, never guilt), then one concrete next step tied to what they said they are doing next. No emoji, no health claims, and do not mention breathing science. Pass `felt` only if the user said how they feel. The reflection is shown verbatim; do not repeat it. Do not call for abandoned breaks.",
       "timeout": 60,
       "parameters": [
         {
@@ -75,8 +111,57 @@
             "same",
             "wired"
           ],
-          "description": "Optional self-report: how the user feels after the break.",
-          "required": false
+          "required": false,
+          "description": "Only if the user said how they feel."
+        },
+        {
+          "name": "reflection",
+          "type": "string",
+          "required": false,
+          "description": "Your closing note, written as described above."
+        }
+      ]
+    },
+    {
+      "name": "brume_get_ready",
+      "description": "Guide the user through a 3-minute get-ready routine before an interview, presentation, hard conversation or important meeting: about a minute of cyclic-sigh breathing, 30 seconds of opening up their posture, 30 seconds of humming as a voice warm-up, then rehearsing an opening line and key point. Write `opener`, `key_point` and `reminder` yourself from what they told you (ask what is coming up first if it is unclear; never invent facts about them). Everything is rendered verbatim; do not restate it. Make no claims about hormones, confidence effects or health.",
+      "timeout": 30,
+      "parameters": [
+        {
+          "name": "event",
+          "type": "string",
+          "required": true,
+          "description": "What is coming up, as a short phrase."
+        },
+        {
+          "name": "kind",
+          "type": "string",
+          "enum": [
+            "interview",
+            "presentation",
+            "hard-conversation",
+            "meeting"
+          ],
+          "required": false,
+          "description": "Kind of moment."
+        },
+        {
+          "name": "opener",
+          "type": "string",
+          "required": false,
+          "description": "One natural opening sentence in the user's own voice, max 30 words."
+        },
+        {
+          "name": "key_point",
+          "type": "string",
+          "required": false,
+          "description": "The one point they want remembered, clear and memorable, max 20 words."
+        },
+        {
+          "name": "reminder",
+          "type": "string",
+          "required": false,
+          "description": "One short practical reminder for the moment itself, max 14 words (for example about pausing or listening)."
         }
       ]
     }

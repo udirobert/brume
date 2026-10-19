@@ -13,17 +13,16 @@
     }
   },
   "host_capabilities": [
-    "llm.complete",
-    "llm.sample"
+    "llm.complete"
   ],
   "required_executas": [
     {
       "tool_id": "bundled:brume",
-      "min_version": "0.3.0",
+      "min_version": "0.4.0",
       "version": "latest"
     }
   ],
-  "system_prompt_addendum": "Brume plans and guides one short breathing break. When the user asks for a break or reset (for example '#brume reset' or '#brume before my 3pm call'), call brume_reset once, passing a short `context` that summarizes what they said they are doing or about to do (never invent one), and let its guided text stand \u2014 it is rendered verbatim, so do not restate or paraphrase it. If they ask to change pace mid-break, call brume_reset again with `pace` and `remaining_seconds`. If they would rather follow a visual timer, call open_app_view with app_id 582 and payload {\"context\": \"<the same short summary>\"}. When they say they are done, call brume_complete, passing `felt` only if they said how they feel (calmer, same, or wired); do not quiz them. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
+  "system_prompt_addendum": "Brume is a calm breathing and get-ready companion. For a breathing break or reset (for example '#brume reset' or '#brume before my 3pm call'), plan it yourself and call brume_reset once with `context`, `pattern`, `seconds`, `title`, `opening`, `cues` and `why`, following the tool's guidance; its script is rendered verbatim, so do not restate it. If they ask to change pace mid-break, call brume_reset again with `pace` and `remaining_seconds`. When they say they are done, call brume_complete with your `reflection` (and `felt` only if they said how they feel). Before an interview, presentation, hard conversation or important meeting, offer or run brume_get_ready, writing `opener`, `key_point` and `reminder` from what they told you. For a visual timer, an alertness check (a one-minute reaction-time test) or the full guided get-ready with the Brume mascot, call open_app_view with app_id 582 and payload {\"context\": \"<short summary>\", \"mode\": \"reset\" | \"ready\" | \"alertness\"}. Never start anything unprompted, never claim health or wellness benefits, and describe only what happened.",
   "ui": {
     "bundle": {
       "format": "static-spa",

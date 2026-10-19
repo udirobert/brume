@@ -3,7 +3,7 @@
 
 Chat-native guided breathing break for `#brume reset`.
 
-  brume_reset     Plans (via host sampling) and returns the pacing
+  brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
                   fields (pattern, seconds, title, opening, cues, why,
                   planSource). Optional `context` summarizes the moment;
@@ -14,15 +14,16 @@ Chat-native guided breathing break for `#brume reset`.
   brume_complete  On the user's "done": writes a factual session record
                   via `storage/set` (scope "user") and updates the
                   rolling `reset/summary`, then asks the host for a
-                  short reflection via `sampling/createMessage`. Optional
+                  short agent-written reflection. Optional
                   `felt` (calmer|same|wired) records their check-in. Any
                   reverse-RPC failure degrades gracefully; abandoned runs
                   write nothing.
 
 Wire notes (anna.partners/developers/tools/*): `initialize` is answered
 with protocolVersion "2.0" + {"sampling": {}, "storage": {}}; the
-describe manifest declares host_capabilities ["llm.sample", "aps.kv"]
-(without them the host rejects reverse RPCs -32008/-32021). Reverse RPCs
+describe manifest declares host_capabilities ["aps.kv", ...] — the
+CALLING model writes the plan/reflection as tool arguments, so no
+sampling capability is needed (and none is declared). Reverse RPCs
 echo params.context.invoke_id back in their own params.context and are
 sent optimistically under a bounded wait — the dev harness answers them
 without `initialize`; a strict v1 host ignores them and the wait times
@@ -47,7 +48,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -145,80 +146,97 @@ MANIFEST: dict[str, Any] = {
     "author": "Brume",
     "category": "productivity",
     "license": "MIT",
-    "host_capabilities": ["llm.sample", "aps.kv", "aps.scope.user.read", "aps.scope.user.write"],
+    "host_capabilities": ["aps.kv", "aps.scope.user.read", "aps.scope.user.write"],
     "tools": [
         {
             "name": "brume_reset",
             "description": (
-                "Plan and start (or continue) a guided breathing break. Pass a "
-                "short `context` summarizing what the user said they are doing "
-                "or about to do (never invent one); the pattern and length are "
-                "chosen for that moment unless `pattern` is given. Returns the "
-                "pacing script as verbatim display blocks — do not restate or "
-                "paraphrase them. If the user asks to adjust pace mid-break, "
-                "invoke again with the new `pace` and `remaining_seconds` set "
-                "to the un-delivered remainder. When the user later signals "
-                "they finished, call brume_complete."
+                "Start (or continue) a short guided breathing break, rendered verbatim to the user. "
+                "Before calling, plan it yourself from what the user said: choose `pattern` "
+                "(cyclic-sigh: 2s in, 1s top-up, 6s out — right before something tense or when keyed up; "
+                "long-exhale: 4s in, 6s out — a gentle reset between tasks; "
+                "box: 4s in, 4s hold, 4s out, 4s hold — getting ready for focused work; "
+                "steady: 5.5s in, 5.5s out — winding down) and `seconds` (60, 90, 120 or 180; "
+                "60 if they have little time), and write `title`, `opening`, `cues` and `why`. "
+                "Describe only the rhythm and how it fits their moment — never effects on the body, "
+                "brain, stress, sleep or health. The returned script is shown verbatim; do not restate "
+                "it. If the user asks to change pace mid-break, call again with `pace` and "
+                "`remaining_seconds` (the plan is kept). When the user says they are done, call "
+                "brume_complete."
             ),
             "timeout": 30,
             "parameters": [
-                {
-                    "name": "context",
-                    "type": "string",
-                    "description": "What the user said they are doing or about to do, in a few words (e.g. 'before my 3pm call'). Used to pick the pattern and personalize the plan; optional.",
-                    "required": False,
-                },
-                {
-                    "name": "pattern",
-                    "type": "string",
-                    "enum": PATTERN_IDS,
-                    "description": "Force a specific pattern id, skipping the AI plan. Use only when the user names a pattern.",
-                    "required": False,
-                },
-                {
-                    "name": "pace",
-                    "type": "string",
-                    "enum": ["slow", "normal", "fast"],
-                    "description": "Tempo factor: slow = 1.25x phase length, normal = 1x, fast = 0.8x. Default normal.",
-                    "required": False,
-                    "default": DEFAULT_PACE,
-                },
-                {
-                    "name": "remaining_seconds",
-                    "type": "integer",
-                    "description": "Deliver only roughly this many more seconds — use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length.",
-                    "required": False,
-                },
-                {
-                    "name": "cycles",
-                    "type": "integer",
-                    "description": "Legacy override: exact breath cycles to deliver. When omitted, cycles are derived from the planned length (or remaining_seconds).",
-                    "required": False,
-                },
+                {"name": "context", "type": "string", "required": False,
+                 "description": "What the user said they are doing or about to do, as a short phrase. Never invent one."},
+                {"name": "pattern", "type": "string", "enum": PATTERN_IDS, "required": False,
+                 "description": "Breathing pattern you chose."},
+                {"name": "seconds", "type": "integer", "enum": ALLOWED_LENGTHS, "required": False,
+                 "description": "Length you chose."},
+                {"name": "title", "type": "string", "required": False,
+                 "description": "Up to 6 words naming this break."},
+                {"name": "opening", "type": "string", "required": False,
+                 "description": "One or two calm sentences (max 30 words) responding to what they said."},
+                {"name": "cues", "type": "array", "items_type": "string", "required": False,
+                 "description": "2–3 short phrases (max 8 words each) about posture or attention, shown during the break. Never counts, timings, or the words in, out, hold, inhale, exhale."},
+                {"name": "why", "type": "string", "required": False,
+                 "description": "One sentence (max 20 words): which part of their note this rhythm fits, describing only the rhythm."},
+                {"name": "pace", "type": "string", "enum": ["slow", "normal", "fast"],
+                 "required": False, "default": DEFAULT_PACE,
+                 "description": "Tempo factor: slow = 1.25x phase length, normal = 1x, fast = 0.8x. Default normal."},
+                {"name": "remaining_seconds", "type": "integer", "required": False,
+                 "description": "Deliver only roughly this many more seconds — use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length."},
+                {"name": "cycles", "type": "integer", "required": False,
+                 "description": "Legacy override: exact breath cycles to deliver. Ignored when seconds is given."},
             ],
         },
         {
             "name": "brume_complete",
             "description": (
-                "Close out a guided break after the user says they are done (e.g. "
-                "'done', 'finished', 'back'). Writes a factual session record, "
-                "updates the user's rolling summary, and returns a short "
-                "reflection line. Pass `felt` only if the user said how they "
-                "feel; do not quiz them. Do not call for abandoned or "
-                "interrupted breaks."
+                "Close out a guided break after the user says they are done. Write `reflection` "
+                "yourself: at most 2 sentences and 35 words — first acknowledge how it went in plain "
+                "words (matter-of-fact if they ended early or still feel wired, never guilt), then one "
+                "concrete next step tied to what they said they are doing next. No emoji, no health "
+                "claims, and do not mention breathing science. Pass `felt` only if the user said how "
+                "they feel. The reflection is shown verbatim; do not repeat it. Do not call for "
+                "abandoned breaks."
             ),
             "timeout": 60,
             "parameters": [
-                {
-                    "name": "felt",
-                    "type": "string",
-                    "enum": ["calmer", "same", "wired"],
-                    "description": "Optional self-report: how the user feels after the break.",
-                    "required": False,
-                },
+                {"name": "felt", "type": "string", "enum": ["calmer", "same", "wired"],
+                 "required": False,
+                 "description": "Only if the user said how they feel."},
+                {"name": "reflection", "type": "string", "required": False,
+                 "description": "Your closing note, written as described above."},
+            ],
+        },
+        {
+            "name": "brume_get_ready",
+            "description": (
+                "Guide the user through a 3-minute get-ready routine before an interview, presentation, "
+                "hard conversation or important meeting: about a minute of cyclic-sigh breathing, 30 "
+                "seconds of opening up their posture, 30 seconds of humming as a voice warm-up, then "
+                "rehearsing an opening line and key point. Write `opener`, `key_point` and `reminder` "
+                "yourself from what they told you (ask what is coming up first if it is unclear; never "
+                "invent facts about them). Everything is rendered verbatim; do not restate it. Make no "
+                "claims about hormones, confidence effects or health."
+            ),
+            "timeout": 30,
+            "parameters": [
+                {"name": "event", "type": "string", "required": True,
+                 "description": "What is coming up, as a short phrase."},
+                {"name": "kind", "type": "string",
+                 "enum": ["interview", "presentation", "hard-conversation", "meeting"],
+                 "required": False, "description": "Kind of moment."},
+                {"name": "opener", "type": "string", "required": False,
+                 "description": "One natural opening sentence in the user's own voice, max 30 words."},
+                {"name": "key_point", "type": "string", "required": False,
+                 "description": "The one point they want remembered, clear and memorable, max 20 words."},
+                {"name": "reminder", "type": "string", "required": False,
+                 "description": "One short practical reminder for the moment itself, max 14 words (for example about pausing or listening)."},
             ],
         },
     ],
+
 }
 
 # stdin is drained by one reader thread into this queue so reverse-RPC
@@ -227,7 +245,6 @@ _IN_Q: "queue.Queue[str | None]" = queue.Queue()
 _STDIN_EOF = False
 
 REVERSE_RPC_TIMEOUT_S = 20.0  # < the 60s invoke timeout
-PLAN_RPC_TIMEOUT_S = 12.0     # bounded wait for the plan sampling call
 # Delivered reset segments, in order, for the completion record. A
 # mid-break pace change is a re-invocation that appends a segment, so
 # brume_complete can record what was actually delivered (seconds and
@@ -320,32 +337,6 @@ def _storage_get(key: str, invoke_id: str | None, timeout_s: float | None = None
 
 def _storage_set(key: str, value: Any, invoke_id: str | None) -> None:
     _reverse_rpc("storage/set", {"scope": "user", "key": key, "value": value}, invoke_id)
-
-
-def _sample_text(
-    prompt: str,
-    max_tokens: int,
-    invoke_id: str | None,
-    timeout_s: float | None = None,
-) -> str | None:
-    """One sampling/createMessage round-trip. None on any failure."""
-    try:
-        res = _reverse_rpc(
-            "sampling/createMessage",
-            {
-                "messages": [{"role": "user", "content": {"type": "text", "text": prompt}}],
-                "maxTokens": max_tokens,
-                "includeContext": "none",
-                "metadata": {"executa_invoke_id": invoke_id} if invoke_id else {},
-            },
-            invoke_id,
-            timeout_s=timeout_s,
-        )
-        text = ((res.get("content") or {}).get("text") or "").strip()
-        return " ".join(text.split()) or None
-    except Exception as exc:  # noqa: BLE001
-        _log(f"sampling unavailable: {exc}")
-        return None
 
 
 # --- Plan contract (1:1 port of bundle/plan.js — see plan-cases.json) -----
@@ -623,15 +614,128 @@ def personalization_from_summary(summary: Any) -> str | None:
     return "; ".join(parts) if parts else None
 
 
-def plan_via_sampling(context: Any, invoke_id: str | None) -> dict[str, Any]:
-    """Plan via host sampling; deterministic fallback on any failure."""
-    # Bounded reads/waits: worst case ~18s stays under the 30s tool
-    # timeout even when the host never answers.
-    summary = _storage_get(SUMMARY_KEY, invoke_id, timeout_s=6.0)
-    prompt = build_plan_prompt(context, personalization_from_summary(summary))
-    raw = _sample_text(prompt, PLAN_MAX_TOKENS, invoke_id, timeout_s=PLAN_RPC_TIMEOUT_S)
-    plan = parse_model_plan(raw) if raw else None
-    return plan if plan else fallback_plan(context)
+CUE_FORBIDDEN_RE = re.compile(
+    r"\b(in|out|hold|inhale|exhale|breathe|breath|count|counts|second|seconds|\d+)\b",
+    re.IGNORECASE,
+)
+
+
+def validate_agent_plan(args: dict) -> dict | None:
+    """Agent-supplied plan fields through the same caps/filters as model
+    output. None when pattern is missing/unknown (caller falls back)."""
+    pattern = args.get("pattern")
+    if pattern not in PATTERNS:
+        return None
+    canned = CANNED[pattern]
+
+    def _safe(v: Any, max_len: int, canned_text: str) -> str:
+        t = _clean_text(v, max_len)
+        return canned_text if (not t or HEALTH_CLAIM_RE.search(t)) else t
+
+    canned_cues = list(canned["cues"])
+    cues: list[str] = []
+    if isinstance(args.get("cues"), list):
+        for c in args["cues"]:
+            t = _clean_text(c, 60)
+            if not t or HEALTH_CLAIM_RE.search(t) or CUE_FORBIDDEN_RE.search(t):
+                if canned_cues:
+                    cues.append(canned_cues.pop(0))
+                continue
+            if t in canned_cues:
+                canned_cues.remove(t)
+            cues.append(t)
+        cues = cues[:3]
+    for c in canned["cues"]:
+        if len(cues) >= 2:
+            break
+        if c not in cues:
+            cues.append(c)
+    seconds = args.get("seconds")
+    return {
+        "pattern": pattern,
+        "seconds": seconds if seconds in ALLOWED_LENGTHS else _snap_seconds(seconds),
+        "title": _safe(args.get("title"), 60, canned["title"]),
+        "opening": _safe(args.get("opening"), 240, canned["opening"]),
+        "cues": cues,
+        "why": _safe(args.get("why"), 160, canned["why"]),
+        "planSource": "agent",
+    }
+
+
+READY_KINDS = {"interview", "presentation", "hard-conversation", "meeting"}
+
+
+def _ready_blocks(event: str, kind: str | None, opener: str, key_point: str,
+                  reminder: str) -> list[dict]:
+    pat = PATTERNS["cyclic-sigh"]
+    cycle_line = f"in · {int(pat['inhale'])} · 1 — top up · {int(pat['topup'])} — out · 6 · 5 · 4 · 3 · 2 · 1"
+    cycle_lines = "\n".join(f"**{i}** — {cycle_line}" for i in range(1, 8))
+    blocks = [
+        {"type": "markdown", "text": (
+            "**Breathe** — Two short sips of air through the nose, then one long, "
+            "slow breath out. About a minute.\n\n" + cycle_lines)},
+        {"type": "markdown", "text": (
+            "**Open up** — Sit or stand tall and roll your shoulders back. If you "
+            "have room, raise your arms overhead in a wide V and hold for a few "
+            "breaths, then let them float down.")},
+        {"type": "markdown", "text": (
+            "**Warm up your voice** — With your lips closed, hum gently on a "
+            "comfortable note. Then glide the hum up and down like a slow siren, "
+            "a few times.")},
+    ]
+    rehearse = "**Rehearse** — Say your opening line out loud, twice, at an easy pace:"
+    if opener:
+        rehearse += f"\n\n> {opener}"
+    if key_point:
+        rehearse += f"\n\n**The one thing to land:** {key_point}"
+    if reminder:
+        rehearse += f"\n\n_{reminder}_"
+    blocks.append({"type": "markdown", "text": rehearse})
+    blocks.append({"type": "markdown", "text": "You're ready. Go well."})
+    return blocks
+
+
+def invoke_get_ready(args: dict, context: dict) -> dict:
+    invoke_id = context.get("invoke_id")
+    event = clean_context(args.get("event"))
+    if not event:
+        return {"success": False, "data": {"error": "event is required — ask what is coming up first"}}
+    kind = args.get("kind")
+    kind = kind if kind in READY_KINDS else None
+    opener = _clean_text(args.get("opener"), 220)
+    key_point = _clean_text(args.get("key_point"), 160)
+    reminder = _clean_text(args.get("reminder"), 110)
+    if HEALTH_CLAIM_RE.search(opener):
+        opener = ""
+    if HEALTH_CLAIM_RE.search(key_point):
+        key_point = ""
+    if HEALTH_CLAIM_RE.search(reminder):
+        reminder = "Pause before you answer."
+    if not reminder:
+        reminder = "Pause before you answer."
+    record = {
+        "completedAt": _utc_now_iso(),
+        "event": event, "kind": kind,
+        "opener": opener, "key_point": key_point, "reminder": reminder,
+        "source": "executa.chat",
+    }
+    key, err = None, None
+    try:
+        k = f"ready/sessions/{record['completedAt']}"
+        _storage_set(k, record, invoke_id)
+        key = k
+    except Exception as exc:  # noqa: BLE001
+        err = str(exc)
+    return {
+        "success": True,
+        "data": {
+            "event": event, "kind": kind,
+            "opener": opener, "key_point": key_point, "reminder": reminder,
+            "record_written": key is not None, "storage_error": err,
+            "record": record,
+            "_display": {"blocks": _ready_blocks(event, kind, opener, key_point, reminder)},
+        },
+    }
 
 
 # --- Tools ---------------------------------------------------------------
@@ -669,22 +773,14 @@ def invoke_reset(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any
     tempo = PACE_TEMPO[pace]
     ctx = clean_context(args.get("context"))
 
-    explicit = args.get("pattern")
-    explicit = explicit if explicit in PATTERNS else None
     continuation = bool(_RESET_SEGMENTS)
 
-    if explicit:
-        plan = fallback_plan(ctx, plan_source="explicit")
-        plan["pattern"] = explicit
-        canned = CANNED[explicit]
-        plan.update(title=canned["title"], opening=canned["opening"],
-                    cues=list(canned["cues"][:3]), why=canned["why"])
-    elif continuation:
+    if continuation and args.get("pattern") not in PATTERNS:
         # A mid-break re-invocation continues the first segment's pattern
         # and plan; only the tempo changes.
         plan = dict(_RESET_SEGMENTS[0]["plan"])
     else:
-        plan = plan_via_sampling(ctx, invoke_id)
+        plan = validate_agent_plan(args) or fallback_plan(ctx)
 
     pattern_id = plan["pattern"]
     pat = PATTERNS[pattern_id]
@@ -850,13 +946,7 @@ def invoke_complete(args: dict[str, Any], context: dict[str, Any]) -> dict[str, 
     ctx = next((s["context"] for s in segments if s.get("context")), "")
     paces = sorted({s["pace"] for s in segments})
 
-    reflection_raw = _sample_text(
-        build_reflection_prompt(
-            ctx, pat["name"], seconds, planned_seconds, cycles, False, felt,
-        ),
-        REFLECTION_MAX_TOKENS,
-        invoke_id,
-    )
+    reflection_raw = args.get("reflection")
     reflection = clean_reflection(reflection_raw)
 
     record = {
@@ -870,6 +960,7 @@ def invoke_complete(args: dict[str, Any], context: dict[str, Any]) -> dict[str, 
         "felt": felt,
         "planSource": plan.get("planSource"),
         "reflection": reflection,
+        "reflectionSource": "agent" if reflection != FALLBACK_REFLECTION else "fallback",
         "source": "executa.chat",
         "user_reported": "done",
     }
@@ -884,7 +975,7 @@ def invoke_complete(args: dict[str, Any], context: dict[str, Any]) -> dict[str, 
         "success": True,
         "data": {
             "closing": reflection,
-            "closing_source": "llm" if reflection_raw else "fallback",
+            "closing_source": "agent" if reflection != FALLBACK_REFLECTION else "fallback",
             "reflection": reflection,
             "felt": felt,
             "planSource": plan.get("planSource"),
@@ -903,6 +994,8 @@ def invoke(tool: str, args: dict[str, Any], context: dict[str, Any]) -> dict[str
         return invoke_reset(args, context)
     if tool == "brume_complete":
         return invoke_complete(args, context)
+    if tool == "brume_get_ready":
+        return invoke_get_ready(args, context)
     raise LookupError(f"unknown tool: {tool}")
 
 

@@ -131,7 +131,7 @@ class InvokeContract(unittest.TestCase):
         self.assertTrue(out["success"])
         data = out["data"]
         self.assertEqual(data["pattern"], "cyclic-sigh")
-        self.assertEqual(data["planSource"], "explicit")
+        self.assertEqual(data["planSource"], "agent")
         # cyclic sigh at normal tempo: 2 in, 1 top-up, 6 out -> 9s cycle
         self.assertEqual(data["cycle_seconds"], 9.0)
         # planned 90s -> 10 cycles
@@ -160,7 +160,7 @@ class InvokeContract(unittest.TestCase):
         self.assertEqual(rec["pattern"], "steady")
         self.assertEqual(rec["felt"], "calmer")
         self.assertEqual(rec["source"], "executa.chat")
-        self.assertEqual(rec["planSource"], "explicit")
+        self.assertEqual(rec["planSource"], "agent")
         self.assertEqual(rec["reflection"], bp.FALLBACK_REFLECTION)
         self.assertFalse(out["data"]["record_written"])
 

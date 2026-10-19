@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
+import { BrumeMascot } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
 import { Button } from "@/components/ui/button";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
@@ -39,6 +40,14 @@ export default function Index() {
   return (
     <div className="w-full flex flex-col items-center px-2">
       <div className="relative text-center space-y-2 max-w-2xl">
+        <motion.div
+          className="flex justify-center mb-4"
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <BrumeMascot state="idle" size={104} />
+        </motion.div>
         <WordReveal
           parts={headline}
           className="text-3xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1]"

@@ -907,6 +907,7 @@ async function finishReady() {
 
 async function main() {
   anna = await connectAnna();
+  try { window.__brumeAnna = anna; } catch { /* test hook */ }
   if (anna) {
     [summary, prefs] = await Promise.all([
       loadSummary(anna),

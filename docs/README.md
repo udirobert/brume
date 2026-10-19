@@ -65,8 +65,8 @@ Frontend (React/TypeScript) → API (host migrating off retired imperfectform.fu
 ## 🌐 **Production URLs**
 
 - **Frontend**: Your Netlify deployment
-- **API**: see `docs/` (host is being migrated off the retired imperfectform.fun domain)
-- **Health Check**: `api.imperfectform.fun/health` (pending domain migration)
+- **API**: see `docs/` (api.brume.trustfall.xyz)
+- **Health Check**: `api.brume.trustfall.xyz/health`
 
 ## 📋 **Prerequisites**
 

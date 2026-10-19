@@ -155,9 +155,9 @@ export const config: EnvironmentConfig = {
     description:
       import.meta.env.VITE_APP_DESCRIPTION ||
       "A calm companion for breathing breaks",
-    url: import.meta.env.VITE_APP_URL || "https://brumeapp.netlify.app",
+    url: import.meta.env.VITE_APP_URL || "https://brume.trustfall.xyz",
     icon:
-      import.meta.env.VITE_APP_ICON || "https://brumeapp.netlify.app/android-chrome-512x512.png",
+      import.meta.env.VITE_APP_ICON || "https://brume.trustfall.xyz/android-chrome-512x512.png",
   },
   development: {
     debugMode: import.meta.env.VITE_DEBUG_MODE === "true",

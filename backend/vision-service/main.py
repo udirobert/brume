@@ -205,9 +205,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:4556",                    # Local development frontend
         "http://localhost:4567",                    # Alternative local port
-        "https://brumeapp.netlify.app",      # Production Netlify
-        "https://brumeapp.netlify.app",              # Production domain
-        "https://brume.trustfall.xyz",        # Future domain
+        "https://brumeapp.netlify.app",      # Netlify mirror
+        "https://brume.trustfall.xyz",       # Production domain
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],

@@ -3,7 +3,7 @@
 # Deployment Status Check Script
 # This script checks the status of all services and provides a comprehensive overview
 
-echo "🚀 Imperfect Breath - Deployment Status Dashboard"
+echo "🚀 Brume - Deployment Status Dashboard"
 echo "=================================================="
 
 # Colors for output

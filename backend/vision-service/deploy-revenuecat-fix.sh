@@ -36,4 +36,4 @@ echo "✅ Deployment complete!"
 EOF
 
 echo "🎉 RevenueCat configuration deployed successfully!"
-echo "🔗 Test endpoint: https://api.imperfectform.fun/api/config/revenuecat"
+echo "🔗 Test endpoint: https://api.brume.trustfall.xyz/api/config/revenuecat"

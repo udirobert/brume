@@ -27,8 +27,8 @@ export const useSiweAuth = (): UseSiweAuthReturn => {
       }
 
       const parsedChainId = chainId ? parseInt(chainId, 16) : 1;
-      const domain = opts?.domain || new URL(config.app.url).hostname || 'brumeapp.netlify.app';
-      const uri = opts?.uri || config.app.url || 'https://brumeapp.netlify.app';
+      const domain = opts?.domain || new URL(config.app.url).hostname || 'brume.trustfall.xyz';
+      const uri = opts?.uri || config.app.url || 'https://brume.trustfall.xyz';
       const statement = opts?.statement || 'Sign-In with Ethereum to Brume';
 
       const challenge = await issueSiweChallenge({ address, chainId: parsedChainId, domain, uri, statement });

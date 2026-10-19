@@ -19,7 +19,7 @@ today, x402-style per-call payments next.
 
 ```bash
 npm install && npm run build
-BRUME_API_KEYS=key1,key2 BRUME_VISION_URL=https://api.imperfectform.fun npm start
+BRUME_API_KEYS=key1,key2 BRUME_VISION_URL=https://api.brume.trustfall.xyz npm start
 ```
 
 ## Privacy invariant

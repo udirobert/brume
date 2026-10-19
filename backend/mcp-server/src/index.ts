@@ -13,7 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const VISION_URL = process.env.BRUME_VISION_URL ?? "https://api.imperfectform.fun";
+const VISION_URL = process.env.BRUME_VISION_URL ?? "https://api.brume.trustfall.xyz";
 
 // --- Metering stub -----------------------------------------------------------
 // TODO(x402): replace key-based metering with per-call payment verification.

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Security Check Script for Imperfect Breath
+# Security Check Script for Brume
 # Verifies no secrets are exposed before deployment
 
-echo "🔒 Security Check for Imperfect Breath"
+echo "🔒 Security Check for Brume"
 echo "====================================="
 
 # Colors for output

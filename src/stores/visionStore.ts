@@ -81,7 +81,7 @@ export interface VisionActions {
 
 const DEFAULT_CONFIG: VisionConfig = {
     sessionId: '',
-    backendUrl: 'https://api.imperfectform.fun',
+    backendUrl: 'https://api.brume.trustfall.xyz',
     targetFPS: 1,
     enableAdaptiveFPS: true,
     features: {

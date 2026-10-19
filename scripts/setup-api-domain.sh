@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# API Domain Setup Script for Imperfect Breath
-# Sets up api.imperfectform.fun with SSL for the vision service
+# API Domain Setup Script for Brume
+# Sets up api.brume.trustfall.xyz with SSL for the vision service
 
-echo "🌐 Setting up api.imperfectform.fun for Imperfect Breath"
+echo "🌐 Setting up api.brume.trustfall.xyz for Brume"
 echo "======================================================"
 
 # Colors for output
@@ -31,10 +31,10 @@ print_info() {
 }
 
 # Configuration
-API_DOMAIN="api.imperfectform.fun"
+API_DOMAIN="api.brume.trustfall.xyz"
 SERVER_HOST="157.180.36.156"
 SERVER_USER="root"
-EMAIL="admin@imperfectform.fun"  # Using domain email for Let's Encrypt
+EMAIL="admin@trustfall.xyz"  # Using domain email for Let's Encrypt
 
 print_info "This script will set up: $API_DOMAIN"
 print_info "Server: $SERVER_HOST"
@@ -44,7 +44,7 @@ echo ""
 echo "📋 Prerequisites Checklist:"
 echo "=========================="
 echo "1. ✅ Vision service is running on server"
-echo "2. ⚠️  DNS record added: api.imperfectform.fun → 157.180.36.156"
+echo "2. ⚠️  DNS record added: api.brume.trustfall.xyz → 157.180.36.156"
 echo "3. ⚠️  Email updated in script for Let's Encrypt"
 echo "4. ✅ SSH access to server configured"
 echo ""
@@ -54,7 +54,7 @@ echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     print_warning "Please complete DNS setup first:"
-    echo "1. Go to GoDaddy DNS Management for imperfectform.fun"
+    echo "1. Go to GoDaddy DNS Management for trustfall.xyz"
     echo "2. Add A record: api → 157.180.36.156"
     echo "3. Wait 5-10 minutes for DNS propagation"
     echo "4. Run this script again"
@@ -185,7 +185,7 @@ http {
             limit_req zone=api burst=20 nodelay;
             
             # CORS headers for your domains
-            add_header Access-Control-Allow-Origin "https://imperfectform.fun, https://breath.imperfectform.fun, https://*.netlify.app, http://localhost:4567" always;
+            add_header Access-Control-Allow-Origin "https://trustfall.xyz, https://api.brume.trustfall.xyz, https://*.netlify.app, http://localhost:4567" always;
             add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
             add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
             add_header Access-Control-Max-Age 86400 always;
@@ -209,7 +209,7 @@ http {
 
         # Root endpoint - API info
         location / {
-            return 200 '{"service":"Imperfect Breath API","version":"1.0","endpoints":["/health","/api/"],"domain":"$API_DOMAIN"}';
+            return 200 '{"service":"Brume API","version":"1.0","endpoints":["/health","/api/"],"domain":"$API_DOMAIN"}';
             add_header Content-Type application/json;
         }
     }
@@ -265,7 +265,7 @@ EOF
 print_status "✅ API domain setup completed!"
 
 echo ""
-echo "🎉 Success! Your Imperfect Breath API is now available at:"
+echo "🎉 Success! Your Brume API is now available at:"
 echo "========================================================="
 echo ""
 echo "  🔗 https://$API_DOMAIN/health"
@@ -278,7 +278,7 @@ echo ""
 echo "2. Test the API:"
 echo "   curl https://$API_DOMAIN/health"
 echo ""
-echo "3. Your existing imperfectform.fun project is unaffected"
+echo "3. Your existing trustfall.xyz project is unaffected"
 echo ""
 echo "🔄 Certificate auto-renewal is configured"
 

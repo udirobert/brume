@@ -15,7 +15,7 @@ const connectors = [
   injected(),
   coinbaseWallet({
     appName: 'Brume',
-    appLogoUrl: 'https://brumeapp.netlify.app/android-chrome-512x512.png',
+    appLogoUrl: 'https://brume.trustfall.xyz/android-chrome-512x512.png',
   }),
   ...(enableWalletConnect ? [walletConnect({ projectId })] : []),
 ]

@@ -41,26 +41,26 @@ if ! command -v hcloud &> /dev/null; then
     echo "   - Linux: Download binary and add to PATH"
     echo ""
     echo "3. Configure with your API token:"
-    echo "   hcloud context create imperfect-breath"
+    echo "   hcloud context create brume"
     exit 1
 fi
 
 # Check if context is configured
-if ! hcloud context list | grep -q "imperfect-breath"; then
-    print_warning "No 'imperfect-breath' context found."
+if ! hcloud context list | grep -q "brume"; then
+    print_warning "No 'brume' context found."
     echo ""
     echo "Please create a context first:"
-    echo "  hcloud context create imperfect-breath"
+    echo "  hcloud context create brume"
     echo ""
     echo "Then set your API token when prompted."
     echo "You can get your API token from: https://console.hetzner.cloud/"
     exit 1
 fi
 
-# Use the imperfect-breath context
-hcloud context use imperfect-breath
+# Use the brume context
+hcloud context use brume
 
-print_status "Using Hetzner Cloud context: imperfect-breath"
+print_status "Using Hetzner Cloud context: brume"
 
 # Get server information
 print_info "Fetching server information..."
@@ -80,7 +80,7 @@ SERVER_NAME=$(echo "$SERVER_INFO" | jq -r '.name')
 print_status "Found server: $SERVER_NAME (ID: $SERVER_ID)"
 
 # Check if firewall exists
-FIREWALL_NAME="imperfect-breath-firewall"
+FIREWALL_NAME="brume-firewall"
 FIREWALL_ID=$(hcloud firewall list -o json | jq -r ".[] | select(.name == \"$FIREWALL_NAME\") | .id")
 
 if [ -z "$FIREWALL_ID" ]; then

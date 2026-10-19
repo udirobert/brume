@@ -158,7 +158,7 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
   ctx.fillStyle = ACCENT;
   ctx.font = "400 28px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("brumeapp.netlify.app", W / 2, H - 120);
+  ctx.fillText("brume.trustfall.xyz", W / 2, H - 120);
 
   ctx.fillStyle = TEXT_SECONDARY;
   ctx.font = "300 20px system-ui, -apple-system, sans-serif";
@@ -218,7 +218,7 @@ function shareText(data: ProofCardData): string {
 }
 
 async function copyTextFallback(data: ProofCardData): Promise<void> {
-  const text = `${shareText(data)} — https://brumeapp.netlify.app`;
+  const text = `${shareText(data)} — https://brume.trustfall.xyz`;
   try {
     await navigator.clipboard.writeText(text);
   } catch {

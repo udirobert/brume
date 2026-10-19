@@ -111,14 +111,14 @@ if [ -f "app.log" ]; then
 elif [ -f "main.log" ]; then
     echo "Recent main.log entries:"
     tail -20 main.log
-elif [ -f "/var/log/imperfect-breath.log" ]; then
+elif [ -f "/var/log/brume.log" ]; then
     echo "Recent system log entries:"
-    tail -20 /var/log/imperfect-breath.log
+    tail -20 /var/log/brume.log
 else
     echo "No obvious log files found"
     echo "Checking systemd logs if available:"
     if command -v journalctl > /dev/null; then
-        journalctl -u imperfect-breath --no-pager -n 10 2>/dev/null || echo "No systemd service logs found"
+        journalctl -u brume --no-pager -n 10 2>/dev/null || echo "No systemd service logs found"
     fi
 fi
 echo ""
@@ -205,7 +205,7 @@ echo ""
 echo "🔄 SERVICE RESTART TEST"
 echo "======================="
 echo "To restart the service, you can try:"
-echo "1. If using systemd: sudo systemctl restart imperfect-breath"
+echo "1. If using systemd: sudo systemctl restart brume"
 echo "2. If running manually: pkill -f main.py && python3 main.py &"
 echo "3. If using screen/tmux: check running sessions"
 echo ""

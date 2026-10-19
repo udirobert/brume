@@ -9,7 +9,7 @@
     - [ ] `GEMINI_API_KEY`: For multimodal Google Gemini insights.
     - [ ] `OPENAI_API_KEY`: For GPT-4o-mini fallback analysis.
 - [ ] **Production Supabase**: Move from development/test project to production project.
-- [ ] **SSL Certification**: Verify `breath.imperfectform.fun` has a valid, auto-renewing Certbot/LetsEncrypt certificate.
+- [ ] **SSL Certification**: Verify `api.brume.trustfall.xyz` has a valid, auto-renewing Certbot/LetsEncrypt certificate.
 
 ### 2. Error Monitoring & Reliability
 - [ ] **Sentry Integration**: Initialize Sentry on both frontend and backend.

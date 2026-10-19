@@ -551,7 +551,7 @@ score inflation, and cross-account replay are all impossible.
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
 VITE_GEMINI_API_KEY=your_gemini_key
-VITE_HETZNER_SERVICE_URL=https://api.imperfectform.fun
+VITE_HETZNER_SERVICE_URL=https://api.brume.trustfall.xyz
 
 # Blockchain (optional)
 VITE_FLOW_ACCESS_NODE=https://rest-testnet.onflow.org

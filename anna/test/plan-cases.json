@@ -121,6 +121,19 @@
         "title": "Square up",
         "why": "An even structure before focused work."
       }
+    },
+    {
+      "name": "health claims in opening+why -> canned both",
+      "raw": "{\"pattern\":\"steady\",\"seconds\":180,\"title\":\"Wind down\",\"opening\":\"This even rhythm helps your system transition into a state of quiet repose.\",\"cues\":[\"Shoulders soft\"],\"why\":\"It helps your body relax before sleep.\"}",
+      "expect": {
+        "pattern": "steady",
+        "planSource": "ai",
+        "opening": "An unhurried five and a half counts in, the same back out.",
+        "whyForbidden": [
+          "body",
+          "relax"
+        ]
+      }
     }
   ],
   "fallback_contexts": [
@@ -437,6 +450,22 @@
     {
       "text": "Therapy-grade calm for your break.",
       "expect": "block"
+    },
+    {
+      "text": "This even rhythm helps your system transition into a state of quiet repose.",
+      "expect": "block"
+    },
+    {
+      "text": "It helps your body relax before the call.",
+      "expect": "block"
+    },
+    {
+      "text": "Helps you settle into the call",
+      "expect": "block"
+    },
+    {
+      "text": "A steady rhythm for the minutes before your call.",
+      "expect": "pass"
     }
   ]
 }

@@ -40,6 +40,9 @@ class ModelPlanCases(unittest.TestCase):
                         self.assertEqual(got[k], exp[k], k)
                 if "cues" in exp:
                     self.assertEqual(got["cues"], exp["cues"])
+                if "whyForbidden" in exp:
+                    for f in exp["whyForbidden"]:
+                        self.assertNotIn(f, got["why"])
                 if "cuesForbidden" in exp:
                     for f in exp["cuesForbidden"]:
                         self.assertFalse(any(f in c for c in got["cues"]), f)

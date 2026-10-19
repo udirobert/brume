@@ -1,7 +1,7 @@
 {
   "name": "tool-papa-brume-htcxvfcr",
   "display_name": "Brume Reset",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "An AI-planned guided breathing break, delivered inline in chat. brume_reset picks a pattern and length for the user's moment (or honours an explicit `pattern`), renders the pacing script verbatim, and remembers the plan; brume_complete records the finished break \u2014 including an optional `felt` check-in \u2014 and writes a short session reflection. If the user asks to adjust pace mid-break, invoke brume_reset again with `pace` and `remaining_seconds` rather than restarting.",
   "author": "Brume",
   "category": "productivity",

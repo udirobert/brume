@@ -171,6 +171,8 @@ for (const tc of planCases.model_outputs) {
   if (tc.expect.cues) assert.deepEqual(got.cues, tc.expect.cues);
   if (tc.expect.cuesForbidden)
     assert.ok(got.cues.every((c) => !tc.expect.cuesForbidden.some((f) => c.includes(f))), `${tc.name}.cues forbidden`);
+  if (tc.expect.whyForbidden)
+    assert.ok(!tc.expect.whyForbidden.some((f) => got.why.includes(f)), `${tc.name}.why forbidden`);
   const minCues = tc.expect.minCues ?? 2;
   assert.ok(got.cues.length >= minCues && got.cues.length <= 3, `${tc.name}.cues`);
   assert.ok(got.cues.every((c) => c.length <= 60), `${tc.name}.cues length`);

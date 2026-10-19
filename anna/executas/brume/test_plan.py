@@ -40,6 +40,9 @@ class ModelPlanCases(unittest.TestCase):
                         self.assertEqual(got[k], exp[k], k)
                 if "cues" in exp:
                     self.assertEqual(got["cues"], exp["cues"])
+                if "cuesForbidden" in exp:
+                    for f in exp["cuesForbidden"]:
+                        self.assertFalse(any(f in c for c in got["cues"]), f)
                 min_cues = exp.get("minCues", 2)
                 self.assertGreaterEqual(len(got["cues"]), min_cues)
                 self.assertLessEqual(len(got["cues"]), 3)
@@ -96,6 +99,14 @@ class Reflection(unittest.TestCase):
         )
         self.assertEqual(bp.clean_reflection('{"note":"x"}'), bp.FALLBACK_REFLECTION)
         self.assertEqual(bp.clean_reflection("   "), bp.FALLBACK_REFLECTION)
+
+    def test_fixture_reflections(self):
+        import json as _json
+        with open(FIXTURE, encoding="utf-8") as f:
+            cases = _json.load(f).get("reflection_outputs", [])
+        for tc in cases:
+            want = bp.FALLBACK_REFLECTION if tc["expect"] == "FALLBACK" else tc["expect"]
+            self.assertEqual(bp.clean_reflection(tc["raw"]), want, tc["name"])
 
     def test_prompt_facts(self):
         p = bp.build_reflection_prompt("call", "Box", 30, 120, 2, True, "wired")

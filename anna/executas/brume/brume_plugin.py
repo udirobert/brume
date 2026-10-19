@@ -349,6 +349,17 @@ def _sample_text(
 
 
 # --- Plan contract (1:1 port of bundle/plan.js — see plan-cases.json) -----
+# Health-claim backstop — mirror of HEALTH_CLAIM_RE in bundle/plan.js.
+HEALTH_CLAIM_RE = re.compile(
+    r"physiolog|arousal|nervous system|vagus|vagal|cortisol|hormone|heart rate"
+    r"|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic"
+    r"|fight.or.flight|your (body|system|brain|mind) (will|can|to)|lowers?|reduces?"
+    r"|proven|scientific|research|studies|study shows|anxiety|insomnia|therap"
+    r"|heal|cure|treat",
+    re.IGNORECASE,
+)
+
+
 
 _STRIP_RE = re.compile(
     "[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2060\\ufeff\\ufe0f"
@@ -377,8 +388,8 @@ _PLAN_LIBRARY_BLOCK = """You plan one short guided breathing break for a person 
 Allowed lengths in seconds: 60, 90, 120, 180. Use 60 if they mention having little time."""
 
 _PLAN_FORMAT_BLOCK = """Reply with ONLY a JSON object, no prose and no code fences:
-{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) on why this pattern fits their moment}
-Do not make medical or health claims, do not diagnose, and do not use emoji."""
+{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
+Never describe effects on the body, brain, nerves, hormones, sleep quality, stress or anxiety; describe only the rhythm and how it fits their moment. Do not diagnose and do not use emoji."""
 
 
 def build_plan_prompt(context: Any, personalization: str | None) -> str:
@@ -449,15 +460,26 @@ def parse_model_plan(raw: Any) -> dict[str, Any] | None:
     if pattern not in PATTERNS:
         return None
     canned = CANNED[pattern]
-    title = _clean_text(parsed.get("title"), 60) or canned["title"]
-    opening = _clean_text(parsed.get("opening"), 240) or canned["opening"]
-    why = _clean_text(parsed.get("why"), 160) or canned["why"]
+
+    def _safe(v: Any, max_len: int, canned_text: str) -> str:
+        t = _clean_text(v, max_len)
+        return canned_text if (not t or HEALTH_CLAIM_RE.search(t)) else t
+
+    title = _safe(parsed.get("title"), 60, canned["title"])
+    opening = _safe(parsed.get("opening"), 240, canned["opening"])
+    why = _safe(parsed.get("why"), 160, canned["why"])
+    canned_cues = list(canned["cues"])
     cues: list[str] = []
     if isinstance(parsed.get("cues"), list):
         for c in parsed["cues"]:
-            cleaned = _clean_text(c, 60)
-            if cleaned:
-                cues.append(cleaned)
+            t = _clean_text(c, 60)
+            if not t or HEALTH_CLAIM_RE.search(t):
+                # offending cue -> an unused canned cue
+                cues.append(canned_cues.pop(0)) if canned_cues else None
+                continue
+            if t in canned_cues:
+                canned_cues.remove(t)
+            cues.append(t)
         cues = cues[:3]
     for c in canned["cues"]:
         if len(cues) >= 2:
@@ -542,7 +564,7 @@ def clean_reflection(raw: Any) -> str:
         text.startswith("'") and text.endswith("'")
     ):
         text = text[1:-1].strip()
-    if not text or text.startswith("{"):
+    if not text or text.startswith("{") or HEALTH_CLAIM_RE.search(text):
         return FALLBACK_REFLECTION
     return text[:300].strip() if len(text) > 300 else text
 

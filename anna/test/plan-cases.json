@@ -10,7 +10,10 @@
         "planSource": "ai",
         "title": "Before the call",
         "opening": "A short settle before you dial in.",
-        "cues": ["Shoulders soft", "Slow the out-breath"],
+        "cues": [
+          "Shoulders soft",
+          "Slow the out-breath"
+        ],
         "why": "The long exhale suits the minutes before a tense moment."
       }
     },
@@ -59,7 +62,7 @@
     },
     {
       "name": "emoji stripped, overlong title capped, missing why filled",
-      "raw": "{\"pattern\": \"long-exhale\", \"seconds\": 90, \"title\": \"A very long title that keeps going and going past sixty characters easily yes\", \"opening\": \"Nice easy rhythm 🌿\", \"cues\": [\"Breathe 🍃\"], \"why\": \"\"}",
+      "raw": "{\"pattern\": \"long-exhale\", \"seconds\": 90, \"title\": \"A very long title that keeps going and going past sixty characters easily yes\", \"opening\": \"Nice easy rhythm \ud83c\udf3f\", \"cues\": [\"Breathe \ud83c\udf43\"], \"why\": \"\"}",
       "expect": {
         "pattern": "long-exhale",
         "seconds": 90,
@@ -76,17 +79,112 @@
         "planSource": "ai",
         "minCues": 2
       }
+    },
+    {
+      "name": "health claim in why -> canned why",
+      "raw": "{\"pattern\":\"cyclic-sigh\",\"seconds\":90,\"title\":\"Before the call\",\"opening\":\"A short settle before you dial in.\",\"cues\":[\"Shoulders soft\",\"Slow the out-breath\"],\"why\":\"The cyclic sigh quickly lowers physiological arousal, making it ideal for managing pre-meeting tension and nerves.\"}",
+      "expect": {
+        "pattern": "cyclic-sigh",
+        "seconds": 90,
+        "planSource": "ai",
+        "why": "The double inhale and long exhale suits the minutes before something tense."
+      }
+    },
+    {
+      "name": "health claim in opening -> canned opening",
+      "raw": "{\"pattern\":\"long-exhale\",\"seconds\":90,\"title\":\"Reset\",\"opening\":\"The extended exhale helps trigger a relaxation response to clear your mind.\",\"cues\":[\"Easy in\",\"Slow out\"],\"why\":\"A longer exhale fits a general pause.\"}",
+      "expect": {
+        "pattern": "long-exhale",
+        "planSource": "ai",
+        "opening": "A gentle rhythm \u2014 four counts in, six counts out \u2014 between one thing and the next."
+      }
+    },
+    {
+      "name": "health claim in one cue -> cue replaced by canned",
+      "raw": "{\"pattern\":\"steady\",\"seconds\":180,\"title\":\"Wind down\",\"opening\":\"Even and unhurried.\",\"cues\":[\"No hurry\",\"This helps your system transition into a state of quiet repose\"],\"why\":\"An even rhythm to close out your workday.\"}",
+      "expect": {
+        "pattern": "steady",
+        "planSource": "ai",
+        "cuesForbidden": [
+          "quiet repose"
+        ],
+        "minCues": 2
+      }
+    },
+    {
+      "name": "clean plan passes untouched",
+      "raw": "{\"pattern\":\"box\",\"seconds\":120,\"title\":\"Square up\",\"opening\":\"Four even sides before you begin.\",\"cues\":[\"Even counts\",\"Follow the square\"],\"why\":\"An even structure before focused work.\"}",
+      "expect": {
+        "pattern": "box",
+        "seconds": 120,
+        "planSource": "ai",
+        "title": "Square up",
+        "why": "An even structure before focused work."
+      }
     }
   ],
   "fallback_contexts": [
-    { "context": "Big call with my manager in 10 minutes", "pattern": "cyclic-sigh", "seconds": 90 },
-    { "context": "Presenting the roadmap to the team", "pattern": "cyclic-sigh", "seconds": 90 },
-    { "context": "Need to focus on writing a report next", "pattern": "box", "seconds": 120 },
-    { "context": "Deep work on the migration code", "pattern": "box", "seconds": 120 },
-    { "context": "Winding down before bed", "pattern": "steady", "seconds": 180 },
-    { "context": "Done for the day, tired", "pattern": "steady", "seconds": 180 },
-    { "context": "Been debugging for 3 hours, brain is fried", "pattern": "long-exhale", "seconds": 90 },
-    { "context": "", "pattern": "long-exhale", "seconds": 90 },
-    { "context": "Just a break", "pattern": "long-exhale", "seconds": 90 }
+    {
+      "context": "Big call with my manager in 10 minutes",
+      "pattern": "cyclic-sigh",
+      "seconds": 90
+    },
+    {
+      "context": "Presenting the roadmap to the team",
+      "pattern": "cyclic-sigh",
+      "seconds": 90
+    },
+    {
+      "context": "Need to focus on writing a report next",
+      "pattern": "box",
+      "seconds": 120
+    },
+    {
+      "context": "Deep work on the migration code",
+      "pattern": "box",
+      "seconds": 120
+    },
+    {
+      "context": "Winding down before bed",
+      "pattern": "steady",
+      "seconds": 180
+    },
+    {
+      "context": "Done for the day, tired",
+      "pattern": "steady",
+      "seconds": 180
+    },
+    {
+      "context": "Been debugging for 3 hours, brain is fried",
+      "pattern": "long-exhale",
+      "seconds": 90
+    },
+    {
+      "context": "",
+      "pattern": "long-exhale",
+      "seconds": 90
+    },
+    {
+      "context": "Just a break",
+      "pattern": "long-exhale",
+      "seconds": 90
+    }
+  ],
+  "reflection_outputs": [
+    {
+      "name": "clean reflection",
+      "raw": "You finished the full break. Head back to the call with the same easy pace.",
+      "expect": "You finished the full break. Head back to the call with the same easy pace."
+    },
+    {
+      "name": "health claim -> fallback",
+      "raw": "This breathing pattern calms your nervous system and reduces cortisol.",
+      "expect": "FALLBACK"
+    },
+    {
+      "name": "empty",
+      "raw": "   ",
+      "expect": "FALLBACK"
+    }
   ]
 }

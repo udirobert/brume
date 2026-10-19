@@ -168,6 +168,8 @@ for (const tc of planCases.model_outputs) {
     }
   }
   if (tc.expect.cues) assert.deepEqual(got.cues, tc.expect.cues);
+  if (tc.expect.cuesForbidden)
+    assert.ok(got.cues.every((c) => !tc.expect.cuesForbidden.some((f) => c.includes(f))), `${tc.name}.cues forbidden`);
   const minCues = tc.expect.minCues ?? 2;
   assert.ok(got.cues.length >= minCues && got.cues.length <= 3, `${tc.name}.cues`);
   assert.ok(got.cues.every((c) => c.length <= 60), `${tc.name}.cues length`);
@@ -210,6 +212,10 @@ ok("json-ish reflection falls back", plan.cleanReflection('{"note":"x"}') === pl
 ok("empty reflection falls back", plan.cleanReflection("   ") === plan.FALLBACK_REFLECTION);
 const rp = plan.buildReflectionPrompt({ context: "call", patternName: "Box", activeSeconds: 30, plannedSeconds: 120, cycles: 2, interrupted: true, felt: "wired" });
 ok("reflection prompt carries facts", rp.includes("still wired") && rp.includes("ended early: yes"));
+for (const tc of planCases.reflection_outputs ?? []) {
+  const want = tc.expect === "FALLBACK" ? plan.FALLBACK_REFLECTION : tc.expect;
+  ok(`reflection "${tc.name}"`, plan.cleanReflection(tc.raw) === want);
+}
 
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------
 

@@ -110,6 +110,12 @@ export function cleanContext(input) {
   return cleanText(input.replace(/["'\r\n]+/g, " "), 200);
 }
 
+// Health-claim backstop. Even with the tightened prompt the model can
+// slip physiological/therapeutic language into plan text or reflections;
+// any field matching this is replaced by the pattern's canned text.
+export const HEALTH_CLAIM_RE =
+  /physiolog|arousal|nervous system|vagus|vagal|cortisol|hormone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic|fight.or.flight|your (body|system|brain|mind) (will|can|to)|lowers?|reduces?|proven|scientific|research|studies|study shows|anxiety|insomnia|therap|heal|cure|treat/i;
+
 // --- Plan prompt --------------------------------------------------------------
 
 const PLAN_LIBRARY_BLOCK = `You plan one short guided breathing break for a person at work. Choose from this fixed library only:
@@ -120,8 +126,8 @@ const PLAN_LIBRARY_BLOCK = `You plan one short guided breathing break for a pers
 Allowed lengths in seconds: 60, 90, 120, 180. Use 60 if they mention having little time.`;
 
 const PLAN_FORMAT_BLOCK = `Reply with ONLY a JSON object, no prose and no code fences:
-{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) on why this pattern fits their moment}
-Do not make medical or health claims, do not diagnose, and do not use emoji.`;
+{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
+Never describe effects on the body, brain, nerves, hormones, sleep quality, stress or anxiety; describe only the rhythm and how it fits their moment. Do not diagnose and do not use emoji.`;
 
 // personalization: string like "cyclic-sigh: calmer 3 of 4; box: calmer 1
 // of 3" built from summary byPattern entries with >=2 ratings, or null.
@@ -199,11 +205,25 @@ export function parseModelPlan(raw) {
   const pattern = PATTERNS[parsed.pattern] ? parsed.pattern : null;
   if (!pattern) return null;
   const canned = CANNED[pattern];
-  const title = cleanText(parsed.title, 60) || canned.title;
-  const opening = cleanText(parsed.opening, 240) || canned.opening;
-  const why = cleanText(parsed.why, 160) || canned.why;
+  const safe = (v, max, cannedText) => {
+    const t = cleanText(v, max);
+    return !t || HEALTH_CLAIM_RE.test(t) ? cannedText : t;
+  };
+  const title = safe(parsed.title, 60, canned.title);
+  const opening = safe(parsed.opening, 240, canned.opening);
+  const why = safe(parsed.why, 160, canned.why);
+  const cannedCues = [...canned.cues];
   const cues = Array.isArray(parsed.cues)
-    ? parsed.cues.map((c) => cleanText(c, 60)).filter(Boolean).slice(0, 3)
+    ? parsed.cues
+        .map((c) => {
+          const t = cleanText(c, 60);
+          // Offending cue -> an unused canned cue (never leave a claim in).
+          if (!t || HEALTH_CLAIM_RE.test(t)) return cannedCues.shift() || null;
+          if (cannedCues.includes(t)) cannedCues.splice(cannedCues.indexOf(t), 1);
+          return t;
+        })
+        .filter(Boolean)
+        .slice(0, 3)
     : [];
   for (const c of canned.cues) {
     if (cues.length >= 2) break;
@@ -298,7 +318,9 @@ export function cleanReflection(raw) {
   ) {
     text = text.slice(1, -1).trim();
   }
-  if (!text || text.startsWith("{")) return FALLBACK_REFLECTION;
+  if (!text || text.startsWith("{") || HEALTH_CLAIM_RE.test(text)) {
+    return FALLBACK_REFLECTION;
+  }
   return text.length > 300 ? text.slice(0, 300).trim() : text;
 }
 

@@ -95,6 +95,15 @@ const els = {
   toast: $("#toast"),
 };
 
+// Brume mascots — one sprite per screen, lazily created on first show.
+const mascots = {};
+function mascot(name) {
+  const host = $(`#mascot-${name}`);
+  if (!host) return null;
+  if (!mascots[name]) mascots[name] = createMascot(host);
+  return mascots[name];
+}
+
 let anna = null;
 let prefs = {};
 let summary = null;
@@ -134,8 +143,19 @@ function fmtSeconds(total) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+const SCREEN_MASCOT = {
+  home: { el: "home", state: "idle" },
+  planning: { el: "planning", state: "thinking" },
+  checkin: { el: "checkin", state: "idle" },
+  result: { el: "result", state: "proud" },
+};
+
 function show(screen) {
   for (const el of Object.values(els.screens)) el.hidden = el !== screen;
+  for (const [key, conf] of Object.entries(SCREEN_MASCOT)) {
+    const s = els.screens[key];
+    if (s === screen) mascot(conf.el)?.setState(conf.state);
+  }
 }
 
 function toast(msg, ms = 5000) {
@@ -329,6 +349,11 @@ function tick() {
   els.phase.textContent = isClockRunning(clock)
     ? phaseWord(plan.pattern, snap.currentPhase)
     : "Paused";
+  const m = mascot("session");
+  if (m) {
+    m.setState(isClockRunning(clock) ? snap.currentPhase : "idle");
+    m.setBreath(snap.phaseProgress / 100);
+  }
   if (snap.currentPhase !== lastPhase) {
     lastPhase = snap.currentPhase;
     if (isClockRunning(clock)) {
@@ -445,6 +470,7 @@ async function completeResult(felt) {
     : Promise.resolve(null);
 
   els.resultHeading.textContent = interrupted ? "Ended early" : "Reset complete";
+  mascot("result")?.setState(interrupted ? "idle" : "proud");
   els.resultPattern.textContent = pat.name;
   els.resultTime.textContent = `${activeSeconds} second${activeSeconds === 1 ? "" : "s"}`;
   els.resultCycles.textContent = String(cycles);

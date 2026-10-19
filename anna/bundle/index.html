@@ -9,6 +9,8 @@
   <body>
     <main id="root">
       <section id="screen-home" class="screen">
+        <div class="mascot-slot mascot-lg" id="mascot-home" aria-hidden="true"></div>
+        <p class="mascot-voice muted" id="home-voice">Hi, I'm Brume.</p>
         <h1>Brume</h1>
         <p class="hint">One short breathing break, planned for this moment.</p>
         <label class="field-label" for="context-input">What's next for you?</label>
@@ -32,6 +34,7 @@
       </section>
 
       <section id="screen-planning" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-planning" aria-hidden="true"></div>
         <div class="spinner" aria-hidden="true"></div>
         <p class="planning-note">Choosing a pattern for this moment…</p>
         <button id="btn-skip-plan" type="button">Skip — use a standard reset</button>
@@ -60,7 +63,7 @@
       <section id="screen-session" class="screen" hidden>
         <p class="pattern-name" id="session-pattern"></p>
         <div class="breath-stage" aria-live="polite">
-          <div id="breath-dot" aria-hidden="true"></div>
+          <div class="mascot-slot mascot-xl" id="mascot-session" aria-hidden="true"></div>
           <p id="phase-word" class="phase-word"></p>
           <p id="cue-text" class="cue-text"></p>
         </div>
@@ -81,6 +84,7 @@
       </section>
 
       <section id="screen-checkin" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-checkin" aria-hidden="true"></div>
         <h1>How do you feel now?</h1>
         <div class="col">
           <button class="primary" type="button" data-felt="calmer">Calmer</button>
@@ -91,6 +95,7 @@
       </section>
 
       <section id="screen-result" class="screen" hidden>
+        <div class="mascot-slot mascot-lg" id="mascot-result" aria-hidden="true"></div>
         <h1 id="result-heading"></h1>
         <dl class="facts">
           <div><dt>Pattern</dt><dd id="result-pattern"></dd></div>

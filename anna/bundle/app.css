@@ -235,3 +235,44 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #plan-opening, #plan-why { font-size: 0.9rem; margin: 6px 0; }
   button { padding: 8px 18px; }
 }
+
+/* --- Brume mascot ------------------------------------------------------ */
+.mascot { display: inline-block; line-height: 0; }
+.mascot-svg { width: 100%; height: 100%; overflow: visible; }
+.mascot-fill { fill: #5b8a72; }
+.mascot-hl { fill: #7ba88e; opacity: .8; }
+.mascot-halo { fill: none; stroke: rgba(91,138,114,.18); stroke-width: 10; }
+.mascot-eye { fill: #26303a; }
+.mascot-lid { fill: #5b8a72; }
+.mascot-mouth { fill: none; stroke: #26303a; stroke-width: 2; stroke-linecap: round; }
+.mascot-cheek { fill: #7ba88e; opacity: 0; }
+.mascot-arm { stroke: #5b8a72; stroke-width: 5; stroke-linecap: round; opacity: 0; }
+.mascot-wisp { fill: rgba(91,138,114,.4); opacity: 0; }
+.mascot-wave { fill: none; stroke: #5b8a72; stroke-width: 2; stroke-linecap: round; opacity: 0; }
+.mascot-swirl { fill: none; stroke: #5b8a72; stroke-width: 2; opacity: 0; }
+.mascot-arms .mascot-arm { opacity: 1; }
+.mascot-cheeks .mascot-cheek { opacity: .6; }
+.mascot-wisped .mascot-wisp { opacity: .6; }
+.mascot-humming .mascot-wave { opacity: .8; }
+.mascot-thinking .mascot-swirl { opacity: .8; }
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-body { animation: mascot-bob 6s ease-in-out infinite; transform-origin: 50px 55px; }
+  .mascot-wisped .w0 { animation: wisp 3.4s ease-out infinite; }
+  .mascot-wisped .w1 { animation: wisp 3.4s ease-out .9s infinite; }
+  .mascot-wisped .w2 { animation: wisp 3.4s ease-out 1.8s infinite; }
+  .mascot-wisped .w3 { animation: wisp 3.4s ease-out 2.6s infinite; }
+  .mascot-thinking .mascot-swirl { animation: swirl 1.6s ease-in-out infinite; }
+  .mascot-puff .mascot-body { animation: puff .5s ease-out; }
+}
+@keyframes mascot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes wisp { 0% { transform: translateY(0); opacity:.6; } 100% { transform: translateY(-26px); opacity:0; } }
+@keyframes swirl { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
+@keyframes puff { 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) {
+  .mascot-body, .mascot-wisp, .mascot-swirl { animation: none !important; }
+}
+.mascot-slot { margin: 0 auto 4px; }
+.mascot-lg { width: 110px; height: 110px; }
+.mascot-md { width: 84px; height: 84px; }
+.mascot-xl { width: 160px; height: 160px; }
+.mascot-voice { text-align: center; font-size: .92rem; margin: 0 0 10px; }

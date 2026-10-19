@@ -198,6 +198,26 @@
       "name": "empty",
       "raw": "   ",
       "expect": "FALLBACK"
+    },
+    {
+      "name": "word-count parenthetical + alternative",
+      "raw": "You finished all 10 cycles and feel calmer\u2014nice. Take a quick stretch or sip of water before your call to keep that steadiness. (19 words)  \n\n(Alternative if over word count: You finished all 10 cycles and feel calmer. You could stretch or sip water before your call. (16 words))",
+      "expect": "You finished all 10 cycles and feel calmer\u2014nice. Take a quick stretch or sip of water before your call to keep that steadiness."
+    },
+    {
+      "name": "wrapped quotes + word counts",
+      "raw": "\"This is your first check\u2014no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes.\" (36 words)  \n\n(Alternative if sleepy: \"Try a short break.\") (39 words)",
+      "expect": "This is your first check\u2014no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes."
+    },
+    {
+      "name": "trailing word count",
+      "raw": "You finished all 4 cycles as planned. Now open your report and list the section headings first.  \n\n(Word count: 35)",
+      "expect": "You finished all 4 cycles as planned. Now open your report and list the section headings first."
+    },
+    {
+      "name": "clean two sentences",
+      "raw": "You ended a little early and that is fine. Head into the call with the same easy pace.",
+      "expect": "You ended a little early and that is fine. Head into the call with the same easy pace."
     }
   ],
   "agent_args": [

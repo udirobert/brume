@@ -57,6 +57,8 @@ export function buildCompletionRecord({
   interrupted,
   felt,
   planSource,
+  planModel = null,
+  reflectionModel = null,
   reflection,
   source,
   now,
@@ -71,6 +73,8 @@ export function buildCompletionRecord({
     interrupted: Boolean(interrupted),
     felt: felt === "calmer" || felt === "same" || felt === "wired" ? felt : null,
     planSource,
+    planModel,
+    reflectionModel,
     reflection: typeof reflection === "string" ? reflection : "",
     source: source === "executa.chat" ? "executa.chat" : "app",
   };
@@ -208,6 +212,9 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
+let lastLlmModel = null;
+export let lastReflectionModel = null;
+
 async function callLlm(anna, prompt, maxTokens, timeoutMs) {
   const res = await withTimeout(
     Promise.resolve(
@@ -221,7 +228,8 @@ async function callLlm(anna, prompt, maxTokens, timeoutMs) {
     timeoutMs,
   );
   const text = responseText(res);
-  // Diagnostic hook for dev/testing: last prompt + raw model text.
+  lastLlmModel = res?.model ?? null;
+// Diagnostic hook for dev/testing: last prompt + raw model text.
   try {
     const h = window.location?.hostname;
     if (h === "localhost" || h === "127.0.0.1")
@@ -236,6 +244,7 @@ async function callLlm(anna, prompt, maxTokens, timeoutMs) {
 // where plan is a validated plan object; on any failure the plan is the
 // deterministic fallback for the same context.
 export async function fetchPlan(anna, { context, summary }, opts) {
+  lastLlmModel = null;
   const fb = () => fallbackPlan(context);
   if (!anna || typeof anna.llm?.complete !== "function") {
     return { plan: fb(), offline: true };
@@ -249,6 +258,7 @@ export async function fetchPlan(anna, { context, summary }, opts) {
       timeoutMs,
     );
     const plan = parseModelPlan(raw);
+    if (plan) plan.planModel = lastLlmModel;
     return plan ? { plan, offline: false } : { plan: fb(), offline: true };
   } catch {
     return { plan: fb(), offline: true };
@@ -258,6 +268,7 @@ export async function fetchPlan(anna, { context, summary }, opts) {
 // Reflection via the model. Never throws — resolves the cleaned line or
 // the fixed fallback.
 export async function fetchReflection(anna, facts, opts) {
+  lastLlmModel = null;
   if (!anna || typeof anna.llm?.complete !== "function") {
     return FALLBACK_REFLECTION;
   }
@@ -269,7 +280,10 @@ export async function fetchReflection(anna, facts, opts) {
       REFLECTION_MAX_TOKENS,
       timeoutMs,
     );
-    return cleanReflection(raw);
+    const t = cleanReflection(raw);
+    if (t === FALLBACK_REFLECTION) return t;
+    lastReflectionModel = lastLlmModel;
+    return t;
   } catch {
     return FALLBACK_REFLECTION;
   }

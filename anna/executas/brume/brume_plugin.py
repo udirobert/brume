@@ -48,7 +48,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -341,6 +341,12 @@ def _storage_set(key: str, value: Any, invoke_id: str | None) -> None:
 
 # --- Plan contract (1:1 port of bundle/plan.js — see plan-cases.json) -----
 # Health-claim backstop — mirror of HEALTH_CLAIM_RE in bundle/plan.js.
+CUE_FORBIDDEN_RE = re.compile(
+    r"\b(in|out|hold|inhale|exhale|breathe|breath|count|counts|second|seconds|\d+)\b",
+    re.IGNORECASE,
+)
+
+
 HEALTH_CLAIM_RE = re.compile(
     r"physiolog|arousal|nervous system|vagus|vagal|cortisol|hormon|testosterone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic nervous|fight.or.flight|your (body|system|brain|nervous system) (will|can|is going to)|\b(lowers?|reduces?|decreases?) (your )?(stress|anxiety|tension|cortisol|heart rate|blood pressure)|research (shows|suggests|finds|found)|studies (show|suggest|find|found)|study (shows|found|finds)|scientifically|clinically|proven to|\banxiety\b|insomnia|\b(cure|cures|heal|heals|healing|therapy|therapeutic|treatment)\b|\bhelps? (to |you |your )?(calm|relax|settle|soothe)\b|\bhelps? your (body|system|brain|mind|nerves|nervous system)\b|\byour (body|system|brain|mind) (will|can|is going to|to)\b",
     re.IGNORECASE,
@@ -377,6 +383,53 @@ Allowed lengths in seconds: 60, 90, 120, 180. Use 60 if they mention having litt
 _PLAN_FORMAT_BLOCK = """Reply with ONLY a JSON object, no prose and no code fences:
 {"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) about posture or attention to show during the break — never counts, timings, or the words in, out, hold, inhale or exhale, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
 Never describe effects on the body, brain, nerves, hormones, sleep quality, stress or anxiety; describe only the rhythm and how it fits their moment. Do not diagnose and do not use emoji."""
+
+
+
+def update_summary(summary: Any, record: dict) -> dict:
+    """reset/summary read-modify-write — mirror of updateSummary in plan.js."""
+    s = dict(summary) if isinstance(summary, dict) else {}
+    s["version"] = 1
+    s["total"] = int(s.get("total") or 0) + 1
+    byp = s.setdefault("byPattern", {})
+    pid = record.get("pattern") or "long-exhale"
+    ent = byp.setdefault(pid, {"sessions": 0, "calmer": 0, "same": 0, "wired": 0})
+    ent["sessions"] = int(ent.get("sessions") or 0) + 1
+    felt = record.get("felt")
+    if felt in ("calmer", "same", "wired"):
+        ent[felt] = int(ent.get(felt) or 0) + 1
+    recent = s.setdefault("recent", [])
+    recent.insert(0, {
+        "completedAt": record.get("completedAt"),
+        "pattern": record.get("pattern"),
+        "activeSeconds": record.get("activeSeconds"),
+        "felt": record.get("felt"),
+        "interrupted": record.get("interrupted"),
+    })
+    s["recent"] = recent[:10]
+    return s
+
+
+def personalization_from_summary(summary: Any) -> str | None:
+    if not isinstance(summary, dict):
+        return None
+    bp = summary.get("byPattern") or {}
+    parts = []
+    for pid in PATTERN_IDS:
+        p = bp.get(pid)
+        if not isinstance(p, dict):
+            continue
+        ratings = int(p.get("calmer") or 0) + int(p.get("same") or 0) + int(p.get("wired") or 0)
+        if ratings < 2:
+            continue
+        if p.get("calmer", 0) >= p.get("same", 0) and p.get("calmer", 0) >= p.get("wired", 0):
+            label, count = "calmer", p.get("calmer", 0)
+        elif p.get("same", 0) >= p.get("wired", 0):
+            label, count = "about the same", p.get("same", 0)
+        else:
+            label, count = "still wired", p.get("wired", 0)
+        parts.append(f"{pid}: {label} {count} of {ratings}")
+    return "; ".join(parts) if parts else None
 
 
 def build_plan_prompt(context: Any, personalization: str | None) -> str:
@@ -555,74 +608,29 @@ def build_reflection_prompt(
 
 
 def clean_reflection(raw: Any) -> str:
-    text = re.sub(r"\s+", " ", str(raw or "")).strip()
-    if (text.startswith('"') and text.endswith('"')) or (
-        text.startswith("'") and text.endswith("'")
-    ):
+    if not isinstance(raw, str):
+        return FALLBACK_REFLECTION
+    text = raw
+    # (a) first non-empty paragraph only
+    para = next((p for p in re.split(r"\n\s*\n", text) if p.strip()), "")
+    text = para
+    # (b) remove meta parentheticals: "(19 words)", "(word count ...)",
+    # "(alternative ...)", "(note: ...)"
+    text = re.sub(
+        r"\s*\((?:\s*\d+\s*words?\s*|word count[^)]*|alternative[^)]*|note:[^)]*)\)",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    # (c) drop a trailing "Word count: N" / "(N words)" remnant
+    text = re.sub(r"\s*\(?\bword count:?\s*\d+\)?\s*$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*\(\s*\d+\s*words?\s*\)\s*$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > 1 and text.startswith('"') and text.endswith('"'):
         text = text[1:-1].strip()
     if not text or text.startswith("{") or HEALTH_CLAIM_RE.search(text):
         return FALLBACK_REFLECTION
-    return text[:300].strip() if len(text) > 300 else text
-
-
-def update_summary(summary: Any, record: dict[str, Any]) -> dict[str, Any]:
-    s = summary if isinstance(summary, dict) and isinstance(summary.get("byPattern"), dict) else None
-    if s is None:
-        s = {"version": 1, "total": 0, "byPattern": {}, "recent": []}
-    by_pattern = dict(s.get("byPattern") or {})
-    pid = record.get("pattern")
-    if pid in PATTERNS:
-        prev = by_pattern.get(pid) or {}
-        nxt = {
-            "sessions": int(prev.get("sessions") or 0) + 1,
-            "calmer": int(prev.get("calmer") or 0) + (1 if record.get("felt") == "calmer" else 0),
-            "same": int(prev.get("same") or 0) + (1 if record.get("felt") == "same" else 0),
-            "wired": int(prev.get("wired") or 0) + (1 if record.get("felt") == "wired" else 0),
-        }
-        by_pattern[pid] = nxt
-    recent = [
-        {
-            "completedAt": record.get("completedAt"),
-            "pattern": record.get("pattern"),
-            "activeSeconds": record.get("activeSeconds"),
-            "felt": record.get("felt"),
-            "interrupted": bool(record.get("interrupted")),
-        }
-    ] + list(s.get("recent") or [])
-    return {
-        "version": 1,
-        "total": int(s.get("total") or 0) + 1,
-        "byPattern": by_pattern,
-        "recent": recent[:RECENT_MAX],
-    }
-
-
-def personalization_from_summary(summary: Any) -> str | None:
-    bp = summary.get("byPattern") if isinstance(summary, dict) else None
-    if not isinstance(bp, dict):
-        return None
-    parts = []
-    for pid in PATTERN_IDS:
-        p = bp.get(pid)
-        if not isinstance(p, dict):
-            continue
-        ratings = int(p.get("calmer") or 0) + int(p.get("same") or 0) + int(p.get("wired") or 0)
-        if ratings < 2:
-            continue
-        if p.get("calmer", 0) >= p.get("same", 0) and p.get("calmer", 0) >= p.get("wired", 0):
-            label, count = "calmer", p.get("calmer", 0)
-        elif p.get("same", 0) >= p.get("wired", 0):
-            label, count = "about the same", p.get("same", 0)
-        else:
-            label, count = "still wired", p.get("wired", 0)
-        parts.append(f"{pid}: {label} {count} of {ratings}")
-    return "; ".join(parts) if parts else None
-
-
-CUE_FORBIDDEN_RE = re.compile(
-    r"\b(in|out|hold|inhale|exhale|breathe|breath|count|counts|second|seconds|\d+)\b",
-    re.IGNORECASE,
-)
+    return text[:300].strip()
 
 
 def validate_agent_plan(args: dict) -> dict | None:

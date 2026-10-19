@@ -36,25 +36,48 @@ const provider = env.GEMINI_API_KEY
 if (!provider) throw new Error("Set GEMINI_API_KEY (preferred) or FEATHERLESS_API_KEY in anna/.env.local");
 const MODEL = provider.model;
 const TEMPERATURE = Number(env.LLM_TEMPERATURE ?? 0.7); // Anna's llm.complete default
+// --headroom=N multiplies the app's maxTokens (thinking models spend output
+// tokens on hidden reasoning). Default 1 = exactly what the app sends.
+const HEADROOM = Number((process.argv.find((a) => a.startsWith("--headroom=")) || "=1").split("=")[1]);
+// Gemini 3 Flash is a thinking model: at the app's small maxTokens, "low" or
+// default thinking eats the budget and truncates every answer. Anna's real
+// plans arrive intact at maxTokens 300, so production evidently runs with
+// minimal thinking; mirror that by default. Set LLM_REASONING_EFFORT=default
+// to omit the parameter (stress-test for thinking-heavy user models).
+const REASONING = provider.name === "gemini" ? (env.LLM_REASONING_EFFORT || "minimal") : env.LLM_REASONING_EFFORT;
 
-async function complete(prompt, maxTokens) {
-  const t0 = Date.now();
-  const res = await fetch(`${provider.base}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${provider.key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, temperature: TEMPERATURE,
-      messages: [{ role: "user", content: prompt }] }),
-  });
-  const raw = await res.text();
-  let body;
-  try { body = JSON.parse(raw); } catch { throw new Error(`${res.status} non-JSON response: ${raw.slice(0, 120)}`); }
-  if (body?.[0]?.error) body = body[0];
-  if (!res.ok || body.error) throw new Error(`${res.status} ${JSON.stringify(body.error ?? body).slice(0, 300)}`);
-  const choice = body.choices?.[0] ?? {};
-  if (choice.finish_reason === "length" || !(choice.message?.content ?? "").trim()) {
-    console.log(`  ⚠ finish_reason=${choice.finish_reason} with maxTokens=${maxTokens}; usage=${JSON.stringify(body.usage)}`);
+async function complete(prompt, appMaxTokens) {
+  const maxTokens = Math.round(appMaxTokens * HEADROOM);
+  for (let attempt = 1; ; attempt++) {
+    const t0 = Date.now();
+    const res = await fetch(`${provider.base}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${provider.key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, temperature: TEMPERATURE,
+        ...(REASONING && REASONING !== "default" ? { reasoning_effort: REASONING } : {}),
+        messages: [{ role: "user", content: prompt }] }),
+    });
+    const raw = await res.text();
+    let body;
+    try { body = JSON.parse(raw); } catch { throw new Error(`${res.status} non-JSON response: ${raw.slice(0, 120)}`); }
+    if (body?.[0]?.error) body = body[0];
+    if (res.status === 429 && attempt <= 4) {
+      // Free tier is rate-limited per minute; honour the server's retry hint.
+      const hint = JSON.stringify(body).match(/"retryDelay":\s*"(\d+)/);
+      const waitS = hint ? Number(hint[1]) + 1 : 20;
+      console.log(`  … rate-limited (free tier), retrying in ${waitS}s`);
+      await new Promise((r) => setTimeout(r, waitS * 1000));
+      continue;
+    }
+    if (!res.ok || body.error) throw new Error(`${res.status} ${JSON.stringify(body.error ?? body).slice(0, 300)}`);
+    const choice = body.choices?.[0] ?? {};
+    const u = body.usage ?? {};
+    const hidden = (u.total_tokens ?? 0) - (u.prompt_tokens ?? 0) - (u.completion_tokens ?? 0);
+    if (choice.finish_reason === "length" || !(choice.message?.content ?? "").trim()) {
+      console.log(`  ⚠ truncated: finish_reason=${choice.finish_reason}, maxTokens=${maxTokens}, visible=${u.completion_tokens}, hidden thinking≈${hidden}`);
+    }
+    return { text: choice.message?.content ?? "", finish: choice.finish_reason, usage: u, hidden, ms: Date.now() - t0 };
   }
-  return { text: choice.message?.content ?? "", finish: choice.finish_reason, usage: body.usage, ms: Date.now() - t0 };
 }
 
 const PLAN_CONTEXTS = [
@@ -122,8 +145,8 @@ async function checkAlertness() {
   return { cases: ALERT_CASES.length, fallbacks };
 }
 
-const which = process.argv[2] || "all";
-console.log(`provider: ${provider.name} · model: ${MODEL} · temperature: ${TEMPERATURE}`);
+const which = process.argv.slice(2).find((a) => !a.startsWith("--")) || "all";
+console.log(`provider: ${provider.name} · model: ${MODEL} · temperature: ${TEMPERATURE} · maxTokens ×${HEADROOM} · reasoning_effort: ${REASONING || "default"}`);
 const summary = {};
 if (which === "plan" || which === "all") summary.plan = await checkPlans();
 if (which === "reflection" || which === "all") summary.reflection = await checkReflections();

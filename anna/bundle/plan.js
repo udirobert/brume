@@ -152,7 +152,7 @@ export function buildPlanPrompt(context, personalization) {
   return parts.join("\n\n");
 }
 
-export const PLAN_MAX_TOKENS = 300;
+export const PLAN_MAX_TOKENS = 1024;
 
 // --- Plan parsing + validation -----------------------------------------------
 
@@ -287,7 +287,7 @@ export function fallbackPlan(context, planSource = "fallback") {
 
 // --- Reflection prompt + cleaning ----------------------------------------------
 
-export const REFLECTION_MAX_TOKENS = 120;
+export const REFLECTION_MAX_TOKENS = 512;
 export const FALLBACK_REFLECTION =
   "Take a moment before you begin again.";
 
@@ -317,14 +317,23 @@ Write at most 2 sentences and 35 words in total. First, acknowledge how it went 
 
 // Model text -> displayable note. Empty or JSON-ish output falls back.
 export function cleanReflection(raw) {
-  let text = String(raw ?? "").replace(/\s+/g, " ").trim();
-  // strip one layer of wrapping quotes
-  if (
-    (text.startsWith('"') && text.endsWith('"')) ||
-    (text.startsWith("'") && text.endsWith("'"))
-  ) {
+  if (!raw || typeof raw !== "string") return FALLBACK_REFLECTION;
+  let text = raw;
+  // (a) keep only the first non-empty paragraph
+  const para = text.split(/\n\s*\n/).find((p) => p.trim());
+  text = para ?? "";
+  // (b) remove meta parentheticals: "(19 words)", "(Word count: ...)",
+  // "(Alternative ...)", "(note: ...)"
+  text = text.replace(
+    /\s*\((?:\s*\d+\s*words?\s*|word count[^)]*|alternative[^)]*|note:[^)]*)\)/gi,
+    "",
+  );
+  // (c) drop a trailing "Word count: N" / "(N words)" remnant
+  text = text.replace(/\s*\(?\bword count:?\s*\d+\)?\s*$/i, "");
+  text = text.replace(/\s*\(\s*\d+\s*words?\s*\)\s*$/i, "");
+  text = text.replace(/\s+/g, " ").trim();
+  if (text.length > 1 && text.startsWith('"') && text.endsWith('"'))
     text = text.slice(1, -1).trim();
-  }
   if (!text || text.startsWith("{") || HEALTH_CLAIM_RE.test(text)) {
     return FALLBACK_REFLECTION;
   }

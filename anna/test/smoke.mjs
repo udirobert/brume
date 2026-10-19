@@ -463,7 +463,7 @@ ok("reflection prompt carries the pattern name", prompt.includes("Cyclic sigh"))
 ok("reflection prompt carries context", prompt.includes("big call soon"));
 ok("reflection prompt carries the felt word", prompt.includes("calmer"));
 ok("reflection prompt asks for <=35 words", prompt.includes("35 words"));
-ok("maxTokens is 120", req.maxTokens === 120);
+ok("maxTokens is 512", req.maxTokens === 512);
 // The default mock echoes the (60-char-truncated) prompt, so a successful
 // call returns the mock line rather than the fixed fallback.
 ok(
@@ -478,7 +478,7 @@ ok("plan issues one llm.complete", harness.calls.byNs("llm.complete").length ===
 const planReq = harness.calls.byNs("llm.complete")[0].args;
 ok("plan prompt is the verbatim contract",
   planReq.messages[0].content.text.startsWith("You plan one short guided breathing break"));
-ok("plan maxTokens is 300", planReq.maxTokens === 300);
+ok("plan maxTokens is 1024", planReq.maxTokens === 1024);
 ok("mock echo does not parse -> fallback plan", offline === true && aiPlan.planSource === "fallback");
 
 // Denied path: a manifest without the llm grant makes the dispatcher

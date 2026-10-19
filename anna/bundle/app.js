@@ -39,6 +39,7 @@ import {
   summaryLine,
   fetchPlan,
   fetchReflection,
+  lastReflectionModel,
   FALLBACK_REFLECTION,
   responseText,
 } from "./session.js";
@@ -557,6 +558,8 @@ async function completeResult(felt) {
       interrupted,
       felt,
       planSource: plan.planSource,
+      planModel: plan.planModel ?? null,
+      reflectionModel: lastReflectionModel,
       reflection,
       source: "app",
       now: Date.now(),
@@ -729,16 +732,18 @@ async function finishAlert(metrics) {
   const kss = alertKss;
   const checkCount = checks.filter((c) => c.inputType === metrics.inputType).length + 1;
   const timeOfDay = new Date().toTimeString().slice(0, 5);
-  let note = ALERTNESS_FALLBACK_NOTE, noteSource = "fallback";
+  let note = ALERTNESS_FALLBACK_NOTE, noteSource = "fallback", noteModel = null;
   if (anna?.llm?.complete) {
     try {
       const res = await anna.llm.complete({
         messages: [{ role: "user", content: { type: "text",
           text: alertnessNotePrompt({ metrics, baseline, band, kss, checkCount, timeOfDay }) } }],
-        maxTokens: 120,
+        maxTokens: 512,
       });
       const t = cleanReflection(responseText(res));
-      if (t !== "Take a moment before you begin again.") { note = t; noteSource = "ai"; }
+      if (t !== "Take a moment before you begin again.") {
+        note = t; noteSource = "ai"; noteModel = res?.model ?? null;
+      }
     } catch { /* fallback */ }
   }
   const record = {
@@ -746,7 +751,7 @@ async function finishAlert(metrics) {
     trials: metrics.trials, medianMs: metrics.medianMs,
     meanSpeed: metrics.meanSpeed, lapses: metrics.lapses,
     falseStarts: metrics.falseStarts, inputType: metrics.inputType,
-    kss, band, baselineMs: baseline, note, noteSource,
+    kss, band, baselineMs: baseline, note, noteSource, noteModel,
   };
   try {
     await anna.storage.set({ key: `alert/checks/${record.completedAt}`, value: record, scope: "user" });
@@ -815,12 +820,12 @@ function readyKindChips() {
 async function prepareReady() {
   const event = els.readyEvent.value.trim().slice(0, 200);
   const point = els.readyPoint.value.trim().slice(0, 200);
-  readyPlan = { event, kind: readyKind, opener: "", keyPoint: point, reminder: "Pause before you answer.", planSource: "fallback", title: "Get ready" };
+  readyPlan = { event, kind: readyKind, opener: "", keyPoint: point, reminder: "Pause before you answer.", planSource: "fallback", planModel: null, title: "Get ready" };
   if (anna?.llm?.complete) {
     try {
       const res = await anna.llm.complete({
         messages: [{ role: "user", content: { type: "text", text: READY_PROMPT(event, readyKind, point) } }],
-        maxTokens: 300,
+        maxTokens: 1024,
       });
       const raw = responseText(res);
       const i = raw.indexOf("{"), j = raw.lastIndexOf("}");
@@ -831,6 +836,7 @@ async function prepareReady() {
         readyPlan.reminder = cleanText(p.reminder, 110) || readyPlan.reminder;
         readyPlan.title = cleanText(p.title, 60) || readyPlan.title;
         readyPlan.planSource = "ai";
+        readyPlan.planModel = res?.model ?? null;
         if (HEALTH_CLAIM_RE.test(readyPlan.opener)) readyPlan.opener = "";
         if (HEALTH_CLAIM_RE.test(readyPlan.keyPoint)) readyPlan.keyPoint = point;
         if (HEALTH_CLAIM_RE.test(readyPlan.reminder)) readyPlan.reminder = "Pause before you answer.";
@@ -911,7 +917,8 @@ async function finishReady() {
         completedAt: new Date().toISOString(), event: readyPlan.event,
         kind: readyPlan.kind, opener: readyPlan.opener,
         key_point: readyPlan.keyPoint, reminder: readyPlan.reminder,
-        planSource: readyPlan.planSource, stepsCompleted: readyStep + 1,
+        planSource: readyPlan.planSource, planModel: readyPlan.planModel,
+        stepsCompleted: readyStep + 1,
         source: "app",
       },
       scope: "user",

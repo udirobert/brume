@@ -47,6 +47,7 @@ import { createMascot } from "./mascot.js";
 import {
   runAlertness, baselineMedian, bandFor, updateAlertSummary,
   alertnessNotePrompt, ALERTNESS_FALLBACK_NOTE, CHECK_SECONDS,
+  alertHeading,
 } from "./alertness.js";
 
 const SDK_URL = "/static/anna-apps/_sdk/latest/index.js";
@@ -751,7 +752,7 @@ async function finishAlert(metrics) {
     await anna.storage.set({ key: "alert/summary", value: updateAlertSummary(prev?.value ?? prev, record), scope: "user" });
   } catch { /* storage optional */ }
   show(els.screens.alertResult);
-  els.alertBand.textContent = band || "Done";
+  els.alertBand.textContent = alertHeading(band, baseline, checkCount);
   els.alertMedian.textContent = `${metrics.medianMs} ms`;
   els.alertLapses.textContent = `${metrics.lapses} of ${metrics.trials}`;
   els.alertTrials.textContent = `${metrics.trials} (${metrics.falseStarts} false start${metrics.falseStarts === 1 ? "" : "s"})`;

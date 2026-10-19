@@ -95,6 +95,15 @@ Facts:
 Write at most 2 sentences and 40 words in total. First, say plainly what the result shows compared with their own usual, without judging them. Second, suggest one small next step for the next few minutes that fits the result: if they are sharper than usual or about their usual, a good use of that focus, such as starting the task that needs it most; if they are slower than usual or sleepy, a short Brume breathing break, a few minutes of movement or daylight, or some water; if it is late and they are very sleepy, winding down. Plain text only, no emoji, no medical or health claims, and never diagnose.`;
 }
 
+
+// Result heading: capitalized band, or the baseline-building note when
+// there isn't a baseline yet (never a bare band in that case).
+export function alertHeading(band, baseline, checkCount) {
+  if (baseline == null)
+    return `Building your baseline (check ${checkCount} of ${BASELINE_MIN})`;
+  return band ? band[0].toUpperCase() + band.slice(1) : "Check complete";
+}
+
 export const ALERTNESS_FALLBACK_NOTE =
   "Thanks — this check is saved and helps build your usual.";
 

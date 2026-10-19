@@ -1,39 +1,46 @@
 # brume — Executa plugin
 
-Chat-native guided Reset for the Brume Anna App. A stdio JSON-RPC 2.0
-Executa plugin, stdlib-only Python (3.10+), no dependencies.
+Chat-native Brume tools for the Brume Anna App (current version 0.4.2). A
+stdio JSON-RPC 2.0 Executa plugin, stdlib-only Python (3.10+), no
+dependencies.
 
-- `brume_reset` — plans (via `sampling/createMessage` + a `storage/get`
-  of `reset/summary` for "what has worked" personalization) and returns
-  the pacing script as verbatim `_display` blocks plus the plan fields.
-  Optional args:
-  - `context` — what the user said they are doing or about to do;
-    drives the AI plan. Without it (or on any sampling failure) the
-    plan falls back to deterministic keyword rules.
-  - `pattern` — one of `cyclic-sigh` | `long-exhale` | `box` | `steady`;
-    an explicit choice skips the model entirely.
-  - `pace` — `"slow"` (1.25×), `"normal"` (1×, default), `"fast"`
-    (0.8×), a tempo factor applied to every phase. A mid-break pace
-    change is a re-invocation — continuations keep the first segment's
-    pattern unless `pattern` is given.
-  - `remaining_seconds` — delivers only roughly that many more seconds
-    (partial cycles allowed, ≥1 cycle), so a re-invoked script covers
-    just the un-delivered remainder.
-  - `cycles` — legacy override; by default cycles derive from the
-    planned length (60/90/120/180 s).
-  Each invoke appends a segment `{pace, pattern, plan, cycles, seconds}`
-  so the record reflects what was actually delivered; re-invoked
-  scripts are framed as continuations ("continuing at a slower pace").
-- `brume_complete` — optional `felt` (`calmer`|`same`|`wired`) check-in;
-  writes the factual session record via plugin-side APS (`storage/set`,
-  `scope: "user"`, keys `reset/sessions/<iso>` + `reset/last` +
-  `reset/summary`, same namespace the iframe bundle uses) and asks the
-  host for a reflection line via `sampling/createMessage` (`llm.sample`)
-  with the same prompt contract as the bundle. Degrades to a fixed line
-  when sampling is unavailable; abandoned runs write nothing.
+**The calling model writes the AI text.** Anna's own model plans the break
+and writes the reflection and get-ready copy, passing them as tool
+arguments; the plugin validates and filters them (same caps,
+`HEALTH_CLAIM_RE` and `CUE_FORBIDDEN_RE` as the bundle) and renders verbatim
+`_display` blocks. The plugin makes **no** `sampling/createMessage` calls
+and declares no `llm.sample`: on Anna that capability is off after install
+and nothing in the chat flow asks the user to enable it (found on the
+Cloud Agent, 2026-10-19). `host_capabilities` = `aps.kv`,
+`aps.scope.user.read`, `aps.scope.user.write` (must normalize to the app
+manifest's `storage` block, or publish fails with "storage declaration
+drift").
 
-The plan contract (prompt, JSON extraction, validation caps, fallback
-rules, summary shape) is a 1:1 port of `anna/bundle/plan.js`; both are
+- `brume_reset` — plan args from the model: `context`, `pattern`
+  (`cyclic-sigh` | `long-exhale` | `box` | `steady`), `seconds`
+  (60/90/120/180), `title`, `opening`, `cues` (posture/attention only),
+  `why`. Valid → `planSource: "agent"`; missing/invalid pattern →
+  deterministic keyword fallback (`planSource: "fallback"`). Also:
+  - `pace` — `slow` (1.25×), `normal`, `fast` (0.8×); a mid-break pace
+    change is a re-invocation and keeps the stored plan.
+  - `remaining_seconds` — covers only the un-delivered remainder.
+  - `cycles` — legacy; ignored when `seconds` is given. Sessions snap to
+    whole cycles.
+- `brume_complete` — `reflection` (written by the model; cleaned and
+  filtered, fallback line if missing/blocked) and optional `felt`
+  (`calmer`|`same`|`wired`). Writes `reset/sessions/<iso>`, `reset/last`
+  and `reset/summary` (`scope: "user"`, shared with the window).
+- `brume_get_ready` — `event` (required), `kind`, `opener`, `key_point`,
+  `reminder`. Renders Breathe (7 cyclic-sigh lines) → Open up → Warm up
+  your voice → Rehearse (opener, key point, reminder) → "You're ready. Go
+  well." Writes `ready/sessions/<iso>`.
+
+`manifest.json` here is the exported `describe` output; `anna-app apps
+publish` syncs it as the protocol manifest (`test_plan.py` asserts it
+equals `MANIFEST`). Regenerate it whenever `describe` changes.
+
+The plan contract (validation caps, filters, fallback rules, cycle
+snapping, summary shape) is a 1:1 port of `anna/bundle/plan.js`; both are
 tested against `anna/test/plan-cases.json` (`npm test` and
 `python3 -m unittest test_plan`).
 
@@ -75,9 +82,7 @@ release assets into `anna/executas/brume/dist/` (gitignored), then
 # from anna/
 anna-app dev --no-llm                      # auto-discovers executas/brume
 anna-app executa dev --dir executas/brume --describe
-anna-app executa dev --dir executas/brume \
-  --mock-sampling executas/brume/sampling-fixture.jsonl \
-  --invoke brume_complete                  # exercises both reverse RPCs
+python3 executas/brume/scripts/smoke_binary.py <binary> <version>  # all 3 tools
 
 # raw protocol:
 echo '{"jsonrpc":"2.0","method":"describe","id":1}' \

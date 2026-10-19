@@ -1,11 +1,11 @@
 # Brume on Anna: Product and Adoption Plan
 
-> **Status:** 2026-10-17. This is a plan - nothing here is implemented
-> feature proof. The local CLI contract (schema-3 bundle-only manifest,
-> `validate --strict`, `dev` harness, storage round-trip) has been
-> verified live; production behavior and qualified-run semantics have not.
-> For the actually-implemented baseline see
-> [DEPENDENCIES.md](./DEPENDENCIES.md).
+> **Status (2026-10-19):** sections 1-11 are the original 2026-10-17 plan
+> and are partly superseded. What shipped since, what we learned on the
+> real Cloud Agent, and current open items are in
+> [§12 Progress log and learnings](#12-progress-log-and-learnings-2026-10-19).
+> Operational detail (layout, testing tiers, release steps, platform
+> gotchas) lives in [`anna/README.md`](../anna/README.md).
 
 ## 1. Vision
 
@@ -18,7 +18,7 @@ deciding. This is an acquisition wedge, not a restriction on eventual
 users. Brume is non-clinical: no stress diagnosis, no validated
 physiology score.
 
-## 2. Program context (unverified)
+## 2. Program context (superseded — verified rules in §12.1)
 
 Sourced only from the user's announcement, not confirmed platform terms:
 
@@ -379,3 +379,116 @@ not invented metric goals.
    Done locally in `anna/` (2026-10-17); not yet exercised against
    production Anna.
 4. Observe actual first completions.
+
+## 12. Progress log and learnings (2026-10-19)
+
+### 12.1 Program rules (verified from the official forum post, topic 205)
+
+- Grants pay on **Qualified App MAU**: unique signed-in users with at least
+  one **Qualified App Run** in a calendar month. A run qualifies only if it
+  executes the app's declared primary function and returns a "meaningful,
+  non-trivial result", measured from Anna's server-side logs. Installs,
+  views, failed or cancelled runs, bots, and developer/team/QA accounts
+  don't count. BYOK, free credits and paid credits all count.
+- Tiers: E 200+ MAU $50/mo · D 500+ $100 · C 1,000+ $200 · B 4,000+ $1,000
+  · A 10,000+ $2,500 · S 20,000+ $5,000. Qualification window ends
+  **2026-11-30**; since October grants are per builder portfolio (users
+  deduped across a builder's apps). One meaningful improvement per month
+  is required to keep receiving a grant.
+- September: only two builders qualified (both Tier D, 500+).
+- Review criteria include an **"AI-Native Core: primary value must depend
+  on AI reasoning or workflows. Superficial chatbot add-ons do not
+  qualify."** A fixed timer with an AI closing line would fail this.
+
+### 12.2 Market research (2026-10-19)
+
+- **Anna marketplace:** 40 apps. Leaders have ~550–930 installs (Earth
+  Anomaly Observatory 929, nikku696969's suite ~560–700), each with 4–6 real
+  screenshots and a proper cover. **No breathing, break or wellness app
+  exists** — open lane. Money Companion (cat mascot, 141 installs) shows a
+  companion character can make an app a daily habit. Most apps are
+  desktop-only; mobile apps get a "📱 Mobile ready" badge.
+- **Wellness app retention:** ~95% of users abandon meditation/breathing
+  apps within weeks; main causes are no external cue to come back and too
+  many choices. Brume's structural advantage on Anna is that the cue lives
+  where the work happens (agent chat + the proactive offer skill).
+- **Evidence we lean on, and how we phrase it:** cyclic sighing improved
+  mood more than mindfulness meditation in Balban et al. 2023 (Cell Reports
+  Medicine) — offered as a pattern, described by rhythm only. The
+  Psychomotor Vigilance Test is the standard reaction-time measure of
+  reduced alertness; 3-minute phone versions were validated (Basner et al.),
+  though a 2022 study found the 3-minute PVT tracks the 10-minute version
+  less well — so Brume compares only against the user's own baseline and
+  says "not a medical test". The Karolinska Sleepiness Scale is a validated
+  one-item self-rating.
+- **Power posing:** the hormone claims (testosterone/cortisol) failed
+  replication (Ranehill et al. 2015, n=200) and the original lead author
+  (Dana Carney) disavowed the effect in 2016; self-reported "feeling
+  powerful" evidence is weaker and contested. Brume includes "open up your
+  posture" as a preparation step with no claimed effect.
+- **Camera-based tiredness detection:** rejected — breaks the
+  no-camera promise, webcam fatigue estimates are unreliable, and Anna
+  only offers still-photo capture on mobile.
+
+### 12.3 What shipped (app 0.1.0 → 0.3.1, tool 0.2.0 → 0.4.2)
+
+1. **Rejection fixes (review email 2026-10-19):** long listing description;
+   PyInstaller binaries for darwin-arm64/x86_64, linux-x86_64,
+   windows-x86_64 via GitHub Actions, uploaded through
+   `distribution.binary_artifacts`; bundled-executa setup
+   (`bundled:brume`).
+2. **AI-native core:** sessions are planned by AI from one line of context
+   (pattern, length, title, opening, posture cues, why), personalized by
+   the user's own after-session ratings; AI reflection + next step after
+   each break.
+3. **Brume mascot:** inline-SVG mist sprite with 12 states; it is the
+   breathing circle and reflects alertness.
+4. **Get ready (3 min):** guided cyclic sighs → open up → humming voice
+   warm-up → rehearse an AI-drafted opener, key point and reminder.
+5. **Alertness check (1 min):** Karolinska rating + 60 s reaction-time test
+   → median, lapses, band vs own baseline (after 3 checks, same input
+   type) → AI next-step note.
+6. **Chat tools** `brume_reset`, `brume_complete`, `brume_get_ready`, with
+   Anna's model writing the AI text as tool arguments.
+7. Mobile support (responsive, safe areas, 44px targets, haptics), chime and
+   voice cues, health-claim and cue filters shared between JS and Python
+   via one fixture file.
+
+### 12.4 Cloud Agent findings (real Anna, Linux Cloud Agent on fly.io)
+
+| Version | Finding | Resolution |
+|---|---|---|
+| 0.2.1 | Linux binary installs, starts and renders the chat script | ✅ review issue #2 resolved |
+| 0.2.1 | Window AI plan 3.5 s, reflection 2 s, cross-path storage works | ✅ |
+| 0.2.1 | Tool `llm.sample` is OFF after install; chat AI silently fell back to canned text (`planSource: "fallback"`) | Calling model writes plan/reflection as tool args; sampling removed (tool 0.4.0) |
+| 0.2.1 | "Allow all & open" gate before `open_app_view`; window opened from it dropped the chat context | Gate gone once the tool stopped requesting a user-grantable capability |
+| 0.2.1 | AI cues contradicted phases ("Hold for four" during "Breathe out"); box hold labelled "Rest"; cycle count mismatch | Cue rules + filter; box "Hold"; sessions snap to whole cycles |
+| 0.3.0 | Chat plan + reflection now `agent`; no permission gate; window opens in ready mode with event prefilled; alertness check runs (median 308 ms) | ✅ |
+| 0.3.0 | Health filter matched "research" and blanked the get-ready opener/key point and the alertness note | Narrowed regex + gaps closed (tool 0.4.1/0.4.2) |
+| 0.3.0 | Get-ready Breathe step had no guidance, only a countdown | Real guided session |
+| 0.3.1 | **Tool missing from the agent >3 min after install**; model improvised `exec_run brume_get_ready` | **Open** — then the account hit "Quota exhausted" |
+
+### 12.5 Testing strategy (decided 2026-10-19)
+
+Most bugs worth finding are in our code and are free to catch locally; the
+ones only Anna reveals (permission defaults, tool deployment, gates, how
+Anna's model uses tools) need a short cloud pass. So: **tier 1** unit/smoke
+tests + CI binaries on every change; **tier 2** mock-LLM UI runs and
+Featherless prompt checks (`anna/scripts/prompt-check.mjs`) when prompts
+change; **tier 3** a fixed ~6-turn Cloud Agent checklist per release
+candidate, each turn in a new chat. Quota burned in this session came from
+long chat threads (context re-sent every turn) and real-LLM `anna-app dev`
+batches on the Anna account. BYOK in Anna is recommended for test traffic.
+Details: `anna/README.md` → Testing.
+
+### 12.6 Open items
+
+1. Diagnose the missing tool after installing 0.3.1 (needs quota or BYOK);
+   then the full tier-3 checklist from a truly fresh install.
+2. Verify voice cues and phone haptics on a real device.
+3. Harden reflection cleaning against appended "(19 words)" /
+   "Alternative…" notes (seen on DeepSeek via prompt-check).
+4. Regenerate listing screenshots/cover/logo with the mascot and upload them.
+5. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
+6. Submit 0.3.x for review; then distribution — store browse alone won't
+   reach 200 MAU before 2026-11-30.

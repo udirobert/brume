@@ -20,6 +20,7 @@ const manifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"))
 const planCases = JSON.parse(await readFile(join(root, "test", "plan-cases.json"), "utf8"));
 const timing = await import(join(root, "bundle", "timing.js"));
 const plan = await import(join(root, "bundle", "plan.js"));
+const alert = await import(join(root, "bundle", "alertness.js"));
 const session = await import(join(root, "bundle", "session.js"));
 
 let passed = 0;
@@ -211,6 +212,53 @@ for (const tc of planCases.fallback_contexts) {
     `fallback "${tc.context.slice(0, 40) || "(empty)"}" -> ${tc.pattern}`,
     fb.pattern === tc.pattern && fb.seconds === tc.seconds && fb.planSource === "fallback",
   );
+}
+
+// --- Alertness metrics (pure, bundle/alertness.js) -------------------------
+{
+  const m = alert.computeMetrics([
+    { rtMs: 250, inputType: "mouse" },
+    { rtMs: 300, inputType: "touch" },
+    { rtMs: 350, inputType: "mouse" },
+    { rtMs: 620, inputType: "mouse" },
+    { falseStart: true, inputType: "keyboard" },
+  ]);
+  ok("alert metrics trials", m.trials === 4);
+  ok("alert metrics median", m.medianMs === 325);
+  ok("alert metrics lapses", m.lapses === 1);
+  ok("alert metrics falseStarts", m.falseStarts === 1);
+  ok("alert metrics inputType majority", m.inputType === "mouse");
+  ok("alert metrics meanSpeed", m.meanSpeed > 0);
+
+  // baseline: needs >=3 same-inputType checks
+  const prior = [
+    { medianMs: 300, inputType: "mouse" },
+    { medianMs: 320, inputType: "mouse" },
+    { medianMs: 310, inputType: "mouse" },
+    { medianMs: 200, inputType: "touch" },
+  ];
+  ok("baseline needs 3", alert.baselineMedian(prior.slice(0, 2), "mouse") === null);
+  ok("baseline median", alert.baselineMedian(prior, "mouse") === 310);
+  ok("baseline ignores other inputType", alert.baselineMedian(prior, "touch") === null);
+  // window: uses up to 10
+  const many = Array.from({ length: 12 }, (_, i) => ({ medianMs: 300 + i, inputType: "mouse" }));
+  ok("baseline window 10", alert.baselineMedian(many, "mouse") !== null);
+
+  // bands
+  ok("band sharper", alert.bandFor(280, 0, 310) === "sharper than usual");
+  ok("band usual", alert.bandFor(310, 0, 310) === "about your usual");
+  ok("band slower", alert.bandFor(350, 0, 310) === "slower than usual");
+  ok("band much slower +20%", alert.bandFor(380, 0, 310) === "much slower than usual");
+  ok("band lapses>=3 forces much slower", alert.bandFor(280, 3, 310) === "much slower than usual");
+  ok("band null baseline", alert.bandFor(300, 0, null) === null);
+
+  const sum = alert.updateAlertSummary(null, { completedAt: "t1", medianMs: 300, lapses: 0, kss: 3, inputType: "mouse" });
+  ok("alert summary recent", sum.recent.length === 1 && sum.recent[0].medianMs === 300);
+
+  const np = alert.alertnessNotePrompt({ metrics: m, baseline: 310, band: "about your usual", kss: 5, checkCount: 4, timeOfDay: "15:30" });
+  ok("alert prompt facts", np.includes("325 ms") && np.includes("15:30") && np.includes("5"));
+  const np2 = alert.alertnessNotePrompt({ metrics: m, baseline: null, band: null, kss: null, checkCount: 1, timeOfDay: "09:10" });
+  ok("alert prompt no baseline", np2.includes("check 1 of the 3") && np2.includes("not given"));
 }
 
 // Plan prompt shape (the verbatim contract with the model).

@@ -68,6 +68,7 @@ export function createMascot(host) {
   for (let i = 0; i < 4; i += 1) {
     wisps.appendChild(el("circle", {
       cx: 50 + (i - 1.5) * 6, cy: 70, r: 2.5 - i * 0.3, class: `mascot-wisp w${i}`,
+      fill: "#cfe0d6", opacity: 0,
     }));
   }
   svg.appendChild(wisps);

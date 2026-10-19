@@ -430,7 +430,7 @@ not invented metric goals.
   no-camera promise, webcam fatigue estimates are unreliable, and Anna
   only offers still-photo capture on mobile.
 
-### 12.3 What shipped (app 0.1.0 → 0.3.1, tool 0.2.0 → 0.4.2)
+### 12.3 What shipped (app 0.1.0 → 0.3.2, tool 0.2.0 → 0.4.4)
 
 1. **Rejection fixes (review email 2026-10-19):** long listing description;
    PyInstaller binaries for darwin-arm64/x86_64, linux-x86_64,
@@ -491,5 +491,8 @@ Details: `anna/README.md` → Testing.
    "Alternative…" notes (seen on DeepSeek via prompt-check).
 4. Regenerate listing screenshots/cover/logo with the mascot and upload them.
 5. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
-6. Submit 0.3.x for review; then distribution — store browse alone won't
-   reach 200 MAU before 2026-11-30.
+6. ~~Submit 0.3.x for review~~ — **0.3.2 (tool 0.4.4) submitted
+   2026-10-19, `pending_review`.** Not re-tested on the Cloud Agent after
+   0.3.0 (no Anna quota budget); the missing-tool-after-upgrade issue from
+   0.3.1 is unresolved. Next: distribution — store browse alone won't reach
+   200 MAU before 2026-11-30.

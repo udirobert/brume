@@ -6,9 +6,10 @@ get-ready before a big conversation, and runs a 1-minute alertness check
 against your own usual. Every run ends in an AI-written, specific result
 (that is what makes it an Anna "Qualified App Run").
 
-Current state (2026-10-19): app **0.3.1** published (not yet submitted for
-review), bundled tool **0.4.2** (binaries in GitHub release
-`brume-executa-v0.4.2`). App id 582, slug `brume`, tool id
+Current state (2026-10-19): app **0.3.2** submitted for review
+(`pending_review`), bundled tool **0.4.4** (binaries in GitHub release
+`brume-executa-v0.4.4`). Listing logo, cover and 5 screenshots set in the
+Developer Console (images served from `anna/listing/` on GitHub). App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 

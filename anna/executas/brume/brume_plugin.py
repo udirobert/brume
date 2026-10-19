@@ -36,7 +36,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # Paces are gentle, non-medical cadences. "normal" is the default Reset

@@ -1,7 +1,10 @@
 {
   "name": "Brume",
   "tagline": "A short breathing break between thinking and doing.",
-  "description": "One quiet Reset routine: a ~90 second camera-free breathing break. Factual session record only \u2014 no scores, no verification.",
+  "description": "Brume gives you one quiet, guided breathing break of about 90 seconds, for the gap between finishing one thing and starting the next. There is no camera, no microphone, no audio and no account to set up. You just follow a calm on-screen rhythm and come back when you're ready.\n\n**What a session looks like**\n\n- **The routine:** Reset, 4 seconds in and 6 seconds out, for 9 cycles (about a minute and a half).\n- **In the Brume window:** press **Begin**. A softly growing and shrinking circle and a single word (*Breathe in* / *Breathe out*) guide each breath, with a timer and a \"Cycle 3 of 9\" counter. You can tap **Slower** or **Faster** at any point to change the tempo without losing your place, **Pause** and **Resume** whenever you like, or **End** early. Stopping early is completely fine.\n- **In chat:** type `#brume reset` (or just ask Anna for a short breathing break). The guided pacing script appears right in the conversation, one line per breath cycle. Say **slower** or **faster** mid-break to continue at a new pace from where you are, and reply **done** when you're back.\n\n**What you get at the end**\n\n- A plain, factual summary: the pattern you followed, your active practice time in seconds, and the number of cycles you completed. Paused time is never counted.\n- One short closing line written for that session by Anna's AI, such as a calm note or a gentle next step. If the AI isn't available, a fixed line is shown instead.\n- A private record of the session saved to your own Anna storage, so the window can show \"Last reset: …\" next time. Breaks you abandon are not saved.\n\n**What Brume doesn't do**\n\nBrume doesn't score you, check whether you really breathed, run streaks or nag you, and it makes no health or medical claims. It only describes what actually happened in the session. It never starts a break on its own: Anna may offer one when you mention you've been working for a long time or are about to send something important, but you can turn it down and it won't ask again in that conversation.",
   "category": "productivity",
-  "slug": "brume"
+  "slug": "brume",
+  "bundled_executas": {
+    "brume": { "path": "./executas/brume" }
+  }
 }

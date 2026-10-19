@@ -123,3 +123,6 @@ playwright-report/
 test-results/
 blob-report/
 playwright/.cache/
+
+# PyInstaller spec files (brume executa builds)
+anna/executas/brume/*.spec

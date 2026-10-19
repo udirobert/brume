@@ -1,9 +1,44 @@
 {
   "slug": "brume",
   "name": "brume",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "executa_type": "tool",
   "description": "Guided ~90s breathing reset, delivered inline in chat.",
   "tool_id": "tool-papa-brume-htcxvfcr",
-  "type": "python"
+  "type": "python",
+  "distribution": {
+    "active": "binary",
+    "profiles": {
+      "local": {
+        "type": "local",
+        "supports_protocol": true
+      },
+      "binary": {
+        "type": "binary",
+        "supports_protocol": true,
+        "binary_artifacts": {
+          "darwin-arm64": {
+            "path": "dist/brume-{version}-darwin-arm64.tar.gz",
+            "entrypoint": "brume",
+            "format": "tar.gz"
+          },
+          "darwin-x86_64": {
+            "path": "dist/brume-{version}-darwin-x86_64.tar.gz",
+            "entrypoint": "brume",
+            "format": "tar.gz"
+          },
+          "linux-x86_64": {
+            "path": "dist/brume-{version}-linux-x86_64.tar.gz",
+            "entrypoint": "brume",
+            "format": "tar.gz"
+          },
+          "windows-x86_64": {
+            "path": "dist/brume-{version}-windows-x86_64.zip",
+            "entrypoint": "brume.exe",
+            "format": "zip"
+          }
+        }
+      }
+    }
+  }
 }

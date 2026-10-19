@@ -1,0 +1,99 @@
+name: Brume Executa Binaries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            platform: darwin-arm64
+          - os: macos-15-intel
+            platform: darwin-x86_64
+          - os: ubuntu-22.04
+            platform: linux-x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: anna/executas/brume
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install PyInstaller
+        run: pip install pyinstaller==6.22.3
+      - name: Build binary
+        run: pyinstaller --onefile --name brume --clean brume_plugin.py
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(python -c "import json; print(json.load(open('executa.json'))['version'])")" >> "$GITHUB_OUTPUT"
+      - name: Smoke test binary
+        shell: bash
+        run: |
+          BIN=dist/brume
+          if [ "${{ matrix.platform }}" = "windows-x86_64" ]; then BIN=dist/brume.exe; fi
+          python scripts/smoke_binary.py "$BIN" "${{ steps.version.outputs.version }}"
+      - name: Package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          V="${{ steps.version.outputs.version }}"
+          P="${{ matrix.platform }}"
+          if [ "$P" = "windows-x86_64" ]; then
+            cp dist/brume.exe brume.exe
+            7z a "brume-${V}-${P}.zip" brume.exe
+            rm brume.exe
+          else
+            tar -czf "brume-${V}-${P}.tar.gz" -C dist brume
+          fi
+      - name: Checksum
+        shell: bash
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          P="${{ matrix.platform }}"
+          if [ "$P" = "windows-x86_64" ]; then EXT=zip; else EXT=tar.gz; fi
+          shasum -a 256 "brume-${V}-${P}.${EXT}" > "brume-${V}-${P}.${EXT}.sha256" || \
+            sha256sum "brume-${V}-${P}.${EXT}" > "brume-${V}-${P}.${EXT}.sha256"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: brume-${{ matrix.platform }}
+          path: |
+            anna/executas/brume/brume-*-${{ matrix.platform }}.tar.gz
+            anna/executas/brume/brume-*-${{ matrix.platform }}.zip
+            anna/executas/brume/brume-*-${{ matrix.platform }}.*.sha256
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: brume-*
+          path: artifacts
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          V=$(python3 -c "import json; print(json.load(open('anna/executas/brume/executa.json'))['version'])")
+          TAG="brume-executa-v${V}"
+          find artifacts -type f -exec cp {} . \;
+          ls -la brume-*
+          gh release create "$TAG" brume-* \
+            --title "Brume executa binaries v${V}" \
+            --notes "Prebuilt brume executa binaries for darwin-arm64, darwin-x86_64, linux-x86_64, windows-x86_64." \
+            || gh release upload "$TAG" brume-* --clobber

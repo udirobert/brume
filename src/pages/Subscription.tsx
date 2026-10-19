@@ -76,12 +76,11 @@ const Subscription: React.FC = () => {
               <Sparkles className="h-8 w-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Breathwork that can see you.
+              Breathing breaks that fit your day.
             </h2>
           </div>
           <p className="text-lg text-muted-foreground mb-8">
-            The session watches you back. One membership unlocks the full
-            practice.
+            One membership unlocks the full practice.
           </p>
 
           {/* Key Benefits */}

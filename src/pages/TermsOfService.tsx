@@ -877,10 +877,10 @@ const TermsOfService = () => {
                   <p>
                     <strong>Website:</strong>{" "}
                     <a
-                      href="https://imperfectbreath.netlify.app"
+                      href="https://brumeapp.netlify.app"
                       className="text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      imperfectbreath.netlify.app
+                      brumeapp.netlify.app
                     </a>
                   </p>
                   <p>

@@ -11,7 +11,7 @@ export function roomWhisper(part: DayPart): string {
   if (part === "dawn") return "The room is still waking.";
   if (part === "dusk") return "Let the day settle.";
   if (part === "night") return "The room is quieter now.";
-  return "The session watches you back.";
+  return "A pause in the middle of the day.";
 }
 
 /** Sets html[data-daypart] so mist, gradient, and copy share one clock. */

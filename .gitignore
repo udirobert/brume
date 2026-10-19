@@ -127,3 +127,4 @@ playwright/.cache/
 # PyInstaller spec files (brume executa builds)
 anna/executas/brume/*.spec
 anna/bundle/anna-tool-ids.js
+anna/.anna/

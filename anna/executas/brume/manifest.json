@@ -1,8 +1,8 @@
 {
   "name": "tool-papa-brume-htcxvfcr",
   "display_name": "Brume Reset",
-  "version": "0.4.3",
-  "description": "An AI-planned guided breathing break, delivered inline in chat. brume_reset picks a pattern and length for the user's moment (or honours an explicit `pattern`), renders the pacing script verbatim, and remembers the plan; brume_complete records the finished break \u2014 including an optional `felt` check-in \u2014 and writes a short session reflection. If the user asks to adjust pace mid-break, invoke brume_reset again with `pace` and `remaining_seconds` rather than restarting.",
+  "version": "0.4.4",
+  "description": "An AI-planned guided breathing break, delivered inline in chat. brume_reset picks a pattern and length for the user's moment (or honours an explicit `pattern`), renders the pacing script verbatim, and remembers the plan; brume_complete records the finished break — including an optional `felt` check-in — and writes a short session reflection. If the user asks to adjust pace mid-break, invoke brume_reset again with `pace` and `remaining_seconds` rather than restarting.",
   "author": "Brume",
   "category": "productivity",
   "license": "MIT",
@@ -14,7 +14,7 @@
   "tools": [
     {
       "name": "brume_reset",
-      "description": "Start (or continue) a short guided breathing break, rendered verbatim to the user. Before calling, plan it yourself from what the user said: choose `pattern` (cyclic-sigh: 2s in, 1s top-up, 6s out \u2014 right before something tense or when keyed up; long-exhale: 4s in, 6s out \u2014 a gentle reset between tasks; box: 4s in, 4s hold, 4s out, 4s hold \u2014 getting ready for focused work; steady: 5.5s in, 5.5s out \u2014 winding down) and `seconds` (60, 90, 120 or 180; 60 if they have little time), and write `title`, `opening`, `cues` and `why`. Describe only the rhythm and how it fits their moment \u2014 never effects on the body, brain, stress, sleep or health. The returned script is shown verbatim; do not restate it. If the user asks to change pace mid-break, call again with `pace` and `remaining_seconds` (the plan is kept). When the user says they are done, call brume_complete.",
+      "description": "Start (or continue) a short guided breathing break, rendered verbatim to the user. Before calling, plan it yourself from what the user said: choose `pattern` (cyclic-sigh: 2s in, 1s top-up, 6s out — right before something tense or when keyed up; long-exhale: 4s in, 6s out — a gentle reset between tasks; box: 4s in, 4s hold, 4s out, 4s hold — getting ready for focused work; steady: 5.5s in, 5.5s out — winding down) and `seconds` (60, 90, 120 or 180; 60 if they have little time), and write `title`, `opening`, `cues` and `why`. Describe only the rhythm and how it fits their moment — never effects on the body, brain, stress, sleep or health. The returned script is shown verbatim; do not restate it. If the user asks to change pace mid-break, call again with `pace` and `remaining_seconds` (the plan is kept). When the user says they are done, call brume_complete.",
       "timeout": 30,
       "parameters": [
         {
@@ -64,7 +64,7 @@
           "type": "array",
           "items_type": "string",
           "required": false,
-          "description": "2\u20133 short phrases (max 8 words each) about posture or attention, shown during the break. Never counts, timings, or the words in, out, hold, inhale, exhale."
+          "description": "2–3 short phrases (max 8 words each) about posture or attention, shown during the break. Never counts, timings, or the words in, out, hold, inhale, exhale."
         },
         {
           "name": "why",
@@ -88,7 +88,7 @@
           "name": "remaining_seconds",
           "type": "integer",
           "required": false,
-          "description": "Deliver only roughly this many more seconds \u2014 use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length."
+          "description": "Deliver only roughly this many more seconds — use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length."
         },
         {
           "name": "cycles",
@@ -100,7 +100,7 @@
     },
     {
       "name": "brume_complete",
-      "description": "Close out a guided break after the user says they are done. Write `reflection` yourself: at most 2 sentences and 35 words \u2014 first acknowledge how it went in plain words (matter-of-fact if they ended early or still feel wired, never guilt), then one concrete next step tied to what they said they are doing next. No emoji, no health claims, and do not mention breathing science. Pass `felt` only if the user said how they feel. The reflection is shown verbatim; do not repeat it. Do not call for abandoned breaks.",
+      "description": "Close out a guided break after the user says they are done. Write `reflection` yourself: at most 2 sentences and 35 words — first acknowledge how it went in plain words (matter-of-fact if they ended early or still feel wired, never guilt), then one concrete next step tied to what they said they are doing next. No emoji, no health claims, and do not mention breathing science. Pass `felt` only if the user said how they feel. The reflection is shown verbatim; do not repeat it. Do not call for abandoned breaks.",
       "timeout": 60,
       "parameters": [
         {

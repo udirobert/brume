@@ -48,7 +48,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -386,34 +386,42 @@ Never describe effects on the body, brain, nerves, hormones, sleep quality, stre
 
 
 
-def update_summary(summary: Any, record: dict) -> dict:
-    """reset/summary read-modify-write — mirror of updateSummary in plan.js."""
-    s = dict(summary) if isinstance(summary, dict) else {}
-    s["version"] = 1
-    s["total"] = int(s.get("total") or 0) + 1
-    byp = s.setdefault("byPattern", {})
-    pid = record.get("pattern") or "long-exhale"
-    ent = byp.setdefault(pid, {"sessions": 0, "calmer": 0, "same": 0, "wired": 0})
-    ent["sessions"] = int(ent.get("sessions") or 0) + 1
-    felt = record.get("felt")
-    if felt in ("calmer", "same", "wired"):
-        ent[felt] = int(ent.get(felt) or 0) + 1
-    recent = s.setdefault("recent", [])
-    recent.insert(0, {
-        "completedAt": record.get("completedAt"),
-        "pattern": record.get("pattern"),
-        "activeSeconds": record.get("activeSeconds"),
-        "felt": record.get("felt"),
-        "interrupted": record.get("interrupted"),
-    })
-    s["recent"] = recent[:10]
-    return s
+def update_summary(summary: Any, record: dict[str, Any]) -> dict[str, Any]:
+    s = summary if isinstance(summary, dict) and isinstance(summary.get("byPattern"), dict) else None
+    if s is None:
+        s = {"version": 1, "total": 0, "byPattern": {}, "recent": []}
+    by_pattern = dict(s.get("byPattern") or {})
+    pid = record.get("pattern")
+    if pid in PATTERNS:
+        prev = by_pattern.get(pid) or {}
+        nxt = {
+            "sessions": int(prev.get("sessions") or 0) + 1,
+            "calmer": int(prev.get("calmer") or 0) + (1 if record.get("felt") == "calmer" else 0),
+            "same": int(prev.get("same") or 0) + (1 if record.get("felt") == "same" else 0),
+            "wired": int(prev.get("wired") or 0) + (1 if record.get("felt") == "wired" else 0),
+        }
+        by_pattern[pid] = nxt
+    recent = [
+        {
+            "completedAt": record.get("completedAt"),
+            "pattern": record.get("pattern"),
+            "activeSeconds": record.get("activeSeconds"),
+            "felt": record.get("felt"),
+            "interrupted": bool(record.get("interrupted")),
+        }
+    ] + list(s.get("recent") or [])
+    return {
+        "version": 1,
+        "total": int(s.get("total") or 0) + 1,
+        "byPattern": by_pattern,
+        "recent": recent[:RECENT_MAX],
+    }
 
 
 def personalization_from_summary(summary: Any) -> str | None:
-    if not isinstance(summary, dict):
+    bp = summary.get("byPattern") if isinstance(summary, dict) else None
+    if not isinstance(bp, dict):
         return None
-    bp = summary.get("byPattern") or {}
     parts = []
     for pid in PATTERN_IDS:
         p = bp.get(pid)
@@ -626,7 +634,10 @@ def clean_reflection(raw: Any) -> str:
     text = re.sub(r"\s*\(?\bword count:?\s*\d+\)?\s*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s*\(\s*\d+\s*words?\s*\)\s*$", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > 1 and text.startswith('"') and text.endswith('"'):
+    if len(text) > 1 and (
+        (text.startswith('"') and text.endswith('"'))
+        or (text.startswith("'") and text.endswith("'"))
+    ):
         text = text[1:-1].strip()
     if not text or text.startswith("{") or HEALTH_CLAIM_RE.search(text):
         return FALLBACK_REFLECTION

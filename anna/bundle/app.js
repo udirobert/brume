@@ -18,6 +18,8 @@ import {
   PATTERNS,
   ALLOWED_LENGTHS,
   fallbackPlan,
+  effectiveLengthSeconds,
+  phaseWord,
 } from "./plan.js";
 import {
   PHASE_WORDS,
@@ -261,9 +263,15 @@ function showPlan(p) {
 
 // --- Session ------------------------------------------------------------------
 
+// Whole-cycle snapping shared with the chat path: the session always
+// ends at the end of a full cycle, so timer target, cycle counter,
+// summary cycles and chat count lines all agree.
+function effectiveLength() {
+  return effectiveLengthSeconds(plan.pattern, plan.seconds);
+}
+
 function totalCycles() {
-  const pat = PATTERNS[plan.pattern];
-  return Math.max(1, Math.round(plan.seconds / cycleDurationSeconds(pat)));
+  return effectiveLength().cycles;
 }
 
 function updateBreathDot(snap) {
@@ -296,7 +304,7 @@ function setPaceLevel(idx) {
 
 function phaseSound(phase) {
   if (soundMode === "voice" && voice && !voice.failed) {
-    voice.play(PHASE_WORDS[phase] || phase);
+    voice.play(phaseWord(plan.pattern, phase));
   } else if (soundMode === "chime" && chime) {
     chime.play(phase);
   }
@@ -319,7 +327,7 @@ function tick() {
   const pat = PATTERNS[plan.pattern];
   const snap = sampleSessionTimingWithTempo(clock, tracker, pat, now());
   els.phase.textContent = isClockRunning(clock)
-    ? PHASE_WORDS[snap.currentPhase] || snap.currentPhase
+    ? phaseWord(plan.pattern, snap.currentPhase)
     : "Paused";
   if (snap.currentPhase !== lastPhase) {
     lastPhase = snap.currentPhase;
@@ -333,7 +341,7 @@ function tick() {
   els.cycle.textContent = `Cycle ${Math.min(snap.cycleCount + 1, total)} of ${total}`;
   updateCue(snap.duration);
   updateBreathDot(snap);
-  if (snap.duration >= plan.seconds) finish(false);
+  if (snap.duration >= effectiveLength().effectiveSeconds) finish(false);
 }
 
 // Prefetch the opening line + every phase word the pattern uses, so
@@ -353,7 +361,7 @@ async function primeVoice() {
       ["exhale", "exhale"],
       ["holdAfterExhale", "pause"],
     ]) {
-      if (pat[key] > 0) texts.add(PHASE_WORDS[label]);
+      if (pat[key] > 0) texts.add(phaseWord(plan.pattern, label));
     }
     for (const t of texts) voice.speakBuffer(t).catch(() => {});
   } catch (e) {
@@ -377,7 +385,7 @@ async function begin() {
   paceIdx = 1;
   els.pause.textContent = "Pause";
   els.sessionPattern.textContent = `${PATTERNS[plan.pattern].name} · ${plan.title}`;
-  els.target.textContent = fmtSeconds(plan.seconds);
+  els.target.textContent = fmtSeconds(effectiveLength().effectiveSeconds);
   updatePaceUI();
   // Audio must start inside this click handler (autoplay policy).
   if (soundMode === "chime" && chime) chime.ensureContext();
@@ -429,6 +437,7 @@ async function completeResult(felt) {
         patternName: pat.name,
         activeSeconds,
         plannedSeconds: plan.seconds,
+        effectiveSeconds: effectiveLength().effectiveSeconds,
         cycles,
         interrupted,
         felt,

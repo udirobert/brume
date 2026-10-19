@@ -426,3 +426,14 @@ export function phaseWord(patternId, phase) {
     exhale: "Breathe out", pause: "Rest",
   }[phase] || phase;
 }
+
+// Agent-supplied plan args (chat path): same caps/filters as model output,
+// planSource "agent". Returns null when pattern is missing/unknown — the
+// caller falls back to the deterministic plan.
+export function validateAgentPlan(args) {
+  if (!args || !PATTERNS[args.pattern]) return null;
+  const parsed = parseModelPlan(JSON.stringify(args));
+  if (!parsed) return null;
+  parsed.planSource = "agent";
+  return parsed;
+}

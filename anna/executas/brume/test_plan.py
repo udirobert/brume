@@ -100,6 +100,36 @@ class Reflection(unittest.TestCase):
         self.assertEqual(bp.clean_reflection('{"note":"x"}'), bp.FALLBACK_REFLECTION)
         self.assertEqual(bp.clean_reflection("   "), bp.FALLBACK_REFLECTION)
 
+    def test_fixture_agent_args(self):
+        import json as _json
+        with open(FIXTURE, encoding="utf-8") as f:
+            cases = _json.load(f).get("agent_args", [])
+        for tc in cases:
+            got = bp.validate_agent_plan(tc["args"])
+            if tc["expect"] is None:
+                self.assertIsNone(got, tc["name"])
+                continue
+            exp = tc["expect"]
+            for k in ("pattern", "seconds", "planSource", "title"):
+                if k in exp:
+                    self.assertEqual(got[k], exp[k], f"{tc['name']}.{k}")
+            if "cues" in exp:
+                self.assertEqual(got["cues"], exp["cues"])
+            for f2 in exp.get("cuesForbidden", []):
+                self.assertFalse(any(f2 in c for c in got["cues"]), f2)
+            for f3 in exp.get("titleForbidden", []):
+                self.assertNotIn(f3, got["title"])
+            self.assertGreaterEqual(len(got["cues"]), exp.get("minCues", 2))
+
+    def test_fixture_cycle_snap(self):
+        import json as _json
+        with open(FIXTURE, encoding="utf-8") as f:
+            cases = _json.load(f).get("cycle_snap", [])
+        for tc in cases:
+            got = bp.effective_length(tc["pattern"], tc["seconds"])
+            self.assertEqual((got["cycles"], got["seconds"]),
+                             (tc["cycles"], tc["effectiveSeconds"]), tc)
+
     def test_fixture_reflections(self):
         import json as _json
         with open(FIXTURE, encoding="utf-8") as f:

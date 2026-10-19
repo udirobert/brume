@@ -20,7 +20,7 @@ Chat-native guided breathing break for `#brume reset`.
                   write nothing.
 
 Wire notes (anna.partners/developers/tools/*): `initialize` is answered
-with protocolVersion "2.0" + {"sampling": {}, "storage": {}}; the
+with protocolVersion "2.0" + {"storage": {}}; the
 describe manifest declares host_capabilities ["aps.kv", ...] — the
 CALLING model writes the plan/reflection as tool arguments, so no
 sampling capability is needed (and none is declared). Reverse RPCs
@@ -89,25 +89,25 @@ CANNED: dict[str, dict[str, Any]] = {
     "cyclic-sigh": {
         "title": "A steadying pause",
         "opening": "Two short sips of air, then one long out-breath — a way to settle before what's next.",
-        "cues": ["Shoulders soft", "Slow the out-breath", "Unclench your jaw"],
+        "cues": ["Shoulders soft", "Unclench your jaw", "Let your gaze rest"],
         "why": "The double inhale and long exhale suits the minutes before something tense.",
     },
     "long-exhale": {
         "title": "A quiet reset",
         "opening": "A gentle rhythm — four counts in, six counts out — between one thing and the next.",
-        "cues": ["Easy in-breath", "Long slow out-breath"],
+        "cues": ["Let your gaze rest", "Relax your hands"],
         "why": "A simple longer exhale makes a gentle break between tasks.",
     },
     "box": {
         "title": "A square breath",
         "opening": "Four even sides — in, hold, out, hold — to gather your attention.",
-        "cues": ["Follow the four sides", "Even counts, no rush"],
+        "cues": ["Notice your feet on the floor", "Sit tall, stay easy"],
         "why": "Its even structure suits getting ready for focused work.",
     },
     "steady": {
         "title": "An easy rhythm",
         "opening": "An unhurried five and a half counts in, the same back out.",
-        "cues": ["No hurry", "Let the pace carry you"],
+        "cues": ["Let your shoulders drop", "Settle into the chair"],
         "why": "An even, slow rhythm suits winding down.",
     },
 }
@@ -379,7 +379,7 @@ _PLAN_LIBRARY_BLOCK = """You plan one short guided breathing break for a person 
 Allowed lengths in seconds: 60, 90, 120, 180. Use 60 if they mention having little time."""
 
 _PLAN_FORMAT_BLOCK = """Reply with ONLY a JSON object, no prose and no code fences:
-{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) to show during the break, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
+{"pattern": one of the four ids, "seconds": one of the allowed lengths, "title": up to 6 words naming this break, "opening": one or two calm sentences (max 30 words) that respond to what they said, "cues": 2 or 3 short phrases (max 8 words each) about posture or attention to show during the break — never counts, timings, or the words in, out, hold, inhale or exhale, "why": one sentence (max 20 words) saying which part of their note this pattern fits, describing only the rhythm itself (for example: An even, unhurried rhythm to close out your workday.)}
 Never describe effects on the body, brain, nerves, hormones, sleep quality, stress or anxiety; describe only the rhythm and how it fits their moment. Do not diagnose and do not use emoji."""
 
 
@@ -464,7 +464,7 @@ def parse_model_plan(raw: Any) -> dict[str, Any] | None:
     if isinstance(parsed.get("cues"), list):
         for c in parsed["cues"]:
             t = _clean_text(c, 60)
-            if not t or HEALTH_CLAIM_RE.search(t):
+            if not t or HEALTH_CLAIM_RE.search(t) or CUE_FORBIDDEN_RE.search(t):
                 # offending cue -> an unused canned cue
                 cues.append(canned_cues.pop(0)) if canned_cues else None
                 continue
@@ -496,6 +496,15 @@ _FALLBACK_RULES = [
     (re.compile(r"sleep|bed|wind down|winding down|evening|tired|done for the day"),
      {"pattern": "steady", "seconds": 180}),
 ]
+
+
+def effective_length(pattern_id: str, seconds: int) -> dict[str, int]:
+    """Whole-cycle snapping: effective = max(1, round(s/cycle)) * cycle —
+    mirror of effectiveLengthSeconds in bundle/plan.js."""
+    p = PATTERNS[pattern_id]
+    cyc = p["inhale"] + p.get("topup", 0) + p.get("hold", 0) + p["exhale"] + p.get("hold_after", 0)
+    cycles = max(1, round(seconds / cyc))
+    return {"cycles": cycles, "seconds": int(round(cycles * cyc))}
 
 
 def fallback_plan(context: Any, plan_source: str = "fallback") -> dict[str, Any]:
@@ -1010,7 +1019,7 @@ def _dispatch(env: dict[str, Any]) -> None:
             result = {
                 "protocolVersion": "2.0",
                 "server_info": {"name": TOOL_ID, "version": VERSION},
-                "capabilities": {"sampling": {}, "storage": {}},
+                "capabilities": {"storage": {}},
             }
         elif method == "describe":
             result = MANIFEST

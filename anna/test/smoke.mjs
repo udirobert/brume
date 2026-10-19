@@ -178,6 +178,33 @@ for (const tc of planCases.model_outputs) {
   console.log(`ok ${passed} - plan "${tc.name}" validates`);
 }
 
+for (const tc of planCases.agent_args ?? []) {
+  const got = plan.validateAgentPlan(tc.args);
+  if (tc.expect === null) {
+    ok(`agent "${tc.name}" -> null`, got === null);
+    continue;
+  }
+  assert.ok(got, `agent "${tc.name}"`);
+  for (const k of ["pattern", "seconds", "planSource", "title"])
+    if (tc.expect[k] !== undefined) assert.equal(got[k], tc.expect[k], `${tc.name}.${k}`);
+  if (tc.expect.cues) assert.deepEqual(got.cues, tc.expect.cues);
+  if (tc.expect.cuesForbidden)
+    assert.ok(got.cues.every((c) => !tc.expect.cuesForbidden.some((f) => c.includes(f))), `${tc.name} cues`);
+  if (tc.expect.titleForbidden)
+    assert.ok(!tc.expect.titleForbidden.some((f) => got.title.includes(f)), `${tc.name} title`);
+  passed += 1;
+  console.log(`ok ${passed} - agent "${tc.name}"`);
+}
+
+for (const tc of planCases.cycle_snap ?? []) {
+  const r = plan.effectiveLengthSeconds(tc.pattern, tc.seconds);
+  ok(`cycle snap ${tc.pattern} ${tc.seconds}s`, r.cycles === tc.cycles && r.effectiveSeconds === tc.effectiveSeconds);
+}
+
+for (const tc of planCases.phase_words ?? []) {
+  ok(`phase word ${tc.pattern} ${tc.phase}`, plan.phaseWord(tc.pattern, tc.phase) === tc.word);
+}
+
 for (const tc of planCases.fallback_contexts) {
   const fb = plan.fallbackPlan(tc.context);
   ok(

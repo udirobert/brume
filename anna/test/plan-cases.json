@@ -3,7 +3,7 @@
   "model_outputs": [
     {
       "name": "clean json object",
-      "raw": "{\"pattern\": \"cyclic-sigh\", \"seconds\": 90, \"title\": \"Before the call\", \"opening\": \"A short settle before you dial in.\", \"cues\": [\"Shoulders soft\", \"Slow the out-breath\"], \"why\": \"The long exhale suits the minutes before a tense moment.\"}",
+      "raw": "{\"pattern\": \"cyclic-sigh\", \"seconds\": 90, \"title\": \"Before the call\", \"opening\": \"A short settle before you dial in.\", \"cues\": [\"Shoulders soft\", \"Unclench your jaw\"], \"why\": \"The long exhale suits the minutes before a tense moment.\"}",
       "expect": {
         "pattern": "cyclic-sigh",
         "seconds": 90,
@@ -12,7 +12,7 @@
         "opening": "A short settle before you dial in.",
         "cues": [
           "Shoulders soft",
-          "Slow the out-breath"
+          "Unclench your jaw"
         ],
         "why": "The long exhale suits the minutes before a tense moment."
       }
@@ -82,7 +82,7 @@
     },
     {
       "name": "health claim in why -> canned why",
-      "raw": "{\"pattern\":\"cyclic-sigh\",\"seconds\":90,\"title\":\"Before the call\",\"opening\":\"A short settle before you dial in.\",\"cues\":[\"Shoulders soft\",\"Slow the out-breath\"],\"why\":\"The cyclic sigh quickly lowers physiological arousal, making it ideal for managing pre-meeting tension and nerves.\"}",
+      "raw": "{\"pattern\":\"cyclic-sigh\",\"seconds\":90,\"title\":\"Before the call\",\"opening\":\"A short settle before you dial in.\",\"cues\":[\"Shoulders soft\",\"Unclench your jaw\"],\"why\":\"The cyclic sigh quickly lowers physiological arousal, making it ideal for managing pre-meeting tension and nerves.\"}",
       "expect": {
         "pattern": "cyclic-sigh",
         "seconds": 90,
@@ -185,6 +185,220 @@
       "name": "empty",
       "raw": "   ",
       "expect": "FALLBACK"
+    }
+  ],
+  "agent_args": [
+    {
+      "name": "good agent plan",
+      "args": {
+        "pattern": "box",
+        "seconds": 120,
+        "title": "Square up",
+        "opening": "Four even sides.",
+        "cues": [
+          "Sit tall",
+          "Notice your feet"
+        ],
+        "why": "Structure before focused work."
+      },
+      "expect": {
+        "pattern": "box",
+        "seconds": 120,
+        "planSource": "agent",
+        "title": "Square up",
+        "cues": [
+          "Sit tall",
+          "Notice your feet"
+        ]
+      }
+    },
+    {
+      "name": "bad pattern -> fallback (expect null)",
+      "args": {
+        "pattern": "wim-hof",
+        "seconds": 90,
+        "title": "x",
+        "opening": "y",
+        "cues": [
+          "a",
+          "b"
+        ],
+        "why": "z"
+      },
+      "expect": null
+    },
+    {
+      "name": "cue violations dropped+refilled",
+      "args": {
+        "pattern": "steady",
+        "seconds": 90,
+        "title": "Wind",
+        "opening": "Easy.",
+        "cues": [
+          "Hold for four",
+          "Slow the out-breath"
+        ],
+        "why": "ok"
+      },
+      "expect": {
+        "pattern": "steady",
+        "planSource": "agent",
+        "cuesForbidden": [
+          "Hold",
+          "out"
+        ],
+        "minCues": 2
+      }
+    },
+    {
+      "name": "health claim in title -> canned",
+      "args": {
+        "pattern": "long-exhale",
+        "seconds": 90,
+        "title": "Calms your nervous system",
+        "opening": "A gentle pause.",
+        "cues": [
+          "Shoulders soft"
+        ],
+        "why": "fits"
+      },
+      "expect": {
+        "pattern": "long-exhale",
+        "planSource": "agent",
+        "titleForbidden": [
+          "nervous"
+        ]
+      }
+    }
+  ],
+  "cycle_snap": [
+    {
+      "pattern": "cyclic-sigh",
+      "seconds": 60,
+      "cycles": 7,
+      "effectiveSeconds": 63
+    },
+    {
+      "pattern": "cyclic-sigh",
+      "seconds": 90,
+      "cycles": 10,
+      "effectiveSeconds": 90
+    },
+    {
+      "pattern": "cyclic-sigh",
+      "seconds": 120,
+      "cycles": 13,
+      "effectiveSeconds": 117
+    },
+    {
+      "pattern": "cyclic-sigh",
+      "seconds": 180,
+      "cycles": 20,
+      "effectiveSeconds": 180
+    },
+    {
+      "pattern": "long-exhale",
+      "seconds": 60,
+      "cycles": 6,
+      "effectiveSeconds": 60
+    },
+    {
+      "pattern": "long-exhale",
+      "seconds": 90,
+      "cycles": 9,
+      "effectiveSeconds": 90
+    },
+    {
+      "pattern": "long-exhale",
+      "seconds": 120,
+      "cycles": 12,
+      "effectiveSeconds": 120
+    },
+    {
+      "pattern": "long-exhale",
+      "seconds": 180,
+      "cycles": 18,
+      "effectiveSeconds": 180
+    },
+    {
+      "pattern": "box",
+      "seconds": 60,
+      "cycles": 4,
+      "effectiveSeconds": 64
+    },
+    {
+      "pattern": "box",
+      "seconds": 90,
+      "cycles": 6,
+      "effectiveSeconds": 96
+    },
+    {
+      "pattern": "box",
+      "seconds": 120,
+      "cycles": 8,
+      "effectiveSeconds": 128
+    },
+    {
+      "pattern": "box",
+      "seconds": 180,
+      "cycles": 11,
+      "effectiveSeconds": 176
+    },
+    {
+      "pattern": "steady",
+      "seconds": 60,
+      "cycles": 5,
+      "effectiveSeconds": 55
+    },
+    {
+      "pattern": "steady",
+      "seconds": 90,
+      "cycles": 8,
+      "effectiveSeconds": 88
+    },
+    {
+      "pattern": "steady",
+      "seconds": 120,
+      "cycles": 11,
+      "effectiveSeconds": 121
+    },
+    {
+      "pattern": "steady",
+      "seconds": 180,
+      "cycles": 16,
+      "effectiveSeconds": 176
+    }
+  ],
+  "phase_words": [
+    {
+      "pattern": "box",
+      "phase": "pause",
+      "word": "Hold"
+    },
+    {
+      "pattern": "box",
+      "phase": "hold",
+      "word": "Hold"
+    },
+    {
+      "pattern": "steady",
+      "phase": "pause",
+      "word": "Rest"
+    },
+    {
+      "pattern": "cyclic-sigh",
+      "phase": "topup",
+      "word": "Top up"
+    },
+    {
+      "pattern": "cyclic-sigh",
+      "phase": "inhale",
+      "word": "Breathe in"
+    },
+    {
+      "pattern": "steady",
+      "phase": "exhale",
+      "word": "Breathe out"
     }
   ]
 }

@@ -298,3 +298,20 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .progress-dots span.on { background: #5b8a72; }
 blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid #5b8a72;
   font-style: italic; background: #f4f7f4; border-radius: 4px; }
+
+/* --- home rework + alertness bar --------------------------------------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.textlink { background: none; border: none; color: #5b8a72; text-decoration: underline;
+  padding: 6px; min-height: 44px; cursor: pointer; font-size: .9rem; }
+.chips.compact { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.chips.compact .chip { flex: 0 1 auto; padding: 6px 12px; font-size: .85rem; min-height: 36px; }
+.home-cards { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+@media (min-width: 360px) {
+  .home-cards { flex-direction: row; }
+  .home-cards .card { flex: 1; }
+}
+.home-meta { margin-top: 12px; font-size: .82rem; }
+.home-meta p { margin: 2px 0; }
+.alert-bar { height: 4px; background: #dde5df; border-radius: 2px; overflow: hidden; margin: 6px 0; }
+#alert-bar-fill { height: 100%; width: 0%; background: #5b8a72; transition: width .5s linear; }

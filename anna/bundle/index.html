@@ -9,26 +9,25 @@
   <body>
     <main id="root">
       <section id="screen-home" class="screen">
-        <div class="mascot-slot mascot-lg" id="mascot-home" aria-hidden="true"></div>
-        <p class="mascot-voice muted" id="home-voice">Hi, I'm Brume.</p>
-        <h1>Brume</h1>
-        <p class="hint">One short breathing break, planned for this moment.</p>
-        <label class="field-label" for="context-input">What's next for you?</label>
+        <h1 class="sr-only">Brume</h1>
+        <div class="mascot-slot mascot-xl" id="mascot-home" data-mascot aria-hidden="true"></div>
+        <p class="mascot-voice" id="home-voice">Hi, I'm Brume. What's next for you?</p>
         <input
           id="context-input"
+          class="context-input"
           type="text"
           maxlength="200"
           placeholder="Big call in 10 minutes"
-          autocomplete="off"
+          aria-label="What is next for you?"
         />
-        <div class="chips" role="group" aria-label="Suggestions">
-          <button class="chip" type="button" data-context="Before a call or meeting">Before a call or meeting</button>
-          <button class="chip" type="button" data-context="After a long stretch of focus">After a long stretch of focus</button>
-          <button class="chip" type="button" data-context="Need to focus next">Need to focus next</button>
-          <button class="chip" type="button" data-context="Winding down for the day">Winding down for the day</button>
+        <div class="chips compact" id="context-chips" role="group" aria-label="Suggestions">
+          <button class="chip" type="button" data-context="Before a call or meeting">Before a call</button>
+          <button class="chip" type="button" data-context="After a long stretch of focus">After deep work</button>
+          <button class="chip" type="button" data-context="Need to focus next">Focus next</button>
+          <button class="chip" type="button" data-context="Winding down for the day">Winding down</button>
         </div>
         <button id="btn-plan" class="primary" type="button">Plan my reset</button>
-        <button id="btn-quick" type="button">Quick 90-second reset</button>
+        <button id="btn-quick" class="textlink" type="button">Quick 90-second reset</button>
         <div class="home-cards">
           <button id="btn-ready" class="card" type="button">
             <span class="card-title">Get ready for something</span>
@@ -39,10 +38,12 @@
             <span class="card-sub">One-minute reaction-time check</span>
           </button>
         </div>
-        <p id="alert-line" class="muted" hidden></p>
-        <canvas id="alert-spark" class="spark" width="140" height="24" hidden aria-hidden="true"></canvas>
-        <p class="last-session" data-last-session hidden></p>
-        <p class="last-session" data-worked hidden></p>
+        <div class="home-meta">
+          <p class="muted" data-last-session hidden></p>
+          <p class="muted" data-worked hidden></p>
+          <p id="alert-line" class="muted" hidden></p>
+          <canvas id="alert-spark" class="spark" width="140" height="24" hidden aria-hidden="true"></canvas>
+        </div>
       </section>
 
       <section id="screen-planning" class="screen" hidden>
@@ -126,6 +127,7 @@
           <span id="alert-ms" class="alert-ms" hidden>0</span>
           <span id="alert-msg" class="muted" hidden></span>
         </div>
+        <div class="alert-bar" aria-hidden="true"><div id="alert-bar-fill"></div></div>
         <p id="alert-progress" class="muted"></p>
         <button id="btn-alert-cancel" type="button">Cancel</button>
       </section>

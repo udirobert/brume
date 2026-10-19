@@ -43,6 +43,11 @@ import {
   responseText,
 } from "./session.js";
 import { ChimePlayer, VoiceGuide, VoiceUnavailable } from "./audio.js";
+import { createMascot } from "./mascot.js";
+import {
+  runAlertness, baselineMedian, bandFor, updateAlertSummary,
+  alertnessNotePrompt, ALERTNESS_FALLBACK_NOTE, CHECK_SECONDS,
+} from "./alertness.js";
 
 const SDK_URL = "/static/anna-apps/_sdk/latest/index.js";
 const TICK_MS = 200;
@@ -708,6 +713,8 @@ function startAlertTest() {
   const prog = setInterval(() => {
     const left = Math.max(0, CHECK_SECONDS - (performance.now() - t0) / 1000);
     els.alertProgress.textContent = `${Math.ceil(left)}s left`;
+    const fill = document.getElementById("alert-bar-fill");
+    if (fill) fill.style.width = `${Math.min(100, (1 - left / CHECK_SECONDS) * 100)}%`;
     if (left <= 0 || els.screens.alertTest.hidden) clearInterval(prog);
   }, 500);
 }
@@ -907,7 +914,10 @@ async function finishReady() {
 
 async function main() {
   anna = await connectAnna();
-  try { window.__brumeAnna = anna; } catch { /* test hook */ }
+  try {
+    const h = location.hostname;
+    if (h === "localhost" || h === "127.0.0.1") window.__brumeAnna = anna;
+  } catch { /* test hook */ }
   if (anna) {
     [summary, prefs] = await Promise.all([
       loadSummary(anna),
@@ -1032,6 +1042,11 @@ async function main() {
 
   refreshHomeMeta();
   refreshAlertLine();
+  // The home screen is visible before any show() call — create its
+  // mascot (and any other already-visible screen's) explicitly.
+  for (const [key, conf] of Object.entries(SCREEN_MASCOT)) {
+    if (!els.screens[key].hidden) mascot(conf.el)?.setState(conf.state);
+  }
 }
 
 main();

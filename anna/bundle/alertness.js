@@ -92,7 +92,7 @@ Facts:
 - Compared with their usual: ${band || "no baseline yet"}
 - How sleepy they said they feel (Karolinska scale, 1 = extremely alert, 9 = very sleepy): ${kss ?? "not given"}
 - Local time of day: ${timeOfDay}
-Write at most 2 sentences and 40 words in total. First, say plainly what the result shows compared with their own usual, without judging them. Second, suggest one small next step for the next few minutes: a short Brume breathing break, a few minutes of movement or daylight, some water, or, if it is late and they are very sleepy, winding down. Plain text only, no emoji, no medical or health claims, and never diagnose.`;
+Write at most 2 sentences and 40 words in total. First, say plainly what the result shows compared with their own usual, without judging them. Second, suggest one small next step for the next few minutes that fits the result: if they are sharper than usual or about their usual, a good use of that focus, such as starting the task that needs it most; if they are slower than usual or sleepy, a short Brume breathing break, a few minutes of movement or daylight, or some water; if it is late and they are very sleepy, winding down. Plain text only, no emoji, no medical or health claims, and never diagnose.`;
 }
 
 export const ALERTNESS_FALLBACK_NOTE =

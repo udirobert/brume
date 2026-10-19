@@ -223,7 +223,9 @@ async function callLlm(anna, prompt, maxTokens, timeoutMs) {
   const text = responseText(res);
   // Diagnostic hook for dev/testing: last prompt + raw model text.
   try {
-    window.__brumeLastLlm = { prompt, text };
+    const h = window.location?.hostname;
+    if (h === "localhost" || h === "127.0.0.1")
+      window.__brumeLastLlm = { prompt, text };
   } catch {
     /* non-window contexts (tests) */
   }

@@ -27,6 +27,7 @@ function el(tag, attrs) {
 
 export function createMascot(host) {
   host.classList.add("mascot");
+  host.setAttribute("data-mascot", "");
   const svg = el("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
   svg.classList.add("mascot-svg");
 

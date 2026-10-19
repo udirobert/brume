@@ -1,0 +1,11 @@
+{
+  "$schema": "anna-executas-lock/v1",
+  "host": "https://anna.partners",
+  "executas": {
+    "brume": {
+      "tool_id": "tool-papa-brume-htcxvfcr",
+      "path": "./executas/brume",
+      "source": "cut"
+    }
+  }
+}

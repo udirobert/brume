@@ -120,7 +120,7 @@ export function cleanContext(input) {
 // slip physiological/therapeutic language into plan text or reflections;
 // any field matching this is replaced by the pattern's canned text.
 export const HEALTH_CLAIM_RE =
-  /physiolog|arousal|nervous system|vagus|vagal|cortisol|hormone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic|fight.or.flight|your (body|system|brain|mind) (will|can|to)|lowers?|reduces?|proven|scientific|research|studies|study shows|anxiety|insomnia|therap|heal|cure|treat/i;
+  /physiolog|arousal|nervous system|vagus|vagal|cortisol|hormon|testosterone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic nervous|fight.or.flight|your (body|system|brain|nervous system) (will|can|is going to)|\b(lowers?|reduces?|decreases?) (your )?(stress|anxiety|tension|cortisol|heart rate|blood pressure)|research (shows|suggests|finds|found)|studies (show|suggest|find|found)|study (shows|found|finds)|scientifically|clinically|proven to|\banxiety\b|insomnia|\b(cure|cures|heal|heals|healing|therapy|therapeutic|treatment)\b/i
 
 // --- Plan prompt --------------------------------------------------------------
 

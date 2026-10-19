@@ -400,5 +400,43 @@
       "phase": "exhale",
       "word": "Breathe out"
     }
+  ],
+  "health_filter": [
+    {
+      "text": "I'm really excited to talk about how I bridge the gap between complex user research and actionable design.",
+      "expect": "pass"
+    },
+    {
+      "text": "I turn messy research into clear decisions.",
+      "expect": "pass"
+    },
+    {
+      "text": "Let's reduce the scope before the review.",
+      "expect": "pass"
+    },
+    {
+      "text": "Research shows this lowers stress.",
+      "expect": "block"
+    },
+    {
+      "text": "This reduces your stress levels.",
+      "expect": "block"
+    },
+    {
+      "text": "It calms your nervous system.",
+      "expect": "block"
+    },
+    {
+      "text": "Take these few minutes to settle your nerves before you join the call.",
+      "expect": "pass"
+    },
+    {
+      "text": "This lowers your cortisol and heart rate.",
+      "expect": "block"
+    },
+    {
+      "text": "Therapy-grade calm for your break.",
+      "expect": "block"
+    }
   ]
 }

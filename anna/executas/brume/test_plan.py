@@ -130,6 +130,14 @@ class Reflection(unittest.TestCase):
             self.assertEqual((got["cycles"], got["seconds"]),
                              (tc["cycles"], tc["effectiveSeconds"]), tc)
 
+    def test_fixture_health_filter(self):
+        import json as _json
+        with open(FIXTURE, encoding="utf-8") as f:
+            cases = _json.load(f).get("health_filter", [])
+        for tc in cases:
+            self.assertEqual(bool(bp.HEALTH_CLAIM_RE.search(tc["text"])),
+                             tc["expect"] == "block", tc["text"])
+
     def test_fixture_reflections(self):
         import json as _json
         with open(FIXTURE, encoding="utf-8") as f:

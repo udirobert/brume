@@ -206,6 +206,11 @@ for (const tc of planCases.phase_words ?? []) {
   ok(`phase word ${tc.pattern} ${tc.phase}`, plan.phaseWord(tc.pattern, tc.phase) === tc.word);
 }
 
+for (const tc of planCases.health_filter ?? []) {
+  const hit = plan.HEALTH_CLAIM_RE.test(tc.text);
+  ok(`health "${tc.expect}" ${tc.text.slice(0, 30)}`, hit === (tc.expect === "block"));
+}
+
 for (const tc of planCases.fallback_contexts) {
   const fb = plan.fallbackPlan(tc.context);
   ok(

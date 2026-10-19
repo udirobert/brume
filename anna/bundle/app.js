@@ -578,6 +578,8 @@ function applyEntryPayload(payload) {
   const mode = payload.mode || "reset";
   if (mode === "ready") {
     els.readyEvent.value = ctx.slice(0, 200);
+    if (typeof payload.key_point === "string" && payload.key_point)
+      els.readyPoint.value = payload.key_point.slice(0, 200);
     show(els.screens.ready);
     readyKindChips();
     return;
@@ -756,11 +758,9 @@ async function finishAlert(metrics) {
   els.alertMedian.textContent = `${metrics.medianMs} ms`;
   els.alertLapses.textContent = `${metrics.lapses} of ${metrics.trials}`;
   els.alertTrials.textContent = `${metrics.trials} (${metrics.falseStarts} false start${metrics.falseStarts === 1 ? "" : "s"})`;
-  els.alertBaselineNote.hidden = baseline != null;
-  if (baseline == null) {
-    els.alertBaselineNote.textContent = `Building your baseline (check ${checkCount} of 3)`;
-    els.alertBaselineNote.hidden = false;
-  }
+  // The heading already carries the baseline-building message — never
+  // repeat it in the note line below.
+  els.alertBaselineNote.hidden = true;
   els.alertNote.textContent = note;
   const m = mascot("alert-result");
   if (m) m.setState(kss >= 7 || band === "much slower than usual" ? "sleepy" : band === "sharper than usual" ? "bright" : "idle");
@@ -771,6 +771,7 @@ async function finishAlert(metrics) {
 let readyPlan = null;
 let readyStep = 0;
 let readyTimerId = null;
+let readyT0 = 0;
 
 const READY_STEPS = [
   { key: "breathe", label: "Step 1 of 4", title: "Breathe", state: "inhale",
@@ -868,17 +869,22 @@ function runReadyStep() {
   clearInterval(readyTimerId);
   if (step.secs) {
     let left = step.secs;
-    const t0 = performance.now();
+    readyT0 = performance.now();
     readyTimerId = setInterval(() => {
-      left = Math.max(0, Math.round(step.secs - (performance.now() - t0) / 1000));
+      left = Math.max(0, Math.round(step.secs - (performance.now() - readyT0) / 1000));
       els.readyTimer.textContent = `${left}s`;
       if (step.key === "breathe") {
-        // drive the mascot through cyclic-sigh phases (9s cycle)
-        const t = (performance.now() - t0) / 1000;
+        // Real cyclic-sigh guidance: phase word + Cycle N of 7 +
+        // "0:12 / 1:03" timer, driven by the same clock math as a reset.
+        const t = (performance.now() - readyT0) / 1000;
         const ph = t % 9;
+        const cyc = Math.min(7, Math.floor(t / 9) + 1);
         const state = ph < 2 ? "inhale" : ph < 3 ? "topup" : "exhale";
+        const word = { inhale: "Breathe in", topup: "Top up", exhale: "Breathe out" }[state];
         mascot("ready-run")?.setState(state);
         mascot("ready-run")?.setBreath(ph < 3 ? ph / 3 : Math.max(0, 1 - (ph - 3) / 6));
+        els.readyTimer.textContent =
+          `${word} · Cycle ${cyc} of 7 · ${fmtSeconds(Math.floor(t))} / 1:03`;
       }
       if (left <= 0) { clearInterval(readyTimerId); nextReadyStep(); }
     }, 250);
@@ -1018,9 +1024,21 @@ async function main() {
   els.readyEvent.addEventListener("keydown", (e) => { if (e.key === "Enter") prepareReady(); });
   $("#btn-ready-next").addEventListener("click", nextReadyStep);
   $("#btn-ready-skip").addEventListener("click", nextReadyStep);
+  let readyPaused = false;
+  let readyT0Adjust = 0;
   $("#btn-ready-pause").addEventListener("click", () => {
-    if (readyTimerId) { clearInterval(readyTimerId); readyTimerId = null; $("#btn-ready-pause").textContent = "Resume"; }
-    else { $("#btn-ready-pause").textContent = "Pause"; runReadyStep(); }
+    if (!readyPaused) {
+      readyPaused = true;
+      clearInterval(readyTimerId);
+      readyTimerId = null;
+      readyT0Adjust = performance.now();
+      $("#btn-ready-pause").textContent = "Resume";
+    } else {
+      readyPaused = false;
+      readyT0 += performance.now() - readyT0Adjust;
+      $("#btn-ready-pause").textContent = "Pause";
+      runReadyStep();
+    }
   });
   els.btnHear.addEventListener("click", () => {
     if (readyPlan?.opener && voice) voice.play(readyPlan.opener);

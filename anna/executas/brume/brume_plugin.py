@@ -48,7 +48,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -342,11 +342,7 @@ def _storage_set(key: str, value: Any, invoke_id: str | None) -> None:
 # --- Plan contract (1:1 port of bundle/plan.js — see plan-cases.json) -----
 # Health-claim backstop — mirror of HEALTH_CLAIM_RE in bundle/plan.js.
 HEALTH_CLAIM_RE = re.compile(
-    r"physiolog|arousal|nervous system|vagus|vagal|cortisol|hormone|heart rate"
-    r"|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic"
-    r"|fight.or.flight|your (body|system|brain|mind) (will|can|to)|lowers?|reduces?"
-    r"|proven|scientific|research|studies|study shows|anxiety|insomnia|therap"
-    r"|heal|cure|treat",
+    r"physiolog|arousal|nervous system|vagus|vagal|cortisol|hormon|testosterone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic nervous|fight.or.flight|your (body|system|brain|nervous system) (will|can|is going to)|\b(lowers?|reduces?|decreases?) (your )?(stress|anxiety|tension|cortisol|heart rate|blood pressure)|research (shows|suggests|finds|found)|studies (show|suggest|find|found)|study (shows|found|finds)|scientifically|clinically|proven to|\banxiety\b|insomnia|\b(cure|cures|heal|heals|healing|therapy|therapeutic|treatment)\b",
     re.IGNORECASE,
 )
 

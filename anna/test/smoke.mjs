@@ -251,6 +251,9 @@ for (const tc of planCases.fallback_contexts) {
   ok("band much slower +20%", alert.bandFor(380, 0, 310) === "much slower than usual");
   ok("band lapses>=3 forces much slower", alert.bandFor(280, 3, 310) === "much slower than usual");
   ok("band null baseline", alert.bandFor(300, 0, null) === null);
+  ok("heading caps band", alert.alertHeading("about your usual", 310, 4) === "About your usual");
+  ok("heading no baseline", alert.alertHeading(null, null, 1) === "Building your baseline (check 1 of 3)");
+  ok("heading no band ever w/o baseline", alert.alertHeading("slower than usual", null, 2) === "Building your baseline (check 2 of 3)");
 
   const sum = alert.updateAlertSummary(null, { completedAt: "t1", medianMs: 300, lapses: 0, kss: 3, inputType: "mouse" });
   ok("alert summary recent", sum.recent.length === 1 && sum.recent[0].medianMs === 300);

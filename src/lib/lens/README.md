@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains the complete Lens Protocol v3 integration for Imperfect Breath, featuring real content curation, consolidated authentication, and a production-ready social feed architecture.
+This directory contains the complete Lens Protocol v3 integration for Brume, featuring real content curation, consolidated authentication, and a production-ready social feed architecture.
 
 ## Implementation Status: ✅ PRODUCTION READY
 
@@ -264,7 +264,7 @@ npm run dev          # Development with Lens debugging
 
 ### Community
 - [Lens Developer Discord](https://discord.gg/lens)
-- [Imperfect Breath Community](https://lens.xyz/u/imperfectbreath)
+- [Brume Community](https://lens.xyz/u/imperfectbreath)
 
 ### Issues
 For Lens integration issues, check:

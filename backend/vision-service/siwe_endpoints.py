@@ -33,9 +33,9 @@ nonce_store: Dict[str, Dict[str, Any]] = {}
 class ChallengeRequest(BaseModel):
     address: str = Field(..., description="Ethereum address requesting SIWE challenge")
     chainId: Optional[int] = Field(default=1, description="EVM chain id, default 1")
-    domain: Optional[str] = Field(default="imperfectbreath.com", description="Expected domain")
-    uri: Optional[str] = Field(default="https://imperfectbreath.com", description="Login URI")
-    statement: Optional[str] = Field(default="Sign-In with Ethereum to Imperfect Breath", description="Optional statement")
+    domain: Optional[str] = Field(default="brumeapp.netlify.app", description="Expected domain")
+    uri: Optional[str] = Field(default="https://brumeapp.netlify.app", description="Login URI")
+    statement: Optional[str] = Field(default="Sign-In with Ethereum to Brume", description="Optional statement")
 
 class ChallengeResponse(BaseModel):
     message: str

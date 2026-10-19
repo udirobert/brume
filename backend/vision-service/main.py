@@ -205,9 +205,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:4556",                    # Local development frontend
         "http://localhost:4567",                    # Alternative local port
-        "https://imperfectbreath.netlify.app",      # Production Netlify
-        "https://imperfectbreath.com",              # Production domain
-        "https://breath.imperfectform.fun",         # Alternative domain
+        "https://brumeapp.netlify.app",      # Production Netlify
+        "https://brumeapp.netlify.app",              # Production domain
+        "https://brume.trustfall.xyz",        # Future domain
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
@@ -268,7 +268,7 @@ class SignedSessionResponse(BaseModel):
 async def sign_lens_session(record: SessionRecord):
     """
     Signs a breathing session record for Lens V3 Open Action.
-    Verifiable proof that the session was completed in Imperfect Breath.
+    Verifiable proof that the session was completed in Brume.
     """
     if not CONFIG["lens_signer_key"]:
         # Fallback to a development key if not configured
@@ -281,7 +281,7 @@ async def sign_lens_session(record: SessionRecord):
     try:
         # Construct the payload
         payload = {
-            "appId": "imperfect-breath",
+            "appId": "brume",
             "user": record.user_address,
             "pattern": record.pattern_name,
             "duration": record.duration,

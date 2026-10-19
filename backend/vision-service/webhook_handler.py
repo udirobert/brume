@@ -1,5 +1,5 @@
 """
-GitHub Webhook Handler for Imperfect Breath
+GitHub Webhook Handler for Brume
 Handles automatic deployments and notifications
 """
 

@@ -1,12 +1,12 @@
 {
   "permissions": {
     "ask": [
-      "Read(!/Users/udingethe/dev/imperfect-breath/**)",
-      "Edit(!/Users/udingethe/dev/imperfect-breath/**)"
+      "Read(!/Users/udingethe/Dev/brume/**)",
+      "Edit(!/Users/udingethe/Dev/brume/**)"
     ],
     "allow": [
-      "Read(/Users/udingethe/dev/imperfect-breath/**)",
-      "Edit(/Users/udingethe/dev/imperfect-breath/**)"
+      "Read(/Users/udingethe/Dev/brume/**)",
+      "Edit(/Users/udingethe/Dev/brume/**)"
     ]
   },
   "memoryImport": {},

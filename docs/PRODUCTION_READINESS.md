@@ -1,4 +1,4 @@
-# Production Readiness Checklist: Imperfect Breath
+# Production Readiness Checklist: Brume
 
 ## 🚀 Priority 1: Launch Foundations (Critical)
 
@@ -33,7 +33,7 @@
 ## 📱 Priority 3: Distribution & Mobile
 
 ### 5. Capacitor Build
-- [ ] **Bundle IDs**: Finalize `com.imperfectbreath.app` for iOS and Android.
+- [ ] **Bundle IDs**: Finalize `xyz.trustfall.brume` for iOS and Android.
 - [ ] **App Icons & Splash**: Generate high-quality assets using the brand guidelines.
 - [ ] **RevenueCat Webhooks**: Set up webhooks between RevenueCat and Supabase to sync subscription status.
 

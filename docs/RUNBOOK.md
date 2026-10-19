@@ -6,7 +6,7 @@
 ## 1. Apple Developer account — TODAY (longest lead)
 
 1. Enroll at developer.apple.com ($99/yr). Individual enrollment is fastest (org needs D-U-N-S).
-2. When active: App Store Connect → create app **Brume**, bundle id `fun.imperfectform.brume`.
+2. When active: App Store Connect → create app **Brume**, bundle id `xyz.trustfall.brume`.
 3. Add the iOS platform to Capacitor: `npx cap add ios` (code side, do when account exists).
 4. Store review prep: camera permission string = *"Brume uses your camera to verify your breathing practice. Video never leaves your device."* — this exact framing matters; reviewers reject vague health-adjacent copy.
 
@@ -34,7 +34,7 @@
 
 ## 4. Google Play Console (release vehicle — Sep 3)
 
-1. Create app `fun.imperfectform.brume`, name **Brume**.
+1. Create app `xyz.trustfall.brume`, name **Brume**.
 2. Internal testing track → upload AAB (`cd android && ./gradlew bundleRelease`).
 3. Data safety form: camera = "used on-device, not collected" (matches Privacy Policy — keep them consistent or review fails).
 4. Content rating: Everyone. Health claims: wellness only, no medical claims (Terms already say this).
@@ -56,7 +56,7 @@
 
 ## 7. Domain
 
-- `brume.imperfectform.fun` → Netlify deploy of the PWA build; agent API docs at `/agents` later.
+- `brumeapp.netlify.app` → Netlify deploy of the PWA build; agent API docs at `/agents` later.
 
 ## 8. Flow PracticeCredential verifier (on-chain attestations)
 

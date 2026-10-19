@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Comprehensive testing approach for Imperfect Breath.
+Comprehensive testing approach for Brume.
 
 > **Verification status (2026-10-17, post dependency migration):**
 > currently installed: **Vitest 5.0.5** + `react-dom`/`act` + **jsdom 30**.
@@ -136,7 +136,7 @@ test('should allow user to register with email', async ({ page }) => {
   await page.getByLabel('Email').fill('test@example.com');
   await page.getByLabel('Password').fill('SecurePassword123!');
   await page.getByRole('button', { name: 'Register' }).click();
-  await expect(page.getByText('Welcome to Imperfect Breath')).toBeVisible();
+  await expect(page.getByText('Welcome to Brume')).toBeVisible();
 });
 ```
 

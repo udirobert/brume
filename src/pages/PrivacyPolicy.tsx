@@ -378,7 +378,7 @@ const PrivacyPolicy = () => {
 
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <div className="space-y-2">
-                  <p><strong>Email:</strong> privacy@imperfectform.fun</p>
+                  <p><strong>Contact:</strong> <a href="https://github.com/udirobert/brume/issues" className="text-blue-600 dark:text-blue-400 hover:underline">github.com/udirobert/brume/issues</a></p>
                   <p><strong>Website:</strong> <a href="https://brumeapp.netlify.app" className="text-blue-600 dark:text-blue-400 hover:underline">brumeapp.netlify.app</a></p>
                   <p><strong>Community:</strong> <a href="https://lens.xyz/u/imperfectbreath" className="text-blue-600 dark:text-blue-400 hover:underline">Lens Protocol Community</a></p>
                   <p><strong>Response Time:</strong> We typically respond within 72 hours</p>

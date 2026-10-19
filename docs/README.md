@@ -1,4 +1,4 @@
-# Imperfect Breath - Documentation Hub
+# Brume - Documentation Hub
 
 ## 🎯 **Quick Start**
 
@@ -38,7 +38,7 @@ pnpm run deploy:firewall
 ## 🏗️ **Architecture**
 
 ```
-Frontend (React/TypeScript) → API (api.imperfectform.fun) → Vision Service (Hetzner)
+Frontend (React/TypeScript) → API (host migrating off retired imperfectform.fun) → Vision Service (Hetzner)
      ↓                              ↓                           ↓
   Netlify/Vercel              Nginx + SSL                Docker + FastAPI
      ↓                              ↓                           ↓
@@ -65,8 +65,8 @@ Frontend (React/TypeScript) → API (api.imperfectform.fun) → Vision Service (
 ## 🌐 **Production URLs**
 
 - **Frontend**: Your Netlify deployment
-- **API**: https://api.imperfectform.fun
-- **Health Check**: https://api.imperfectform.fun/health
+- **API**: see `docs/` (host is being migrated off the retired imperfectform.fun domain)
+- **Health Check**: `api.imperfectform.fun/health` (pending domain migration)
 
 ## 📋 **Prerequisites**
 

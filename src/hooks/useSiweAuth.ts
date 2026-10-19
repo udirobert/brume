@@ -27,9 +27,9 @@ export const useSiweAuth = (): UseSiweAuthReturn => {
       }
 
       const parsedChainId = chainId ? parseInt(chainId, 16) : 1;
-      const domain = opts?.domain || new URL(config.app.url).hostname || 'imperfectbreath.com';
-      const uri = opts?.uri || config.app.url || 'https://imperfectbreath.com';
-      const statement = opts?.statement || 'Sign-In with Ethereum to Imperfect Breath';
+      const domain = opts?.domain || new URL(config.app.url).hostname || 'brumeapp.netlify.app';
+      const uri = opts?.uri || config.app.url || 'https://brumeapp.netlify.app';
+      const statement = opts?.statement || 'Sign-In with Ethereum to Brume';
 
       const challenge = await issueSiweChallenge({ address, chainId: parsedChainId, domain, uri, statement });
       const signature = await signMessage(challenge.message);

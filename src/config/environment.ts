@@ -151,13 +151,13 @@ export const config: EnvironmentConfig = {
     geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || "",
   },
   app: {
-    name: import.meta.env.VITE_APP_NAME || "Imperfect Breath",
+    name: import.meta.env.VITE_APP_NAME || "Brume",
     description:
       import.meta.env.VITE_APP_DESCRIPTION ||
-      "Decentralized wellness platform for breathing patterns",
-    url: import.meta.env.VITE_APP_URL || "https://imperfectbreath.com",
+      "A calm companion for breathing breaks",
+    url: import.meta.env.VITE_APP_URL || "https://brumeapp.netlify.app",
     icon:
-      import.meta.env.VITE_APP_ICON || "https://imperfectbreath.com/icon.png",
+      import.meta.env.VITE_APP_ICON || "https://brumeapp.netlify.app/android-chrome-512x512.png",
   },
   development: {
     debugMode: import.meta.env.VITE_DEBUG_MODE === "true",

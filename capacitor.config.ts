@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "fun.imperfectform.brume",
+  appId: "xyz.trustfall.brume",
   appName: "Brume",
   webDir: "dist",
   server: {
@@ -28,7 +28,7 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
   },
   ios: {
-    scheme: "Imperfect Breath",
+    scheme: "Brume",
   },
 };
 

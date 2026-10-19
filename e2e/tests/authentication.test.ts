@@ -17,7 +17,7 @@ test.describe('Authentication Flow', () => {
     await page.getByRole('button', { name: 'Register' }).click();
     
     // Verify successful registration
-    await expect(page.getByText('Welcome to Imperfect Breath')).toBeVisible();
+    await expect(page.getByText('Welcome to Brume')).toBeVisible();
     await expect(page.getByText('test@example.com')).toBeVisible();
   });
 

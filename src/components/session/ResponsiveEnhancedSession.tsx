@@ -18,6 +18,7 @@ import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
 import VideoFeed from '../VideoFeed';
 import { VisionManager } from './VisionManager';
 import BreathingAnimation from '../BreathingAnimation';
+import { BrumeMascot, type BrumeMascotState } from '../BrumeMascot';
 import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
@@ -206,6 +207,34 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     />
   );
 
+  // Brume rides the corner of the orb and breathes the same phases.
+  const breathPhase = session.metrics?.currentPhase;
+  const breathProgress01 = (session.metrics?.phaseProgress || 0) / 100;
+  const mascotState: BrumeMascotState =
+    session.phase === 'complete' ? 'proud'
+    : session.phase === 'paused' ? 'sleepy'
+    : session.phase !== 'active' ? 'watching'
+    : breathPhase === 'inhale' ? 'inhale'
+    : breathPhase === 'exhale' ? 'exhale'
+    : 'hold';
+  const mascotBreath =
+    session.phase !== 'active' ? undefined
+    : breathPhase === 'inhale' ? breathProgress01
+    : breathPhase === 'exhale' ? 1 - breathProgress01
+    : breathPhase === 'hold' ? 1
+    : 0;
+  const animationWithMascot = (
+    <div className="relative">
+      {breathingAnimation}
+      <BrumeMascot
+        state={mascotState}
+        breath={mascotBreath}
+        size={72}
+        className="absolute -bottom-3 -right-3"
+      />
+    </div>
+  );
+
   // Session controls component
   const controls = (
     <SessionControls
@@ -274,7 +303,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       videoFeed={videoFeed}
       showVideo={!!cameraStream}
       seen={stableMetrics.hasValidData}
-      breathingAnimation={breathingAnimation}
+      breathingAnimation={animationWithMascot}
       metrics={metrics}
       sessionInfo={sessionInfo}
       controls={controls}

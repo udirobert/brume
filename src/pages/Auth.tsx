@@ -7,6 +7,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SignInForm, type SignInIntent } from "@/components/auth/SignInForm";
 import { MistField } from "@/components/atmosphere/MistField";
 import { ProgressiveBlur } from "@/components/atmosphere/ProgressiveBlur";
+import { BrumeMascot } from "@/components/BrumeMascot";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -60,6 +61,7 @@ const Auth = () => {
       <ProgressiveBlur />
 
       <div className="relative z-10 flex flex-col items-center">
+        <BrumeMascot state="idle" size={88} className="mb-6" />
         <SignInForm
           intent={intent}
           defaultSignUp={defaultSignUp}

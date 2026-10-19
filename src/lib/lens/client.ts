@@ -106,7 +106,7 @@ export class LensV3API {
       console.log("🌿 Starting Lens v3 login for:", walletAddress);
 
       // Simulate challenge-response flow
-      const challengeMessage = `Welcome to Imperfect Breath!\n\nSign this message to authenticate with Lens Protocol.\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+      const challengeMessage = `Welcome to Brume!\n\nSign this message to authenticate with Lens Protocol.\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
 
       // Get signature
       const signature = await signMessage(challengeMessage);
@@ -684,7 +684,7 @@ export class LensV3API {
       }
 
       if (signedRecord) {
-        content += `✅ Verified by Imperfect Breath\n`;
+        content += `✅ Verified by Brume\n`;
       }
 
       content += `\n#breathing #mindfulness #wellness #${session.patternName.toLowerCase().replace(/\s+/g, "")}`;
@@ -741,7 +741,7 @@ export class LensV3API {
    */
   private getFeedContext(post: Post): string {
     if (post.id.startsWith(IMPERFECT_BREATH_APP_ID)) {
-      return "From Imperfect Breath community";
+      return "From the Brume community";
     }
     if (post.id.startsWith("group-")) {
       return "From wellness groups you might like";
@@ -760,7 +760,7 @@ export class LensV3API {
       {
         id: "fallback-1",
         content:
-          "Welcome to the Imperfect Breath community! 🌬️\n\nConnect your breathing practice with others on this journey of mindfulness and wellness.\n\n#community #breathing #mindfulness",
+          "Welcome to the Brume community! 🌬️\n\nConnect your breathing practice with others on this journey of mindfulness and wellness.\n\n#community #breathing #mindfulness",
         author: {
           id: "0x0000",
           address: "0x0000000000000000000000000000000000000000",
@@ -769,7 +769,7 @@ export class LensV3API {
             fullHandle: "imperfectbreath.lens",
           },
           metadata: {
-            name: "Imperfect Breath",
+            name: "Brume",
           },
         },
         timestamp: new Date().toISOString(),

@@ -67,7 +67,7 @@ export const developerCommands = {
   // Help command
   help: () => {
     console.info(`
-🔧 Imperfect Breath Developer Commands:
+🔧 Brume Developer Commands:
 
 Subscription Overrides:
   dev.setBasic()     - Set basic tier access

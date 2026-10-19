@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Technical architecture and system design for Imperfect Breath.
+Technical architecture and system design for Brume.
 
 ## System Overview
 

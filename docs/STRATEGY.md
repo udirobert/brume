@@ -1,7 +1,7 @@
 # Strategy: Creative Monopoly & Wedge
 
 > v3 — Thiel/PG consolidation pass. Decisions locked: revenue model is **agent-native**
-> (Proof-of-Practice as a Service); the Shipaton app is named **Brume** (`fun.imperfectform.brume`);
+> (Proof-of-Practice as a Service); the Shipaton app is named **Brume** (`xyz.trustfall.brume`);
 > NFT marketplace buried (sunk cost). Today is **Aug 27** — we are *inside* the Shipaton window
 > (Aug 1 – Sep 30, 2026). Sprint mode: release within days; every week of delay costs
 > Grand-Prize traction-measurement time.
@@ -23,7 +23,7 @@ Every component is one capability — **verifiable practice** — seen from four
 | **Attestation** | Flow on-chain records | Makes practice *portable and verifiable* — credentials, not collectibles |
 | **Distribution** | Lens graph, verified-only leaderboard, accountability hub | Makes proof *social* and unfakeable |
 
-> **Monopoly claim: Imperfect Breath is the trust layer for breathwork — the only platform that can verify a human actually practiced.**
+> **Monopoly claim: Brume is the trust layer for breathwork — the only platform that can verify a human actually practiced.**
 
 The 10x: every competitor is a timer with audio. None can *know* you breathed. In an agentic world this 10x gets sharper, not duller — agents are proliferating as coaches, therapists, and wellness concierges, and **none of them can verify anything about the physical world**. We own the sensor.
 
@@ -63,7 +63,7 @@ Who pays: AI coach/companion apps, corporate wellness bots, telehealth and thera
 
 ### Hard constraints
 - **Brand-new app**, first *public* release inside Aug 1 – Sep 30, 2026. Updates to previously released apps don't qualify.
-  - ✅ Identity locked: **Brume**, bundle `fun.imperfectform.brume` (renamed from `com.imperfectbreath.app` on branch `feat/brume`). Still confirm the old id was never published to any store. We are inside the window — release ASAP; the pre-Aug-1 embargo no longer applies.
+  - ✅ Identity locked: **Brume**, bundle `xyz.trustfall.brume` (renamed from `com.imperfectbreath.app` on branch `feat/brume`). Still confirm the old id was never published to any store. We are inside the window — release ASAP; the pre-Aug-1 embargo no longer applies.
 - **RevenueCat SDK** must power ≥1 IAP. Plumbing already exists (`revenuecat_config.py`, `revenueCatAuthIntegration.ts`) — port it into the new app.
 - Submission assets: 2-min demo video (YouTube/Vimeo), 1024×1024 icon, 1179×2556 screenshot, free trial or promo code for judges.
 
@@ -101,7 +101,7 @@ Who pays: AI coach/companion apps, corporate wellness bots, telehealth and thera
 
 ## 8. Open Questions
 
-1. ~~New app name/identity~~ — **decided: Brume** (`fun.imperfectform.brume`). Remaining: verify the old id was never store-listed; register `brume.imperfectform.fun`.
+1. ~~New app name/identity~~ — **decided: Brume** (`xyz.trustfall.brume`). Remaining: verify the old id was never store-listed; register `brumeapp.netlify.app`.
 2. **Agent payment rails** — metered API keys at launch, x402-style per-call when? Recommendation: keys first.
 3. **Verification accuracy bar** — what false-accept/reject rates make "verified" sellable to agent builders? Needs a measurement pass before the API pitch.
 4. **Award bandwidth** — confirm the 3 primary targets (HAMM / Grand / Peace) so scope stays Thiel-small.

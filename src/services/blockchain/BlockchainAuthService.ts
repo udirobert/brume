@@ -107,7 +107,7 @@ export class BlockchainAuthService {
     fcl.config({
       'accessNode.api': config.accessNode,
       'discovery.wallet': config.discoveryWallet,
-      'app.detail.title': 'Imperfect Breath',
+      'app.detail.title': 'Brume',
       'app.detail.icon': '/icon.png',
     });
     

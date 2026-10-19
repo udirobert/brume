@@ -869,10 +869,10 @@ const TermsOfService = () => {
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <div className="space-y-2">
                   <p>
-                    <strong>Email:</strong> legal@imperfectform.fun
+                    <strong>Legal:</strong> <a href="https://github.com/udirobert/brume/issues" className="text-blue-600 dark:text-blue-400 hover:underline">github.com/udirobert/brume/issues</a>
                   </p>
                   <p>
-                    <strong>Support:</strong> support@imperfectform.fun
+                    <strong>Support:</strong> <a href="https://github.com/udirobert/brume/issues" className="text-blue-600 dark:text-blue-400 hover:underline">github.com/udirobert/brume/issues</a>
                   </p>
                   <p>
                     <strong>Website:</strong>{" "}

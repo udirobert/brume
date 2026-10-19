@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Sparkles, Camera, ShieldCheck } from "lucide-react";
 import BreathingAnimation from "@/components/BreathingAnimation";
+import { BrumeMascot } from "@/components/BrumeMascot";
 
 /**
  * Onboarding — single screen, one breath away.
@@ -32,14 +33,21 @@ export default function Onboarding() {
         className="w-full max-w-md flex flex-col items-center text-center space-y-8"
       >
         {/* The mist orb — idle, waiting. This is the visual hook. */}
-        <BreathingAnimation
-          phase="prepare"
-          isActive={false}
-          pattern={{
-            name: "Box Breathing",
-            phases: { inhale: 4, hold: 4, exhale: 4, hold_after_exhale: 4 },
-          }}
-        />
+        <div className="relative">
+          <BreathingAnimation
+            phase="prepare"
+            isActive={false}
+            pattern={{
+              name: "Box Breathing",
+              phases: { inhale: 4, hold: 4, exhale: 4, hold_after_exhale: 4 },
+            }}
+          />
+          <BrumeMascot
+            state="idle"
+            size={72}
+            className="absolute -bottom-3 -right-3"
+          />
+        </div>
 
         <div className="space-y-3">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">

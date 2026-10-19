@@ -98,7 +98,7 @@ ${score ? `📊 Score: ${score}/100` : ""}
 ${sessionData.cycles ? `🔄 Cycles: ${sessionData.cycles}` : ""}
 ${sessionData.breathHoldTime ? `💨 Breath Hold: ${sessionData.breathHoldTime}s` : ""}
 
-#BreathingPractice #Wellness #Mindfulness #ImperfectBreath`;
+#BreathingPractice #Wellness #Mindfulness #Brume`;
 
     return content;
   }

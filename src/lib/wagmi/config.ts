@@ -14,8 +14,8 @@ const chains = [mainnet, polygon, arbitrum, sepolia, lensTestnet] as const
 const connectors = [
   injected(),
   coinbaseWallet({
-    appName: 'Imperfect Breath',
-    appLogoUrl: 'https://imperfect-breath.com/icon.png',
+    appName: 'Brume',
+    appLogoUrl: 'https://brumeapp.netlify.app/android-chrome-512x512.png',
   }),
   ...(enableWalletConnect ? [walletConnect({ projectId })] : []),
 ]

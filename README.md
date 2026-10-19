@@ -1,18 +1,15 @@
-# Imperfect Breath
+# Brume
 
-> A wellness platform for guided breathing with optional AI coaching and camera feedback
+> A calm little companion for breathing breaks, getting ready, and checking how sharp you are.
 
-**Live Demo**: [Try Now](https://brumeapp.netlify.app) | **API**: [api.imperfectform.fun](https://api.imperfectform.fun)
+**Live Demo**: [Try Now](https://brumeapp.netlify.app) | **Anna App Store**: @papa/brume
 
-## 🎯 What is Imperfect Breath?
+## 🎯 What is Brume?
 
-A wellness platform combining ancient breathing wisdom with modern technology:
+Brume is a mist sprite who breathes with you. Two faces, one character:
 
-- **🫁 Ancient Techniques** - Traditional patterns from around the world
-- **🤖 AI Coaching** - Real-time personalized guidance with Zen AI agent
-- **📱 Camera Feedback** - Optional camera-based movement feedback (not biometric validation)
-- **⛓️ Web3 Integration** - NFTs, social features, and community
-- **👥 Social Platform** - Connect with practitioners worldwide
+- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided patterns, AI coaching, optional camera feedback (video never leaves your device unprocessed), accounts and history.
+- **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent: AI-planned resets, a 3-minute get-ready before calls and interviews, and a 1-minute alertness check. No camera, no account.
 
 **Core Philosophy:** Progress over perfection, consistency over intensity, mindful awareness over mechanical practice.
 

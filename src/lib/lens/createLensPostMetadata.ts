@@ -96,7 +96,7 @@ export function createTextPostMetadata(
 ): TextOnlyMetadata {
   return textOnly({
     content,
-    tags: tags || ["imperfect-breath"],
+    tags: tags || ["brume"],
   });
 }
 

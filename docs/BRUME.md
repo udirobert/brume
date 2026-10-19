@@ -1,7 +1,7 @@
 # Brume — Product Brief
 
 > **Brume** (French: *mist*) — guided breathwork with optional camera feedback.
-> Shipaton 2026 entry · bundle `fun.imperfectform.brume` · flagship client of the
+> Shipaton 2026 entry · bundle `xyz.trustfall.brume` · flagship client of the
 > Proof-of-Practice primitive (see `docs/STRATEGY.md`).
 
 ## One-liner
@@ -95,4 +95,4 @@ anonymously via tags meanwhile).
 
 1. Apple developer account active? (longest-lead item — confirm today)
 2. google-services.json for OneSignal push on Android (gradle already guards for it)
-3. Domain: `brume.imperfectform.fun` for landing + agent API docs
+3. Domain: `brumeapp.netlify.app` for landing + agent API docs

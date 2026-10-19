@@ -1,6 +1,6 @@
 # Development Guide
 
-Complete development guide for Imperfect Breath - setup, roadmap, implementation, and testing.
+Complete development guide for Brume - setup, roadmap, implementation, and testing.
 
 ## Quick Start
 
@@ -93,7 +93,7 @@ current verification status.
 ## Project Structure
 
 ```
-imperfect-breath/
+brume/
 ├── src/
 │   ├── components/     # React components
 │   ├── lib/           # Utilities & services

@@ -180,7 +180,7 @@ const REFLECTION_TIMEOUT_MS = 6000;
 
 // Accepts the llm.complete result ({role, content:{type:"text",text}}) or a
 // raw {ok:false,error} envelope — normalize to a trimmed string.
-function responseText(res) {
+export function responseText(res) {
   const r = unwrap(res);
   const content = r && r.content;
   let text = "";

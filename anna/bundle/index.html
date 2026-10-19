@@ -29,6 +29,18 @@
         </div>
         <button id="btn-plan" class="primary" type="button">Plan my reset</button>
         <button id="btn-quick" type="button">Quick 90-second reset</button>
+        <div class="home-cards">
+          <button id="btn-ready" class="card" type="button">
+            <span class="card-title">Get ready for something</span>
+            <span class="card-sub">3-minute prep before a big moment</span>
+          </button>
+          <button id="btn-alertness" class="card" type="button">
+            <span class="card-title">Check my alertness</span>
+            <span class="card-sub">One-minute reaction-time check</span>
+          </button>
+        </div>
+        <p id="alert-line" class="muted" hidden></p>
+        <canvas id="alert-spark" class="spark" width="140" height="24" hidden aria-hidden="true"></canvas>
         <p class="last-session" data-last-session hidden></p>
         <p class="last-session" data-worked hidden></p>
       </section>
@@ -92,6 +104,86 @@
           <button type="button" data-felt="wired">Still wired</button>
           <button class="chip" type="button" data-felt="">Skip</button>
         </div>
+      </section>
+
+      <section id="screen-alert" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-alert" aria-hidden="true"></div>
+        <h1>Alertness check</h1>
+        <p>A one-minute reaction-time check, compared with your own usual. Not a medical test.</p>
+        <p class="field-label">How sleepy do you feel right now?</p>
+        <div class="kss-row" id="kss-row" role="group" aria-label="Sleepiness 1 to 9"></div>
+        <p class="hint" id="kss-hint"></p>
+        <div class="btn-row">
+          <button id="btn-alert-start" class="primary" type="button">Start check</button>
+          <button id="btn-alert-skip-kss" type="button">Skip rating</button>
+        </div>
+      </section>
+
+      <section id="screen-alert-test" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-alert-test" aria-hidden="true"></div>
+        <div id="alert-target" class="alert-target" tabindex="0" role="button" aria-label="Tap when the counter appears">
+          <span id="alert-wait" class="muted">Wait for the counter…</span>
+          <span id="alert-ms" class="alert-ms" hidden>0</span>
+          <span id="alert-msg" class="muted" hidden></span>
+        </div>
+        <p id="alert-progress" class="muted"></p>
+        <button id="btn-alert-cancel" type="button">Cancel</button>
+      </section>
+
+      <section id="screen-alert-result" class="screen" hidden>
+        <div class="mascot-slot mascot-lg" id="mascot-alert-result" aria-hidden="true"></div>
+        <h1 id="alert-band"></h1>
+        <dl class="facts">
+          <div><dt>Median</dt><dd id="alert-median"></dd></div>
+          <div><dt>Lapses</dt><dd id="alert-lapses"></dd></div>
+          <div><dt>Responses</dt><dd id="alert-trials"></dd></div>
+        </dl>
+        <p id="alert-note" class="closing-line"></p>
+        <p id="alert-baseline-note" class="muted" hidden></p>
+        <div class="btn-row">
+          <button id="btn-alert-break" class="primary" type="button">Do a breathing break</button>
+          <button id="btn-alert-done" type="button">Done</button>
+        </div>
+      </section>
+
+      <section id="screen-ready" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-ready" aria-hidden="true"></div>
+        <h1>Get ready</h1>
+        <p class="field-label" for="ready-event">What's coming up?</p>
+        <input id="ready-event" type="text" maxlength="200" placeholder="Interview at 3pm" />
+        <div class="chips" id="ready-kind-chips" role="group" aria-label="Kind"></div>
+        <input id="ready-point" type="text" maxlength="200" placeholder="The one thing you want them to remember (optional)" />
+        <button id="btn-prepare" class="primary" type="button">Prepare me</button>
+      </section>
+
+      <section id="screen-ready-run" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-ready-run" aria-hidden="true"></div>
+        <p class="muted" id="ready-step-label"></p>
+        <h1 id="ready-step-title"></h1>
+        <p id="ready-step-text"></p>
+        <div id="ready-rehearse" hidden>
+          <blockquote id="ready-opener"></blockquote>
+          <p><strong>The one thing to land:</strong> <span id="ready-keypoint"></span></p>
+          <p><em id="ready-reminder"></em></p>
+          <button id="btn-hear" type="button" hidden>Hear it</button>
+        </div>
+        <p id="ready-timer" class="phase-word"></p>
+        <div class="progress-dots" id="ready-dots" aria-hidden="true"></div>
+        <div class="btn-row">
+          <button id="btn-ready-next" class="primary" type="button">Next</button>
+          <button id="btn-ready-skip" type="button">Skip</button>
+          <button id="btn-ready-pause" type="button">Pause</button>
+        </div>
+      </section>
+
+      <section id="screen-ready-done" class="screen" hidden>
+        <div class="mascot-slot mascot-lg" id="mascot-ready-done" aria-hidden="true"></div>
+        <h1>You're ready. Go well.</h1>
+        <div id="ready-done-card">
+          <blockquote id="ready-done-opener"></blockquote>
+          <p><strong>The one thing to land:</strong> <span id="ready-done-keypoint"></span></p>
+        </div>
+        <button id="btn-ready-again" class="primary" type="button">Done</button>
       </section>
 
       <section id="screen-result" class="screen" hidden>

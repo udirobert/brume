@@ -20,6 +20,9 @@ import {
   fallbackPlan,
   effectiveLengthSeconds,
   phaseWord,
+  cleanText,
+  cleanReflection,
+  HEALTH_CLAIM_RE,
 } from "./plan.js";
 import {
   PHASE_WORDS,
@@ -37,6 +40,7 @@ import {
   fetchPlan,
   fetchReflection,
   FALLBACK_REFLECTION,
+  responseText,
 } from "./session.js";
 import { ChimePlayer, VoiceGuide, VoiceUnavailable } from "./audio.js";
 
@@ -49,6 +53,38 @@ const REDUCED_MOTION =
 const $ = (sel) => document.querySelector(sel);
 
 const els = {
+  btnReady: $("#btn-ready"),
+  btnAlertness: $("#btn-alertness"),
+  alertLine: $("#alert-line"),
+  alertSpark: $("#alert-spark"),
+  kssRow: $("#kss-row"),
+  kssHint: $("#kss-hint"),
+  alertTarget: $("#alert-target"),
+  alertWait: $("#alert-wait"),
+  alertMs: $("#alert-ms"),
+  alertMsg: $("#alert-msg"),
+  alertProgress: $("#alert-progress"),
+  alertBand: $("#alert-band"),
+  alertMedian: $("#alert-median"),
+  alertLapses: $("#alert-lapses"),
+  alertTrials: $("#alert-trials"),
+  alertNote: $("#alert-note"),
+  alertBaselineNote: $("#alert-baseline-note"),
+  readyEvent: $("#ready-event"),
+  readyPoint: $("#ready-point"),
+  readyKindChips: $("#ready-kind-chips"),
+  readyStepLabel: $("#ready-step-label"),
+  readyStepTitle: $("#ready-step-title"),
+  readyStepText: $("#ready-step-text"),
+  readyRehearse: $("#ready-rehearse"),
+  readyOpener: $("#ready-opener"),
+  readyKeypoint: $("#ready-keypoint"),
+  readyReminder: $("#ready-reminder"),
+  readyTimer: $("#ready-timer"),
+  readyDots: $("#ready-dots"),
+  btnHear: $("#btn-hear"),
+  readyDoneOpener: $("#ready-done-opener"),
+  readyDoneKeypoint: $("#ready-done-keypoint"),
   screens: {
     home: $("#screen-home"),
     planning: $("#screen-planning"),
@@ -56,6 +92,12 @@ const els = {
     session: $("#screen-session"),
     checkin: $("#screen-checkin"),
     result: $("#screen-result"),
+    alert: $("#screen-alert"),
+    alertTest: $("#screen-alert-test"),
+    alertResult: $("#screen-alert-result"),
+    ready: $("#screen-ready"),
+    readyRun: $("#screen-ready-run"),
+    readyDone: $("#screen-ready-done"),
   },
   contextInput: $("#context-input"),
   btnPlan: $("#btn-plan"),
@@ -148,6 +190,12 @@ const SCREEN_MASCOT = {
   planning: { el: "planning", state: "thinking" },
   checkin: { el: "checkin", state: "idle" },
   result: { el: "result", state: "proud" },
+  alert: { el: "alert", state: "idle" },
+  alertTest: { el: "alert-test", state: "watching" },
+  alertResult: { el: "alert-result", state: "bright" },
+  ready: { el: "ready", state: "idle" },
+  readyRun: { el: "ready-run", state: "idle" },
+  readyDone: { el: "ready-done", state: "proud" },
 };
 
 function show(screen) {
@@ -521,6 +569,18 @@ async function completeResult(felt) {
 function applyEntryPayload(payload) {
   if (!payload || typeof payload !== "object") return;
   const ctx = typeof payload.context === "string" ? payload.context : "";
+  const mode = payload.mode || "reset";
+  if (mode === "ready") {
+    els.readyEvent.value = ctx.slice(0, 200);
+    show(els.screens.ready);
+    readyKindChips();
+    return;
+  }
+  if (mode === "alertness") {
+    buildKssRow();
+    show(els.screens.alert);
+    return;
+  }
   if (!ctx) return;
   els.contextInput.value = ctx.slice(0, 200);
   // Auto-run planning (never auto-start the session itself).
@@ -528,6 +588,322 @@ function applyEntryPayload(payload) {
 }
 
 // --- Boot -------------------------------------------------------------------------
+
+// --- Alertness check -----------------------------------------------------
+
+const KSS_LABELS = {
+  1: "Extremely alert", 3: "Alert", 5: "Neither alert nor sleepy",
+  7: "Sleepy, but no effort to stay awake", 9: "Very sleepy, fighting sleep",
+};
+let alertKss = null;
+let alertRun = null;
+
+function buildKssRow() {
+  if (els.kssRow.childElementCount) return;
+  for (let i = 1; i <= 9; i += 1) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = String(i);
+    b.setAttribute("aria-label", KSS_LABELS[i] ? `${i} — ${KSS_LABELS[i]}` : String(i));
+    b.addEventListener("click", () => {
+      alertKss = i;
+      els.kssRow.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
+      b.classList.add("selected");
+      els.kssHint.textContent = KSS_LABELS[i] || "";
+    });
+    els.kssRow.appendChild(b);
+  }
+}
+
+async function alertChecks() {
+  if (!anna?.storage?.list) return [];
+  try {
+    const res = await anna.storage.list({ prefix: "alert/checks/", scope: "user" });
+    const keys = res.keys || res.items || [];
+    const out = [];
+    for (const k of keys.slice(0, 12)) {
+      const v = await anna.storage.get({ key: k.key ?? k, scope: "user" });
+      const rec = v?.value ?? v;
+      if (rec && rec.medianMs) out.push(rec);
+    }
+    return out.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
+  } catch {
+    return [];
+  }
+}
+
+async function refreshAlertLine() {
+  const checks = await alertChecks();
+  if (!checks.length) return;
+  const last = checks[0];
+  els.alertLine.textContent = `Alertness: ${last.medianMs} ms${last.band ? ` · ${last.band}` : ""}`;
+  els.alertLine.hidden = false;
+  const recent = checks.slice(0, 7).reverse();
+  if (recent.length >= 2 && els.alertSpark) {
+    const c = els.alertSpark.getContext("2d");
+    const max = Math.max(...recent.map((x) => x.medianMs));
+    const min = Math.min(...recent.map((x) => x.medianMs));
+    const range = Math.max(1, max - min);
+    c.clearRect(0, 0, 140, 24);
+    c.strokeStyle = "#5b8a72"; c.lineWidth = 1.5; c.beginPath();
+    recent.forEach((x, i) => {
+      const px = (i / (recent.length - 1)) * 130 + 5;
+      const py = 20 - ((x.medianMs - min) / range) * 16;
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
+    });
+    c.stroke();
+    els.alertSpark.hidden = false;
+  }
+}
+
+function startAlertTest() {
+  show(els.screens.alertTest);
+  mascot("alert-test")?.setState("watching");
+  els.alertWait.textContent = "Wait for the counter…";
+  els.alertWait.hidden = false;
+  els.alertMs.hidden = true;
+  els.alertMsg.hidden = true;
+  let rtAnim = null;
+  let onsetNow = 0;
+
+  const run = runAlertness({
+    onStimulus: () => {
+      els.alertWait.hidden = true;
+      els.alertMsg.hidden = true;
+      els.alertMs.hidden = false;
+      onsetNow = performance.now();
+      const step = () => {
+        els.alertMs.textContent = String(Math.max(0, Math.round(performance.now() - onsetNow)));
+        rtAnim = requestAnimationFrame(step);
+      };
+      rtAnim = requestAnimationFrame(step);
+    },
+    onResult: (metrics) => finishAlert(metrics),
+    isCancelled: () => els.screens.alertTest.hidden,
+  });
+  alertRun = run;
+
+  function respond(itype) {
+    if (!run.awaiting()) return;
+    const rt = performance.now() - onsetNow;
+    cancelAnimationFrame(rtAnim);
+    els.alertMs.hidden = true;
+    if (rt < 100) {
+      els.alertMsg.textContent = "Too soon";
+      els.alertMsg.hidden = false;
+      els.alertWait.hidden = true;
+    } else {
+      els.alertMsg.textContent = `${Math.round(rt)} ms`;
+      els.alertMsg.hidden = false;
+      els.alertWait.hidden = true;
+    }
+    run.respond(itype, rt);
+  }
+
+  const onPointer = (e) => respond(e.pointerType === "touch" ? "touch" : "mouse");
+  const onKey = (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); respond("keyboard"); } };
+  els.alertTarget.addEventListener("pointerdown", onPointer);
+  els.alertTarget.addEventListener("keydown", onKey);
+  const t0 = performance.now();
+  const prog = setInterval(() => {
+    const left = Math.max(0, CHECK_SECONDS - (performance.now() - t0) / 1000);
+    els.alertProgress.textContent = `${Math.ceil(left)}s left`;
+    if (left <= 0 || els.screens.alertTest.hidden) clearInterval(prog);
+  }, 500);
+}
+
+async function finishAlert(metrics) {
+  const checks = await alertChecks();
+  const baseline = baselineMedian(checks, metrics.inputType);
+  const band = bandFor(metrics.medianMs, metrics.lapses, baseline);
+  const kss = alertKss;
+  const checkCount = checks.filter((c) => c.inputType === metrics.inputType).length + 1;
+  const timeOfDay = new Date().toTimeString().slice(0, 5);
+  let note = ALERTNESS_FALLBACK_NOTE, noteSource = "fallback";
+  if (anna?.llm?.complete) {
+    try {
+      const res = await anna.llm.complete({
+        messages: [{ role: "user", content: { type: "text",
+          text: alertnessNotePrompt({ metrics, baseline, band, kss, checkCount, timeOfDay }) } }],
+        maxTokens: 120,
+      });
+      const t = cleanReflection(responseText(res));
+      if (t !== "Take a moment before you begin again.") { note = t; noteSource = "ai"; }
+    } catch { /* fallback */ }
+  }
+  const record = {
+    completedAt: new Date().toISOString(), durationSec: CHECK_SECONDS,
+    trials: metrics.trials, medianMs: metrics.medianMs,
+    meanSpeed: metrics.meanSpeed, lapses: metrics.lapses,
+    falseStarts: metrics.falseStarts, inputType: metrics.inputType,
+    kss, band, baselineMs: baseline, note, noteSource,
+  };
+  try {
+    await anna.storage.set({ key: `alert/checks/${record.completedAt}`, value: record, scope: "user" });
+    const prev = await anna.storage.get({ key: "alert/summary", scope: "user" }).catch(() => null);
+    await anna.storage.set({ key: "alert/summary", value: updateAlertSummary(prev?.value ?? prev, record), scope: "user" });
+  } catch { /* storage optional */ }
+  show(els.screens.alertResult);
+  els.alertBand.textContent = band || "Done";
+  els.alertMedian.textContent = `${metrics.medianMs} ms`;
+  els.alertLapses.textContent = `${metrics.lapses} of ${metrics.trials}`;
+  els.alertTrials.textContent = `${metrics.trials} (${metrics.falseStarts} false start${metrics.falseStarts === 1 ? "" : "s"})`;
+  els.alertBaselineNote.hidden = baseline != null;
+  if (baseline == null) {
+    els.alertBaselineNote.textContent = `Building your baseline (check ${checkCount} of 3)`;
+    els.alertBaselineNote.hidden = false;
+  }
+  els.alertNote.textContent = note;
+  const m = mascot("alert-result");
+  if (m) m.setState(kss >= 7 || band === "much slower than usual" ? "sleepy" : band === "sharper than usual" ? "bright" : "idle");
+}
+
+// --- Get ready ------------------------------------------------------------
+
+let readyPlan = null;
+let readyStep = 0;
+let readyTimerId = null;
+
+const READY_STEPS = [
+  { key: "breathe", label: "Step 1 of 4", title: "Breathe", state: "inhale",
+    text: "Two short sips of air through the nose, then one long, slow breath out. About a minute.", secs: 63 },
+  { key: "open", label: "Step 2 of 4", title: "Open up", state: "stretch",
+    text: "Sit or stand tall and roll your shoulders back. If you have room, raise your arms overhead in a wide V and hold for a few breaths, then let them float down.", secs: 30 },
+  { key: "hum", label: "Step 3 of 4", title: "Warm up your voice", state: "hum",
+    text: "With your lips closed, hum gently on a comfortable note. Then glide the hum up and down like a slow siren, a few times.", secs: 30 },
+  { key: "rehearse", label: "Step 4 of 4", title: "Rehearse", state: "idle",
+    text: "Say your opening line out loud, twice, at an easy pace:", secs: 0 },
+];
+
+const READY_PROMPT = (event, kind, point) => `You help someone get ready in the few minutes before an important moment at work.
+What's coming up: "${event || "not given"}"
+Kind: ${kind || "not given"}
+The one thing they want the other person to remember, in their words: "${point || "not given"}"
+Reply with ONLY a JSON object, no prose and no code fences:
+{"title": up to 6 words naming this prep, "opener": one natural opening sentence they could say, in their own voice (max 30 words), "key_point": their main point rewritten to be clear and memorable (max 20 words; if they gave none, infer a sensible one from what is coming up), "reminder": one short practical reminder for the moment itself (max 14 words, for example about pausing or listening)}
+Keep it specific to what they said. Do not invent facts about them, make no medical or health claims, and do not use emoji.`;
+
+const READY_KINDS = [
+  ["interview", "Interview"], ["presentation", "Presentation"],
+  ["hard-conversation", "Hard conversation"], ["meeting", "Meeting"],
+];
+let readyKind = null;
+
+function readyKindChips() {
+  if (els.readyKindChips.childElementCount) return;
+  for (const [id, label] of READY_KINDS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.addEventListener("click", () => {
+      readyKind = id;
+      els.readyKindChips.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
+      b.classList.add("selected");
+    });
+    els.readyKindChips.appendChild(b);
+  }
+}
+
+async function prepareReady() {
+  const event = els.readyEvent.value.trim().slice(0, 200);
+  const point = els.readyPoint.value.trim().slice(0, 200);
+  readyPlan = { event, kind: readyKind, opener: "", keyPoint: point, reminder: "Pause before you answer.", planSource: "fallback", title: "Get ready" };
+  if (anna?.llm?.complete) {
+    try {
+      const res = await anna.llm.complete({
+        messages: [{ role: "user", content: { type: "text", text: READY_PROMPT(event, readyKind, point) } }],
+        maxTokens: 300,
+      });
+      const raw = responseText(res);
+      const i = raw.indexOf("{"), j = raw.lastIndexOf("}");
+      if (i >= 0 && j > i) {
+        const p = JSON.parse(raw.slice(i, j + 1));
+        readyPlan.opener = cleanText(p.opener, 220);
+        readyPlan.keyPoint = cleanText(p.key_point, 160) || point;
+        readyPlan.reminder = cleanText(p.reminder, 110) || readyPlan.reminder;
+        readyPlan.title = cleanText(p.title, 60) || readyPlan.title;
+        readyPlan.planSource = "ai";
+        if (HEALTH_CLAIM_RE.test(readyPlan.opener)) readyPlan.opener = "";
+        if (HEALTH_CLAIM_RE.test(readyPlan.keyPoint)) readyPlan.keyPoint = point;
+        if (HEALTH_CLAIM_RE.test(readyPlan.reminder)) readyPlan.reminder = "Pause before you answer.";
+      }
+    } catch { /* fallback */ }
+  }
+  readyStep = 0;
+  runReadyStep();
+}
+
+function renderReadyDots() {
+  els.readyDots.innerHTML = "";
+  READY_STEPS.forEach((_, i) => {
+    const d = document.createElement("span");
+    if (i <= readyStep) d.classList.add("on");
+    els.readyDots.appendChild(d);
+  });
+}
+
+function runReadyStep() {
+  const step = READY_STEPS[readyStep];
+  show(els.screens.readyRun);
+  mascot("ready-run")?.setState(step.state);
+  els.readyStepLabel.textContent = step.label;
+  els.readyStepTitle.textContent = step.title;
+  els.readyStepText.textContent = step.text;
+  els.readyRehearse.hidden = step.key !== "rehearse";
+  renderReadyDots();
+  if (step.key === "rehearse") {
+    els.readyOpener.textContent = readyPlan.opener || "(say it your way — the main thing first)";
+    els.readyKeypoint.textContent = readyPlan.keyPoint || "Your one clear point.";
+    els.readyReminder.textContent = readyPlan.reminder;
+    els.btnHear.hidden = soundMode !== "voice";
+    els.readyTimer.textContent = "";
+  }
+  clearInterval(readyTimerId);
+  if (step.secs) {
+    let left = step.secs;
+    const t0 = performance.now();
+    readyTimerId = setInterval(() => {
+      left = Math.max(0, Math.round(step.secs - (performance.now() - t0) / 1000));
+      els.readyTimer.textContent = `${left}s`;
+      if (step.key === "breathe") {
+        // drive the mascot through cyclic-sigh phases (9s cycle)
+        const t = (performance.now() - t0) / 1000;
+        const ph = t % 9;
+        const state = ph < 2 ? "inhale" : ph < 3 ? "topup" : "exhale";
+        mascot("ready-run")?.setState(state);
+        mascot("ready-run")?.setBreath(ph < 3 ? ph / 3 : Math.max(0, 1 - (ph - 3) / 6));
+      }
+      if (left <= 0) { clearInterval(readyTimerId); nextReadyStep(); }
+    }, 250);
+  } else {
+    els.readyTimer.textContent = "";
+  }
+}
+
+function nextReadyStep() {
+  clearInterval(readyTimerId);
+  readyStep += 1;
+  if (readyStep >= READY_STEPS.length) return finishReady();
+  runReadyStep();
+}
+
+async function finishReady() {
+  show(els.screens.readyDone);
+  els.readyDoneOpener.textContent = readyPlan.opener || "";
+  els.readyDoneKeypoint.textContent = readyPlan.keyPoint || "";
+  try {
+    await anna?.storage?.set({
+      key: `ready/sessions/${new Date().toISOString()}`,
+      value: {
+        completedAt: new Date().toISOString(), event: readyPlan.event,
+        kind: readyPlan.kind, opener: readyPlan.opener,
+        key_point: readyPlan.keyPoint, reminder: readyPlan.reminder,
+        planSource: readyPlan.planSource, stepsCompleted: readyStep + 1,
+        source: "app",
+      },
+      scope: "user",
+    });
+  } catch { /* optional */ }
+}
 
 async function main() {
   anna = await connectAnna();
@@ -589,6 +965,59 @@ async function main() {
     updatePaceUI();
   });
 
+  els.btnReady.addEventListener("click", () => {
+    readyKindChips();
+    show(els.screens.ready);
+  });
+  els.btnAlertness.addEventListener("click", () => {
+    buildKssRow();
+    alertKss = null;
+    els.kssHint.textContent = "";
+    els.kssRow.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
+    show(els.screens.alert);
+  });
+  $("#btn-alert-start").addEventListener("click", () => {
+    // 3-2-1 countdown then run
+    let n = 3;
+    show(els.screens.alertTest);
+    els.alertWait.textContent = String(n);
+    const cd = setInterval(() => {
+      n -= 1;
+      if (n <= 0) { clearInterval(cd); startAlertTest(); return; }
+      els.alertWait.textContent = String(n);
+    }, 1000);
+  });
+  $("#btn-alert-skip-kss").addEventListener("click", () => {
+    alertKss = null;
+    $("#btn-alert-start").click();
+  });
+  $("#btn-alert-cancel").addEventListener("click", () => {
+    alertRun?.stop?.();
+    show(els.screens.home);
+  });
+  $("#btn-alert-break").addEventListener("click", () => {
+    const kss = alertKss ? `${alertKss}/9` : "not given";
+    els.contextInput.value = `Alertness check: ${els.alertBand.textContent || "done"}, sleepiness ${kss}`.slice(0, 200);
+    show(els.screens.home);
+    startPlanning();
+  });
+  $("#btn-alert-done").addEventListener("click", () => show(els.screens.home));
+  $("#btn-prepare").addEventListener("click", prepareReady);
+  els.readyEvent.addEventListener("keydown", (e) => { if (e.key === "Enter") prepareReady(); });
+  $("#btn-ready-next").addEventListener("click", nextReadyStep);
+  $("#btn-ready-skip").addEventListener("click", nextReadyStep);
+  $("#btn-ready-pause").addEventListener("click", () => {
+    if (readyTimerId) { clearInterval(readyTimerId); readyTimerId = null; $("#btn-ready-pause").textContent = "Resume"; }
+    else { $("#btn-ready-pause").textContent = "Pause"; runReadyStep(); }
+  });
+  els.btnHear.addEventListener("click", () => {
+    if (readyPlan?.opener && voice) voice.play(readyPlan.opener);
+  });
+  $("#btn-ready-again").addEventListener("click", () => {
+    refreshAlertLine();
+    show(els.screens.home);
+  });
+
   // entry_payload: initial value, then live pushes when the assistant
   // re-invokes open_app_view with a payload.
   try {
@@ -601,6 +1030,7 @@ async function main() {
   }
 
   refreshHomeMeta();
+  refreshAlertLine();
 }
 
 main();

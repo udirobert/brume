@@ -100,12 +100,17 @@ storage reverse-RPC; a fake-host harness that answers it is a TODO.)
 
 - UI/layout: `anna-app dev --mock-llm test/mock-llm.jsonl` (no quota).
 - Prompt quality without Anna quota: copy `.env.example` to `.env.local`
-  (gitignored), set `FEATHERLESS_API_KEY`, then
+  (gitignored), set `GEMINI_API_KEY`, then
   `node scripts/prompt-check.mjs [plan|reflection|alertness|all]`. Uses the
-  real prompt builders and validators; default model
-  `deepseek-ai/DeepSeek-V3-0324` (Meta Llama models on Featherless are
-  gated behind Hugging Face access). A proxy only: Anna's production model
-  (Gemini 3 Flash at time of writing) may behave differently.
+  real prompt builders and validators against `gemini-3-flash-preview` —
+  the model Anna showed as the default — at Anna's default temperature
+  (0.7). Apps can't pin the production model: `llm.complete` runs on the
+  user's chosen model and `modelPreferences` only breaks ties among models
+  the user enabled, so prompts must stay robust across models. The script
+  flags truncated/empty answers (`finish_reason=length`), which matters for
+  thinking models at our small `maxTokens`. Featherless
+  (`FEATHERLESS_API_KEY`) is a fallback proxy only; its Chat plan forbids
+  automated/benchmark traffic.
 - `anna-app dev` with a logged-in account uses real Anna models and
   **consumes account quota** — small batches only.
 

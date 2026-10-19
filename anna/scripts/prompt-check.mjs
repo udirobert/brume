@@ -1,10 +1,15 @@
 // Tier-2 prompt check: run Brume's real prompt builders + validators against
-// an OpenAI-compatible model (Featherless by default) so prompt changes can be
-// judged without spending Anna account quota. Output quality on Featherless is
-// a proxy — Anna's production model may differ; confirm on Anna before release.
+// the same model family Anna serves, without spending Anna account quota.
+//
+// Anna's llm.complete runs on the USER's chosen model (default seen in Anna:
+// Gemini 3 Flash Preview); apps cannot pin it — modelPreferences only breaks
+// ties among models the user enabled. So we test against Gemini 3 Flash via
+// Google's OpenAI-compatible endpoint, at Anna's default temperature (0.7,
+// since Brume sends none). Featherless is a fallback proxy only, and its Chat
+// plan forbids automated/benchmark traffic.
 //
 // Usage (from anna/):  node scripts/prompt-check.mjs [plan|reflection|alertness|all]
-// Needs anna/.env.local with FEATHERLESS_API_KEY (see .env.example).
+// Needs anna/.env.local with GEMINI_API_KEY (preferred) or FEATHERLESS_API_KEY.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -21,20 +26,35 @@ const env = Object.fromEntries(
     .split("\n").filter((l) => /^\w+=/.test(l))
     .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).trim()]),
 );
-const BASE = env.FEATHERLESS_BASE_URL || "https://api.featherless.ai/v1";
-const MODEL = env.FEATHERLESS_MODEL || "deepseek-ai/DeepSeek-V3-0324";
-if (!env.FEATHERLESS_API_KEY) throw new Error("FEATHERLESS_API_KEY missing in anna/.env.local");
+const provider = env.GEMINI_API_KEY
+  ? { name: "gemini", base: env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai",
+      key: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || "gemini-3-flash-preview" }
+  : env.FEATHERLESS_API_KEY
+    ? { name: "featherless (proxy only)", base: env.FEATHERLESS_BASE_URL || "https://api.featherless.ai/v1",
+        key: env.FEATHERLESS_API_KEY, model: env.FEATHERLESS_MODEL || "deepseek-ai/DeepSeek-V3-0324" }
+    : null;
+if (!provider) throw new Error("Set GEMINI_API_KEY (preferred) or FEATHERLESS_API_KEY in anna/.env.local");
+const MODEL = provider.model;
+const TEMPERATURE = Number(env.LLM_TEMPERATURE ?? 0.7); // Anna's llm.complete default
 
 async function complete(prompt, maxTokens) {
   const t0 = Date.now();
-  const res = await fetch(`${BASE}/chat/completions`, {
+  const res = await fetch(`${provider.base}/chat/completions`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.FEATHERLESS_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+    headers: { Authorization: `Bearer ${provider.key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, temperature: TEMPERATURE,
+      messages: [{ role: "user", content: prompt }] }),
   });
-  const body = await res.json();
-  if (!res.ok || body.error) throw new Error(`${res.status} ${JSON.stringify(body.error ?? body)}`);
-  return { text: body.choices?.[0]?.message?.content ?? "", ms: Date.now() - t0 };
+  const raw = await res.text();
+  let body;
+  try { body = JSON.parse(raw); } catch { throw new Error(`${res.status} non-JSON response: ${raw.slice(0, 120)}`); }
+  if (body?.[0]?.error) body = body[0];
+  if (!res.ok || body.error) throw new Error(`${res.status} ${JSON.stringify(body.error ?? body).slice(0, 300)}`);
+  const choice = body.choices?.[0] ?? {};
+  if (choice.finish_reason === "length" || !(choice.message?.content ?? "").trim()) {
+    console.log(`  ⚠ finish_reason=${choice.finish_reason} with maxTokens=${maxTokens}; usage=${JSON.stringify(body.usage)}`);
+  }
+  return { text: choice.message?.content ?? "", finish: choice.finish_reason, usage: body.usage, ms: Date.now() - t0 };
 }
 
 const PLAN_CONTEXTS = [
@@ -103,7 +123,7 @@ async function checkAlertness() {
 }
 
 const which = process.argv[2] || "all";
-console.log(`model: ${MODEL}`);
+console.log(`provider: ${provider.name} · model: ${MODEL} · temperature: ${TEMPERATURE}`);
 const summary = {};
 if (which === "plan" || which === "all") summary.plan = await checkPlans();
 if (which === "reflection" || which === "all") summary.reflection = await checkReflections();

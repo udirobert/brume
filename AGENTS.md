@@ -14,7 +14,7 @@ npm test                                         # node smoke + shared fixture
 anna-app validate --strict
 ```
 
-Prompt changes: `node scripts/prompt-check.mjs all` (Featherless, needs
+Prompt changes: `node scripts/prompt-check.mjs all` (Gemini 3 Flash, the model Anna serves by default; needs
 `anna/.env.local`; does not use Anna quota). Real-LLM `anna-app dev` and
 Cloud Agent chats DO use the Anna account quota — keep them to the tier-3
 release checklist, one new chat per step.

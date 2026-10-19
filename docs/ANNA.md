@@ -474,8 +474,9 @@ Most bugs worth finding are in our code and are free to catch locally; the
 ones only Anna reveals (permission defaults, tool deployment, gates, how
 Anna's model uses tools) need a short cloud pass. So: **tier 1** unit/smoke
 tests + CI binaries on every change; **tier 2** mock-LLM UI runs and
-Featherless prompt checks (`anna/scripts/prompt-check.mjs`) when prompts
-change; **tier 3** a fixed ~6-turn Cloud Agent checklist per release
+prompt checks against Gemini 3 Flash (`anna/scripts/prompt-check.mjs`) —
+the model Anna serves by default; apps cannot pin the production model, it
+is the user's choice — when prompts change; **tier 3** a fixed ~6-turn Cloud Agent checklist per release
 candidate, each turn in a new chat. Quota burned in this session came from
 long chat threads (context re-sent every turn) and real-LLM `anna-app dev`
 batches on the Anna account. BYOK in Anna is recommended for test traffic.

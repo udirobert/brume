@@ -1,0 +1,92 @@
+{
+  "comment": "Shared contract for bundle/plan.js and executas/brume. model_outputs: raw model text -> expected parse result (\"fallback\" = parse returns null). fallback_contexts: user context -> deterministic fallback plan.",
+  "model_outputs": [
+    {
+      "name": "clean json object",
+      "raw": "{\"pattern\": \"cyclic-sigh\", \"seconds\": 90, \"title\": \"Before the call\", \"opening\": \"A short settle before you dial in.\", \"cues\": [\"Shoulders soft\", \"Slow the out-breath\"], \"why\": \"The long exhale suits the minutes before a tense moment.\"}",
+      "expect": {
+        "pattern": "cyclic-sigh",
+        "seconds": 90,
+        "planSource": "ai",
+        "title": "Before the call",
+        "opening": "A short settle before you dial in.",
+        "cues": ["Shoulders soft", "Slow the out-breath"],
+        "why": "The long exhale suits the minutes before a tense moment."
+      }
+    },
+    {
+      "name": "prose + code fence around object",
+      "raw": "Here is a plan:\n```json\n{\"pattern\": \"box\", \"seconds\": 120, \"title\": \"Focus block\", \"opening\": \"Even sides to gather your attention.\", \"cues\": [\"Follow the four sides\"], \"why\": \"Structure suits getting ready for focused work.\"}\n```\nEnjoy.",
+      "expect": {
+        "pattern": "box",
+        "seconds": 120,
+        "planSource": "ai",
+        "title": "Focus block"
+      }
+    },
+    {
+      "name": "seconds snapped to nearest allowed",
+      "raw": "{\"pattern\": \"steady\", \"seconds\": 100, \"title\": \"Wind down\", \"opening\": \"Even and unhurried.\", \"cues\": [\"No hurry\", \"Easy pace\"], \"why\": \"An even rhythm suits winding down.\"}",
+      "expect": {
+        "pattern": "steady",
+        "seconds": 90,
+        "planSource": "ai"
+      }
+    },
+    {
+      "name": "seconds snapped up to 180",
+      "raw": "{\"pattern\": \"steady\", \"seconds\": 200, \"title\": \"Long wind down\", \"opening\": \"Even and unhurried.\", \"cues\": [\"No hurry\", \"Easy pace\"], \"why\": \"An even rhythm suits winding down.\"}",
+      "expect": {
+        "pattern": "steady",
+        "seconds": 180,
+        "planSource": "ai"
+      }
+    },
+    {
+      "name": "unknown pattern id -> whole plan falls back",
+      "raw": "{\"pattern\": \"wim-hof\", \"seconds\": 90, \"title\": \"x\", \"opening\": \"y\", \"cues\": [\"a\", \"b\"], \"why\": \"z\"}",
+      "expect": "fallback"
+    },
+    {
+      "name": "no json at all -> fallback",
+      "raw": "I'd suggest a nice breathing exercise! Just breathe slowly for a bit.",
+      "expect": "fallback"
+    },
+    {
+      "name": "truncated json -> fallback",
+      "raw": "{\"pattern\": \"box\", \"seconds\": 120, \"title\": \"Focus",
+      "expect": "fallback"
+    },
+    {
+      "name": "emoji stripped, overlong title capped, missing why filled",
+      "raw": "{\"pattern\": \"long-exhale\", \"seconds\": 90, \"title\": \"A very long title that keeps going and going past sixty characters easily yes\", \"opening\": \"Nice easy rhythm 🌿\", \"cues\": [\"Breathe 🍃\"], \"why\": \"\"}",
+      "expect": {
+        "pattern": "long-exhale",
+        "seconds": 90,
+        "planSource": "ai",
+        "opening": "Nice easy rhythm"
+      }
+    },
+    {
+      "name": "single cue padded to two",
+      "raw": "{\"pattern\": \"steady\", \"seconds\": 60, \"title\": \"Quick pause\", \"opening\": \"Short and even.\", \"cues\": [\"Only one cue\"], \"why\": \"Short on time.\"}",
+      "expect": {
+        "pattern": "steady",
+        "seconds": 60,
+        "planSource": "ai",
+        "minCues": 2
+      }
+    }
+  ],
+  "fallback_contexts": [
+    { "context": "Big call with my manager in 10 minutes", "pattern": "cyclic-sigh", "seconds": 90 },
+    { "context": "Presenting the roadmap to the team", "pattern": "cyclic-sigh", "seconds": 90 },
+    { "context": "Need to focus on writing a report next", "pattern": "box", "seconds": 120 },
+    { "context": "Deep work on the migration code", "pattern": "box", "seconds": 120 },
+    { "context": "Winding down before bed", "pattern": "steady", "seconds": 180 },
+    { "context": "Done for the day, tired", "pattern": "steady", "seconds": 180 },
+    { "context": "Been debugging for 3 hours, brain is fried", "pattern": "long-exhale", "seconds": 90 },
+    { "context": "", "pattern": "long-exhale", "seconds": 90 },
+    { "context": "Just a break", "pattern": "long-exhale", "seconds": 90 }
+  ]
+}

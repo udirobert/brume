@@ -3,27 +3,39 @@
 Chat-native guided Reset for the Brume Anna App. A stdio JSON-RPC 2.0
 Executa plugin, stdlib-only Python (3.10+), no dependencies.
 
-- `brume_reset` — returns the full ~90s pacing script (4s in / 6s out,
-  9 cycles) as verbatim `_display` blocks plus model-facing fields that
-  point to `brume_complete`. Optional args:
-  - `pace` — `"slow"` (5s in / 7s out), `"normal"` (4s in / 6s out,
-    default), `"fast"` (3s in / 5s out). If the user asks to adjust pace
-    mid-break, the agent re-invokes `brume_reset` with the new pace —
-    re-invocation is the adaptation mechanism, no separate tool.
+- `brume_reset` — plans (via `sampling/createMessage` + a `storage/get`
+  of `reset/summary` for "what has worked" personalization) and returns
+  the pacing script as verbatim `_display` blocks plus the plan fields.
+  Optional args:
+  - `context` — what the user said they are doing or about to do;
+    drives the AI plan. Without it (or on any sampling failure) the
+    plan falls back to deterministic keyword rules.
+  - `pattern` — one of `cyclic-sigh` | `long-exhale` | `box` | `steady`;
+    an explicit choice skips the model entirely.
+  - `pace` — `"slow"` (1.25×), `"normal"` (1×, default), `"fast"`
+    (0.8×), a tempo factor applied to every phase. A mid-break pace
+    change is a re-invocation — continuations keep the first segment's
+    pattern unless `pattern` is given.
   - `remaining_seconds` — delivers only roughly that many more seconds
     (partial cycles allowed, ≥1 cycle), so a re-invoked script covers
-    just the un-delivered remainder. Overrides `cycles`.
-  - `cycles` — 3–12 (default 9) when `remaining_seconds` is not set.
-  Each invoke appends a segment `{pace, cycles, seconds}` so the record
-  reflects what was actually delivered; re-invoked scripts are framed as
-  continuations ("continuing at a slower pace").
-- `brume_complete` — writes a factual session record via plugin-side APS
-  (`storage/set`, `scope: "user"`, keys `reset/sessions/<iso>` +
-  `reset/last`, same namespace the iframe bundle uses) and asks the host
-  for a closing line via `sampling/createMessage` (`llm.sample`).
-  Degrades to a fixed line when sampling is unavailable; abandoned runs
-  write nothing. Mixed-pace runs record `"pattern": "Reset · mixed pace"`
-  with a `paces` list and per-segment detail.
+    just the un-delivered remainder.
+  - `cycles` — legacy override; by default cycles derive from the
+    planned length (60/90/120/180 s).
+  Each invoke appends a segment `{pace, pattern, plan, cycles, seconds}`
+  so the record reflects what was actually delivered; re-invoked
+  scripts are framed as continuations ("continuing at a slower pace").
+- `brume_complete` — optional `felt` (`calmer`|`same`|`wired`) check-in;
+  writes the factual session record via plugin-side APS (`storage/set`,
+  `scope: "user"`, keys `reset/sessions/<iso>` + `reset/last` +
+  `reset/summary`, same namespace the iframe bundle uses) and asks the
+  host for a reflection line via `sampling/createMessage` (`llm.sample`)
+  with the same prompt contract as the bundle. Degrades to a fixed line
+  when sampling is unavailable; abandoned runs write nothing.
+
+The plan contract (prompt, JSON extraction, validation caps, fallback
+rules, summary shape) is a 1:1 port of `anna/bundle/plan.js`; both are
+tested against `anna/test/plan-cases.json` (`npm test` and
+`python3 -m unittest test_plan`).
 
 `tool_id` is `tool-papa-brume-htcxvfcr` (identity in `.anna/executa.json`;
 `executa.json` / `[project.scripts]` carry the same id). The app manifest

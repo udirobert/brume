@@ -30,12 +30,15 @@ export function isClockRunning(clock) {
   return clock.runningSince !== null;
 }
 
-// pattern: { inhale, hold, exhale, holdAfterExhale } in seconds.
+// pattern: { inhale, topup, hold, exhale, holdAfterExhale } in seconds.
+// `topup` (the cyclic sigh's second sip of air) sits between inhale and
+// hold; absent/zero keeps the old four-phase behaviour exactly.
 // Returns { duration, cycleCount, currentPhase, phaseProgress } where
 // duration is floored active seconds and cycleCount counts full cycles.
 export function sampleSessionTiming(clock, pattern, nowMs) {
   const phases = [
     { name: "inhale", seconds: pattern.inhale },
+    { name: "topup", seconds: pattern.topup || 0 },
     { name: "hold", seconds: pattern.hold },
     { name: "exhale", seconds: pattern.exhale },
     { name: "pause", seconds: pattern.holdAfterExhale },
@@ -78,6 +81,7 @@ export function sampleSessionTiming(clock, pattern, nowMs) {
 export function cycleDurationSeconds(pattern) {
   return (
     (pattern.inhale || 0) +
+    (pattern.topup || 0) +
     (pattern.hold || 0) +
     (pattern.exhale || 0) +
     (pattern.holdAfterExhale || 0)

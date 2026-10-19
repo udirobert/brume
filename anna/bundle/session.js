@@ -1,17 +1,24 @@
-// Reset routine definition + factual completion record.
+// Session storage + host calls for Brume Reset.
 // Dependency-free so the node smoke test can import it directly.
 
-// One Reset-appropriate default: a comfortable 4s in / 6s out rhythm,
-// 10s per cycle, 9 cycles ≈ 90 seconds total.
-export const PATTERN = {
-  name: "Reset · 4s in, 6s out",
-  inhale: 4,
-  hold: 0,
-  exhale: 6,
-  holdAfterExhale: 0,
-};
+import {
+  PATTERNS,
+  buildPlanPrompt,
+  parseModelPlan,
+  fallbackPlan,
+  buildReflectionPrompt,
+  cleanReflection,
+  updateSummary,
+  personalizationFromSummary,
+  PLAN_MAX_TOKENS,
+  REFLECTION_MAX_TOKENS,
+  FALLBACK_REFLECTION,
+  SUMMARY_KEY,
+} from "./plan.js";
 
-export const TARGET_SECONDS = 90;
+export { FALLBACK_REFLECTION };
+// Back-compat export name used by the smoke test / app.
+export const FALLBACK_CLOSING_LINE = FALLBACK_REFLECTION;
 
 // Mid-session pace control (co-breathing). Uniform tempo factors scale
 // every phase duration (see timing.js tempo section): slower stretches,
@@ -27,20 +34,45 @@ export const PACE_LABEL = {
 
 export const PHASE_WORDS = {
   inhale: "Breathe in",
+  topup: "Top up",
   hold: "Hold",
   exhale: "Breathe out",
   pause: "Rest",
 };
 
-// Factual record only — pattern, active seconds, cycles, timestamp, flag.
-// No scores, no verification language.
-export function buildCompletionRecord({ activeSeconds, cycles, interrupted, now }) {
+export const PREFS_KEY = "brume/prefs";
+export const SOUND_MODES = ["off", "chime", "voice"];
+
+// --- Records -------------------------------------------------------------------
+
+// Factual record: what was planned, what happened, how the user says
+// they feel, and which source produced the plan/reflection. No scores,
+// no verification language.
+export function buildCompletionRecord({
+  context,
+  pattern,
+  plannedSeconds,
+  activeSeconds,
+  cycles,
+  interrupted,
+  felt,
+  planSource,
+  reflection,
+  source,
+  now,
+}) {
   return {
-    pattern: PATTERN.name,
+    completedAt: new Date(now).toISOString(),
+    context: typeof context === "string" ? context.slice(0, 200) : "",
+    pattern,
+    plannedSeconds,
     activeSeconds,
     cycles,
-    completedAt: new Date(now).toISOString(),
     interrupted: Boolean(interrupted),
+    felt: felt === "calmer" || felt === "same" || felt === "wired" ? felt : null,
+    planSource,
+    reflection: typeof reflection === "string" ? reflection : "",
+    source: source === "executa.chat" ? "executa.chat" : "app",
   };
 }
 
@@ -56,57 +88,99 @@ function unwrap(res) {
   return res;
 }
 
-// Writes the completion record to per-user APS KV via the host API.
-// `anna` is the AnnaAppRuntime object (or a compatible test double).
+function storageArgs(extra) {
+  return { scope: "user", ...extra };
+}
+
+// Writes the completion record + summary to per-user APS KV via the host
+// API. `anna` is the AnnaAppRuntime object (or a compatible test double).
 // Throws on failure — the caller shows a "couldn't save" note.
 export async function saveCompletionRecord(anna, record) {
   const key = `reset/sessions/${record.completedAt}`;
   await unwrap(
-    anna.storage.set({ key, value: record, scope: "user" }),
+    anna.storage.set(storageArgs({ key, value: record })),
   );
   await unwrap(
-    anna.storage.set({ key: "reset/last", value: record, scope: "user" }),
+    anna.storage.set(storageArgs({ key: "reset/last", value: record })),
+  );
+  // Read-modify-write the rolling summary. A lost race just loses one
+  // session's contribution — acceptable for a counter.
+  let summary = null;
+  try {
+    const res = await unwrap(
+      anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
+    );
+    summary = res && typeof res === "object" && "value" in res ? res.value : res;
+  } catch {
+    /* no summary yet */
+  }
+  await unwrap(
+    anna.storage.set(
+      storageArgs({ key: SUMMARY_KEY, value: updateSummary(summary, record) }),
+    ),
   );
   return key;
 }
 
 export async function loadLastRecord(anna) {
   const res = await unwrap(
-    anna.storage.get({ key: "reset/last", scope: "user" }),
+    anna.storage.get(storageArgs({ key: "reset/last" })),
   );
   return res && typeof res === "object" && "value" in res ? res.value : res;
 }
 
-// --- Closing line via anna.llm.complete ------------------------------------
-//
-// The successful llm.complete call is what makes a run server-observable
-// (a storage.set alone does not count as a qualified run). The prompt is
-// built ONLY from session facts — pattern, active seconds, cycles, and the
-// interrupted flag. No user text or reflections ever reach the model.
-// Any failure, timeout, denial, or absent SDK resolves to the fixed
-// fallback line so the factual result always shows.
-
-export const FALLBACK_CLOSING_LINE = "Take a moment before you begin again.";
-
-const LLM_TIMEOUT_MS = 4000;
-const LLM_MAX_TOKENS = 64; // one short line; far below the 8192 sync ceiling
-
-export function buildClosingPrompt({ activeSeconds, cycles, interrupted }) {
-  return [
-    "You are writing the closing line shown after a guided breathing break.",
-    "Session facts:",
-    `- Routine: ${PATTERN.name}`,
-    `- Active practice time: ${activeSeconds} seconds`,
-    `- Breathing cycles completed: ${cycles}`,
-    `- Ended early: ${interrupted ? "yes" : "no"}`,
-    "Write one calm closing line or next-action suggestion.",
-    "15 words or fewer, plain sentence text, no emoji.",
-  ].join("\n");
+export async function loadSummary(anna) {
+  try {
+    const res = await unwrap(
+      anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
+    );
+    const v = res && typeof res === "object" && "value" in res ? res.value : res;
+    return v && typeof v === "object" ? v : null;
+  } catch {
+    return null;
+  }
 }
 
+export async function loadPrefs(anna) {
+  try {
+    const res = await unwrap(
+      anna.storage.get(storageArgs({ key: PREFS_KEY })),
+    );
+    const v = res && typeof res === "object" && "value" in res ? res.value : res;
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function savePrefs(anna, prefs) {
+  await unwrap(
+    anna.storage.set(storageArgs({ key: PREFS_KEY, value: prefs })),
+  );
+}
+
+export function summaryLine(summary) {
+  const p = personalizationFromSummary(summary);
+  if (!p) return null;
+  // "cyclic-sigh: calmer 3 of 4" -> "Cyclic sigh — calmer 3 of 4 times"
+  const [id, rest] = p.split(/: (.+)/);
+  const name = PATTERNS[id] ? PATTERNS[id].name : id;
+  return `${name} — ${rest} times`;
+}
+
+// --- LLM plumbing ---------------------------------------------------------------
+//
+// Both the plan call and the reflection call go through anna.llm.complete.
+// The successful calls are what make each run server-observable. Every
+// failure, timeout, denial, or absent SDK resolves to a deterministic
+// fallback so the UI never blocks on the model.
+
+const PLAN_TIMEOUT_MS = 8000;
+const REFLECTION_TIMEOUT_MS = 6000;
+
 // Accepts the llm.complete result ({role, content:{type:"text",text}}) or a
-// raw {ok:false,error} envelope — normalize to a trimmed single-line string.
-function closingText(res) {
+// raw {ok:false,error} envelope — normalize to a trimmed string.
+function responseText(res) {
   const r = unwrap(res);
   const content = r && r.content;
   let text = "";
@@ -119,7 +193,7 @@ function closingText(res) {
   } else if (content && typeof content === "object") {
     text = String(content.text ?? "");
   }
-  return text.replace(/\s+/g, " ").trim();
+  return text.trim();
 }
 
 function withTimeout(promise, ms) {
@@ -134,30 +208,70 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-// One call, no retries. Never throws — resolves to the model's line or the
-// fixed fallback. `opts.timeoutMs` is for tests; production uses ~4s.
-export async function fetchClosingLine(anna, facts, opts) {
-  if (!anna || typeof anna.llm?.complete !== "function") {
-    return FALLBACK_CLOSING_LINE;
-  }
-  const timeoutMs = opts?.timeoutMs ?? LLM_TIMEOUT_MS;
+async function callLlm(anna, prompt, maxTokens, timeoutMs) {
+  const res = await withTimeout(
+    Promise.resolve(
+      anna.llm.complete({
+        messages: [
+          { role: "user", content: { type: "text", text: prompt } },
+        ],
+        maxTokens,
+      }),
+    ),
+    timeoutMs,
+  );
+  const text = responseText(res);
+  // Diagnostic hook for dev/testing: last prompt + raw model text.
   try {
-    const res = await withTimeout(
-      Promise.resolve(
-        anna.llm.complete({
-          messages: [
-            {
-              role: "user",
-              content: { type: "text", text: buildClosingPrompt(facts) },
-            },
-          ],
-          maxTokens: LLM_MAX_TOKENS,
-        }),
-      ),
+    window.__brumeLastLlm = { prompt, text };
+  } catch {
+    /* non-window contexts (tests) */
+  }
+  return text;
+}
+
+// Plan via the model. Never throws — resolves {plan, plannedOffline}
+// where plan is a validated plan object; on any failure the plan is the
+// deterministic fallback for the same context.
+export async function fetchPlan(anna, { context, summary }, opts) {
+  const fb = () => fallbackPlan(context);
+  if (!anna || typeof anna.llm?.complete !== "function") {
+    return { plan: fb(), offline: true };
+  }
+  const timeoutMs = opts?.timeoutMs ?? PLAN_TIMEOUT_MS;
+  try {
+    const raw = await callLlm(
+      anna,
+      buildPlanPrompt(context, personalizationFromSummary(summary)),
+      PLAN_MAX_TOKENS,
       timeoutMs,
     );
-    return closingText(res) || FALLBACK_CLOSING_LINE;
+    const plan = parseModelPlan(raw);
+    return plan ? { plan, offline: false } : { plan: fb(), offline: true };
   } catch {
-    return FALLBACK_CLOSING_LINE;
+    return { plan: fb(), offline: true };
   }
 }
+
+// Reflection via the model. Never throws — resolves the cleaned line or
+// the fixed fallback.
+export async function fetchReflection(anna, facts, opts) {
+  if (!anna || typeof anna.llm?.complete !== "function") {
+    return FALLBACK_REFLECTION;
+  }
+  const timeoutMs = opts?.timeoutMs ?? REFLECTION_TIMEOUT_MS;
+  try {
+    const raw = await callLlm(
+      anna,
+      buildReflectionPrompt(facts),
+      REFLECTION_MAX_TOKENS,
+      timeoutMs,
+    );
+    return cleanReflection(raw);
+  } catch {
+    return FALLBACK_REFLECTION;
+  }
+}
+
+// Kept for back-compat with any callers of the old name.
+export const fetchClosingLine = fetchReflection;

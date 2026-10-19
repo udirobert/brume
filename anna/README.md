@@ -4,31 +4,42 @@ Anna App: `manifest.json` (schema 3) + static SPA in `bundle/` + a
 chat-native Executa plugin in `executas/brume/` (bundled handle
 `bundled:brume` in `required_executas` — `app.json` maps it to
 `./executas/brume`, and publish resolves it to the platform `tool_id`
-`tool-papa-brume-htcxvfcr`). One camera-free
-Reset breathing routine (~90 s, 4 s in / 6 s out × 9 cycles), offered
-two ways: the iframe app below, and `#brume reset` in chat, where
-`brume_reset` renders the guided break as verbatim `_display` blocks and
-`brume_complete` writes the session record (`storage/set`, `scope:
-"user"`, same `reset/...` namespace as the bundle) plus a
-`sampling/createMessage` closing line — falling back to a fixed line
-when sampling is unavailable. Abandoned chat runs write nothing. On
+`tool-papa-brume-htcxvfcr`). Brume is AI-native: each break is *planned*
+by the model — the user says what's next ("big call in 10 minutes") and
+`llm.complete` (window) / `sampling/createMessage` (chat) picks one of
+four patterns (cyclic sigh / long exhale / box / steady) and a length
+(60–180 s), plus a title, opening line, in-session cues and a "why",
+personalized by the user's own after-session ratings. After the break a
+second model call writes the reflection note — both calls are what make
+each run server-observable. Any failure falls back to a deterministic
+plan. The window flow: Home → Planning → Plan → Session → Check-in →
+Result, with chime (WebAudio) or voice (host `audio.speak`) phase cues,
+mobile support (`form_factors`, haptics, safe-area), and `#brume reset`
+in chat. Sessions write `reset/sessions/<ts>` + `reset/last` +
+`reset/summary` (scope `user`). On
 iframe completion (natural end or ended early with ≥1 active second) the
 bundle:
 
 1. calls `anna.llm.complete` — a short prompt built **only** from session
-   facts (pattern name, active seconds, cycles, interrupted flag) asks the
-   model for one calm closing line (≤15 words), which is shown under the
-   factual result. This is the server-observable step: per Anna forum
-   staff, a `storage.set` alone does **not** count as a Qualified App Run,
-   but a successful `llm.complete` producing the meaningful result can.
-   The call is raced against a ~4 s timeout and never blocks the result;
-   on denial/failure/timeout/no-SDK the fixed line "Take a moment before
+   facts (context, pattern name, active/planned seconds, cycles,
+   interrupted flag, and the check-in `felt` value) asks the model for a
+   ≤2-sentence reflection note, shown under the factual result. This is
+   the server-observable step: per Anna forum staff, a `storage.set`
+   alone does **not** count as a Qualified App Run, but a successful
+   `llm.complete` producing the meaningful result can. The call is raced
+   against a ~6 s timeout and never blocks the result; on
+   denial/failure/timeout/no-SDK the fixed line "Take a moment before
    you begin again." is shown instead (a fallback-only run likely does
    not qualify).
-2. writes a factual record (`{pattern, activeSeconds, cycles,
-   completedAt, interrupted}`) via `anna.storage.*` at `scope: "user"`.
+2. writes a factual record (`{completedAt, context, pattern,
+   plannedSeconds, activeSeconds, cycles, interrupted, felt, planSource,
+   reflection, source}`) via `anna.storage.*` at `scope: "user"`, plus a
+   read-modify-write `reset/summary` that feeds the plan prompt's
+   "what has worked" line.
 
-No audio, no getUserMedia, no external network calls.
+No camera, no getUserMedia, no external network calls. Chime tones are
+synthesized locally (WebAudio); voice cues use host `audio.speak`
+(inline delivery, decoded in memory — no URLs persisted).
 
 ## Mid-session pacing (co-breathing)
 

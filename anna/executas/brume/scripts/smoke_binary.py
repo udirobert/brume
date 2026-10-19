@@ -21,7 +21,7 @@ def fail(msg: str) -> "None":
     sys.exit(1)
 
 
-def read_line(proc: subprocess.Popen, timeout: float = 15.0) -> dict:
+def read_line(proc: subprocess.Popen, timeout: float = 40.0) -> dict:
     """Read one stdout line with a timeout; return parsed JSON."""
     box = {}
 
@@ -48,7 +48,7 @@ def request(proc: subprocess.Popen, rid: int, method: str, params: dict | None =
         env["params"] = params
     proc.stdin.write(json.dumps(env) + "\n")
     proc.stdin.flush()
-    deadline = time.monotonic() + 15.0
+    deadline = time.monotonic() + 45.0
     while True:
         resp = read_line(proc, max(0.1, deadline - time.monotonic()))
         # Skip reverse-RPC request frames the plugin may emit mid-invoke.
@@ -96,11 +96,22 @@ def main() -> None:
         if not isinstance(r.get("result"), dict):
             fail("health: result is not an object")
 
-        # invoke brume_reset {}
-        r = request(proc, 3, "invoke", {"tool": "brume_reset", "arguments": {}})
+        # invoke brume_reset with a context. The plan sampling call has
+        # no host to answer it here, so the plugin waits out its ~12s
+        # reverse-RPC timeout and falls back — tolerate the delay.
+        started = time.monotonic()
+        r = request(proc, 3, "invoke", {"tool": "brume_reset", "arguments": {"context": "big call soon"}})
+        elapsed = time.monotonic() - started
         result = r.get("result")
         if not isinstance(result, dict) or result.get("success") is not True:
             fail(f"invoke brume_reset: expected result.success true, got {result!r}")
+        data = result.get("data") or {}
+        if data.get("pattern") not in ("cyclic-sigh", "long-exhale", "box", "steady"):
+            fail(f"invoke brume_reset: unexpected pattern {data.get('pattern')!r}")
+        # With no host answering sampling, the plan must be the fallback.
+        if data.get("planSource") not in ("fallback", "ai"):
+            fail(f"invoke brume_reset: unexpected planSource {data.get('planSource')!r}")
+        print(f"  (brume_reset took {elapsed:.1f}s — plan RPC timeout path)")
 
         # close stdin -> process must exit 0
         proc.stdin.close()

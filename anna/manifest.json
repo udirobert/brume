@@ -19,11 +19,11 @@
   "required_executas": [
     {
       "tool_id": "bundled:brume",
-      "min_version": "0.2.1",
+      "min_version": "0.3.0",
       "version": "latest"
     }
   ],
-  "system_prompt_addendum": "Brume offers one quiet guided breathing break. When the user asks for a break or reset (e.g. '#brume reset'), call brume_reset once and let its guided text stand \u2014 it is rendered verbatim, so do not restate or paraphrase it. When the user signals they finished (e.g. 'done'), call brume_complete. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
+  "system_prompt_addendum": "Brume plans and guides one short breathing break. When the user asks for a break or reset (for example '#brume reset' or '#brume before my 3pm call'), call brume_reset once, passing a short `context` that summarizes what they said they are doing or about to do (never invent one), and let its guided text stand \u2014 it is rendered verbatim, so do not restate or paraphrase it. If they ask to change pace mid-break, call brume_reset again with `pace` and `remaining_seconds`. If they would rather follow a visual timer, call open_app_view with app_id 582 and payload {\"context\": \"<the same short summary>\"}. When they say they are done, call brume_complete, passing `felt` only if they said how they feel (calmer, same, or wired); do not quiz them. Never start a break unprompted and never claim health or wellness benefits; describe only what happened.",
   "ui": {
     "bundle": {
       "format": "static-spa",
@@ -50,16 +50,28 @@
     "host_api": {
       "storage": [
         "get",
-        "set"
+        "set",
+        "list"
       ],
       "llm": [
-        "complete"
+        "complete",
+        "catalog"
+      ],
+      "audio": [
+        "speak"
+      ],
+      "mobile": [
+        "haptics"
       ],
       "window": [
         "set_title"
       ]
     },
-    "state_merge": "last_writer_wins"
+    "state_merge": "last_writer_wins",
+    "form_factors": [
+      "desktop",
+      "mobile"
+    ]
   },
   "dev": {
     "mocks": {
@@ -68,7 +80,7 @@
           "role": "assistant",
           "content": {
             "type": "text",
-            "text": "Carry this quiet into whatever comes next."
+            "text": "{\"pattern\":\"cyclic-sigh\",\"seconds\":90,\"title\":\"Before the call\",\"opening\":\"A short settle before you dial in.\",\"cues\":[\"Shoulders soft\",\"Slow the out-breath\"],\"why\":\"The long exhale suits the minutes before a tense moment.\"}"
           },
           "model": "mock-model",
           "stopReason": "endTurn",

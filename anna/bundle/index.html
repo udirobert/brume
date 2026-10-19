@@ -2,29 +2,67 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Brume Reset</title>
     <link rel="stylesheet" href="./app.css" />
     <script src="./app.js" type="module"></script>
   </head>
   <body>
     <main id="root">
-      <section id="screen-start" class="screen">
+      <section id="screen-home" class="screen">
         <h1>Brume</h1>
-        <p class="pattern-name" data-pattern-name></p>
-        <p class="hint">
-          A short breathing break — about a minute and a half. Sit comfortably;
-          you can pause or stop at any time.
-        </p>
+        <p class="hint">One short breathing break, planned for this moment.</p>
+        <label class="field-label" for="context-input">What's next for you?</label>
+        <input
+          id="context-input"
+          type="text"
+          maxlength="200"
+          placeholder="Big call in 10 minutes"
+          autocomplete="off"
+        />
+        <div class="chips" role="group" aria-label="Suggestions">
+          <button class="chip" type="button" data-context="Before a call or meeting">Before a call or meeting</button>
+          <button class="chip" type="button" data-context="After a long stretch of focus">After a long stretch of focus</button>
+          <button class="chip" type="button" data-context="Need to focus next">Need to focus next</button>
+          <button class="chip" type="button" data-context="Winding down for the day">Winding down for the day</button>
+        </div>
+        <button id="btn-plan" class="primary" type="button">Plan my reset</button>
+        <button id="btn-quick" type="button">Quick 90-second reset</button>
         <p class="last-session" data-last-session hidden></p>
+        <p class="last-session" data-worked hidden></p>
+      </section>
+
+      <section id="screen-planning" class="screen" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="planning-note">Choosing a pattern for this moment…</p>
+        <button id="btn-skip-plan" type="button">Skip — use a standard reset</button>
+      </section>
+
+      <section id="screen-plan" class="screen" hidden>
+        <h1 id="plan-title"></h1>
+        <p id="plan-offline" class="muted offline-note" hidden>Planned offline</p>
+        <p id="plan-rhythm" class="pattern-name"></p>
+        <p id="plan-length" class="muted"></p>
+        <p id="plan-opening"></p>
+        <p id="plan-why" class="hint"></p>
+        <div class="field-label">Pattern</div>
+        <div class="chips" id="pattern-chips" role="group" aria-label="Pattern"></div>
+        <div class="field-label">Length</div>
+        <div class="chips" id="length-chips" role="group" aria-label="Length"></div>
+        <div class="field-label">Sound</div>
+        <div class="chips" id="sound-chips" role="group" aria-label="Sound">
+          <button class="chip" type="button" data-sound="off">Off</button>
+          <button class="chip" type="button" data-sound="chime">Chime</button>
+          <button class="chip" type="button" data-sound="voice">Voice</button>
+        </div>
         <button id="btn-begin" class="primary" type="button">Begin</button>
       </section>
 
       <section id="screen-session" class="screen" hidden>
-        <p class="pattern-name" data-pattern-name></p>
+        <p class="pattern-name" id="session-pattern"></p>
         <div class="breath-stage" aria-live="polite">
           <div id="breath-dot" aria-hidden="true"></div>
           <p id="phase-word" class="phase-word"></p>
+          <p id="cue-text" class="cue-text"></p>
         </div>
         <p class="timer">
           <span id="elapsed">0:00</span>
@@ -42,6 +80,16 @@
         </div>
       </section>
 
+      <section id="screen-checkin" class="screen" hidden>
+        <h1>How do you feel now?</h1>
+        <div class="col">
+          <button class="primary" type="button" data-felt="calmer">Calmer</button>
+          <button type="button" data-felt="same">About the same</button>
+          <button type="button" data-felt="wired">Still wired</button>
+          <button class="chip" type="button" data-felt="">Skip</button>
+        </div>
+      </section>
+
       <section id="screen-result" class="screen" hidden>
         <h1 id="result-heading"></h1>
         <dl class="facts">
@@ -53,6 +101,8 @@
         <p id="save-note" class="muted" hidden></p>
         <button id="btn-again" class="primary" type="button">Again</button>
       </section>
+
+      <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
     </main>
   </body>
 </html>

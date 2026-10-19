@@ -47,7 +47,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -145,7 +145,7 @@ MANIFEST: dict[str, Any] = {
     "author": "Brume",
     "category": "productivity",
     "license": "MIT",
-    "host_capabilities": ["llm.sample", "aps.kv"],
+    "host_capabilities": ["llm.sample", "aps.kv", "aps.scope.user.read", "aps.scope.user.write"],
     "tools": [
         {
             "name": "brume_reset",

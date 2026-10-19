@@ -1,0 +1,84 @@
+{
+  "name": "tool-papa-brume-htcxvfcr",
+  "display_name": "Brume Reset",
+  "version": "0.3.1",
+  "description": "An AI-planned guided breathing break, delivered inline in chat. brume_reset picks a pattern and length for the user's moment (or honours an explicit `pattern`), renders the pacing script verbatim, and remembers the plan; brume_complete records the finished break \u2014 including an optional `felt` check-in \u2014 and writes a short session reflection. If the user asks to adjust pace mid-break, invoke brume_reset again with `pace` and `remaining_seconds` rather than restarting.",
+  "author": "Brume",
+  "category": "productivity",
+  "license": "MIT",
+  "host_capabilities": [
+    "llm.sample",
+    "aps.kv",
+    "aps.scope.user.read",
+    "aps.scope.user.write"
+  ],
+  "tools": [
+    {
+      "name": "brume_reset",
+      "description": "Plan and start (or continue) a guided breathing break. Pass a short `context` summarizing what the user said they are doing or about to do (never invent one); the pattern and length are chosen for that moment unless `pattern` is given. Returns the pacing script as verbatim display blocks \u2014 do not restate or paraphrase them. If the user asks to adjust pace mid-break, invoke again with the new `pace` and `remaining_seconds` set to the un-delivered remainder. When the user later signals they finished, call brume_complete.",
+      "timeout": 30,
+      "parameters": [
+        {
+          "name": "context",
+          "type": "string",
+          "description": "What the user said they are doing or about to do, in a few words (e.g. 'before my 3pm call'). Used to pick the pattern and personalize the plan; optional.",
+          "required": false
+        },
+        {
+          "name": "pattern",
+          "type": "string",
+          "enum": [
+            "cyclic-sigh",
+            "long-exhale",
+            "box",
+            "steady"
+          ],
+          "description": "Force a specific pattern id, skipping the AI plan. Use only when the user names a pattern.",
+          "required": false
+        },
+        {
+          "name": "pace",
+          "type": "string",
+          "enum": [
+            "slow",
+            "normal",
+            "fast"
+          ],
+          "description": "Tempo factor: slow = 1.25x phase length, normal = 1x, fast = 0.8x. Default normal.",
+          "required": false,
+          "default": "normal"
+        },
+        {
+          "name": "remaining_seconds",
+          "type": "integer",
+          "description": "Deliver only roughly this many more seconds \u2014 use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length.",
+          "required": false
+        },
+        {
+          "name": "cycles",
+          "type": "integer",
+          "description": "Legacy override: exact breath cycles to deliver. When omitted, cycles are derived from the planned length (or remaining_seconds).",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "brume_complete",
+      "description": "Close out a guided break after the user says they are done (e.g. 'done', 'finished', 'back'). Writes a factual session record, updates the user's rolling summary, and returns a short reflection line. Pass `felt` only if the user said how they feel; do not quiz them. Do not call for abandoned or interrupted breaks.",
+      "timeout": 60,
+      "parameters": [
+        {
+          "name": "felt",
+          "type": "string",
+          "enum": [
+            "calmer",
+            "same",
+            "wired"
+          ],
+          "description": "Optional self-report: how the user feels after the break.",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

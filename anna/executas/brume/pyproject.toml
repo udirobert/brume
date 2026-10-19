@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tool-papa-brume-htcxvfcr"
-version = "0.3.0"
+version = "0.3.1"
 description = "Brume Reset — chat-native guided breathing break (Anna Executa plugin)"
 requires-python = ">=3.10"
 

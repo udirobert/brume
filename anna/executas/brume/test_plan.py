@@ -165,5 +165,12 @@ class InvokeContract(unittest.TestCase):
         self.assertFalse(out["data"]["record_written"])
 
 
+
+class ProtocolManifest(unittest.TestCase):
+    def test_manifest_json_matches_describe(self):
+        here = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(here, "manifest.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), json.loads(json.dumps(bp.MANIFEST)))
+
 if __name__ == "__main__":
     unittest.main()

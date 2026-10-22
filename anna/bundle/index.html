@@ -99,21 +99,36 @@
       </section>
 
       <section id="screen-plan" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-plan" aria-hidden="true"></div>
         <h1 id="plan-title"></h1>
         <p id="plan-offline" class="muted offline-note" hidden>Planned offline</p>
         <p id="plan-rhythm" class="pattern-name"></p>
         <p id="plan-length" class="muted"></p>
         <p id="plan-opening"></p>
         <p id="plan-why" class="hint"></p>
-        <div class="field-label">Pattern</div>
-        <div class="chips" id="pattern-chips" role="group" aria-label="Pattern"></div>
-        <div class="field-label">Length</div>
-        <div class="chips" id="length-chips" role="group" aria-label="Length"></div>
-        <div class="field-label">Sound</div>
-        <div class="chips" id="sound-chips" role="group" aria-label="Sound">
-          <button class="chip" type="button" data-sound="off">Off</button>
-          <button class="chip" type="button" data-sound="chime">Chime</button>
-          <button class="chip" type="button" data-sound="voice">Voice</button>
+        <div class="adjust-panel" id="plan-adjust">
+          <button type="button" class="adjust-row" data-adjust="pattern" aria-expanded="false">
+            <span class="adjust-label">Pattern</span>
+            <span class="adjust-value" id="adj-pattern-val"></span>
+            <span class="adjust-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="chips adjust-opts" id="pattern-chips" role="group" aria-label="Pattern" hidden></div>
+          <button type="button" class="adjust-row" data-adjust="length" aria-expanded="false">
+            <span class="adjust-label">Length</span>
+            <span class="adjust-value" id="adj-length-val"></span>
+            <span class="adjust-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="chips adjust-opts" id="length-chips" role="group" aria-label="Length" hidden></div>
+          <button type="button" class="adjust-row" data-adjust="sound" aria-expanded="false">
+            <span class="adjust-label">Sound</span>
+            <span class="adjust-value" id="adj-sound-val"></span>
+            <span class="adjust-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="chips adjust-opts" id="sound-chips" role="group" aria-label="Sound" hidden>
+            <button class="chip" type="button" data-sound="off">Off</button>
+            <button class="chip" type="button" data-sound="chime">Chime</button>
+            <button class="chip" type="button" data-sound="voice">Voice</button>
+          </div>
         </div>
         <button id="btn-begin" class="primary" type="button">Begin</button>
       </section>

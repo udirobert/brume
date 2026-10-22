@@ -425,3 +425,21 @@ textarea, input[type=text], input:not([type]) {
 .brand-header { padding: max(10px, env(safe-area-inset-top, 0px), var(--anna-safe-area-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
 main#root { width: min(100%, 520px); }
 h1[tabindex="-1"]:focus { outline: none; }
+
+.adjust-panel { margin: 14px 0; }
+.adjust-row {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; min-height: 44px; padding: 8px 14px;
+  border: 1px solid hsl(var(--brume-border));
+  border-radius: var(--brume-radius);
+  background: hsl(var(--brume-surface) / .7);
+  font: inherit; text-align: left; cursor: pointer;
+  color: var(--fg);
+}
+.adjust-row + .adjust-opts, .adjust-opts + .adjust-row { margin-top: 6px; }
+.adjust-label { flex: 0 0 auto; color: var(--muted); font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; }
+.adjust-value { margin-left: auto; font-size: .9rem; }
+.adjust-chevron { color: var(--muted); font-size: 1rem; transition: transform .15s ease; }
+.adjust-row[aria-expanded="true"] .adjust-chevron { transform: rotate(90deg); }
+.adjust-opts { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; padding-left: 4px; }
+.adjust-opts .chip { min-height: 36px; padding: 4px 12px; font-size: .8rem; }

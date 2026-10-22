@@ -192,6 +192,9 @@ const els = {
   planOpening: $("#plan-opening"),
   planWhy: $("#plan-why"),
   patternChips: $("#pattern-chips"),
+  adjPatternVal: $("#adj-pattern-val"),
+  adjLengthVal: $("#adj-length-val"),
+  adjSoundVal: $("#adj-sound-val"),
   lengthChips: $("#length-chips"),
   soundChips: $("#sound-chips"),
   begin: $("#btn-begin"),
@@ -278,6 +281,7 @@ function fmtSeconds(total) {
 const SCREEN_MASCOT = {
   home: { el: "home", state: "idle" },
   planning: { el: "planning", state: "thinking" },
+  plan: { el: "plan", state: "idle" },
   checkin: { el: "checkin", state: "idle" },
   result: { el: "result", state: "proud" },
   alert: { el: "alert", state: "idle" },
@@ -671,6 +675,7 @@ function renderPlanControls() {
       plan.pattern = v;
       markEdited();
       showPlan(plan);
+      previewBreath(v);
     },
   );
   renderChips(
@@ -686,19 +691,58 @@ function renderPlanControls() {
   for (const b of els.soundChips.querySelectorAll(".chip")) {
     b.classList.toggle("active", b.dataset.sound === soundMode);
   }
+  if (els.adjPatternVal) {
+    const current = PATTERNS[plan.pattern];
+    els.adjPatternVal.textContent = current ? current.name : plan.pattern;
+    els.adjLengthVal.textContent = fmtSeconds(plan.seconds);
+    els.adjSoundVal.textContent = { off: "off", chime: "chime", voice: "voice" }[soundMode];
+  }
+}
+
+let breathPreview = 0;
+function previewBreath(patternId) {
+  const token = ++breathPreview;
+  const m = mascot("plan");
+  const pat = PATTERNS[patternId];
+  if (!m || !pat || REDUCED_MOTION) return;
+  const phases = [
+    ["inhale", pat.inhale],
+    ["topup", pat.topup],
+    ["hold", pat.hold],
+    ["exhale", pat.exhale],
+    ["pause", pat.holdAfterExhale],
+  ].filter(([, s]) => s > 0);
+  if (!phases.length) return;
+  const total = phases.reduce((a, [, s]) => a + s, 0) * 1000;
+  const start = performance.now();
+  function frame(t) {
+    if (token !== breathPreview || els.screens.plan.hidden) return;
+    let el = (t - start) % total;
+    let phase = "idle", prog = 0;
+    for (const [name, s] of phases) {
+      const ms = s * 1000;
+      if (el < ms) { phase = name; prog = el / ms; break; }
+      el -= ms;
+    }
+    m.setState(phase === "pause" ? "idle" : phase);
+    m.setBreath(prog);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 
 function showPlan(p) {
   plan = p;
   const pat = PATTERNS[plan.pattern];
-  els.planTitle.textContent = plan.title;
+  const userMoment = (context || "").trim();
+  els.planTitle.textContent = plan.offline && userMoment ? userMoment : plan.title;
   els.planRhythm.textContent = `${pat.name} · ${pat.rhythm}`;
   els.planLength.textContent = `${fmtSeconds(plan.seconds)} total`;
-  els.planOpening.textContent = plan.opening;
-  els.planWhy.textContent = plan.why;
+  els.planOpening.textContent = plan.offline ? plan.why : plan.opening;
+  els.planWhy.textContent = plan.offline ? "" : plan.why;
   els.planOffline.textContent = plan.planSource === "quick"
-    ? "Basic breathing plan — no AI planning."
-    : "Basic breathing plan — AI personalization unavailable.";
+    ? `${plan.title} — a standard breathing plan.`
+    : `${plan.title} — a standard plan; AI personalization unavailable.`;
   els.planOffline.hidden = !plan.offline;
   renderPlanControls();
   show(els.screens.plan);
@@ -2538,6 +2582,23 @@ async function main() {
       prefs = { ...prefs, sound: soundMode };
       if (anna) savePrefs(anna, prefs).catch(() => {});
       if (task?.flow === "reset") snapshotReset(task.screen);
+      if (soundMode === "chime" && chime) chime.play("inhale");
+    });
+  }
+  for (const row of document.querySelectorAll(".adjust-row[data-adjust]")) {
+    row.addEventListener("click", () => {
+      const opts = row.nextElementSibling;
+      const wasOpen = opts && !opts.hidden;
+      for (const r2 of document.querySelectorAll(".adjust-row[data-adjust]")) {
+        r2.setAttribute("aria-expanded", "false");
+        if (r2.nextElementSibling?.classList.contains("adjust-opts")) {
+          r2.nextElementSibling.hidden = true;
+        }
+      }
+      if (opts?.classList.contains("adjust-opts") && !wasOpen) {
+        opts.hidden = false;
+        row.setAttribute("aria-expanded", "true");
+      }
     });
   }
   els.begin.addEventListener("click", begin);

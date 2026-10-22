@@ -18,7 +18,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase configuration is missing. Authentication and database features will not work.');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// createClient() throws on an empty URL, which took down every test that
+// imports this module without a .env file (CI has none). Fall back to a
+// placeholder so the module can be imported; every real call then fails
+// loudly with a network error instead of the whole app failing to mount.
+const effectiveUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const effectiveKey =
+  supabaseAnonKey ||
+  'placeholder-anon-key-for-missing-configuration';
+
+export const supabase = createClient<Database>(effectiveUrl, effectiveKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

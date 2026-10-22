@@ -69,9 +69,17 @@ const missingCriticalVars = criticalEnvVars.filter(
 );
 
 if (missingCriticalVars.length > 0) {
-  console.error("Missing critical environment variables:", missingCriticalVars);
-  throw new Error(
-    `Missing critical environment variables: ${missingCriticalVars.join(", ")}`,
+  const message = `Missing critical environment variables: ${missingCriticalVars.join(", ")}`;
+  // A production build must fail loudly: shipping a bundle with no Supabase
+  // URL means login silently fails in the browser. Tests and the dev server
+  // do not need credentials — a hard throw here broke every test that
+  // imports this module in CI, where there is no .env file.
+  if (import.meta.env.PROD) {
+    console.error(message);
+    throw new Error(message);
+  }
+  console.warn(
+    `${message} — running without them. Sign-in and session data will not work.`,
   );
 }
 

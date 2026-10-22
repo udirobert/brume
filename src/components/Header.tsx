@@ -22,7 +22,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ className }) => {
   const location = useLocation();
   const { logout } = useAuth();
-  const { isAuthenticated } = useAuthStatus();
+  const { isAuthenticated, isLoading } = useAuthStatus();
 
   const navLink = (path: string, label: string, icon: React.ElementType) => {
     const isActive = location.pathname === path;
@@ -76,6 +76,9 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             >
               <LogOut className="w-4 h-4" />
             </Button>
+          ) : isLoading ? (
+            // Session still resolving — don't flash "Sign in" at a signed-in user.
+            <div className="h-8 w-16 rounded-full bg-foreground/5" aria-hidden="true" />
           ) : (
             <Link
               to="/auth"

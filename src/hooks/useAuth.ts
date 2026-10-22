@@ -6,6 +6,7 @@ import { useWalletStatus, useWalletActions } from "./useWallet";
 import { revenueCatAuthIntegration } from "../lib/monetization/revenueCatAuthIntegration";
 import { revenueCatService, UserSubscription } from "../lib/monetization/revenueCat";
 import { useSiweAuth } from './useSiweAuth';
+import { useAuthStore } from '../stores/authStore';
 import type { BlockchainAuthReturn } from './useBlockchainAuth';
 
 /**
@@ -184,6 +185,30 @@ export const useAuth = (): UseAuthReturn => {
       await fetchProfile(session.user.id);
     }
   }, [session, fetchProfile]);
+
+  /**
+   * Mirror the session into the shared auth store.
+   *
+   * The store is the app's cross-screen source of truth (the Header reads
+   * `useAuthStatus()`), but nothing used to write the session into it, so
+   * `isAuthenticated` stayed false forever and the header kept offering
+   * "Sign in" to signed-in users. Several useAuth instances exist (one per
+   * screen), so only a real session clears the profile — a screen that has
+   * not loaded the profile yet must not wipe the one another screen loaded.
+   */
+  useEffect(() => {
+    const store = useAuthStore.getState();
+    store.setSession(session);
+    if (profile) {
+      store.setProfile(profile);
+    } else if (!session) {
+      store.setProfile(null);
+    }
+  }, [session, profile]);
+
+  useEffect(() => {
+    useAuthStore.getState().setLoading(loading);
+  }, [loading]);
 
   useEffect(() => {
     const initAuth = async () => {

@@ -5,23 +5,34 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Skeleton } from "../components/ui/skeleton";
-import { Button } from "../components/ui/button";
-import {
   BarChart3,
-  Settings,
   CreditCard,
   Palette,
   Shield,
   LogOut,
   HelpCircle,
+  ChevronRight,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { BrumeMascot } from "@/components/BrumeMascot";
+import { cn } from "@/lib/utils";
+
+/**
+ * Profile — Brume's own space, not an account dashboard.
+ *
+ * The mascot is the portrait: Brume keeps your place, so Brume is who you
+ * see. Everything else is quiet — two ways in (practice, premium) and a
+ * short list of settings. No wallet section: a wallet is something you
+ * attach on purpose, and touching it here woke the wallet up unasked.
+ */
+
+const THEME_LABEL: Record<string, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
 
 const UserProfilePage = () => {
   const { user, profile, loading: authLoading, signOut } = useAuth();
@@ -32,19 +43,19 @@ const UserProfilePage = () => {
   const navigate = useNavigate();
 
   const cycleTheme = () => {
-    if (theme === 'system') setTheme('light');
-    else if (theme === 'light') setTheme('dark');
-    else setTheme('system');
+    if (theme === "system") setTheme("light");
+    else if (theme === "light") setTheme("dark");
+    else setTheme("system");
   };
 
   const handleSignOut = async () => {
     try {
       await Promise.all([signOut(), lensLogout(), flowDisconnect()]);
-      toast.success('Signed out successfully');
-      navigate('/');
+      toast.success("Signed out successfully");
+      navigate("/");
     } catch (error) {
-      toast.error('Failed to sign out completely');
-      console.error('Sign out error:', error);
+      toast.error("Failed to sign out completely");
+      console.error("Sign out error:", error);
     }
   };
 
@@ -60,7 +71,7 @@ const UserProfilePage = () => {
             <Skeleton className="h-6 w-64" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <Skeleton className="h-48" />
           <Skeleton className="h-48" />
         </div>
@@ -79,116 +90,155 @@ const UserProfilePage = () => {
     );
   }
 
+  const displayName = user.profile.name || user.profile.username || "Your practice";
+  const tierLabel =
+    user.tier === "premium" || user.tier === "pro" ? "Premium" : "Free";
+
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
-        <Avatar className="w-24 h-24 border-4 border-primary">
-          <AvatarImage
-            src={user.profile.avatar}
-            alt={user.profile.name || user.profile.username}
-          />
-          <AvatarFallback>
-            {(user.profile.name || user.profile.username)?.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-4xl font-bold">
-            {user.profile.name || user.profile.username}
-          </h1>
-          <p className="mt-2">{user?.email}</p>
-        </div>
+    <div className="w-full max-w-md mx-auto flex flex-col items-center px-2 py-6">
+      {/* Brume is the portrait — the mascot carries the page, not an avatar. */}
+      <div className="relative">
+        <div
+          className="absolute inset-0 -z-10 rounded-full bg-primary/15 blur-3xl scale-150"
+          aria-hidden="true"
+        />
+        <BrumeMascot state="proud" size={116} />
+        {user.profile.avatar && (
+          <Avatar className="absolute -bottom-1 -right-1 h-11 w-11 border-2 border-background">
+            <AvatarImage src={user.profile.avatar} alt={displayName} />
+            <AvatarFallback>
+              {displayName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-6 max-w-md">
-        <Button
-          variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-3"
-          onClick={() => navigate("/progress")}
-        >
-          <BarChart3 className="h-5 w-5" />
-          <span className="text-xs">Progress</span>
-        </Button>
-        <Button
-          variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-3"
-          onClick={() => navigate("/subscription")}
-        >
-          <CreditCard className="h-5 w-5" />
-          <span className="text-xs">Premium</span>
-        </Button>
+      <h1 className="mt-4 text-3xl font-bold tracking-tight text-center">
+        {displayName}
+      </h1>
+      <p className="mt-1 text-sm text-muted-foreground text-center break-all">
+        {user.email}
+      </p>
+      <span className="mt-3 badge-premium">{tierLabel}</span>
+
+      {/* Two ways in. Nothing else competes with them. */}
+      <div className="mt-9 grid w-full grid-cols-2 gap-3">
+        <ProfileAction
+          to="/progress"
+          icon={BarChart3}
+          title="Progress"
+          copy="Your sessions"
+        />
+        <ProfileAction
+          to="/subscription"
+          icon={CreditCard}
+          title="Premium"
+          copy={tierLabel === "Premium" ? "Manage" : "Unlock more"}
+        />
       </div>
 
-      {/* Consolidation: settings live inside Profile. Theme, legal and sign-out
-          are surfaced here instead of a separate /settings destination. */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-between px-4 py-3 h-auto"
-            onClick={cycleTheme}
-          >
-            <span className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Theme
-            </span>
-            <span className="text-sm text-muted-foreground capitalize">
-              {theme === 'system' ? 'System' : theme}
-            </span>
-          </Button>
-          <Button variant="ghost" className="w-full justify-start px-4 py-3 h-auto" asChild>
-            <Link to="/privacy">
-              <Shield className="h-4 w-4 mr-2" />
-              Privacy Policy
-            </Link>
-          </Button>
-          <Button variant="ghost" className="w-full justify-start px-4 py-3 h-auto" asChild>
-            <Link to="/terms">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              Terms of Service
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start px-4 py-3 h-auto text-destructive hover:text-destructive"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Your practice
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Sessions live on Progress. Video never left your phone.
-            </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate("/progress")}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              See progress
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Settings — one quiet list, no card chrome. */}
+      <div className="mt-9 w-full overflow-hidden rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm divide-y divide-border/60">
+        <SettingsRow
+          icon={Palette}
+          label="Theme"
+          value={THEME_LABEL[theme ?? "system"] ?? "System"}
+          onClick={cycleTheme}
+        />
+        <SettingsRow icon={Shield} label="Privacy Policy" to="/privacy" />
+        <SettingsRow icon={HelpCircle} label="Terms of Service" to="/terms" />
+        <SettingsRow
+          icon={LogOut}
+          label="Sign out"
+          destructive
+          onClick={handleSignOut}
+        />
       </div>
+
+      <p className="mt-6 text-xs text-muted-foreground/70 text-center">
+        Your practice stays with you. Sessions live on Progress — video never
+        left your phone.
+      </p>
     </div>
   );
 };
+
+function ProfileAction({
+  to,
+  icon: Icon,
+  title,
+  copy,
+}: {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  copy: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "group flex flex-col items-start gap-1 rounded-2xl border border-border/70 bg-card/70 p-4",
+        "backdrop-blur-sm transition-all duration-300",
+        "hover:border-primary/40 hover:bg-primary/5",
+      )}
+    >
+      <Icon className="h-5 w-5 text-primary" />
+      <span className="mt-2 text-sm font-semibold">{title}</span>
+      <span className="text-xs text-muted-foreground">{copy}</span>
+    </Link>
+  );
+}
+
+function SettingsRow({
+  icon: Icon,
+  label,
+  value,
+  to,
+  onClick,
+  destructive,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value?: string;
+  to?: string;
+  onClick?: () => void;
+  destructive?: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="flex items-center gap-3">
+        <Icon className={cn("h-4 w-4", destructive ? "text-destructive" : "text-muted-foreground")} />
+        <span className={cn("text-sm", destructive && "text-destructive")}>
+          {label}
+        </span>
+      </span>
+      {value ? (
+        <span className="text-xs text-muted-foreground capitalize">{value}</span>
+      ) : to ? (
+        <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+      ) : null}
+    </>
+  );
+
+  const className = cn(
+    "flex w-full items-center justify-between px-4 py-3.5 text-left",
+    "transition-colors hover:bg-foreground/5",
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {inner}
+    </button>
+  );
+}
 
 export default UserProfilePage;

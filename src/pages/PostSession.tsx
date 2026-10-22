@@ -10,6 +10,7 @@
 import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PostSessionCelebration } from "@/components/session/PostSessionCelebration";
+import { BrumeMascot } from "@/components/BrumeMascot";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,6 +84,7 @@ export default function PostSession() {
           className="rounded-t-[2rem] border-t px-6 pb-10 pt-8 max-h-[90vh] overflow-y-auto sm:max-w-md sm:mx-auto"
         >
           <SheetHeader className="text-center space-y-2 mb-6">
+            <BrumeMascot state="proud" size={64} className="mb-2" />
             <SheetTitle className="text-2xl font-bold tracking-tight">
               Keep this streak
             </SheetTitle>

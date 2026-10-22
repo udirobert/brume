@@ -4,6 +4,7 @@ import { format, parseISO, isToday, isYesterday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { InsightCarousel } from "@/components/progress/InsightCarousel";
+import { BrumeMascot } from "@/components/BrumeMascot";
 
 function when(iso: string): string {
   const date = parseISO(iso);
@@ -27,6 +28,7 @@ export default function Progress() {
   if (history.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-4 h-full max-w-md mx-auto">
+        <BrumeMascot state="sleepy" size={92} className="mb-4" />
         <h1 className="text-3xl font-bold tracking-tight mb-3">Nothing here yet.</h1>
         <p className="text-muted-foreground mb-8">
           Tap how you feel. One session is the start.
@@ -61,6 +63,7 @@ export default function Progress() {
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center text-center px-2 py-4">
+      <BrumeMascot state="proud" size={88} className="mb-3" />
       <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
         {streak > 0 ? `Day ${streak}.` : "Your practice."}
       </h1>

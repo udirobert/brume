@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { SubscriptionManager } from "@/components/monetization/SubscriptionManager";
+import { BrumeMascot } from "@/components/BrumeMascot";
 
 const BENEFITS = [
   {
@@ -71,6 +72,7 @@ const Subscription: React.FC = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
+          <BrumeMascot state="bright" size={88} className="mb-4" />
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-linear-to-br from-purple-500 to-blue-500 rounded-2xl">
               <Sparkles className="h-8 w-8 text-white" />

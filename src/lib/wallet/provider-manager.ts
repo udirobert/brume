@@ -47,6 +47,21 @@ class WalletProviderManager {
   }
 
   /**
+   * A wallet is only "connected" when it actually exposes an account.
+   * Detection of an injected provider is not a connection.
+   */
+  private async hasAccounts(
+    request: (method: string, params?: any[]) => Promise<any>
+  ): Promise<boolean> {
+    try {
+      const accounts = await request('eth_accounts');
+      return Array.isArray(accounts) && accounts.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Initialize the provider manager
    */
   async initialize(): Promise<void> {
@@ -110,7 +125,10 @@ class WalletProviderManager {
         provider: window.walletApi,
         priority: 100,
         isBackpack: this.isBackpackProvider(window.walletApi.getProvider?.()),
-        isConnected: async () => window.walletApi?.isAvailable?.() ?? false,
+        // "A provider exists" is not "a wallet is connected" — ask for
+        // accounts. Reporting isAvailable() here made the app think every
+        // visitor had a wallet and kept probing it.
+        isConnected: async () => this.hasAccounts(window.walletApi!.request),
         request: async (method, params) => window.walletApi!.request(method, params),
       });
     }
@@ -122,7 +140,7 @@ class WalletProviderManager {
         provider: window.safeWallet,
         priority: 80,
         isBackpack: this.isBackpackProvider(window.safeWallet.getProvider?.()),
-        isConnected: async () => window.safeWallet?.isAvailable?.() ?? false,
+        isConnected: async () => this.hasAccounts(window.safeWallet!.request),
         request: async (method, params) => window.safeWallet!.request(method, params),
       });
     }

@@ -18,10 +18,16 @@ interface EagerWeb3ProviderProps {
  *
  * QueryClientProvider must sit *inside* WagmiProvider (wagmi v2). Reuse the
  * root client so session-history queries stay on one cache.
+ *
+ * reconnectOnMount is OFF on purpose. wagmi's reconnect calls getProvider() on
+ * every connector, and the coinbaseWallet connector boots the Coinbase Wallet
+ * SDK to do it — which opens the wallet's own UI. That made the wallet pop up
+ * on every /profile visit, even for people who signed in with email. A wallet
+ * must only be touched when the user asks for it.
  */
 export const EagerWeb3Provider: React.FC<EagerWeb3ProviderProps> = ({ children }) => {
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
         <WalletProvider autoConnect={false}>
           {children}

@@ -331,8 +331,13 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
    */
   useEffect(() => {
     void walletProviderManager.initialize().then(() => {
+      // Only ask the wallet for accounts when the app means to show a
+      // connection. autoConnect=false is the default for email-first screens:
+      // probing on every mount made the wallet look like it was being
+      // triggered by the app. Connecting stays an explicit user action.
+      if (!autoConnect) return;
       updateConnectionState();
-      if (autoConnect && localStorage.getItem('wallet-last-connected')) {
+      if (localStorage.getItem('wallet-last-connected')) {
         connect().catch(console.error);
       }
     });
@@ -345,14 +350,18 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({
    * Save connection state to localStorage
    */
   useEffect(() => {
-    if (state.isConnected && state.activeProvider) {
+    // Only a wallet that actually holds an account counts as connected —
+    // otherwise "wallet-last-connected" gets set for every visitor who has
+    // an extension installed, and the next mount tries to connect the wallet
+    // behind their back.
+    if (state.isConnected && state.activeProvider && state.address) {
       localStorage.setItem('wallet-last-connected', Date.now().toString());
       localStorage.setItem('wallet-last-provider', state.activeProvider.name);
     } else {
       localStorage.removeItem('wallet-last-connected');
       localStorage.removeItem('wallet-last-provider');
     }
-  }, [state.isConnected, state.activeProvider]);
+  }, [state.isConnected, state.activeProvider, state.address]);
 
   /**
    * Monitor account changes

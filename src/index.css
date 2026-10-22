@@ -1,3 +1,4 @@
+@import '../anna/bundle/brand.css';
 
 @import "tailwindcss";
 @config "../tailwind.config.ts";
@@ -15,24 +16,25 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     /* Brume mist theme — calm blue-grey, aligns with tailwind `brume` palette */
-    --background: 204 25% 98%;
-    --foreground: 210 15% 20%;
+    --background: var(--brume-background);
+    --foreground: var(--brume-foreground);
 
-    --card: 204 25% 100%;
-    --card-foreground: 210 15% 20%;
+    --card: var(--brume-surface);
+    --card-foreground: var(--brume-foreground);
 
-    --popover: 204 25% 100%;
-    --popover-foreground: 210 15% 20%;
+    --popover: var(--brume-surface);
+    --popover-foreground: var(--brume-foreground);
 
-    --primary: 204 28% 45%;
-    --primary-foreground: 204 25% 98%;
+    --primary: var(--brume-primary);
+    --primary-foreground: var(--brume-background);
 
     --secondary: 204 25% 92%;
     --secondary-foreground: 204 28% 35%;
 
     --muted: 204 25% 92%;
-    --muted-foreground: 210 12% 45%;
+    --muted-foreground: var(--brume-muted);
 
     --accent: 204 30% 88%;
     --accent-foreground: 210 15% 20%;
@@ -40,49 +42,24 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 204 20% 88%;
-    --input: 204 20% 88%;
-    --ring: 204 28% 45%;
+    --border: var(--brume-border);
+    --input: var(--brume-border);
+    --ring: var(--brume-primary);
 
-    --radius: 0.5rem;
+    --radius: var(--brume-radius);
 
     /* Living mist — daypart overrides these on <html data-daypart> */
-    --mist-r: 147;
-    --mist-g: 197;
-    --mist-b: 253;
-    --calm-1: 204 30% 98%;
-    --calm-2: 204 22% 95%;
-    --calm-3: 210 20% 98%;
+    --mist-r: var(--brume-mist-r, 147);
+    --mist-g: var(--brume-mist-g, 197);
+    --mist-b: var(--brume-mist-b, 253);
+    --calm-1: var(--brume-calm-1);
+    --calm-2: var(--brume-calm-2);
+    --calm-3: var(--brume-calm-3);
   }
 
-  html[data-daypart="dawn"] {
-    --mist-r: 176;
-    --mist-g: 214;
-    --mist-b: 242;
-    --calm-1: 200 32% 98%;
-    --calm-2: 204 20% 96%;
-    --calm-3: 210 18% 98%;
-  }
-
-  html[data-daypart="dusk"] {
-    --mist-r: 186;
-    --mist-g: 168;
-    --mist-b: 216;
-    --calm-1: 250 22% 97%;
-    --calm-2: 230 16% 95%;
-    --calm-3: 210 18% 97%;
-    --primary: 250 16% 42%;
-  }
-
-  html[data-daypart="night"] {
-    --mist-r: 112;
-    --mist-g: 148;
-    --mist-b: 204;
-    --calm-1: 214 24% 94%;
-    --calm-2: 216 20% 91%;
-    --calm-3: 218 18% 94%;
-    --background: 214 22% 94%;
-    --primary: 214 22% 40%;
+  html[data-daypart="dusk"], html[data-daypart="night"] {
+    --background: var(--brume-background);
+    --primary: var(--brume-primary);
   }
 
   /* No dark mode for this app to maintain a consistent calming theme. */
@@ -94,7 +71,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Manrope', sans-serif;
+    font-family: var(--brume-font);
   }
 }
 

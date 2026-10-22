@@ -1,17 +1,17 @@
 /* Brume mascot — mirrored from anna/bundle/app.css. Keep in sync. */
 .mascot, .brume-mascot { display: inline-block; line-height: 0; }
 .mascot-svg { width: 100%; height: 100%; overflow: visible; }
-.mascot-fill { fill: #5b8a72; }
-.mascot-hl { fill: #7ba88e; opacity: .8; }
-.mascot-halo { fill: none; stroke: rgba(91,138,114,.18); stroke-width: 10; }
+.mascot-fill { fill: #7c8cc9; }
+.mascot-hl { fill: #9aa8da; opacity: .8; }
+.mascot-halo { fill: none; stroke: rgba(124,140,201,.18); stroke-width: 10; }
 .mascot-eye { fill: #26303a; }
-.mascot-lid { fill: #5b8a72; }
+.mascot-lid { fill: #7c8cc9; }
 .mascot-mouth { fill: none; stroke: #26303a; stroke-width: 2; stroke-linecap: round; }
-.mascot-cheek { fill: #7ba88e; opacity: 0; }
-.mascot-arm { stroke: #5b8a72; stroke-width: 5; stroke-linecap: round; opacity: 0; }
-.mascot-wisp { fill: rgba(91,138,114,.4); opacity: 0; }
-.mascot-wave { fill: none; stroke: #5b8a72; stroke-width: 2; stroke-linecap: round; opacity: 0; }
-.mascot-swirl { fill: none; stroke: #5b8a72; stroke-width: 2; opacity: 0; }
+.mascot-cheek { fill: #9aa8da; opacity: 0; }
+.mascot-arm { stroke: #7c8cc9; stroke-width: 5; stroke-linecap: round; opacity: 0; }
+.mascot-wisp { fill: rgba(221,227,243,.55); opacity: 0; }
+.mascot-wave { fill: none; stroke: #7c8cc9; stroke-width: 2; stroke-linecap: round; opacity: 0; }
+.mascot-swirl { fill: none; stroke: #7c8cc9; stroke-width: 2; opacity: 0; }
 .mascot-arms .mascot-arm { opacity: 1; }
 .mascot-cheeks .mascot-cheek { opacity: .6; }
 .mascot-wisped .mascot-wisp { opacity: .6; }

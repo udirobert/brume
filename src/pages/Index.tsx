@@ -30,8 +30,8 @@ export default function Index() {
     }
     if (isGuest) {
       return [
-        "A breathing break between thinking and ",
-        { text: "doing.", className: "text-gradient" },
+        "Get ready for what comes ",
+        { text: "next.", className: "text-gradient" },
       ];
     }
     return ["Welcome back."];

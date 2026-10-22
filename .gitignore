@@ -128,3 +128,6 @@ playwright/.cache/
 anna/executas/brume/*.spec
 anna/bundle/anna-tool-ids.js
 anna/.anna/
+
+# Local Netlify folder
+.netlify

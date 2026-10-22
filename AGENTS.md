@@ -6,6 +6,11 @@ Read `anna/README.md` first (layout, flows, testing tiers, release steps,
 platform gotchas). Progress log and market/platform learnings:
 `docs/ANNA.md` §12.
 
+Brand: shared tokens + bundled Manrope live in `anna/bundle/brand.css`
+and `anna/bundle/fonts/`; the web app `@import`s the same file and both
+UIs share `--brume-*` daypart tokens. Browser QA: `npm run test:browser`
+in `anna/` (fake host :4618, session brume-preparation-qa).
+
 Verification (run from `anna/`, all free):
 
 ```bash
@@ -41,3 +46,20 @@ variables with empty values.
 
 The active `gh` account may be `sneldao`; for udirobert/brume use
 `gh auth token --user udirobert` (don't switch the active account).
+
+### Release candidate notes (local, unpublished)
+
+- Conversation preparation replaced the old get-ready script:
+  `bundle/preparation.js` + `bundle/preparation-prompts.js` (prompt text is
+  maintained outside this change), strict JSON validation, one clarify + one rehearsal max.
+- `bundle/recovery.js` checkpoints one active task to
+  `brume/active-task` and validates per-flow data on load/save; reset and
+  preparation restore their exact screen paused, a live alert test always
+  restarts (partial timings are never kept).
+- `session.js`: `unwrap` stays sync (ok:false throws, ok:true → result);
+  storage call sites `await` the SDK promise; `saveCompletionRecord`
+  dedupes summary folds by `completedAt`.
+- Tests: `npm test` = smoke + `node --test test/preparation.mjs
+  test/recovery.mjs`. Browser QA via `test/fake-host-server.mjs`
+  (scripted llm, persistent KV) + agent-browser. Verified locally only —
+  not published, no tier-3 run.

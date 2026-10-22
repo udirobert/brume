@@ -1,13 +1,16 @@
 # Brume — Anna App
 
-Brume is a calm companion on Anna: a mist-sprite mascot that plans a short
-breathing break for the moment you're in, walks you through a 3-minute
-get-ready before a big conversation, and runs a 1-minute alertness check
-against your own usual. Every run ends in an AI-written, specific result
-(that is what makes it an Anna "Qualified App Run").
+Brume is a calm companion on Anna: a mist-sprite mascot that prepares you
+for the conversation ahead (editable talking points plus one optional
+practice turn), plans a short breathing break for the moment you're in,
+and runs a 1-minute alertness check against your own usual. AI
+preparation is the primary function; basic fallback breathing remains
+available. Anna determines whether a run qualifies for its program.
+Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-10-19): app **0.3.2** submitted for review
-(`pending_review`), bundled tool **0.4.4** (binaries in GitHub release
+Current state (2026-10-22): app **0.3.2** rejected on review
+(AI-native core + task recovery), local rework candidate verified and
+unpublished; bundled tool **0.4.4** (binaries in GitHub release
 `brume-executa-v0.4.4`). Listing logo, cover and 5 screenshots set in the
 Developer Console (images served from `anna/listing/` on GitHub). App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
@@ -29,6 +32,10 @@ Developer Console (images served from `anna/listing/` on GitHub). App id 582, sl
   - `plan.js` pattern library, prompts, parsing/validation, health-claim
     and cue filters, cycle snapping, summary/personalization (mirrored 1:1
     in the Python plugin — keep them in sync)
+  - `preparation-prompts.js` + `preparation.js` conversation-preparation
+    prompts and strict parse/request helpers
+  - `recovery.js` active-task checkpoint store (`brume/active-task`,
+    versioned envelope, serialized/coalesced writes, corrupt-safe load)
   - `alertness.js` reaction-time metrics, baseline, bands, note prompt
   - `mascot.js` inline-SVG mist sprite, 12 states, breath-driven scale
   - `session.js` records, storage, prefs, `llm.complete` wrappers
@@ -37,8 +44,11 @@ Developer Console (images served from `anna/listing/` on GitHub). App id 582, sl
 - `executas/brume/` — Python stdio Executa (stdlib only), see its README.
   `manifest.json` there is the exported `describe` output (the platform
   syncs it as the protocol manifest; a test enforces equality).
-- `test/smoke.mjs` (node, `mountBundle`) + `test/plan-cases.json` (shared
-  fixture, also read by `executas/brume/test_plan.py`).
+- `test/smoke.mjs` (node, `mountBundle`), `test/preparation.mjs` +
+  `test/recovery.mjs` (node:test unit tests), `test/plan-cases.json`
+  (shared fixture, also read by `executas/brume/test_plan.py`), and
+  `test/fake-host-server.mjs` + `test/fake-sdk.js` (test-only host with
+  scripted llm replies + persistent KV for browser QA).
 - `scripts/prompt-check.mjs` — real-LLM prompt check via Featherless.
 - `listing/` — store screenshots, cover, logo (**stale: pre-mascot**).
 
@@ -51,9 +61,12 @@ Developer Console (images served from `anna/listing/` on GitHub). App id 582, sl
    → Result (AI reflection + next step). Sessions snap to whole cycles.
    Patterns: cyclic sigh 2/1/6, long exhale 4/6, box 4-4-4-4, steady
    5.5/5.5; lengths 60/90/120/180 s.
-2. **Get ready** — event + kind + optional key point → AI drafts opener,
-   key point, reminder → Breathe (7 guided cyclic sighs) → Open up →
-   Warm up your voice (hum) → Rehearse → Done.
+2. **Prepare a conversation** — event + goal + key point + kind → AI
+   drafts opening/keyPoint/approach/objection/response/nextStep (one
+   clarify question max) → editable wording and hypothetical pushback → optional one-turn
+   rehearsal ("Get one adjustment") → saved card (`ready/sessions/<ts>`,
+   `ready/last`). Optional guided pause reuses the timed steps
+   (breathe → open up → hum → rehearse) and returns to the plan.
 3. **Alertness check** — sleepiness 1–9 (Karolinska) → 60 s
    reaction-time test (ISI 1.5–4 s, false start <100 ms, lapse ≥500 ms) →
    median, lapses, band vs own baseline (needs 3 checks, same input type)
@@ -66,8 +79,10 @@ arguments**; the tool validates and filters them, renders verbatim
 capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
-`reset/summary`, `ready/sessions/<ts>`, `alert/checks/<ts>`,
-`alert/summary`, `brume/prefs`.
+`reset/summary`, `ready/sessions/<ts>`, `ready/last`, `alert/checks/<ts>`,
+`alert/summary`, `brume/prefs`, `brume/active-task` (single unfinished-
+task checkpoint; tombstoned via `set` null, never auto-erased when
+corrupt).
 
 Copy rules: no health/medical/hormone claims, no scores, streaks or guilt,
 no camera or microphone. `HEALTH_CLAIM_RE` + `CUE_FORBIDDEN_RE` back this
@@ -81,10 +96,15 @@ long chat threads are expensive. Use the tiers in order.
 **Tier 1 — free, every change**
 
 ```bash
-npm install && npm test                        # node smoke + shared fixture
+npm install && npm test && npm run test:browser                        # node smoke + shared fixture + preparation/recovery unit tests
 (cd executas/brume && python3 -m unittest test_plan)
 anna-app validate --strict
 ```
+
+Browser QA without quota: `node test/fake-host-server.mjs` serves the
+bundle with a scripted fake host (`/__script`, `/__kv`, `/__dump`); drive
+it with agent-browser. Current state: implemented locally, not yet
+published or tested on Anna Cloud Agents.
 
 Binary build + protocol smoke (also runs in CI on all 4 platforms):
 
@@ -193,3 +213,39 @@ Consider BYOK in Anna for test traffic so it doesn't burn credits.
 
 Note: `anna/` has its own `package.json`/`package-lock.json` on purpose —
 do not add its dependencies to the repo-root manifests.
+
+### Listing candidate images
+
+`listing/candidate/*.png` are mock screenshots captured from a fake-host
+run with synthetic scenario data — they demonstrate the UI, not model
+quality or review QA. This build is a local candidate, not published.
+
+### Brand and first use
+
+`bundle/brand.css` is the shared source for the web and Anna colours and
+bundled Manrope font. The green mascot remains the same character.
+Moment buttons only prefill context; they never select canned advice or
+start a model request. The goal and optional `preserve` boundary are
+included in preparation and rehearsal requests.
+
+The startup shell renders before the host connects. Connection and active-task
+reads have separate eight-second timeouts; a failed read blocks new tasks
+until retry or an explicit decision about an unreadable checkpoint. Optional
+history and preference reads run after task recovery, without blocking it.
+No model calls are made to warm up the app.
+
+The optional `ready/preferences` record stores only an explicitly remembered
+wording style. Removing it writes null. A preference applies to new
+preparations, not existing drafts. Old task checkpoints remain compatible.
+
+An entry payload with `mode: "ready"` may include `context`, `goal`,
+`key_point`, `preserve` and an optional six-field `preparation` object
+with `kind: "plan"`. A valid draft opens for review without another model
+call; an invalid draft leaves the input available for the user to prepare.
+Existing unfinished tasks still require an explicit keep/replace decision.
+
+Run `npm run test:browser` for fake-host regressions.
+`node test/capture-listing.mjs` generates candidate images using a separate
+local fake host and synthetic examples, then closes its browser session.
+`node scripts/preparation-check.mjs --dry-run` makes no model calls;
+`--live` needs explicit spend approval and manual review of the output.

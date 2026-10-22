@@ -2,48 +2,93 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Brume Reset</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Brume</title>
+    <link rel="stylesheet" href="./brand.css" />
     <link rel="stylesheet" href="./app.css" />
     <script src="./app.js" type="module"></script>
   </head>
   <body>
+    <header class="brand-header"><span class="brand-mark">Brume</span><span class="brand-promise">Find your words. Keep your footing.</span></header>
+    <div id="startup-panel" role="status">
+      <p id="startup-message">Opening your space…</p>
+      <button id="btn-startup-retry" type="button" hidden>Retry connection</button>
+      <p class="hint" id="startup-help" hidden>Anna is not connected. Your saved work has not been changed. Check the app connection or installation, then retry.</p>
+    </div>
+    <button id="btn-home-nav" class="textlink home-nav" type="button" hidden>Back to home</button>
     <main id="root">
-      <section id="screen-home" class="screen">
-        <h1 class="sr-only">Brume</h1>
-        <div class="mascot-slot mascot-xl" id="mascot-home" data-mascot aria-hidden="true"></div>
-        <p class="mascot-voice" id="home-voice">Hi, I'm Brume. What's next for you?</p>
-        <input
-          id="context-input"
-          class="context-input"
-          type="text"
-          maxlength="200"
-          placeholder="Big call in 10 minutes"
-          aria-label="What is next for you?"
-        />
-        <div class="chips compact" id="context-chips" role="group" aria-label="Suggestions">
-          <button class="chip" type="button" data-context="Before a call or meeting">Before a call</button>
-          <button class="chip" type="button" data-context="After a long stretch of focus">After deep work</button>
-          <button class="chip" type="button" data-context="Need to focus next">Focus next</button>
-          <button class="chip" type="button" data-context="Winding down for the day">Winding down</button>
+      <div id="task-banner" class="task-banner" hidden>
+        <p id="task-banner-text"></p>
+        <div class="task-banner-actions">
+          <button id="btn-task-resume" type="button">Resume</button>
+          <button id="btn-task-keep" type="button" hidden>Keep current task</button>
+          <button id="btn-task-replace" type="button" hidden>Start new task</button>
+          <button id="btn-task-discard" type="button" hidden>Discard</button>
+          <button id="btn-task-retry" type="button" hidden>Retry</button>
         </div>
-        <button id="btn-plan" class="primary" type="button">Plan my reset</button>
-        <button id="btn-quick" class="textlink" type="button">Quick 90-second reset</button>
+      </div>
+      <p id="task-status" class="task-status" role="status" aria-live="polite" hidden></p>
+
+      <section id="screen-home" class="screen" hidden>
+        <div class="mascot-slot mascot-xl" id="mascot-home" data-mascot aria-hidden="true"></div>
+        <h1 class="home-headline">Get ready for what comes next.</h1>
+        <p class="mascot-voice" id="home-voice">Find your words for the conversation ahead.</p>
+        <p class="process hint">Describe the moment · Try one response · Keep your card</p>
+        <div class="moment-list" role="group" aria-label="Moments">
+          <button type="button" data-moment="deadline">Push back on a deadline</button>
+          <button type="button" data-moment="support">Ask for support</button>
+          <button type="button" data-moment="feedback">Deliver difficult feedback</button>
+          <button type="button" data-moment="interview">Prepare for an interview</button>
+        </div>
+        <button id="btn-ready" type="button">Something else</button>
+        <details class="quiet-details" id="breathing-details">
+          <summary>Or take a breathing break</summary>
+          <input
+            id="context-input"
+            class="context-input"
+            type="text"
+            maxlength="200"
+            placeholder="Big call in 10 minutes"
+            aria-label="What is next for you?"
+          />
+          <div class="chips compact" id="context-chips" role="group" aria-label="Suggestions">
+            <button class="chip" type="button" data-context="Before a call or meeting">Before a call</button>
+            <button class="chip" type="button" data-context="After a long stretch of focus">After deep work</button>
+            <button class="chip" type="button" data-context="Need to focus next">Focus next</button>
+            <button class="chip" type="button" data-context="Winding down for the day">Winding down</button>
+          </div>
+          <button id="btn-plan" type="button">Plan my reset</button>
+          <button id="btn-quick" class="textlink" type="button">Quick 90-second reset</button>
+        </details>
+        <details class="quiet-details" id="pref-details">
+          <summary>Your wording preference</summary>
+          <select id="wording-select" aria-label="Wording preference">
+            <option value="natural">Natural</option>
+            <option value="concise">Shorter</option>
+            <option value="direct">More direct</option>
+          </select>
+          <div class="btn-row">
+            <button id="btn-pref-save" type="button">Remember this preference</button>
+            <button id="btn-pref-forget" class="textlink" type="button">Forget preference</button>
+            <button id="btn-pref-retry" class="textlink" type="button" hidden>Retry</button>
+          </div>
+          <p id="pref-status" role="status" class="muted"></p>
+          <p class="hint">Applies to future preparations; no personality profile is inferred.</p>
+        </details>
         <div class="home-cards">
-          <button id="btn-ready" class="card" type="button">
-            <span class="card-title">Get ready for something</span>
-            <span class="card-sub">3-minute prep before a big moment</span>
+          <button id="btn-last-prep" class="card" type="button" hidden>
+            <span class="card-title">Last preparation</span>
+            <span class="card-sub" id="last-prep-sub">Review your saved card</span>
           </button>
           <button id="btn-alertness" class="card" type="button">
-            <span class="card-title">Check my alertness</span>
-            <span class="card-sub">One-minute reaction-time check</span>
+            <span class="card-title">Alertness check</span>
+            <span class="card-sub">How awake are you right now?</span>
+            <span class="card-line muted" id="alert-line" hidden></span>
+            <canvas id="alert-spark" width="140" height="24" hidden></canvas>
           </button>
         </div>
-        <div class="home-meta">
-          <p class="muted" data-last-session hidden></p>
-          <p class="muted" data-worked hidden></p>
-          <p id="alert-line" class="muted" hidden></p>
-          <canvas id="alert-spark" class="spark" width="140" height="24" hidden aria-hidden="true"></canvas>
-        </div>
+        <p class="muted" data-last-session hidden></p>
+        <p class="muted" data-worked hidden></p>
       </section>
 
       <section id="screen-planning" class="screen" hidden>
@@ -111,6 +156,7 @@
         <div class="mascot-slot mascot-md" id="mascot-alert" aria-hidden="true"></div>
         <h1>Alertness check</h1>
         <p>A one-minute reaction-time check, compared with your own usual. Not a medical test.</p>
+        <p id="alert-interrupt-note" class="hint" hidden>The check was interrupted — timings weren't kept. Start again when you're ready.</p>
         <p class="field-label">How sleepy do you feel right now?</p>
         <div class="kss-row" id="kss-row" role="group" aria-label="Sleepiness 1 to 9"></div>
         <p class="hint" id="kss-hint"></p>
@@ -142,20 +188,123 @@
         </dl>
         <p id="alert-note" class="closing-line"></p>
         <p id="alert-baseline-note" class="muted" hidden></p>
+        <p id="alert-save-note" class="muted" hidden></p>
+        <button id="btn-alert-save-retry" type="button" hidden>Retry save</button>
         <div class="btn-row">
           <button id="btn-alert-break" class="primary" type="button">Do a breathing break</button>
           <button id="btn-alert-done" type="button">Done</button>
         </div>
       </section>
 
-      <section id="screen-ready" class="screen" hidden>
-        <div class="mascot-slot mascot-md" id="mascot-ready" aria-hidden="true"></div>
-        <h1>Get ready</h1>
-        <p class="field-label" for="ready-event">What's coming up?</p>
-        <input id="ready-event" type="text" maxlength="200" placeholder="Interview at 3pm" />
-        <div class="chips" id="ready-kind-chips" role="group" aria-label="Kind"></div>
-        <input id="ready-point" type="text" maxlength="200" placeholder="The one thing you want them to remember (optional)" />
-        <button id="btn-prepare" class="primary" type="button">Prepare me</button>
+      <section id="screen-prep-input" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-prep-input" aria-hidden="true"></div>
+        <h1>Prepare a conversation</h1>
+        <label class="field-label" for="prep-event">What's coming up?</label>
+        <textarea id="prep-event" rows="3" maxlength="600" placeholder="A one-on-one with my manager about next quarter's workload"></textarea>
+        <label class="field-label" for="prep-goal">What needs to change? <span class="muted">(optional)</span></label>
+        <input id="prep-goal" type="text" maxlength="300" placeholder="Agree on a realistic timeline" />
+        <label class="field-label" for="prep-preserve">What do you want to preserve? <span class="muted">(optional)</span></label>
+        <input id="prep-preserve" type="text" maxlength="220" placeholder="Trust, a boundary, or room to negotiate" />
+        <details class="quiet-details" id="prep-more"><summary>More context (optional)</summary>
+        <label class="field-label" for="prep-keypoint">The one thing they should remember <span class="muted">(optional)</span></label>
+        <input id="prep-keypoint" type="text" maxlength="220" placeholder="The deadline needs two more people" />
+        <p class="field-label">Kind of conversation</p>
+        <div class="chips" id="prep-kind-chips" role="group" aria-label="Kind of conversation"></div>
+        </details>
+        <p id="prep-wording-badge" class="hint" aria-live="polite"></p>
+        <div id="prep-moment-switch" class="moment-list compact" role="group" aria-label="Change moment">
+          <button type="button" data-moment="deadline">Deadline</button>
+          <button type="button" data-moment="support">Support</button>
+          <button type="button" data-moment="feedback">Feedback</button>
+          <button type="button" data-moment="interview">Interview</button>
+        </div>
+        <button id="btn-prep-go" class="primary" type="button">Prepare my talking points</button>
+      </section>
+
+      <section id="screen-prep-clarify" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-prep-clarify" aria-hidden="true"></div>
+        <h1>One question first</h1>
+        <blockquote id="prep-question"></blockquote>
+        <label class="field-label" for="prep-clarification">Your answer</label>
+        <textarea id="prep-clarification" rows="3" maxlength="600"></textarea>
+        <div class="btn-row">
+          <button id="btn-prep-answer" class="primary" type="button">Continue</button>
+          <button id="btn-prep-skip-clarify" type="button">Skip question</button>
+        </div>
+      </section>
+
+      <section id="screen-prep-plan" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-prep-plan" aria-hidden="true"></div>
+        <h1>Your preparation</h1>
+        <p class="hint" id="prep-handoff-label" hidden>Draft from Anna · Review before using</p>
+        <p class="hint">Edit anything — the card you save is the version you approve.</p>
+        <label class="field-label" for="prep-opening">Opening</label>
+        <textarea id="prep-opening" rows="2" maxlength="1000"></textarea>
+        <label class="field-label" for="prep-keypoint-edit">Key point</label>
+        <textarea id="prep-keypoint-edit" rows="2" maxlength="1000"></textarea>
+        <label class="field-label" for="prep-approach">Approach</label>
+        <textarea id="prep-approach" rows="2" maxlength="1000"></textarea>
+        <p class="field-label">Possible pushback <span class="muted">— for practice, not a prediction</span></p>
+        <blockquote id="prep-objection"></blockquote>
+        <label class="field-label" for="prep-response">Suggested response</label>
+        <textarea id="prep-response" rows="2" maxlength="1000"></textarea>
+        <label class="field-label" for="prep-nextstep">Next step</label>
+        <textarea id="prep-nextstep" rows="2" maxlength="1000"></textarea>
+        <div class="btn-row">
+          <button id="btn-prep-practice" class="primary" type="button">Practice the pushback</button>
+          <button id="btn-prep-finish" type="button">Finish without practice</button>
+        </div>
+        <button id="btn-prep-pause" class="textlink" type="button">Take a guided pause</button>
+      </section>
+
+      <section id="screen-prep-practice" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-prep-practice" aria-hidden="true"></div>
+        <h1>One difficult moment</h1>
+        <p class="field-label">Possible pushback <span class="muted">— for practice, not a prediction</span></p>
+        <blockquote id="prep-practice-objection"></blockquote>
+        <label class="field-label" for="prep-reply">How you'd answer</label>
+        <textarea id="prep-reply" rows="4" maxlength="1000"></textarea>
+        <div class="btn-row">
+          <button id="btn-prep-adjust" class="primary" type="button">Get one adjustment</button>
+          <button id="btn-prep-back" type="button">Back to plan</button>
+        </div>
+      </section>
+
+      <section id="screen-prep-feedback" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-prep-feedback" aria-hidden="true"></div>
+        <h1>One adjustment</h1>
+        <p class="field-label">What to adjust</p>
+        <p id="prep-adjustment" class="adjustment"></p>
+        <label class="field-label" for="prep-final-response">Your response — edit freely</label>
+        <textarea id="prep-final-response" rows="3" maxlength="1000"></textarea>
+        <label class="field-label" for="prep-final-nextstep">Next step</label>
+        <textarea id="prep-final-nextstep" rows="2" maxlength="220"></textarea>
+        <div class="btn-row">
+          <button id="btn-prep-card" class="primary" type="button">Save my card</button>
+          <button id="btn-prep-keep" type="button">Keep my wording</button>
+        </div>
+      </section>
+
+      <section id="screen-prep-card" class="screen" hidden>
+        <div class="mascot-slot mascot-lg" id="mascot-prep-card" aria-hidden="true"></div>
+        <h1 id="prep-card-title">Your preparation card</h1>
+        <dl class="facts prep-card-facts">
+          <div><dt>Goal</dt><dd id="card-goal"></dd></div>
+          <div><dt>Opening</dt><dd id="card-opening"></dd></div>
+          <div><dt>Key point</dt><dd id="card-keypoint"></dd></div>
+          <div><dt>Approach</dt><dd id="card-approach"></dd></div>
+          <div><dt>Possible pushback</dt><dd id="card-objection"></dd></div>
+          <div><dt>Response</dt><dd id="card-response"></dd></div>
+          <div><dt>Next step</dt><dd id="card-nextstep"></dd></div>
+        </dl>
+        <div id="card-pref-slot"></div>
+        <p id="card-adjustment" class="hint" hidden></p>
+        <p id="card-save-note" class="muted" hidden></p>
+        <button id="btn-card-save-retry" type="button" hidden>Retry save</button>
+        <div class="btn-row">
+          <button id="btn-card-done" class="primary" type="button">Done</button>
+          <button id="btn-card-home" type="button" hidden>Back home</button>
+        </div>
       </section>
 
       <section id="screen-ready-run" class="screen" hidden>
@@ -178,16 +327,6 @@
         </div>
       </section>
 
-      <section id="screen-ready-done" class="screen" hidden>
-        <div class="mascot-slot mascot-lg" id="mascot-ready-done" aria-hidden="true"></div>
-        <h1>You're ready. Go well.</h1>
-        <div id="ready-done-card">
-          <blockquote id="ready-done-opener"></blockquote>
-          <p><strong>The one thing to land:</strong> <span id="ready-done-keypoint"></span></p>
-        </div>
-        <button id="btn-ready-again" class="primary" type="button">Done</button>
-      </section>
-
       <section id="screen-result" class="screen" hidden>
         <div class="mascot-slot mascot-lg" id="mascot-result" aria-hidden="true"></div>
         <h1 id="result-heading"></h1>
@@ -198,10 +337,27 @@
         </dl>
         <p id="closing-line" class="closing-line" hidden></p>
         <p id="save-note" class="muted" hidden></p>
+        <div class="btn-row">
+          <button id="btn-reflect-retry" type="button" hidden>Retry AI note</button>
+          <button id="btn-save-anyway" type="button" hidden>Save without AI note</button>
+          <button id="btn-save-retry" type="button" hidden>Retry save</button>
+        </div>
         <button id="btn-again" class="primary" type="button">Again</button>
       </section>
 
       <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+      <div id="prep-status" class="prep-status" role="status" aria-live="polite" hidden>
+        <p id="prep-status-text"></p>
+        <div class="btn-row">
+          <button id="btn-prep-cancel" type="button" hidden>Cancel</button>
+          <button id="btn-prep-retry" type="button" hidden>Retry</button>
+          <button id="btn-prep-alt" type="button" hidden>Do a breathing break instead</button>
+        </div>
+        <p id="prep-alt-confirm" class="hint" hidden>Replace this preparation with a breathing break?
+          <button id="btn-prep-alt-yes" type="button">Replace</button>
+          <button id="btn-prep-alt-no" type="button">Keep preparing</button>
+        </p>
+      </div>
     </main>
   </body>
 </html>

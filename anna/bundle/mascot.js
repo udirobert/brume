@@ -31,32 +31,32 @@ export function createMascot(host) {
   const svg = el("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
   svg.classList.add("mascot-svg");
 
-  const halo = el("circle", { cx: 50, cy: 52, r: 36, class: "mascot-halo", fill: "none", stroke: "rgba(91,138,114,.18)", "stroke-width": 10 });
+  const halo = el("circle", { cx: 50, cy: 52, r: 36, class: "mascot-halo", fill: "none", stroke: "rgba(124,140,201,.18)", "stroke-width": 10 });
   svg.appendChild(halo);
 
   const bodyG = el("g", { class: "mascot-body" });
   // Cloud blob: main body plus two smaller lobes on top.
-  bodyG.appendChild(el("ellipse", { cx: 50, cy: 58, rx: 30, ry: 26, class: "mascot-fill", fill: "#5b8a72" }));
-  bodyG.appendChild(el("circle", { cx: 38, cy: 38, r: 14, class: "mascot-fill", fill: "#5b8a72" }));
-  bodyG.appendChild(el("circle", { cx: 58, cy: 34, r: 17, class: "mascot-fill", fill: "#5b8a72" }));
-  bodyG.appendChild(el("ellipse", { cx: 56, cy: 30, rx: 8, ry: 5, class: "mascot-hl", fill: "#7ba88e", opacity: ".8" }));
+  bodyG.appendChild(el("ellipse", { cx: 50, cy: 58, rx: 30, ry: 26, class: "mascot-fill", fill: "#7c8cc9" }));
+  bodyG.appendChild(el("circle", { cx: 38, cy: 38, r: 14, class: "mascot-fill", fill: "#7c8cc9" }));
+  bodyG.appendChild(el("circle", { cx: 58, cy: 34, r: 17, class: "mascot-fill", fill: "#7c8cc9" }));
+  bodyG.appendChild(el("ellipse", { cx: 56, cy: 30, rx: 8, ry: 5, class: "mascot-hl", fill: "#9aa8da", opacity: ".8" }));
 
   // Little arms (only visible in "stretch").
-  const armL = el("path", { d: "M 30 52 L 18 30", class: "mascot-arm", stroke: "#5b8a72", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
-  const armR = el("path", { d: "M 70 52 L 82 30", class: "mascot-arm", stroke: "#5b8a72", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
+  const armL = el("path", { d: "M 30 52 L 18 30", class: "mascot-arm", stroke: "#7c8cc9", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
+  const armR = el("path", { d: "M 70 52 L 82 30", class: "mascot-arm", stroke: "#7c8cc9", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
   bodyG.appendChild(armL); bodyG.appendChild(armR);
 
   // Eyes.
   const eyeL = el("ellipse", { cx: 41, cy: 52, rx: 3.2, ry: 4, class: "mascot-eye", fill: "#26303a" });
   const eyeR = el("ellipse", { cx: 59, cy: 52, rx: 3.2, ry: 4, class: "mascot-eye", fill: "#26303a" });
-  const lidL = el("rect", { x: 37, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#5b8a72" });
-  const lidR = el("rect", { x: 55, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#5b8a72" });
+  const lidL = el("rect", { x: 37, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#7c8cc9" });
+  const lidR = el("rect", { x: 55, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#7c8cc9" });
   bodyG.appendChild(eyeL); bodyG.appendChild(eyeR);
   bodyG.appendChild(lidL); bodyG.appendChild(lidR);
 
   // Cheeks (fill for "hold" state).
-  const cheekL = el("ellipse", { cx: 36, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#7ba88e", opacity: 0 });
-  const cheekR = el("ellipse", { cx: 64, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#7ba88e", opacity: 0 });
+  const cheekL = el("ellipse", { cx: 36, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#9aa8da", opacity: 0 });
+  const cheekR = el("ellipse", { cx: 64, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#9aa8da", opacity: 0 });
   bodyG.appendChild(cheekL); bodyG.appendChild(cheekR);
 
   const mouth = el("path", { d: MOUTH.closed, class: "mascot-mouth", fill: "none", stroke: "#26303a", "stroke-width": 2, "stroke-linecap": "round" });
@@ -68,20 +68,20 @@ export function createMascot(host) {
   for (let i = 0; i < 4; i += 1) {
     wisps.appendChild(el("circle", {
       cx: 50 + (i - 1.5) * 6, cy: 70, r: 2.5 - i * 0.3, class: `mascot-wisp w${i}`,
-      fill: "#cfe0d6", opacity: 0,
+      fill: "#dde3f3", opacity: 0,
     }));
   }
   svg.appendChild(wisps);
 
   // Sound-wave lines for hum.
   const waves = el("g", { class: "mascot-waves" });
-  waves.appendChild(el("path", { d: "M 68 56 q 4 2 0 5", class: "mascot-wave", fill: "none", stroke: "#5b8a72", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
-  waves.appendChild(el("path", { d: "M 74 54 q 6 4 0 9", class: "mascot-wave", fill: "none", stroke: "#5b8a72", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
+  waves.appendChild(el("path", { d: "M 68 56 q 4 2 0 5", class: "mascot-wave", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
+  waves.appendChild(el("path", { d: "M 74 54 q 6 4 0 9", class: "mascot-wave", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
   svg.appendChild(waves);
 
   // Thinking swirl.
   const swirl = el("path", {
-    d: "M 50 8 q 8 -4 4 4 q -4 8 -10 2", class: "mascot-swirl", fill: "none", stroke: "#5b8a72", "stroke-width": 2, opacity: 0,
+    d: "M 50 8 q 8 -4 4 4 q -4 8 -10 2", class: "mascot-swirl", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, opacity: 0,
   });
   svg.appendChild(swirl);
 

@@ -482,17 +482,97 @@ long chat threads (context re-sent every turn) and real-LLM `anna-app dev`
 batches on the Anna account. BYOK in Anna is recommended for test traffic.
 Details: `anna/README.md` → Testing.
 
-### 12.6 Open items
+### 12.6 Rejection rework (local candidate, 2026-10-22, unpublished)
+
+Second review email flagged: (1) main value not AI-native, (2) task
+progress lost on close, (3) asked for a fresh-install Cloud Agent test
+before resubmission. The local candidate answers all three; it is not yet
+published or tier-3 tested.
+
+- **AI-native core reworked.** The primary flow is now conversation
+  preparation: event + goal + optional preserve/key point → AI drafts
+  opening/keyPoint/approach/objection/response/nextStep (one clarify
+  question max, one rehearsal turn max) → editable plan → optional
+  adaptive rehearsal ("Get one adjustment") → saved card
+  (`ready/sessions/<ts>`, `ready/last`). Prompt builders in
+  `bundle/preparation-prompts.js` (policy: treat user JSON as data, no
+  invented facts/motives, no scores, fields capped); strict parser in
+  `bundle/preparation.js` rejects prose, malformed/over-cap fields,
+  health claims and a second clarify. Breathing stays as explicit
+  fallback + optional guided pause inside the flow. Get-ready timed
+  steps reuse the pause machinery (`readyStepElapsed` now survives
+  pause/reopen — no reset on resume).
+- **Task recovery.** `bundle/recovery.js` checkpoints one active task to
+  `brume/active-task`: versioned envelope, per-flow/per-screen data
+  validation, serialized coalesced writes, tombstone clear, corrupt-safe
+  load (never auto-erase), 8 s read timeout. Reset restores the session
+  paused with clock/tracker/tempo intact and no closed-time accrual;
+  check-in and pending result (stable `completedAt`,
+  `reflectionStatus: pending`) restore without re-calling the model;
+  a live alertness test never resumes partial timings — it restarts with
+  an interrupt note; results restore with honest unsaved state. Failed
+  saves keep the checkpoint with a retry; a failed clear keeps the task
+  (no resurrect-after-clear). Every AI/storage boundary is guarded by
+  task id + generation so late replies can't mutate a newer task.
+  New-task entry points all route through keep/replace when a task or
+  load error exists.
+- **Cold-start + onboarding.** Static brand header + startup panel render
+  before JS; bounded connect (8 s), recovery first, optional reads
+  (summary/prefs/wording/alert-line) run concurrently after, never
+  blocking restore; queued entry_payload applies post-recovery through
+  the keep/replace gate. Home offers four moment buttons (deadline,
+  support, feedback, interview — `bundle/experience.js`) that prefill
+  context only, no model call; explicit wording preference
+  (`ready/preferences`, natural/concise/direct) applies to new tasks and
+  reaches the model payload. `mode:"ready"` payload may carry
+  `preserve` and a validated six-field `preparation` draft
+  (`planSource:"anna-handoff"`, editable, zero extra model calls;
+  invalid drafts keep context + honest error).
+- **Brand unification.** `bundle/brand.css` is now the canonical token
+  source (mist palette, daypart overrides, bundled Manrope WOFF2 + OFL
+  license); web `src/index.css` consumes the shared vars and the remote
+  Google Fonts links are gone. Anna app.css aliases everything to
+  `--brume-*`; sprite now uses periwinkle (#7c8cc9) — see mascot.js + BrumeMascot.css, kept in sync.
+- **Honesty.** "Planned offline" → truthful basic-plan labels; the
+  breathing fallback never calls the model; save failures show
+  keep-window-open retry; no fabricated Qualified-Run claims.
+- **Test infrastructure.** `test/browser-qa.mjs` (26 agent-browser cases,
+  own fake host :4618), `test/fake-host-server.mjs` (scripted llm /
+  per-key KV faults+delays / startup delay+fail / entry payload),
+  `test/capture-listing.mjs` (regenerates `listing/candidate/` PNGs),
+  `test/preparation.mjs` + `recovery.mjs` + `session-storage.mjs` +
+  `experience.mjs` unit tests, `scripts/preparation-check.mjs`
+  (semantic plan/rehearsal review, dry-run default).
+- **Verified 2026-10-22:** `npm test` 198 smoke + 85 unit; browser 26/26
+  (incl. full 60 s alert run, reload recovery, fault retry, payload
+  races, 320/420/1024 viewports, local font, no remote font requests);
+  `anna-app validate --strict` ✓; root vite dev build ✓.
+- **Not yet done:** publish candidate (new app version), real-model
+  prompt check (`preparation-check.mjs --live` needs quota approval),
+  tier-3 fresh-install Cloud Agent pass, upload `listing/candidate/`
+  images in the Developer Console, forum report on the 0.3.0→0.3.1
+  missing-tool delay.
+
+### 12.7 Open items
 
 1. Diagnose the missing tool after installing 0.3.1 (needs quota or BYOK);
-   then the full tier-3 checklist from a truly fresh install.
-2. Verify voice cues and phone haptics on a real device.
-3. Harden reflection cleaning against appended "(19 words)" /
+   then the full tier-3 checklist from a truly fresh install of the
+   published candidate (new app version — published versions are
+   immutable, so the rework must ship before tier 3).
+2. Run `anna/scripts/preparation-check.mjs --live` (Anna default model,
+   quota-consuming) and manually review the semantic criteria.
+3. Verify voice cues and phone haptics on a real device.
+4. Harden reflection cleaning against appended "(19 words)" /
    "Alternative…" notes (seen on DeepSeek via prompt-check).
-4. Regenerate listing screenshots/cover/logo with the mascot and upload them.
-5. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
-6. ~~Submit 0.3.x for review~~ — **0.3.2 (tool 0.4.4) submitted
-   2026-10-19, `pending_review`.** Not re-tested on the Cloud Agent after
-   0.3.0 (no Anna quota budget); the missing-tool-after-upgrade issue from
-   0.3.1 is unresolved. Next: distribution — store browse alone won't reach
-   200 MAU before 2026-11-30.
+5. ~~Regenerate listing screenshots/cover/logo with the mascot~~ —
+   `anna/listing/candidate/` generated 2026-10-22 from synthetic fixtures
+   (UI demo only, not model-QA evidence); still needs upload in the
+   Developer Console.
+6. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
+7. Post the forum report on the 0.3.0 → 0.3.1 missing-tool delay
+   (`https://forum.anna.partners`, per the review team's request).
+8. ~~Submit 0.3.x for review~~ — **0.3.2 (tool 0.4.4) submitted
+   2026-10-19, rejected.** The local candidate in §12.6 is the resubmission
+   path: publish → tier-3 Cloud Agent run → submit. Next after that:
+   distribution — store browse alone won't reach 200 MAU before
+   2026-11-30.

@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Manrope';
+  src: url('./fonts/Manrope-latin.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --brume-font: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --brume-background: 204 25% 98%;
+  --brume-foreground: 210 15% 20%;
+  --brume-primary: 204 28% 45%;
+  --brume-muted: 210 12% 45%;
+  --brume-border: 204 20% 88%;
+  --brume-surface: 204 25% 100%;
+  --brume-mist-r: 147; --brume-mist-g: 197; --brume-mist-b: 253;
+  --brume-calm-1: 204 30% 98%;
+  --brume-calm-2: 204 22% 95%;
+  --brume-calm-3: 210 20% 98%;
+  --brume-radius: .75rem;
+  --brume-control-radius: 999px;
+  --brume-space-1: .5rem;
+  --brume-space-2: 1rem;
+  --brume-space-3: 1.5rem;
+}
+
+html[data-daypart='dawn'] {
+  --brume-mist-r: 176; --brume-mist-g: 214; --brume-mist-b: 242;
+  --brume-calm-1: 200 32% 98%; --brume-calm-2: 204 20% 96%; --brume-calm-3: 210 18% 98%;
+}
+html[data-daypart='dusk'] {
+  --brume-mist-r: 186; --brume-mist-g: 168; --brume-mist-b: 216;
+  --brume-calm-1: 250 22% 97%; --brume-calm-2: 230 16% 95%; --brume-calm-3: 210 18% 97%;
+  --brume-primary: 250 16% 42%;
+}
+html[data-daypart='night'] {
+  --brume-mist-r: 112; --brume-mist-g: 148; --brume-mist-b: 204;
+  --brume-calm-1: 214 24% 94%; --brume-calm-2: 216 20% 91%; --brume-calm-3: 218 18% 94%;
+  --brume-background: 214 22% 94%;
+  --brume-primary: 214 22% 40%;
+}

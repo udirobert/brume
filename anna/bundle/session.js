@@ -83,13 +83,27 @@ export function buildCompletionRecord({
 function unwrap(res) {
   // SDK calls resolve {ok:true,result} or {ok:false,error}; some harness
   // paths reject instead. Normalize both to throw-on-failure.
-  if (res && typeof res === "object" && res.ok === false) {
-    const err = res.error || {};
-    const e = new Error(err.message || "storage write failed");
-    e.code = err.code;
-    throw e;
+  if (res && typeof res === "object") {
+    if (res.ok === false) {
+      const err = res.error || {};
+      const e = new Error(err.message || "storage write failed");
+      e.code = err.code;
+      throw e;
+    }
+    if (res.ok === true && "result" in res) return res.result;
   }
   return res;
+}
+
+export function unwrapHostResponse(res) {
+  return unwrap(res);
+}
+
+export function storageValue(res) {
+  const r = unwrap(res);
+  if (r == null) return null;
+  if (typeof r === "object" && "value" in r) return r.value;
+  return r;
 }
 
 function storageArgs(extra) {
@@ -102,33 +116,32 @@ function storageArgs(extra) {
 export async function saveCompletionRecord(anna, record) {
   const key = `reset/sessions/${record.completedAt}`;
   await unwrap(
-    anna.storage.set(storageArgs({ key, value: record })),
+    await anna.storage.set(storageArgs({ key, value: record })),
   );
   await unwrap(
-    anna.storage.set(storageArgs({ key: "reset/last", value: record })),
+    await anna.storage.set(storageArgs({ key: "reset/last", value: record })),
   );
   // Read-modify-write the rolling summary. A lost race just loses one
   // session's contribution — acceptable for a counter.
-  let summary = null;
-  try {
-    const res = await unwrap(
-      anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
-    );
-    summary = res && typeof res === "object" && "value" in res ? res.value : res;
-  } catch {
-    /* no summary yet */
-  }
-  await unwrap(
-    anna.storage.set(
-      storageArgs({ key: SUMMARY_KEY, value: updateSummary(summary, record) }),
-    ),
+  const res = await unwrap(
+    await anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
   );
+  const summary = storageValue(res) ?? /* no summary yet */ null;
+  const already = Array.isArray(summary?.recent)
+    && summary.recent.some((r) => r && r.completedAt === record.completedAt);
+  if (!already) {
+    await unwrap(
+      await anna.storage.set(
+        storageArgs({ key: SUMMARY_KEY, value: updateSummary(summary, record) }),
+      ),
+    );
+  }
   return key;
 }
 
 export async function loadLastRecord(anna) {
   const res = await unwrap(
-    anna.storage.get(storageArgs({ key: "reset/last" })),
+    await anna.storage.get(storageArgs({ key: "reset/last" })),
   );
   return res && typeof res === "object" && "value" in res ? res.value : res;
 }
@@ -136,7 +149,7 @@ export async function loadLastRecord(anna) {
 export async function loadSummary(anna) {
   try {
     const res = await unwrap(
-      anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
+      await anna.storage.get(storageArgs({ key: SUMMARY_KEY })),
     );
     const v = res && typeof res === "object" && "value" in res ? res.value : res;
     return v && typeof v === "object" ? v : null;
@@ -148,7 +161,7 @@ export async function loadSummary(anna) {
 export async function loadPrefs(anna) {
   try {
     const res = await unwrap(
-      anna.storage.get(storageArgs({ key: PREFS_KEY })),
+      await anna.storage.get(storageArgs({ key: PREFS_KEY })),
     );
     const v = res && typeof res === "object" && "value" in res ? res.value : res;
     return v && typeof v === "object" ? v : {};
@@ -159,7 +172,7 @@ export async function loadPrefs(anna) {
 
 export async function savePrefs(anna, prefs) {
   await unwrap(
-    anna.storage.set(storageArgs({ key: PREFS_KEY, value: prefs })),
+    await anna.storage.set(storageArgs({ key: PREFS_KEY, value: prefs })),
   );
 }
 
@@ -200,7 +213,7 @@ export function responseText(res) {
   return text.trim();
 }
 
-function withTimeout(promise, ms) {
+export function withTimeout(promise, ms) {
   let t;
   const timeout = new Promise((_, reject) => {
     t = setTimeout(() => {

@@ -132,33 +132,43 @@ export const useAuth = (): UseAuthReturn => {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      // Explicitly type the query to avoid 'never' issues with Supabase client inference
+      // Explicitly type the query to avoid 'never' issues with Supabase client inference.
+      // maybeSingle() (not single()): a missing profile is an expected state, and
+      // PostgREST answers single() with 406 rather than PGRST116 for zero rows.
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        // If no profile exists, create one
-        if (error.code === "PGRST116") {
-          const { data: newUser, error: insertError } = await (supabase
-            .from("users") as any)
-            .insert({ 
-              id: userId, 
-              role: "user" as UserRole,
-              creator_verified: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-          
-          if (insertError) throw insertError;
-          setProfile(transformToUser(newUser));
-        } else {
-          throw error;
-        }
+        throw error;
+      }
+
+      if (!data) {
+        // No profile yet: create it. Sign-up and session restore can race on the
+        // same user id, so insert idempotently and then read the stored row.
+        const { error: insertError } = await (supabase.from("users") as any).upsert(
+          {
+            id: userId,
+            role: "user" as UserRole,
+            creator_verified: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: "id", ignoreDuplicates: true }
+        );
+
+        if (insertError) throw insertError;
+
+        const { data: stored, error: readError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (readError) throw readError;
+        setProfile(transformToUser(stored));
       } else {
         // Map database fields (snake_case) to our User interface (camelCase)
         setProfile(transformToUser(data));

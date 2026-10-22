@@ -1,1 +1,31 @@
-project_id = "pszxedsfbllqnkxyfdzz"
+project_id = "kjqnbsfnufdqcrnyrdul"
+
+[auth]
+additional_redirect_urls = [
+  "https://brume.trustfall.xyz/**",
+  "https://brumeapp.netlify.app/**",
+  "http://localhost:4556/**",
+  "http://localhost:4173/**",
+]
+site_url = "https://brume.trustfall.xyz"
+
+[auth.email]
+# The app has no "check your email" state: sign-up must return a session.
+enable_confirmations = false
+max_frequency = "1m0s"
+otp_length = 6
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[storage.analytics]
+enabled = true
+max_namespaces = 10
+
+[storage.image_transformation]
+enabled = true

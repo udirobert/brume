@@ -237,7 +237,8 @@ CREATE TABLE challenge_participations (
 -- Indexes for performance
 CREATE INDEX idx_users_flow_address ON users(flow_address);
 CREATE INDEX idx_users_lens_profile ON users(lens_profile_id);
-CREATE INDEX idx_users_ethereum_address ON users(ethereum_address);
+-- Ethereum addresses are not stored on this table (see the later
+-- wallet_address migration), so there is no ethereum_address index here.
 
 CREATE INDEX idx_patterns_creator ON breathing_patterns(creator_id);
 CREATE INDEX idx_patterns_category ON breathing_patterns(category);
@@ -277,8 +278,7 @@ CREATE TRIGGER update_patterns_updated_at BEFORE UPDATE ON breathing_patterns
 CREATE TRIGGER update_ratings_updated_at BEFORE UPDATE ON pattern_ratings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_licenses_updated_at BEFORE UPDATE ON ip_licenses
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- ip_licenses is not part of this schema, so it gets no updated_at trigger.
 
 -- Row Level Security (RLS) policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

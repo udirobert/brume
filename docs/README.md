@@ -34,6 +34,7 @@ pnpm run deploy:firewall
 | [Authentication](./AUTHENTICATION.md) | Authentication architecture and implementation |
 | [API](./API.md) | API endpoints and integration guides |
 | [Testing](./TESTING.md) | Testing strategy and implementation |
+| [Hacktoberfest Week 3 draft](./HACKTOBERFEST_WEEK3.md) | DEV submission draft for Hacktoberfest 2026 Week 3 (Slow and Steady) |
 
 ## 🏗️ **Architecture**
 

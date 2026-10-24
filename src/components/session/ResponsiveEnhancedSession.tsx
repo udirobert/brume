@@ -10,6 +10,7 @@
  */
 
 import React, { useRef } from 'react';
+import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from '../../hooks/use-mobile';
 import { useStableMetrics } from '../../hooks/useStableMetrics';
 import { useSession } from '../../hooks/useSession';
@@ -55,6 +56,9 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   onSessionExit,
 }) => {
   const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
+  const skipEntranceMotion =
+    reduceMotion || (typeof document !== "undefined" && document.hidden);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Session phase state - SINGLE SOURCE OF TRUTH
@@ -271,9 +275,17 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     />
   );
 
-  if (sessionPhase === 'setup' || sessionPhase === 'preparation' || sessionPhase === 'camera_setup') {
-    return (
-      <div className="min-h-screen flex flex-col">
+  const showPreview = ['setup', 'preparation', 'camera_setup'].includes(sessionPhase);
+
+  return (
+    showPreview ? (
+      <motion.div
+        key="preview"
+        initial={skipEntranceMotion ? false : { opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="min-h-screen flex flex-col"
+      >
         <SessionPreview
           patternName={config.pattern.name}
           pattern={{
@@ -294,22 +306,28 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
           onStart={handleSessionStart}
           onCancel={onSessionExit}
         />
-      </div>
-    );
-  }
-
-  return (
-    <EnhancedSessionLayout
-      videoFeed={videoFeed}
-      showVideo={!!cameraStream}
-      seen={stableMetrics.hasValidData}
-      breathingAnimation={animationWithMascot}
-      metrics={metrics}
-      sessionInfo={sessionInfo}
-      controls={controls}
-      isMobile={isMobile}
-      onExit={onSessionExit}
-    />
+      </motion.div>
+    ) : (
+      <motion.div
+        key="session"
+        initial={skipEntranceMotion ? false : { opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className="min-h-screen"
+      >
+        <EnhancedSessionLayout
+          videoFeed={videoFeed}
+          showVideo={!!cameraStream}
+          seen={stableMetrics.hasValidData}
+          breathingAnimation={animationWithMascot}
+          metrics={metrics}
+          sessionInfo={sessionInfo}
+          controls={controls}
+          isMobile={isMobile}
+          onExit={onSessionExit}
+        />
+      </motion.div>
+    )
   );
 };
 

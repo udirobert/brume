@@ -31,6 +31,7 @@ function flatten(parts: WordPart[]): { text: string; className?: string; space?:
 
 export function WordReveal({ parts, as = "h1", className }: WordRevealProps) {
   const reduceMotion = useReducedMotion();
+  const skipMotion = reduceMotion || (typeof document !== "undefined" && document.hidden);
   const tokens = useMemo(() => flatten(parts), [parts]);
   const label = useMemo(
     () => tokens.map((t) => t.text).join(""),
@@ -39,7 +40,7 @@ export function WordReveal({ parts, as = "h1", className }: WordRevealProps) {
 
   const Tag = as;
 
-  if (reduceMotion) {
+  if (skipMotion) {
     return (
       <Tag className={className}>
         {tokens.map((t, i) =>
@@ -71,12 +72,12 @@ export function WordReveal({ parts, as = "h1", className }: WordRevealProps) {
             key={`${t.text}-${i}`}
             className={cn("inline-block", t.className)}
             aria-hidden="true"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
-              duration: 0.8,
+              duration: 0.45,
               ease,
-              delay: wordIndex * 0.07,
+              delay: wordIndex * 0.04,
             }}
           >
             {t.text}

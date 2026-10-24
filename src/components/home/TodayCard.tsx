@@ -64,8 +64,11 @@ export function TodayCard({ className }: { className?: string }) {
 
   return (
     <div className={cn("w-full max-w-2xl", className)}>
-      <p className="text-sm font-medium text-muted-foreground mb-3 text-center">
-        What do you need today?
+      <p className="text-sm font-medium text-foreground text-center">
+        Choose how you feel
+      </p>
+      <p className="text-sm text-muted-foreground mt-1 mb-3 text-center">
+        We&apos;ll suggest a rhythm, or you can choose one below.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
         {STATE_CHIPS.map((c) => (

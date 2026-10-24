@@ -79,12 +79,12 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   };
 
   const fade = (delay: number) =>
-    reduceMotion
+    reduceMotion || (typeof document !== "undefined" && document.hidden)
       ? undefined
       : {
           initial: { opacity: 0, y: 8 },
           animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as const },
+          transition: { duration: 0.35, delay: delay * 0.55, ease: [0.16, 1, 0.3, 1] as const },
         };
 
   const meta = [

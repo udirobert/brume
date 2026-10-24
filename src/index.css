@@ -302,7 +302,7 @@
   
   /* Interactive Polish */
   .btn-premium {
-    @apply transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-primary/20 bg-primary text-white;
+    @apply transition-[box-shadow,background-color] duration-200 ease-out shadow-lg hover:shadow-primary/20 bg-primary text-white;
   }
 
   /* Custom tooltips/badges */

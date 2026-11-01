@@ -44,6 +44,7 @@ export default function Decompress() {
   const [shareFeedback, setShareFeedback] = useState("");
   const [sparkKey, setSparkKey] = useState(0);
   const { presence, setPresence } = useMascotPresence();
+  const [nudgeState, setNudgeState] = useState<BrumeMascotState | null>(null);
 
   const elapsedOffsetRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -224,6 +225,19 @@ export default function Decompress() {
     }
   };
 
+  const nudgeBrume = () => {
+    setNudgeState("topup");
+    window.setTimeout(() => setNudgeState(null), 950);
+  };
+
+  const handleRoomPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    const room = roomRef.current;
+    if (!room) return;
+    const rect = room.getBoundingClientRect();
+    room.style.setProperty("--dc-mx", `${event.clientX - rect.left}px`);
+    room.style.setProperty("--dc-my", `${event.clientY - rect.top}px`);
+  };
+
   const finish = () => {
     setShareOpen(false);
     setStage("done");
@@ -239,6 +253,7 @@ export default function Decompress() {
           ? step.mascot
           : "idle";
   const companion = presence === "companion";
+  const displayMascot = nudgeState ?? mascotState;
   const roomMode = stage === "pause" || stage === "checkin";
 
   const activeRail = stage === "checkin" ? 1 : stage === "done" ? 2 : 0;
@@ -261,11 +276,13 @@ export default function Decompress() {
             ref={roomRef}
             data-rhythm={stage === "pause" && musicOn && !isPaused}
             aria-live="polite"
+            onPointerMove={handleRoomPointer}
           >
             {sparkKey > 0 && <span key={sparkKey} className="dc-star-burst" aria-hidden="true" />}
             <span className="dc-room__mist dc-room__mist--one" aria-hidden="true" />
             <span className="dc-room__mist dc-room__mist--two" aria-hidden="true" />
             <span className="dc-room__mist dc-room__mist--three" aria-hidden="true" />
+            <span className="dc-room__wisp" aria-hidden="true" />
 
             {stage === "pause" ? (
               <>
@@ -275,18 +292,20 @@ export default function Decompress() {
               <p key={`${step.title}-cue`} className="dc-room__text">{step.cue}</p>
             </div>
 
-            <div className="dc-room__companion">
-              <BrumeMascot state={mascotState} size={156} presence={presence} breathing={companion} />
-              <span>with you</span>
-            </div>
+            <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
+              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} />
+              <span>with you · tap me</span>
+            </button>
 
             <div
               className="dc-room__shoulder"
               role="progressbar"
-              aria-label="Pause progress"
+              aria-label="Pause progress · press to pause or resume"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round((elapsed / DECOMPRESS_SECONDS) * 100)}
+              onClick={togglePause}
+              title="Pause or resume"
             >
               <svg viewBox="0 0 320 92" aria-hidden="true">
                 <path className="dc-room__shoulder-back" d="M 8 58 C 78 30, 128 30, 160 42 C 192 30, 242 30, 312 58" />
@@ -321,9 +340,9 @@ export default function Decompress() {
               <p className="dc-room__text">You don’t have to explain it.</p>
             </div>
 
-            <div className="dc-room__companion dc-room__companion--checkin">
-              <BrumeMascot state={mascotState} size={112} presence={presence} breathing={companion} trackPointer={companion} />
-            </div>
+            <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
+              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} />
+            </button>
 
             <div
               className="dc-room__shoulder"
@@ -384,6 +403,7 @@ export default function Decompress() {
             </div>
 
             {shareOpen && checkInTouched && (
+              <div className="dc-room__share-wrap">
               <section className="dc-share-card dc-room__share" aria-label="Share message">
                 <div className="dc-share-card__head">
                   <h2>If you want to let someone in</h2>
@@ -431,6 +451,7 @@ export default function Decompress() {
                   )}
                 </div>
               </section>
+              </div>
             )}
               </>
             )}

@@ -606,15 +606,22 @@ body:has(.decompress-page) {
   transition: opacity 250ms var(--ease-soft);
 }
 
-.dc-room__share {
+.dc-room__share-wrap {
   position: absolute;
   z-index: 3;
-  top: calc(50% - 26dvh);
-  left: 50%;
-  width: min(32rem, calc(100% - 2rem));
-  max-height: 52dvh;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg) var(--space-sm);
+  pointer-events: none;
+}
+
+.dc-room__share {
+  width: min(32rem, 100%);
+  max-height: 100%;
+  margin: 0;
   overflow-y: auto;
-  translate: -50% 0;
+  pointer-events: auto;
 }
 
 .dc-room__field .dc-share-card {
@@ -660,6 +667,22 @@ body:has(.decompress-page) {
   position: relative;
   min-height: 100dvh;
   overflow: clip;
+}
+
+.dc-room__wisp {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 9rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  opacity: 0.42;
+  filter: blur(1.6rem);
+  pointer-events: none;
+  translate: calc(var(--dc-mx, -30rem) - 4.5rem) calc(var(--dc-my, -30rem) - 4.5rem);
+  transition: translate 900ms var(--ease-soft);
 }
 
 .dc-room__mist {
@@ -743,6 +766,28 @@ body:has(.decompress-page) {
   color: var(--color-muted);
   font-size: 0.8125rem;
   font-weight: 800;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dc-room__companion .brume-mascot {
+  transition: transform 220ms var(--ease-snap);
+}
+
+.dc-room__companion:hover .brume-mascot {
+  transform: scale(1.05);
+}
+
+.dc-room__companion:active .brume-mascot {
+  transform: scale(0.96);
+}
+
+.dc-room__companion:focus-visible {
+  border-radius: var(--radius-pill);
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
 }
 
 .dc-room__companion::before {
@@ -769,7 +814,12 @@ body:has(.decompress-page) {
   width: min(62vw, 36rem);
   transform: translateX(-50%) translateY(var(--dc-depth-y));
   transition: transform 650ms var(--ease-soft);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.dc-room__shoulder:hover .dc-room__shoulder-front {
+  opacity: 0.55;
 }
 
 .dc-room__shoulder svg {
@@ -1135,7 +1185,11 @@ body:has(.decompress-page) {
 
   .dc-room__share {
     width: 100%;
-    max-height: none;
+    max-height: 100%;
+  }
+
+  .dc-room__share-wrap {
+    position: absolute;
   }
 
   .dc-room__field:has(.dc-room__share) .dc-words,
@@ -1231,6 +1285,15 @@ body:has(.decompress-page) {
   .dc-word,
   .dc-star-burst {
     animation: none !important;
+  }
+
+  .dc-room__wisp {
+    display: none;
+  }
+
+  .dc-room__companion:hover .brume-mascot,
+  .dc-room__companion:active .brume-mascot {
+    transform: none;
   }
 
   .dc-mascot-card::after {

@@ -15,6 +15,7 @@ import { useIsMobile } from '../../hooks/use-mobile';
 import { useStableMetrics } from '../../hooks/useStableMetrics';
 import { useSession } from '../../hooks/useSession';
 import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
+import { useMascotPresence } from '../../hooks/useMascotPresence';
 
 import VideoFeed from '../VideoFeed';
 import { VisionManager } from './VisionManager';
@@ -57,6 +58,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
 }) => {
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
+  const { presence: mascotPresence } = useMascotPresence();
   const skipEntranceMotion =
     reduceMotion || (typeof document !== "undefined" && document.hidden);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -233,6 +235,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       <BrumeMascot
         state={mascotState}
         breath={mascotBreath}
+        presence={mascotPresence}
         size={72}
         className="absolute -bottom-3 -right-3"
       />

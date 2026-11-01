@@ -4,6 +4,7 @@
 // (mirrored from anna/bundle/app.css).
 
 import { useEffect, useRef } from "react";
+import type { MascotPresence } from "@/lib/mascotPresence";
 import "./BrumeMascot.css";
 
 export type BrumeMascotState =
@@ -188,9 +189,22 @@ export interface BrumeMascotProps {
   breath?: number;
   size?: number;
   className?: string;
+  presence?: MascotPresence;
+  trackPointer?: boolean;
+  breathing?: boolean;
+  breathPeriod?: number;
 }
 
-export function BrumeMascot({ state = "idle", breath, size = 104, className }: BrumeMascotProps) {
+export function BrumeMascot({
+  state = "idle",
+  breath,
+  size = 104,
+  className,
+  presence = "quiet",
+  trackPointer = false,
+  breathing = false,
+  breathPeriod = 7,
+}: BrumeMascotProps) {
   const hostRef = useRef<HTMLSpanElement>(null);
   const handleRef = useRef<MascotHandle | null>(null);
 
@@ -212,10 +226,52 @@ export function BrumeMascot({ state = "idle", breath, size = 104, className }: B
     if (breath !== undefined) handleRef.current?.setBreath(breath);
   }, [breath]);
 
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || presence !== "companion" || !trackPointer || REDUCED) return undefined;
+
+    const resetGaze = () => {
+      host.style.setProperty("--mascot-gaze-x", "0px");
+      host.style.setProperty("--mascot-gaze-y", "0px");
+    };
+
+    const trackGaze = (event: PointerEvent) => {
+      const rect = host.getBoundingClientRect();
+      const dx = Math.max(-2.4, Math.min(2.4, ((event.clientX - (rect.left + rect.width / 2)) / rect.width) * 1.5));
+      const dy = Math.max(-1.8, Math.min(1.8, ((event.clientY - (rect.top + rect.height / 2)) / rect.height) * 1.2));
+      host.style.setProperty("--mascot-gaze-x", `${dx.toFixed(2)}px`);
+      host.style.setProperty("--mascot-gaze-y", `${dy.toFixed(2)}px`);
+    };
+
+    resetGaze();
+    window.addEventListener("pointermove", trackGaze, { passive: true });
+    window.addEventListener("pointerleave", resetGaze);
+    return () => {
+      window.removeEventListener("pointermove", trackGaze);
+      window.removeEventListener("pointerleave", resetGaze);
+      resetGaze();
+    };
+  }, [presence, trackPointer]);
+
+  useEffect(() => {
+    if (!breathing || breath !== undefined || REDUCED) return undefined;
+    let frame = 0;
+    const started = performance.now();
+    const tick = (now: number) => {
+      const cycle = (((now - started) / 1000) % breathPeriod) / breathPeriod;
+      const value = (1 - Math.cos(cycle * Math.PI * 2)) / 2;
+      handleRef.current?.setBreath(value);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [breathing, breath, breathPeriod]);
+
   return (
     <span
       ref={hostRef}
       className={`brume-mascot ${className || ""}`}
+      data-presence={presence}
       style={{ width: size, height: size }}
     />
   );

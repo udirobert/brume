@@ -234,39 +234,76 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 
 /* --- Brume mascot ------------------------------------------------------ */
-.mascot { display: inline-block; line-height: 0; }
-.mascot-svg { width: 100%; height: 100%; overflow: visible; }
+.mascot, .brume-mascot {
+  --mascot-gaze-x: 0px;
+  --mascot-gaze-y: 0px;
+  display: inline-block;
+  line-height: 0;
+}
+.mascot-svg { width: 100%; height: 100%; overflow: visible; transform-origin: 50% 58%; }
 .mascot-fill { fill: #7c8cc9; }
 .mascot-hl { fill: #9aa8da; opacity: .8; }
-.mascot-halo { fill: none; stroke: rgba(124,140,201,.18); stroke-width: 10; }
+.mascot-halo { fill: none; stroke: rgba(124,140,201,.18); stroke-width: 10; transform-box: fill-box; transform-origin: center; }
 .mascot-eye { fill: #26303a; }
 .mascot-lid { fill: #7c8cc9; }
-.mascot-mouth { fill: none; stroke: #26303a; stroke-width: 2; stroke-linecap: round; }
+.mascot-eye, .mascot-lid {
+  transform: translate(var(--mascot-gaze-x), var(--mascot-gaze-y));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms ease-out;
+}
+.mascot-mouth {
+  fill: none;
+  stroke: #26303a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform: translate(calc(var(--mascot-gaze-x) * .35), calc(var(--mascot-gaze-y) * .35));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms ease-out;
+}
 .mascot-cheek { fill: #9aa8da; opacity: 0; }
-.mascot-arm { stroke: #7c8cc9; stroke-width: 5; stroke-linecap: round; opacity: 0; }
+.mascot-arm { stroke: #7c8cc9; stroke-width: 5; stroke-linecap: round; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .mascot-wisp { fill: rgba(221,227,243,.55); opacity: 0; }
 .mascot-wave { fill: none; stroke: #7c8cc9; stroke-width: 2; stroke-linecap: round; opacity: 0; }
 .mascot-swirl { fill: none; stroke: #7c8cc9; stroke-width: 2; opacity: 0; }
 .mascot-arms .mascot-arm { opacity: 1; }
 .mascot-cheeks .mascot-cheek { opacity: .6; }
+.mascot[data-presence="companion"][data-state="proud"] .mascot-cheek,
+.mascot[data-presence="companion"][data-state="watching"] .mascot-cheek,
+.brume-mascot[data-presence="companion"][data-state="proud"] .mascot-cheek,
+.brume-mascot[data-presence="companion"][data-state="watching"] .mascot-cheek { opacity: .42; }
 .mascot-wisped .mascot-wisp { opacity: .6; }
 .mascot-humming .mascot-wave { opacity: .8; }
 .mascot-thinking .mascot-swirl { opacity: .8; }
+
 @media (prefers-reduced-motion: no-preference) {
-  .mascot-body { animation: mascot-bob 6s ease-in-out infinite; transform-origin: 50px 55px; }
+  .mascot-svg { animation: mascot-bob 6s ease-in-out infinite; }
+  .mascot[data-presence="companion"] .mascot-svg,
+  .brume-mascot[data-presence="companion"] .mascot-svg { animation: mascot-companion-bob 7s ease-in-out infinite; }
+  .mascot[data-presence="companion"] .mascot-halo,
+  .brume-mascot[data-presence="companion"] .mascot-halo { animation: mascot-halo-breathe 7s ease-in-out infinite; }
+  .mascot[data-presence="companion"][data-state="stretch"] .mascot-arm:first-of-type,
+  .brume-mascot[data-presence="companion"][data-state="stretch"] .mascot-arm:first-of-type { animation: mascot-arm-sway 2.8s ease-in-out infinite; }
+  .mascot[data-presence="companion"][data-state="stretch"] .mascot-arm:last-of-type,
+  .brume-mascot[data-presence="companion"][data-state="stretch"] .mascot-arm:last-of-type { animation: mascot-arm-sway 2.8s ease-in-out .28s infinite; }
   .mascot-wisped .w0 { animation: wisp 3.4s ease-out infinite; }
   .mascot-wisped .w1 { animation: wisp 3.4s ease-out .9s infinite; }
   .mascot-wisped .w2 { animation: wisp 3.4s ease-out 1.8s infinite; }
   .mascot-wisped .w3 { animation: wisp 3.4s ease-out 2.6s infinite; }
   .mascot-thinking .mascot-swirl { animation: swirl 1.6s ease-in-out infinite; }
-  .mascot-puff .mascot-body { animation: puff .5s ease-out; }
+  .mascot-puff .mascot-svg { animation: puff .5s ease-out; }
 }
 @keyframes mascot-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes mascot-companion-bob { 0%,100% { transform: translateY(0) rotate(0deg); } 32% { transform: translateY(-2.5px) rotate(-1deg); } 68% { transform: translateY(-1px) rotate(1deg); } }
+@keyframes mascot-halo-breathe { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: .9; transform: scale(1.045); } }
+@keyframes mascot-arm-sway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-7deg); } }
 @keyframes wisp { 0% { transform: translateY(0); opacity:.6; } 100% { transform: translateY(-26px); opacity:0; } }
 @keyframes swirl { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
 @keyframes puff { 50% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) {
-  .mascot-body, .mascot-wisp, .mascot-swirl { animation: none !important; }
+  .mascot-svg, .mascot-body, .mascot-halo, .mascot-wisp, .mascot-swirl, .mascot-arm { animation: none !important; }
+  .mascot-eye, .mascot-lid, .mascot-mouth { transform: none !important; }
 }
 .mascot-slot { margin: 0 auto 4px; }
 .mascot-lg { width: 110px; height: 110px; }

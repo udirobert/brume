@@ -7,6 +7,7 @@ import { BrumeMascot } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
 import { Button } from "@/components/ui/button";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
+import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
 
@@ -23,6 +24,8 @@ export default function Index() {
   const isGuest = !user;
   const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
   const dayPart = useDayPart();
+  const { presence, setPresence } = useMascotPresence();
+  const companion = presence === "companion";
 
   const headline = useMemo((): WordPart[] => {
     if (streak > 0) {
@@ -46,7 +49,25 @@ export default function Index() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
         >
-          <BrumeMascot state="idle" size={104} />
+          <div className="flex flex-col items-center gap-2">
+            <BrumeMascot
+              state="idle"
+              size={104}
+              presence={presence}
+              breathing={companion}
+              trackPointer={companion}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={companion}
+              onClick={() => setPresence(companion ? "quiet" : "companion")}
+              className="h-7 rounded-full px-3 text-xs text-muted-foreground"
+            >
+              Brume: {companion ? "Company" : "Quiet"}
+            </Button>
+          </div>
         </motion.div>
         <WordReveal
           parts={headline}

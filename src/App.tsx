@@ -26,6 +26,7 @@ const Progress = React.lazy(() => import("@/pages/Progress"));
 const PostSession = React.lazy(() => import("@/pages/PostSession"));
 const UserProfile = React.lazy(() => import("@/pages/UserProfile"));
 const Subscription = React.lazy(() => import("@/pages/Subscription"));
+const Decompress = React.lazy(() => import("@/pages/Decompress"));
 
 // Web3 Provider — lazy-loaded, only wraps /profile and /subscription.
 // /auth is email-first: wagmi mounts only if the user picks wallet login.
@@ -107,6 +108,11 @@ function App() {
           </Route>
 
           {/* Email sign-in must not mount Wagmi. Wallet login lazy-loads it. */}
+          <Route path="/decompress" element={
+            <RouteErrorBoundary>
+              <Decompress />
+            </RouteErrorBoundary>
+          } />
           <Route path="/auth" element={
             <RouteErrorBoundary>
               <Auth />

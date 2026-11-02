@@ -18,7 +18,7 @@ const NotFound = () => {
         <BrumeMascot state="sleepy" size={88} className="mx-auto" />
         <h1 className="text-3xl font-bold tracking-tight">This page isn't here.</h1>
         <p className="text-muted-foreground">
-          Tap how you feel. Brume picks the breath.
+          Nothing is lost. Brume is back this way.
         </p>
         <Link
           to="/"

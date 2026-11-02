@@ -26,7 +26,7 @@ export default function Progress() {
         <BrumeMascot state="sleepy" size={92} className="mb-4" />
         <h1 className="text-3xl font-bold tracking-tight mb-3">Nothing here yet.</h1>
         <p className="text-muted-foreground mb-8">
-          Tap how you feel. One session is the start.
+          One session is the start.
         </p>
         {isGuestMode && (
           <p className="text-sm text-muted-foreground mb-8">

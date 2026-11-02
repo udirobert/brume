@@ -75,6 +75,8 @@
     @apply bg-background text-foreground;
     font-family: var(--brume-font);
   }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
 }
 
 /* ── Agent-native primitive animations (src/components/primitives) ── */

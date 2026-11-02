@@ -96,3 +96,33 @@ anonymously via tags meanwhile).
 1. Apple developer account active? (longest-lead item — confirm today)
 2. google-services.json for OneSignal push on Android (gradle already guards for it)
 3. Domain: `brumeapp.netlify.app` for landing + agent API docs
+
+## Future ideas (parked, 2026-11-02)
+
+### Hands-free interaction — inspired by Winq (winq.kroking.dev)
+
+Winq is a macOS gaze tracker: the camera reads head direction + eye
+position purely as an *input* channel (look at a window → it focuses).
+Frames are processed on-device and discarded. The useful frame for us:
+
+**Camera-as-input is honest; camera-as-verification was not.** We removed
+Brume's camera because a face in frame proves nothing about breathing —
+the camera produced no user value. Winq's camera produces all of its
+value. If a camera ever returns to Brume, it is for *control* (a nod to
+start, a glance to pick a check-in word), never for *proof*.
+
+Tension to respect: during a session the user wants eyes closed — gaze is
+a pre-session modality at best.
+
+Candidate order for "communicate without typing", cheapest first:
+
+1. **OS dictation on existing inputs** — the check-in field already
+   accepts iOS/Android/macOS built-in dictation. Zero code; make sure the
+   copy invites it.
+2. **Brume speaks** — extend `anna/bundle/audio.js`-style cues to the web
+   session (spoken phase words instead of on-screen text). Serves the real
+   hands-free case: eyes closed.
+3. **Optional voice input** — Web Speech API "say how you feel" check-in;
+   free, on-device where supported, opt-in.
+4. **Gaze/head control** — the Winq move; revisit only if it controls
+   something real, and never as a claim about breathing.

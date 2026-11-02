@@ -108,7 +108,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     : breathPhase === 'inhale' ? 'inhale'
     : breathPhase === 'exhale' ? 'exhale'
     : 'hold';
-  const mascotBreath = sessionActive
+  const mascotBreath = sessionActive && !reduceMotion
     ? breathAmount(breathPhase, breathProgress01, true)
     : undefined;
 

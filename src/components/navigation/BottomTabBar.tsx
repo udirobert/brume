@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../ui/button";
-import { Heart, BarChart3, User, Wind } from "lucide-react";
+import { HomeIcon, ProgressIcon, DecompressIcon, ProfileIcon } from "../icons/BrumeIcons";
 
 interface NavItem {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   path: string;
   isActive: boolean;
   color: string;
@@ -22,7 +22,7 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
   {
     id: "home",
     label: "Home",
-    icon: Heart,
+    icon: HomeIcon,
     path: "/",
     isActive: locationPathname === "/",
     color: "",
@@ -32,7 +32,7 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
   {
     id: "progress",
     label: "Progress",
-    icon: BarChart3,
+    icon: ProgressIcon,
     path: "/progress",
     isActive: locationPathname.startsWith("/progress"),
     color: "",
@@ -42,7 +42,7 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
   {
     id: "decompress",
     label: "Decompress",
-    icon: Wind,
+    icon: DecompressIcon,
     path: "/decompress",
     isActive: locationPathname.startsWith("/decompress"),
     color: "",
@@ -52,7 +52,7 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
   {
     id: "profile",
     label: user ? "Profile" : "Sign in",
-    icon: User,
+    icon: ProfileIcon,
     path: user ? "/profile" : "/auth",
     isActive: locationPathname === "/profile" || locationPathname === "/auth",
     color: "",
@@ -139,7 +139,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ className }) => {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-5 w-5 transition-colors duration-200" />
+              <Icon className="h-6 w-6 transition-colors duration-200" />
               <span
                 className={cn(
                   "text-xs leading-none transition-colors duration-200",

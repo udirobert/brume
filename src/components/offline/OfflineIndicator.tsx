@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrumeMascot } from "@/components/BrumeMascot";
 
 interface OfflineIndicatorProps {
   className?: string;
@@ -120,9 +121,10 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       {/* Offline Notice */}
       {!syncStatus.isOnline && (
         <Alert>
+          <BrumeMascot state="sleepy" size={40} />
           <Download className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            You're offline. Sessions will sync when connection is restored.
+            You're offline. Breathing still works.
             Core breathing features remain available.
           </AlertDescription>
         </Alert>

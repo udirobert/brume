@@ -1,0 +1,100 @@
+/* Brume accessibility — forced-colors and high-contrast support.
+   Scoped to the shared brand classes; keep small. */
+
+@media (forced-colors: active) {
+  /* Every interactive surface gets a real border */
+  .brume-btn,
+  .brume-pill,
+  .brume-toggle,
+  .brume-card,
+  .brume-mascot-card,
+  .dc-word,
+  .dc-share-card,
+  .dc-panel,
+  .dc-rail__item,
+  .dc-support__option,
+  .dc-nav-chip {
+    border: 2px solid ButtonText;
+  }
+
+  /* Selected/active states use the system highlight */
+  .brume-pill.is-selected,
+  .brume-pill[aria-pressed="true"],
+  .brume-toggle[aria-pressed="true"],
+  .dc-word.is-chosen,
+  .dc-rail__item.is-active,
+  .dc-support__option.is-selected {
+    border-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* Highlighter becomes an underline band */
+  .brume-hl,
+  .text-gradient {
+    background-image: none;
+    text-decoration: underline;
+    text-decoration-thickness: 0.2em;
+    text-underline-offset: 0.1em;
+  }
+
+  /* Buttons lose the layered cast shadows */
+  .brume-btn,
+  .dc-btn {
+    box-shadow: none;
+  }
+
+  /* The mist orb ring stays visible */
+  .dc-room__shoulder-back,
+  .dc-room__shoulder-front {
+    stroke: CanvasText;
+  }
+
+  /* Mascot keeps its own colours — it IS the character */
+  .brume-mascot,
+  .brume-mascot * {
+    forced-color-adjust: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .brume-btn,
+  .brume-pill,
+  .brume-toggle,
+  .brume-card,
+  .brume-mascot-card,
+  .dc-word,
+  .dc-share-card,
+  .dc-panel {
+    border: 2px solid var(--brume-ink);
+  }
+
+  .dc-field-note,
+  .dc-lede,
+  .dc-note,
+  .brume-mascot-card p,
+  .dc-share-card__head p {
+    color: var(--brume-ink);
+  }
+
+  /* Translucent surfaces become opaque */
+  .brume-card,
+  .dc-panel,
+  .dc-share-card,
+  .brume-mascot-card {
+    background: var(--brume-card);
+    box-shadow: var(--brume-shadow-card);
+  }
+
+  /* Softer halos — less wash, more text edge */
+  .brume-mascot-card::before {
+    opacity: 0.3;
+  }
+}

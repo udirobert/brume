@@ -10,7 +10,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, Wind, User, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { ResetIcon, ProgressIcon, DecompressIcon, ProfileIcon } from "@/components/icons/BrumeIcons";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStatus } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
@@ -56,16 +57,16 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
           className="flex items-center gap-2 font-bold text-primary hover:opacity-80 transition-opacity text-lg"
         >
           <div className="rounded bg-primary/10 p-1">
-            <Sparkles className="w-4 h-4" />
+            <ResetIcon className="w-4 h-4" />
           </div>
           <span>Brume</span>
         </Link>
 
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2">
-            {navLink("/progress", "Progress", BarChart3)}
-            {navLink("/decompress", "Decompress", Wind)}
-            {isAuthenticated && navLink("/profile", "Profile", User)}
+            {navLink("/progress", "Progress", ProgressIcon)}
+            {navLink("/decompress", "Decompress", DecompressIcon)}
+            {isAuthenticated && navLink("/profile", "Profile", ProfileIcon)}
           </div>
           {isAuthenticated ? (
             <Button

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { cn } from "../lib/utils";
-import { motion } from "framer-motion";
-import { breathScale, type BreathPhase } from "../lib/breathCurve";
+import { motion, useReducedMotion } from "framer-motion";
+import { breathScale, breathGlow, type BreathPhase } from "../lib/breathCurve";
 import { EASE } from "../lib/motion";
 
 /**
@@ -51,10 +51,13 @@ const MistOrb: React.FC<{
   isActive: boolean;
   compactMode: boolean;
 }> = React.memo(({ phase, phaseProgress, isActive, compactMode }) => {
+  const reduceMotion = useReducedMotion();
+  const p01 = Math.min(phaseProgress / 100, 1);
   const scale = useMemo(
-    () => breathScale(phase, Math.min(phaseProgress / 100, 1), isActive),
-    [phase, phaseProgress, isActive],
+    () => (reduceMotion ? 1 : breathScale(phase, p01, isActive)),
+    [phase, p01, isActive, reduceMotion],
   );
+  const glow = reduceMotion ? breathGlow(phase, p01, isActive) : 0.9;
 
   // Sized against the viewport so the peak of the inhale (x1.24) never clips.
   const haloSize = compactMode ? "min(340px, 80vw)" : "min(460px, 100vw)";
@@ -71,7 +74,7 @@ const MistOrb: React.FC<{
         // this just smooths between timer updates.
         transition={{ duration: 0.2, ease: "linear" }}
         className="relative flex items-center justify-center"
-        style={{ opacity: 0.9 }}
+        style={{ opacity: glow }}
       >
         <div
           className="absolute rounded-full"

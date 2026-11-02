@@ -97,7 +97,7 @@ export const BREATHING_PATTERNS: Record<string, BreathingPattern> = {
   mindfulness: {
     id: 'mindfulness',
     name: 'Mindfulness Breath',
-    description: 'Five in, five out. Even counts, nothing to get right',
+    description: 'Five in, five out. Even counts.',
     inhale: 5,
     hold: 0,
     exhale: 5,

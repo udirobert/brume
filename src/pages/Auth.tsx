@@ -61,7 +61,7 @@ const Auth = () => {
       <ProgressiveBlur />
 
       <div className="relative z-10 flex flex-col items-center">
-        <BrumeMascot state="idle" size={88} className="mb-6" />
+        <BrumeMascot state="watching" size={72} className="mb-6" />
         <SignInForm
           intent={intent}
           defaultSignUp={defaultSignUp}

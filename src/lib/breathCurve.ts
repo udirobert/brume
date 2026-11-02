@@ -61,3 +61,14 @@ export function breathAmount(
       return 0;
   }
 }
+
+/** Reduced-motion glow: breath expressed as opacity 0.55..1, no scale. */
+export function breathGlow(
+  phase: BreathPhase,
+  progress01: number,
+  isActive = true,
+): number {
+  if (!isActive) return 0.55;
+  const amount = breathAmount(phase, progress01, true);
+  return 0.55 + amount * 0.45;
+}

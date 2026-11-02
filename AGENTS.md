@@ -55,6 +55,11 @@ Motion: the archetype is CALM — one signature ease and three durations in
 `src/lib/motion.ts` (0.2/0.5/0.9 s); the breath itself uses `easeInOutSine`
 in `src/lib/breathCurve.ts`. Playful motion lives only on the mascot.
 Transform + opacity only; reduced-motion means opacity only.
+Say reassurance once per screen.
+Icons: `src/components/icons/BrumeIcons.tsx` (drawn in the mascot's
+rounded style; no lucide sparkles/charts in navigation).
+Accessibility: `src/styles/brume-a11y.css` covers forced-colors and
+prefers-contrast; reduced motion = opacity only.
 
 ## Secrets
 

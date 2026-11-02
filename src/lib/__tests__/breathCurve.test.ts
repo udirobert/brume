@@ -56,3 +56,14 @@ describe("breathAmount", () => {
     expect(breathAmount("inhale", 0.5, false)).toBe(0);
   });
 });
+
+describe("breathGlow", () => {
+  it("stays in 0.55..1 and follows the eased curve", async () => {
+    const { breathGlow } = await import("../breathCurve");
+    expect(breathGlow("inhale", 0)).toBeCloseTo(0.55);
+    expect(breathGlow("inhale", 1)).toBeCloseTo(1);
+    expect(breathGlow("exhale", 1)).toBeCloseTo(0.55);
+    expect(breathGlow("hold", 0.5)).toBe(1);
+    expect(breathGlow("inhale", 0.5, false)).toBe(0.55);
+  });
+});

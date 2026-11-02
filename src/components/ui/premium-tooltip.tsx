@@ -122,7 +122,7 @@ export const MetricTooltips = {
   confidence: {
     title: "Detection Confidence",
     description: "Technical measure of how accurately the AI can detect your facial features. Higher values indicate clearer tracking.",
-    tip: "Nothing to get right — just follow the rhythm."
+    tip: "Just follow the rhythm."
   },
   breathingPhase: {
     title: "Breathing Phase",

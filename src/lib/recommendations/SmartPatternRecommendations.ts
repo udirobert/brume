@@ -173,7 +173,7 @@ export class SmartPatternRecommendations {
         {
           patternId: "mindfulness",
           pattern: BREATHING_PATTERNS.mindfulness,
-          reason: "Even counts, in and out. Nothing to get right.",
+          reason: "Even counts, in and out.",
           confidence: 0.7,
           timeToEffect: "2 minutes",
           bestFor: ["A slower minute", "Noticing the breath"],
@@ -338,7 +338,7 @@ export class SmartPatternRecommendations {
           {
             patternId: "mindfulness",
             pattern: BREATHING_PATTERNS.mindfulness,
-            reason: "Even counts, in and out. Nothing to get right.",
+            reason: "Even counts, in and out.",
             confidence: 0.8,
             timeToEffect: "2 minutes",
             bestFor: ["Noticing the breath", "Sitting still"],

@@ -5,6 +5,7 @@
  * Provides different error boundaries for different parts of the app.
  */
 
+import { BrumeMascot } from '../../components/BrumeMascot';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AppError, ErrorFactory, ErrorCategory, ErrorSeverity } from './error-types';
 import { errorReporter } from './error-reporter';
@@ -233,19 +234,21 @@ export const SessionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>
     <ErrorBoundary
       {...props}
       category={ErrorCategory.SESSION}
-      fallback={(error, retry) => (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <svg className="h-10 w-10 text-yellow-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-lg font-medium text-yellow-800 mb-2">Session Error</h3>
-          <p className="text-yellow-700 mb-4">{error.userMessage}</p>
-          <button
-            onClick={retry}
-            className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
-          >
-            Restart Session
-          </button>
+      fallback={(_error, retry) => (
+        <div className="flex flex-col items-center justify-center min-h-[40vh] p-6 text-center">
+          <BrumeMascot state="sleepy" size={88} className="mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Something slipped.</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Your breath is fine. Try again, or head home.
+          </p>
+          <div className="flex flex-col items-center gap-3">
+            <button onClick={retry} className="brume-btn brume-btn--push px-6">
+              Try again
+            </button>
+            <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Home
+            </a>
+          </div>
         </div>
       )}
     />

@@ -12,7 +12,8 @@ import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { isTouchDevice } from "../../utils/mobile-detection";
-import { Sparkles, Wind, Zap, Heart } from "lucide-react";
+import { Zap } from "lucide-react";
+import { ResetIcon, DecompressIcon, HomeIcon } from "../icons/BrumeIcons";
 
 interface SessionEntryPointsProps {
   variant?: "mobile" | "desktop";
@@ -32,7 +33,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
       title: "Try Breathing",
       description: "Start with guided box breathing - simple and effective",
       badge: "Start Here",
-      icon: Heart,
+      icon: HomeIcon,
       to: "/session/classic",
       buttonClass: isMobile
         ? "w-full text-sm bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100"
@@ -51,7 +52,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
       description:
         "AI-powered feedback for deeper practice",
       badge: "Popular",
-      icon: Wind,
+      icon: DecompressIcon,
       to: "/session/enhanced",
       buttonClass: isMobile
         ? "w-full text-sm bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100"
@@ -121,7 +122,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
                 <ul className="space-y-2 mb-8">
                   {session.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-2 text-sm">
-                      <Sparkles className="w-4 h-4 text-green-500" />
+                      <ResetIcon className="w-4 h-4 text-green-500" />
                       <span>{feature}</span>
                     </li>
                   ))}

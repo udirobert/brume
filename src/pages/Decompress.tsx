@@ -349,7 +349,7 @@ export default function Decompress() {
             <span className="dc-rail__dot" aria-hidden="true" />
             <span className="dc-rail__copy">
               <strong>Settle</strong>
-              <span>Two minutes with nothing to get right.</span>
+              <span>Two minutes to settle.</span>
             </span>
           </li>
           <li className={`dc-rail__item dc-rail__item--cyan ${activeRail === 1 ? "is-active" : ""}`} aria-current={activeRail === 1 ? "step" : undefined}>
@@ -455,7 +455,6 @@ export default function Decompress() {
         <p className="dc-footer__line">A pause can be enough.</p>
         <div className="dc-footer__meta">
           <span>Brume</span>
-          <span>nothing saved</span>
         </div>
       </footer>
     </div>

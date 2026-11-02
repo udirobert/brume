@@ -42,11 +42,16 @@ const LeaderboardRedirect = () => <Navigate to="/" replace />;
 const SettingsRedirect = () => <Navigate to="/profile" replace />;
 
 // Loading component for lazy routes
-import { PixelLoader } from "@/components/primitives/PixelLoader";
+import { BrumeMascot } from "@/components/BrumeMascot";
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <PixelLoader variant="drive" label="Brume" />
+  <div
+    className="flex items-center justify-center min-h-screen"
+    role="status"
+    aria-label="Loading"
+  >
+    <BrumeMascot state="thinking" size={88} breathing />
+    <span className="sr-only">Loading</span>
   </div>
 );
 

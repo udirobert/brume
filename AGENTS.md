@@ -40,6 +40,16 @@ Rules:
 - `anna-app apps publish` uploads a new version (not a review submission);
   submitting for review is done by the owner in the Developer Console.
 
+## MCP app (`mcp/`)
+
+Brume exposed to MCP hosts (ChatGPT Apps SDK target) — spec in
+`docs/MCP-APP.md`, rationale in `docs/AGENTIC.md`, distribution plan in
+`docs/DISTRIBUTION.md`. The server imports `anna/bundle/plan.js` directly;
+that file is now shared by THREE implementations (Anna bundle, Python
+executa, MCP server) — keep the contract in sync across all three and
+cover changes in `anna/test/plan-cases.json`. Verify: `npm test` in `mcp/`.
+Same content rules: rhythm-only copy, enforced by the shared regexes.
+
 ## Web app (`src/`)
 
 Shared brand tokens live in `anna/bundle/brand.css` (both UIs import the

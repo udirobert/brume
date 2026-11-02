@@ -121,9 +121,53 @@ Candidate order for "communicate without typing", cheapest first:
    copy invites it.
 2. **Brume speaks** — extend `anna/bundle/audio.js`-style cues to the web
    session (spoken phase words instead of on-screen text). Serves the real
-   hands-free case: eyes closed. **Promoted 2026-11-02** — building now for
-   the AssemblyAI voice hackathon (see `docs/DISTRIBUTION.md`).
+   hands-free case: eyes closed. **Shipped 2026-11-02** (phase cues + the
+   preview choice) for the AssemblyAI voice hackathon (see
+   `docs/DISTRIBUTION.md`).
 3. **Optional voice input** — Web Speech API "say how you feel" check-in;
-   free, on-device where supported, opt-in.
+   free, on-device where supported, opt-in. AssemblyAI's core product is
+   STT — the same vendor could cover voice in AND voice out, which is
+   also extra hackathon credit.
 4. **Gaze/head control** — the Winq move; revisit only if it controls
    something real, and never as a claim about breathing.
+
+### Voice landscape survey (2026-11-02)
+
+Four categories, and what each sells:
+
+| Player | What they sell | Voice model | Gap for us |
+|---|---|---|---|
+| **Othership** ($18/mo, 500+ sessions) | A *journey* — produced guided breathwork, charismatic human guides, immersive music | Long narration tracks | Heavy, library-driven, claims-heavy ("regulate your nervous system") |
+| **Breathwrk** ($9/mo) | A *routine* — pre-recorded classes, schedules, streaks, categories | Guided class audio | Habit/gamification model we deliberately avoid |
+| **Calm / Headspace** | A *library* — narrated content, celebrity voices | Narration-as-content | Browsing is the opposite of our check-in → done loop |
+| **Moonbird / Morphée** (hardware) | A *device* — screen-free breathing, haptic or box-based | Voice/haptics on hardware | Proves screen-free demand; we do it with software |
+| **Pi / Sesame / Hume EVI** | A *conversation* — an AI that talks to you | Always-on voice agent | Not our game — conversation means explaining, ours means not explaining |
+
+**The niche:** everyone sells content you consume, a coach that talks to
+you, or hardware you buy. Nobody sells *a moment* — two minutes, nothing
+to browse, nothing to get right — and nobody offers it inside other
+agents (MCP). Othership wants to take you on a journey; Brume wants to
+get out of your way in 90 seconds. Our voice is therefore **whisper, not
+narration**: the minimum speech needed so you can close your eyes.
+
+**Voice ideas by user outcome** (ranked by fit):
+
+1. *"Don't make me look"* — spoken phase cues: shipped.
+2. *"Just say it"* — voice check-in: speak a word instead of tapping;
+   free via Web Speech API, AAI STT for the hackathon story.
+3. *"Say it kindly"* — Brume reads your composed check-in sentence back
+   to you; hearing your own words said warmly is different from reading
+   them. Bridges to the share-with-a-human mechanic.
+4. *"Meet me where I am"* — spoken opening line that names your context
+   ("A gentle rhythm between standup and the hard email"). Live TTS of
+   model text needs a proxy + explicit consent; the canned library
+   pre-renders free. Demo-worthy.
+5. *"Stay with me"* — sparse optional murmurs in Decompress ("stay as
+   long as you like"). Companion made audible — must stay rare and
+   off-able; talking during a pause is a fine line.
+6. *"Tell me what to do"* — voice commands mid-session ("slower",
+   "done") — STT again.
+
+**Don't build:** a conversational voice agent. Pi/Sesame/Hume compete on
+who talks best; our differentiator is the product that needs the least
+of you.

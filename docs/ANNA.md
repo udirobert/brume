@@ -585,3 +585,34 @@ streaks, no scores, no outcome claims. The shared brand tokens in
 affects the Anna bundle visuals too, since the iframe links the same file.
 Run `npm run test:browser` in `anna/` before the next publish to check the
 bundle still looks right.
+
+### 12.8 Review round 3 and remaining steps (2026-11-02)
+
+Feedback timeline (Anna Dev team): 21 Oct — post the 0.3.0 → 0.3.1
+missing-tool delay on the forum; no separate dev quota (use BYOK or the
+weekly contribution rewards); notify them once the Cloud Agent test passes
+and review moves forward. 22 Oct — rejected: (1) core not AI-native,
+(2) progress lost on close, (3) run a fresh-install Cloud Agent test before
+resubmitting. 25 Oct — BYOK steps (Settings → Advanced → LLM → My API Keys
+→ Custom OpenAI-compatible → Test & Save, **then enable "Apps & plugins use
+my API Key by default"**, off by default), plus a **new blocker: the app
+hangs forever on "Checking for unfinished work…"**. The 25 Oct email did not
+re-raise the AI-native issue; that suggests, but does not confirm, that the
+conversation-preparation rework was accepted.
+
+Startup hang, hypothesis (not yet reproduced): `initializeHost()`
+(`bundle/app.js`) sets "Checking for unfinished work…" and then runs
+`loadActiveTask({ apply: true })` -> `hydrateTask()` with no try/catch and
+no `.catch` on the `initializeHost()` call. Connect and storage reads both
+have 8 s timeouts, so a slow host errors out; an exception thrown while
+validating or hydrating a restored checkpoint would leave the startup panel
+up forever. Reproduce first with the fake host (poisoned or old-shape
+`brume/active-task`), then fix with a guarded boot (try/finally, an overall
+watchdog, error + Retry + "start fresh" that never erases a corrupt
+checkpoint) and tests for throwing hydrate, throwing/never-resolving
+`storage.get`.
+
+Note: since 22 Oct the shared `brand.css` was retuned warm (web alignment,
+2 Nov); re-run `npm run test:browser` and regenerate `listing/candidate/`
+before the next publish.
+

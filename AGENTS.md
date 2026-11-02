@@ -51,6 +51,11 @@ or `/decompress` → check-in word → optional one-sentence message.
 
 Verification: `pnpm vitest run`, `npx tsc --noEmit`, `pnpm lint`.
 
+Motion: the archetype is CALM — one signature ease and three durations in
+`src/lib/motion.ts` (0.2/0.5/0.9 s); the breath itself uses `easeInOutSine`
+in `src/lib/breathCurve.ts`. Playful motion lives only on the mascot.
+Transform + opacity only; reduced-motion means opacity only.
+
 ## Secrets
 
 Never commit keys. Local secrets live in gitignored env files

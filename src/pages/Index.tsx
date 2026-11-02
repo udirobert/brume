@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { DURATION, EASE } from "@/lib/motion";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot } from "@/components/BrumeMascot";
@@ -41,7 +42,7 @@ export default function Index() {
           className="flex justify-center mb-4"
           initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: DURATION.standard, delay: 0.04, ease: EASE }}
         >
           <div className="brume-mascot-card w-56" data-presence={presence}>
             <BrumeMascot
@@ -80,7 +81,7 @@ export default function Index() {
           className="text-muted-foreground max-w-md mx-auto"
           initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: DURATION.standard, delay: 0.08, ease: EASE }}
         >
           {roomWhisper(dayPart)}
         </motion.p>
@@ -91,7 +92,7 @@ export default function Index() {
         className="mt-10 flex flex-col items-center w-full max-w-xs"
         initial={reduceMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: DURATION.standard, delay: 0.12, ease: EASE }}
       >
         <Link
           to="/session?pattern=reset"
@@ -107,27 +108,24 @@ export default function Index() {
         <p className="mt-3 text-sm text-muted-foreground">
           In for 4, out for 6 · nothing to get right
         </p>
-        <Link
-          to="/decompress"
-          className="brume-btn brume-btn--soft mt-4 w-full py-4 text-base"
-        >
-          Take two minutes
-        </Link>
-        <p className="mt-2 text-xs text-muted-foreground/80">
-          Shoulders, a soft rhythm, and one easy way to say how it is.
-        </p>
       </motion.div>
 
       {/* Secondary: the check-in path — still here, just not the lead. */}
       <motion.div
-        className="mt-12 flex justify-center w-full"
+        className="mt-12 flex flex-col items-center w-full"
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.18 }}
+        transition={{ duration: DURATION.standard, delay: 0.18, ease: EASE }}
       >
         <div className="w-full max-w-2xl brume-card px-4 py-6 md:px-7">
           <TodayCard />
         </div>
+        <Link
+          to="/decompress"
+          className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Want a longer pause? Take two minutes
+        </Link>
       </motion.div>
 
       {isGuest && (
@@ -135,7 +133,7 @@ export default function Index() {
           className="mt-10 text-center space-y-2"
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.35, delay: 0.22 }}
+          transition={{ duration: DURATION.standard, delay: 0.22, ease: EASE }}
         >
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}

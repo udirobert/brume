@@ -267,3 +267,21 @@
     transition: none;
   }
 }
+
+/* Compact mascot card on small screens: smaller art, hidden line, tight padding. */
+@media (max-width: 639px) {
+  .brume-mascot-card {
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
+  }
+  .brume-mascot-card > p {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .brume-mascot-card .brume-mascot {
+    width: 88px !important;
+    height: 88px !important;
+  }
+}

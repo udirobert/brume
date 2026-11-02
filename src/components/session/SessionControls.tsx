@@ -1,60 +1,29 @@
 /**
- * Enhanced Session Controls Component
- * 
- * ENHANCEMENT FIRST: Enhanced existing component with variant support
- * AGGRESSIVE CONSOLIDATION: Replaces SessionControlsBar and composite SessionControls
- * MODULAR: Supports different layouts and configurations
- * CLEAN: Clear separation of concerns with explicit dependencies
+ * Session controls — quiet, brand-shaped.
+ * "End" is an outline pill (never red — this isn't a recorder);
+ * pause/resume and audio are 48px ghost icon buttons.
  */
 
 import React from "react";
-import { Pause, Play, StopCircle, Volume2, VolumeX, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Pause, Play, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
-
-type SessionControlsVariant = "default" | "compact" | "minimal";
 
 type SessionControlsProps = {
   onEndSession?: () => void;
-  variant?: SessionControlsVariant;
   className?: string;
   disabled?: boolean;
   showAudio?: boolean;
-  showStop?: boolean;
   isLoading?: boolean;
 };
 
-const VARIANT_CONFIGS = {
-  default: {
-    buttonSize: "icon" as const,
-    buttonClass: "rounded-full w-16 h-16",
-    iconSize: 32,
-    spacing: "space-x-4",
-    showLabels: false,
-  },
-  compact: {
-    buttonSize: "sm" as const,
-    buttonClass: "rounded-full w-12 h-12",
-    iconSize: 24,
-    spacing: "space-x-3",
-    showLabels: false,
-  },
-  minimal: {
-    buttonSize: "sm" as const,
-    buttonClass: "rounded-md px-4 py-2",
-    iconSize: 16,
-    spacing: "space-x-2",
-    showLabels: true,
-  },
-};
+const ICON_BTN =
+  "w-12 h-12 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50 disabled:pointer-events-none";
 
-export const SessionControls = ({ 
+export const SessionControls = ({
   onEndSession,
-  variant = "default",
   className = "",
   disabled = false,
   showAudio = true,
-  showStop = true,
   isLoading = false,
 }: SessionControlsProps) => {
   const {
@@ -67,13 +36,8 @@ export const SessionControls = ({
     toggleAudio,
   } = useSession();
 
-  const config = VARIANT_CONFIGS[variant];
-
   const handlePlayPause = () => {
     if (disabled || isLoading) return;
-
-    // isActive is lifecycle (phase !== 'setup') and stays true while paused,
-    // so check paused first or resume is unreachable.
     if (isPaused) {
       resume();
     } else if (isActive) {
@@ -81,7 +45,7 @@ export const SessionControls = ({
     }
   };
 
-  const handleStop = () => {
+  const handleEnd = () => {
     if (disabled || isLoading) return;
     if (onEndSession) {
       onEndSession();
@@ -90,42 +54,24 @@ export const SessionControls = ({
     stop();
   };
 
-  const handleToggleAudio = () => {
-    if (disabled || isLoading) return;
-    toggleAudio();
-  };
-
   return (
-    <div className={`z-20 mt-auto mb-8 flex items-center justify-center ${config.spacing} ${className}`}>
-      {/* Audio Toggle */}
+    <div className={`z-20 flex items-center justify-center gap-4 ${className}`}>
       {showAudio && (
-        <Button
-          variant="ghost"
-          size={config.buttonSize}
-          onClick={handleToggleAudio}
-          className={config.buttonClass}
+        <button
+          type="button"
+          onClick={() => { if (!disabled && !isLoading) toggleAudio(); }}
+          className={ICON_BTN}
           disabled={disabled || isLoading}
           aria-label={isAudioEnabled ? "Mute audio" : "Unmute audio"}
         >
-          {isAudioEnabled ? (
-            <Volume2 size={config.iconSize} />
-          ) : (
-            <VolumeX size={config.iconSize} />
-          )}
-          {config.showLabels && (
-            <span className="ml-2">
-              {isAudioEnabled ? "Mute" : "Unmute"}
-            </span>
-          )}
-        </Button>
+          {isAudioEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
+        </button>
       )}
 
-      {/* Play/Pause Button — while paused, Resume is the primary control */}
-      <Button
-        variant={isPaused ? "default" : "ghost"}
-        size={config.buttonSize}
+      <button
+        type="button"
         onClick={handlePlayPause}
-        className={`${config.buttonClass} ${isPaused ? "btn-premium" : ""}`}
+        className={ICON_BTN}
         disabled={disabled || isLoading || (!isActive && !isPaused)}
         aria-label={
           isLoading
@@ -138,48 +84,25 @@ export const SessionControls = ({
         }
       >
         {isLoading ? (
-          <Loader2 size={config.iconSize} className="animate-spin" />
+          <Loader2 size={22} className="animate-spin" />
         ) : isActive && !isPaused ? (
-          <Pause size={config.iconSize} />
+          <Pause size={22} />
         ) : (
-          <Play size={config.iconSize} />
+          <Play size={22} />
         )}
-        {config.showLabels && (
-          <span className="ml-2">
-            {isLoading
-              ? "Loading"
-              : isPaused
-                ? "Resume"
-                : isActive
-                  ? "Pause"
-                  : "Play"}
-          </span>
-        )}
-      </Button>
+      </button>
 
-      {/* Stop Button */}
-      {showStop && (
-        <Button
-          variant="destructive"
-          size={config.buttonSize}
-          onClick={handleStop}
-          className={`${config.buttonClass} bg-red-400 hover:bg-red-500`}
-          disabled={disabled || isLoading}
-          aria-label="End session"
-        >
-          <StopCircle size={config.iconSize} />
-          {config.showLabels && <span className="ml-2">Stop</span>}
-        </Button>
-      )}
+      <button
+        type="button"
+        onClick={handleEnd}
+        className="brume-btn brume-btn--outline min-h-12 px-6"
+        disabled={disabled || isLoading}
+        aria-label="End session"
+      >
+        End
+      </button>
     </div>
   );
 };
 
-// Convenience components for backward compatibility
-export const CompactSessionControls = (props: Omit<SessionControlsProps, "variant">) => (
-  <SessionControls {...props} variant="compact" />
-);
-
-export const MinimalSessionControls = (props: Omit<SessionControlsProps, "variant">) => (
-  <SessionControls {...props} variant="minimal" />
-);
+export default SessionControls;

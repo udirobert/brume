@@ -8,6 +8,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ContextCards } from "@/components/primitives/ContextCard";
+import { formatPhases } from "@/lib/breathingPatterns";
 import { HandsFreeDemo } from "./HandsFreeDemo";
 import { AlertCircle } from "lucide-react";
 
@@ -46,7 +47,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   const source =
     (location.state as { source?: string } | null)?.source || "From how you feel";
 
-  const phases = `${pattern.phases.inhale}s in · ${pattern.phases.hold || 0}s hold · ${pattern.phases.exhale}s out`;
+  const phases = formatPhases(pattern.phases);
 
   return (
     <div className="flex-grow flex flex-col items-center justify-center p-6 space-y-8">

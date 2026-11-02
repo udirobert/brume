@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { motion, useReducedMotion } from "framer-motion";
+import { DURATION, EASE } from "@/lib/motion";
 import { toast } from "sonner";
 import { WordsCard } from "@/components/checkin/WordsCard";
 import { shareInvitation } from "@/lib/invitation";
@@ -65,7 +66,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
       : {
           initial: { opacity: 0, y: 8 },
           animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.35, delay: delay * 0.55, ease: [0.16, 1, 0.3, 1] as const },
+          transition: { duration: DURATION.standard, delay: delay * 0.55, ease: EASE },
         };
 
   const meta = [

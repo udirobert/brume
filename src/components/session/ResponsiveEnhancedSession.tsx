@@ -17,6 +17,7 @@ import { BrumeMascot, type BrumeMascotState } from '../BrumeMascot';
 import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
+import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
 
 interface ResponsiveEnhancedSessionProps {
   config: {
@@ -92,61 +93,41 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     return undefined;
   }, [session]);
 
-  // Session info for display
-  const sessionInfo = {
-    duration: session.getSessionDuration ? session.getSessionDuration() : "00:00",
-    cycle: session.metrics?.cycleCount || 0,
-    phase: session.metrics?.currentPhase || "inhale",
-    progressPercentage: session.getCompletionPercentage ? session.getCompletionPercentage() : 0,
-  };
-
-  const breathingAnimation = (
-    <BreathingAnimation
-      phase={
-        (session.metrics?.currentPhase === "pause"
-          ? "hold_after_exhale"
-          : session.metrics?.currentPhase) || "inhale"
-      }
-      pattern={config.pattern}
-      isActive={session.phase === 'active'}
-      isPaused={session.phase === 'paused'}
-      text={session.phase === 'paused' ? 'Paused' : undefined}
-      cycleCount={session.metrics?.cycleCount || 0}
-      phaseProgress={session.metrics?.phaseProgress || 0}
-      sessionInfo={{
-        duration: sessionInfo.duration,
-        progressPercentage: sessionInfo.progressPercentage,
-      }}
-    />
-  );
-
-  // Brume rides the corner of the orb and breathes the same phases.
-  const breathPhase = session.metrics?.currentPhase;
+  const breathPhase: BreathPhase =
+    (session.metrics?.currentPhase === "pause"
+      ? "hold_after_exhale"
+      : session.metrics?.currentPhase) || "inhale";
   const breathProgress01 = (session.metrics?.phaseProgress || 0) / 100;
+  const sessionActive = session.phase === 'active';
+
+  // Brume IS the breath: centred in the orb, same eased curve.
   const mascotState: BrumeMascotState =
     session.phase === 'complete' ? 'proud'
     : session.phase === 'paused' ? 'sleepy'
-    : session.phase !== 'active' ? 'watching'
+    : !sessionActive ? 'watching'
     : breathPhase === 'inhale' ? 'inhale'
     : breathPhase === 'exhale' ? 'exhale'
     : 'hold';
-  const mascotBreath =
-    session.phase !== 'active' ? undefined
-    : breathPhase === 'inhale' ? breathProgress01
-    : breathPhase === 'exhale' ? 1 - breathProgress01
-    : breathPhase === 'hold' ? 1
-    : 0;
+  const mascotBreath = sessionActive
+    ? breathAmount(breathPhase, breathProgress01, true)
+    : undefined;
+
   const animationWithMascot = (
-    <div className="relative">
-      {breathingAnimation}
+    <BreathingAnimation
+      phase={breathPhase}
+      pattern={config.pattern}
+      isActive={sessionActive}
+      isPaused={session.phase === 'paused'}
+      phaseProgress={session.metrics?.phaseProgress || 0}
+    >
       <BrumeMascot
         state={mascotState}
         breath={mascotBreath}
         presence={mascotPresence}
-        size={72}
-        className="absolute -bottom-3 -right-3"
+        size={isMobile ? 140 : 176}
+        className="absolute z-10"
       />
-    </div>
+    </BreathingAnimation>
   );
 
   // Session controls component
@@ -214,9 +195,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       >
         <EnhancedSessionLayout
           breathingAnimation={animationWithMascot}
-          sessionInfo={sessionInfo}
           controls={controls}
-          isMobile={isMobile}
           onExit={onSessionExit}
         />
       </motion.div>

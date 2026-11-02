@@ -8,6 +8,7 @@
  * button — the state check-in IS the first step of the session.
  */
 import { motion, useReducedMotion } from "framer-motion";
+import { DURATION, EASE } from "@/lib/motion";
 import { useNavigate } from "react-router-dom";
 import { getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
@@ -66,7 +67,7 @@ export function TodayCard({ className }: { className?: string }) {
         How is it for you right now?
       </p>
       <p className="text-sm text-muted-foreground mt-1 mb-3 text-center">
-        Pick one and we&apos;ll suggest a rhythm, or choose one below.
+        Pick one and Brume suggests a rhythm.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
         {CHECK_IN_SHORT_LABELS.map((label, index) => (
@@ -74,31 +75,33 @@ export function TodayCard({ className }: { className?: string }) {
             key={label}
             type="button"
             onClick={() => handleStateSelect(index)}
-            whileHover={reduceMotion ? undefined : { scale: 1.04, borderRadius: 22 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.97, borderRadius: 28 }}
-            transition={{ type: "spring", stiffness: 380, damping: 22 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            transition={{ duration: DURATION.quick, ease: EASE }}
             className={cn("brume-btn brume-btn--soft px-5 py-2.5 min-h-0 text-sm")}
           >
             {label}
           </motion.button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground/70 mt-6 mb-2 text-center">or pick a rhythm</p>
-      <div className="flex flex-wrap justify-center gap-2">
+      <details className="mt-6">
+        <summary className="brume-pill mx-auto w-fit cursor-pointer list-none text-center">More rhythms</summary>
+        <div className="flex flex-wrap justify-center gap-2 mt-3">
         {RHYTHMS.map((r) => (
           <motion.button
             key={r.id}
             type="button"
             onClick={() => handleRhythmSelect(r.id, r.label)}
-            whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 24 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            transition={{ duration: DURATION.quick, ease: EASE }}
             className={cn("brume-pill px-3 py-1.5 min-h-0 text-xs")}
           >
             {r.label}
           </motion.button>
         ))}
-      </div>
+        </div>
+      </details>
     </div>
   );
 }

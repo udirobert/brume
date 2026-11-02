@@ -69,3 +69,12 @@ describe("TodayCard mapping", () => {
     expect(CHECK_IN_PATTERN_IDS[4]).toBe("reset");
   });
 });
+
+describe("formatPhases", () => {
+  it("skips zero phases", async () => {
+    const { formatPhases } = await import("../breathingPatterns");
+    expect(formatPhases({ inhale: 4, hold: 0, exhale: 6 })).toBe("4 in · 6 out");
+    expect(formatPhases({ inhale: 4, hold: 4, exhale: 4, hold_after_exhale: 4 })).toBe("4 in · 4 hold · 4 out · 4 hold");
+    expect(formatPhases({ inhale: 4, hold: 7, exhale: 8, pause: 0 })).toBe("4 in · 7 hold · 8 out");
+  });
+});

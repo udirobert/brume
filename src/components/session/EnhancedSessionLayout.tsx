@@ -7,14 +7,7 @@ import { X } from "lucide-react";
 
 interface EnhancedSessionLayoutProps {
   breathingAnimation: React.ReactNode;
-  sessionInfo: {
-    duration: string;
-    cycle: number;
-    phase: string;
-    progressPercentage: number;
-  };
   controls: React.ReactNode;
-  isMobile?: boolean;
   onExit?: () => void;
 }
 
@@ -42,7 +35,7 @@ export const EnhancedSessionLayout: React.FC<EnhancedSessionLayoutProps> = ({
         {breathingAnimation}
       </div>
 
-      <div className="relative flex-shrink-0 pb-8 pt-2">
+      <div className="relative flex-shrink-0 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {controls}
       </div>
     </div>

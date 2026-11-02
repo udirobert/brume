@@ -130,3 +130,20 @@ export function getPatternsByBenefit(benefit: string): BreathingPattern[] {
 }
 
 export default BREATHING_PATTERNS;
+
+/** "4 in · 6 out" / "4 in · 4 hold · 4 out · 4 hold" — skips zero phases. */
+export function formatPhases(phases: {
+  inhale?: number;
+  hold?: number;
+  exhale?: number;
+  hold_after_exhale?: number;
+  pause?: number;
+}): string {
+  const parts: string[] = [];
+  if (phases.inhale) parts.push(`${phases.inhale} in`);
+  if (phases.hold) parts.push(`${phases.hold} hold`);
+  if (phases.exhale) parts.push(`${phases.exhale} out`);
+  const rest = phases.hold_after_exhale ?? phases.pause;
+  if (rest) parts.push(`${rest} hold`);
+  return parts.join(" · ");
+}

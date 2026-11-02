@@ -32,13 +32,13 @@
     --primary: var(--brume-primary);
     --primary-foreground: var(--brume-background);
 
-    --secondary: 78 18% 90%;
+    --secondary: 66 16% 90%;
     --secondary-foreground: 224 20% 30%;
 
-    --muted: 78 18% 90%;
+    --muted: 66 16% 90%;
     --muted-foreground: var(--brume-muted);
 
-    --accent: 80 24% 88%;
+    --accent: 68 20% 88%;
     --accent-foreground: 228 22% 16%;
 
     --destructive: 0 84.2% 60.2%;

@@ -35,10 +35,6 @@ export function ContextCards({ chunks, className }: { chunks: ContextChunk[]; cl
           <div className="px-3 pb-3">
             <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-muted px-2 text-[12px] font-medium text-muted-foreground">
               {chunk.source}
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M7 17L17 7M7 7h10v10" />
-              </svg>
             </span>
           </div>
         </div>

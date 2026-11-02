@@ -12,16 +12,16 @@
   /* Warm paper/ink brand — the HSL triplets below feed hsl(var(--x)) in
      index.css/tailwind.config; they mirror the oklch tokens used by
      .decompress-page via tokens.css aliases. */
-  --brume-background: 78 24% 95%;   /* ≈ oklch(96% .018 95)  paper */
+  --brume-background: 68 20% 95%;   /* ≈ oklch(96% .018 95)  paper */
   --brume-foreground: 228 22% 16%;  /* ≈ oklch(23% .018 252) ink   */
   --brume-primary: 232 34% 28%;     /* deep ink-blue, ~7.5:1 on paper */
   --brume-muted: 224 13% 38%;       /* ≈ oklch(43% .025 248) */
   --brume-border: 76 9% 80%;        /* ≈ oklch(83% .025 95)  rule  */
-  --brume-surface: 78 22% 97%;      /* ≈ oklch(98% .012 94)  card  */
+  --brume-surface: 68 18% 97%;      /* ≈ oklch(98% .012 94)  card  */
   --brume-mist-r: 233; --brume-mist-g: 224; --brume-mist-b: 184;
-  --brume-calm-1: 78 26% 96%;
-  --brume-calm-2: 76 22% 93%;
-  --brume-calm-3: 82 20% 96%;
+  --brume-calm-1: 68 22% 96%;
+  --brume-calm-2: 66 18% 93%;
+  --brume-calm-3: 72 20% 96%;
   --brume-radius: .75rem;
   --brume-control-radius: 999px;
   --brume-radius-card: 1.75rem;
@@ -54,16 +54,16 @@
 
 html[data-daypart='dawn'] {
   --brume-mist-r: 244; --brume-mist-g: 231; --brume-mist-b: 196;
-  --brume-calm-1: 80 30% 97%; --brume-calm-2: 78 24% 95%; --brume-calm-3: 84 22% 97%;
+  --brume-calm-1: 70 26% 97%; --brume-calm-2: 68 22% 95%; --brume-calm-3: 74 22% 97%;
 }
 html[data-daypart='dusk'] {
   --brume-mist-r: 243; --brume-mist-g: 208; --brume-mist-b: 184;
-  --brume-calm-1: 30 30% 96%; --brume-calm-2: 26 24% 93%; --brume-calm-3: 40 22% 96%;
+  --brume-calm-1: 32 28% 96%; --brume-calm-2: 28 22% 93%; --brume-calm-3: 42 20% 96%;
   --brume-primary: 14 34% 34%;
 }
 html[data-daypart='night'] {
   --brume-mist-r: 168; --brume-mist-g: 175; --brume-mist-b: 150;
-  --brume-calm-1: 76 14% 90%; --brume-calm-2: 78 12% 87%; --brume-calm-3: 80 14% 90%;
-  --brume-background: 76 14% 89%;
+  --brume-calm-1: 58 20% 91%; --brume-calm-2: 60 16% 88%; --brume-calm-3: 62 18% 91%;
+  --brume-background: 58 18% 90%;
   --brume-primary: 230 28% 26%;
 }

@@ -6,152 +6,408 @@
 // sleepy | bright | stretch | hum | watching. prefers-reduced-motion
 // renders static expressions (no scaling, bob, blinks or particles).
 
+import { BRUME_AVATAR, MASCOT_STATES, validateAvatar, sampleMascot } from "./mascot-engine.js";
+
 const NS = "http://www.w3.org/2000/svg";
-const REDUCED =
-  typeof window !== "undefined" &&
-  window.matchMedia &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const MOUTH = {
-  closed: "M 44 60 Q 50 63 56 60",
-  smile: "M 43 58 Q 50 65 57 58",
-  open: "M 47 59 Q 50 63 53 59 Q 50 65 47 59 Z",
-  flat: "M 45 61 L 55 61",
-};
-
-function el(tag, attrs) {
-  const n = document.createElementNS(NS, tag);
+function el(doc, tag, attrs) {
+  const n = doc.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
   return n;
 }
 
-export function createMascot(host) {
+const ARM_L = { d: "M 30 52 L 18 30" };
+const ARM_R = { d: "M 70 52 L 82 30" };
+const CHEEK_L = { cx: 36, cy: 58, rx: 4, ry: 2.5 };
+const CHEEK_R = { cx: 64, cy: 58, rx: 4, ry: 2.5 };
+const WISP_BASE = [0, 1, 2, 3].map((i) => ({ cx: 50 + (i - 1.5) * 6, cy: 70, r: 2.5 - i * 0.3 }));
+const WAVE_PATHS = ["M 68 56 q 4 2 0 5", "M 74 54 q 6 4 0 9"];
+const SWIRL = { d: "M 50 8 q 8 -4 4 4 q -4 8 -10 2", cx: 50, cy: 8 };
+const HALO = { cx: 50, cy: 52, r: 36 };
+
+const scaleAround = (cx, cy, s) => `translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`;
+
+export function createMascot(host, options = {}) {
+  const doc = host.ownerDocument || document;
+  const win = doc.defaultView || (typeof window !== "undefined" ? window : null);
   host.classList.add("mascot");
   host.setAttribute("data-mascot", "");
-  const svg = el("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
+
+  const svg = el(doc, "svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
   svg.classList.add("mascot-svg");
 
-  const halo = el("circle", { cx: 50, cy: 52, r: 36, class: "mascot-halo", fill: "none", stroke: "rgba(124,140,201,.18)", "stroke-width": 10 });
+  const halo = el(doc, "circle", { cx: HALO.cx, cy: HALO.cy, r: HALO.r, class: "mascot-halo" });
   svg.appendChild(halo);
 
-  const bodyG = el("g", { class: "mascot-body" });
-  // Cloud blob: main body plus two smaller lobes on top.
-  bodyG.appendChild(el("ellipse", { cx: 50, cy: 58, rx: 30, ry: 26, class: "mascot-fill", fill: "#7c8cc9" }));
-  bodyG.appendChild(el("circle", { cx: 38, cy: 38, r: 14, class: "mascot-fill", fill: "#7c8cc9" }));
-  bodyG.appendChild(el("circle", { cx: 58, cy: 34, r: 17, class: "mascot-fill", fill: "#7c8cc9" }));
-  bodyG.appendChild(el("ellipse", { cx: 56, cy: 30, rx: 8, ry: 5, class: "mascot-hl", fill: "#9aa8da", opacity: ".8" }));
+  const bodyG = el(doc, "g", { class: "mascot-body" });
+  const primG = el(doc, "g", { class: "mascot-prims" });
+  bodyG.appendChild(primG);
 
   // Little arms (only visible in "stretch").
-  const armL = el("path", { d: "M 30 52 L 18 30", class: "mascot-arm", stroke: "#7c8cc9", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
-  const armR = el("path", { d: "M 70 52 L 82 30", class: "mascot-arm", stroke: "#7c8cc9", "stroke-width": 5, "stroke-linecap": "round", fill: "none", opacity: 0 });
-  bodyG.appendChild(armL); bodyG.appendChild(armR);
+  const armL = el(doc, "path", { d: ARM_L.d, class: "mascot-arm" });
+  const armR = el(doc, "path", { d: ARM_R.d, class: "mascot-arm" });
+  bodyG.appendChild(armL);
+  bodyG.appendChild(armR);
 
   // Eyes.
-  const eyeL = el("ellipse", { cx: 41, cy: 52, rx: 3.2, ry: 4, class: "mascot-eye", fill: "#26303a" });
-  const eyeR = el("ellipse", { cx: 59, cy: 52, rx: 3.2, ry: 4, class: "mascot-eye", fill: "#26303a" });
-  const lidL = el("rect", { x: 37, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#7c8cc9" });
-  const lidR = el("rect", { x: 55, y: 50, width: 8, height: 0, class: "mascot-lid", fill: "#7c8cc9" });
-  bodyG.appendChild(eyeL); bodyG.appendChild(eyeR);
-  bodyG.appendChild(lidL); bodyG.appendChild(lidR);
+  const eyeL = el(doc, "ellipse", { class: "mascot-eye" });
+  const eyeR = el(doc, "ellipse", { class: "mascot-eye" });
+  const lidL = el(doc, "rect", { class: "mascot-lid", height: 0 });
+  const lidR = el(doc, "rect", { class: "mascot-lid", height: 0 });
+  bodyG.appendChild(eyeL);
+  bodyG.appendChild(eyeR);
+  bodyG.appendChild(lidL);
+  bodyG.appendChild(lidR);
 
   // Cheeks (fill for "hold" state).
-  const cheekL = el("ellipse", { cx: 36, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#9aa8da", opacity: 0 });
-  const cheekR = el("ellipse", { cx: 64, cy: 58, rx: 4, ry: 2.5, class: "mascot-cheek", fill: "#9aa8da", opacity: 0 });
-  bodyG.appendChild(cheekL); bodyG.appendChild(cheekR);
+  const cheekL = el(doc, "ellipse", { ...CHEEK_L, class: "mascot-cheek" });
+  const cheekR = el(doc, "ellipse", { ...CHEEK_R, class: "mascot-cheek" });
+  bodyG.appendChild(cheekL);
+  bodyG.appendChild(cheekR);
 
-  const mouth = el("path", { d: MOUTH.closed, class: "mascot-mouth", fill: "none", stroke: "#26303a", "stroke-width": 2, "stroke-linecap": "round" });
-  bodyG.appendChild(mouth);
+  const mouthG = el(doc, "g", { class: "mascot-mouth-g" });
+  const mouth = el(doc, "path", { class: "mascot-mouth" });
+  mouthG.appendChild(mouth);
+  bodyG.appendChild(mouthG);
   svg.appendChild(bodyG);
 
   // Mist wisps for exhale / thinking / hum / proud.
-  const wisps = el("g", { class: "mascot-wisps" });
-  for (let i = 0; i < 4; i += 1) {
-    wisps.appendChild(el("circle", {
-      cx: 50 + (i - 1.5) * 6, cy: 70, r: 2.5 - i * 0.3, class: `mascot-wisp w${i}`,
-      fill: "#dde3f3", opacity: 0,
-    }));
-  }
-  svg.appendChild(wisps);
+  const wispsG = el(doc, "g", { class: "mascot-wisps" });
+  const wispEls = WISP_BASE.map((w, i) => {
+    const c = el(doc, "circle", { cx: w.cx, cy: w.cy, r: w.r, class: `mascot-wisp w${i}` });
+    wispsG.appendChild(c);
+    return c;
+  });
+  svg.appendChild(wispsG);
 
   // Sound-wave lines for hum.
-  const waves = el("g", { class: "mascot-waves" });
-  waves.appendChild(el("path", { d: "M 68 56 q 4 2 0 5", class: "mascot-wave", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
-  waves.appendChild(el("path", { d: "M 74 54 q 6 4 0 9", class: "mascot-wave", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, "stroke-linecap": "round", opacity: 0 }));
-  svg.appendChild(waves);
+  const wavesG = el(doc, "g", { class: "mascot-waves" });
+  for (const d of WAVE_PATHS) wavesG.appendChild(el(doc, "path", { d, class: "mascot-wave" }));
+  svg.appendChild(wavesG);
 
   // Thinking swirl.
-  const swirl = el("path", {
-    d: "M 50 8 q 8 -4 4 4 q -4 8 -10 2", class: "mascot-swirl", fill: "none", stroke: "#7c8cc9", "stroke-width": 2, opacity: 0,
-  });
+  const swirl = el(doc, "path", { d: SWIRL.d, class: "mascot-swirl" });
   svg.appendChild(swirl);
 
   host.appendChild(svg);
 
-  let state = "idle", blinkTimer = null;
+  let avatar = BRUME_AVATAR;
+  function rebuildGeometry() {
+    primG.textContent = "";
+    for (const prim of avatar.body) {
+      const { type, opacity, ...attrs } = prim;
+      const node = el(doc, type, { ...attrs, class: "mascot-fill" });
+      if (opacity !== undefined) node.setAttribute("opacity", opacity);
+      primG.appendChild(node);
+    }
+    const { type, opacity, ...attrs } = avatar.highlight;
+    const node = el(doc, type, { ...attrs, class: "mascot-hl" });
+    node.setAttribute("opacity", opacity ?? 0.8);
+    primG.appendChild(node);
+  }
 
-  function applyEyes({ dx = 0, dy = 0, open = 1, lidFrac = 0 }) {
-    const ry = 4 * open;
-    for (const [e, l, x] of [[eyeL, lidL, 41], [eyeR, lidR, 59]]) {
-      e.setAttribute("cx", x + dx); e.setAttribute("cy", 52 + dy);
-      e.setAttribute("ry", Math.max(0.4, ry));
-      l.setAttribute("x", x + dx - 4);
-      l.setAttribute("y", 48 + dy);
-      l.setAttribute("height", String(9 * lidFrac));
+  const opts = { state: "idle", autoAnimate: true, ...options };
+  let pointerGaze = null;
+  let lastActivity = nowSec();
+  let rafId = 0;
+  let destroyed = false;
+  let offscreen = false;
+  let stateEnteredAt = nowSec();
+
+  const media = win && win.matchMedia ? win.matchMedia("(prefers-reduced-motion: reduce)") : null;
+
+  function nowSec() {
+    return win && win.performance ? win.performance.now() / 1000 : Date.now() / 1000;
+  }
+
+  function isReduced() {
+    return opts.reducedMotion !== undefined ? opts.reducedMotion : !!(media && media.matches);
+  }
+
+  function isSuspended() {
+    if (destroyed) return true;
+    if (doc.hidden) return true;
+    if (offscreen) return true;
+    for (let n = host; n; n = n.parentElement) {
+      if (n.hidden === true) return true;
+    }
+    return false;
+  }
+
+  function applyFrame(frame) {
+    svg.setAttribute("transform", scaleAround(frame.svg.originX, frame.svg.originY, frame.svg.scale));
+    halo.setAttribute("opacity", String(frame.accessories.halo.opacity));
+    halo.setAttribute(
+      "transform",
+      scaleAround(HALO.cx, HALO.cy, frame.accessories.halo.scale),
+    );
+    bodyG.setAttribute(
+      "transform",
+      scaleAround(frame.body.originX, frame.body.originY, frame.body.scale),
+    );
+
+    const e = frame.eyes;
+    eyeL.setAttribute("cx", e.left.cx); eyeL.setAttribute("cy", e.left.cy);
+    eyeL.setAttribute("rx", e.left.rx); eyeL.setAttribute("ry", e.left.ry);
+    eyeR.setAttribute("cx", e.right.cx); eyeR.setAttribute("cy", e.right.cy);
+    eyeR.setAttribute("rx", e.right.rx); eyeR.setAttribute("ry", e.right.ry);
+    lidL.setAttribute("x", e.lidLeft.x); lidL.setAttribute("y", e.lidLeft.y);
+    lidL.setAttribute("width", e.lidLeft.width); lidL.setAttribute("height", e.lidLeft.height);
+    lidR.setAttribute("x", e.lidRight.x); lidR.setAttribute("y", e.lidRight.y);
+    lidR.setAttribute("width", e.lidRight.width); lidR.setAttribute("height", e.lidRight.height);
+
+    mouth.setAttribute("d", frame.mouth.d);
+    mouthG.setAttribute("transform", `translate(${frame.mouth.dx} ${frame.mouth.dy})`);
+
+    const a = frame.accessories;
+    armL.setAttribute("opacity", a.arms.opacity);
+    armR.setAttribute("opacity", a.arms.opacity);
+    armL.setAttribute("transform", `rotate(${a.arms.rotateLeft} ${a.arms.pivotLeft.x} ${a.arms.pivotLeft.y})`);
+    armR.setAttribute("transform", `rotate(${a.arms.rotateRight} ${a.arms.pivotRight.x} ${a.arms.pivotRight.y})`);
+    cheekL.setAttribute("opacity", a.cheeks.opacity);
+    cheekR.setAttribute("opacity", a.cheeks.opacity);
+    wispEls.forEach((c, i) => {
+      c.setAttribute("transform", `translate(0 ${a.wisps[i].dy})`);
+      c.setAttribute("opacity", a.wisps[i].opacity);
+    });
+    wavesG.setAttribute("opacity", a.waves.opacity);
+    swirl.setAttribute("opacity", a.swirl.opacity);
+    swirl.setAttribute("transform", `rotate(${a.swirl.rotate} ${SWIRL.cx} ${SWIRL.cy})`);
+  }
+
+  function liveFrame(t) {
+    return sampleMascot(t, {
+      avatar,
+      state: opts.state,
+      breath: opts.breath,
+      presence: opts.presence,
+      gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
+      reducedMotion: isReduced(),
+      idleSeconds: opts.idleSeconds !== undefined
+        ? opts.idleSeconds
+        : Math.max(0, t - lastActivity),
+      breathing: opts.breathing,
+      breathPeriod: opts.breathPeriod,
+      stateAge: opts.stateAge !== undefined ? opts.stateAge : t - stateEnteredAt,
+    });
+  }
+
+  function render(t) {
+    applyFrame(liveFrame(t));
+  }
+
+  function cancelRaf() {
+    if (rafId && win && win.cancelAnimationFrame) win.cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  function tick() {
+    rafId = 0;
+    if (isSuspended()) return;
+    render(nowSec());
+    schedule();
+  }
+
+  function schedule() {
+    if (rafId || destroyed || isReduced() || opts.autoAnimate === false || isSuspended()) return;
+    if (win && win.requestAnimationFrame) rafId = win.requestAnimationFrame(tick);
+  }
+
+  function refresh() {
+    if (destroyed) return;
+    render(nowSec());
+    if (isSuspended() || isReduced() || opts.autoAnimate === false) {
+      cancelRaf();
+      return;
+    }
+    schedule();
+  }
+
+  function onMediaChange() {
+    syncListeners();
+    refresh();
+  }
+  function onVisibility() {
+    syncListeners();
+    if (doc.hidden) cancelRaf();
+    else refresh();
+  }
+
+  const markActivity = () => { lastActivity = nowSec(); };
+
+  function gazeFromPointer(event) {
+    const rect = host.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const cx = rect.left + rect.width * 0.5;
+    const cy = rect.top + rect.height * 0.52;
+    const nx = (event.clientX - cx) / (rect.width * 0.5);
+    const ny = (event.clientY - cy) / (rect.height * 0.5);
+    const r = Math.hypot(nx, ny) || 1;
+    const k = Math.tanh(r) / r;
+    pointerGaze = { x: nx * k * 2.4, y: ny * k * 1.8 };
+  }
+
+  function onPointerMove(event) {
+    markActivity();
+    if (opts.trackPointer) gazeFromPointer(event);
+  }
+  function onPointerLeave() {
+    pointerGaze = null;
+  }
+
+  function companionActive() {
+    return opts.presence === "companion" && !isReduced() && !isSuspended();
+  }
+
+  let listenersOn = { pointer: false, activity: false };
+  function syncListeners() {
+    if (!win) return;
+    const want = companionActive();
+    const wantPointer = want && !!opts.trackPointer;
+    if (listenersOn.pointer === wantPointer && listenersOn.activity === want) return;
+    if (listenersOn.pointer) {
+      win.removeEventListener("pointermove", onPointerMove);
+      win.removeEventListener("pointerleave", onPointerLeave);
+    }
+    if (listenersOn.activity) {
+      win.removeEventListener("pointermove", markActivity);
+      win.removeEventListener("pointerdown", markActivity);
+      win.removeEventListener("keydown", markActivity);
+    }
+    listenersOn = { pointer: wantPointer, activity: want };
+    if (wantPointer) {
+      win.addEventListener("pointermove", onPointerMove, { passive: true });
+      win.addEventListener("pointerleave", onPointerLeave);
+    } else {
+      pointerGaze = null;
+      if (want) win.addEventListener("pointermove", markActivity, { passive: true });
+    }
+    if (want) {
+      win.addEventListener("pointerdown", markActivity, { passive: true });
+      win.addEventListener("keydown", markActivity);
+    } else {
+      pointerGaze = null;
     }
   }
 
-  function scheduleBlink() {
-    if (REDUCED || blinkTimer) return;
-    blinkTimer = setTimeout(() => {
-      blinkTimer = null;
-      if (state !== "idle") return;
-      applyEyes({ open: 0.12 });
-      setTimeout(() => applyEyes({}), 140);
-      scheduleBlink();
-    }, 4000 + Math.random() * 3000);
+  function detachAll() {
+    if (!win) return;
+    win.removeEventListener("pointermove", onPointerMove);
+    win.removeEventListener("pointerleave", onPointerLeave);
+    win.removeEventListener("pointermove", markActivity);
+    win.removeEventListener("pointerdown", markActivity);
+    win.removeEventListener("keydown", markActivity);
+    listenersOn = { pointer: false, activity: false };
+    pointerGaze = null;
   }
 
-  const STATES = {
-    idle: () => { applyEyes({}); mouth.setAttribute("d", MOUTH.closed); scheduleBlink(); },
-    thinking: () => { applyEyes({ dy: -2 }); mouth.setAttribute("d", MOUTH.flat); },
-    inhale: () => { applyEyes({}); mouth.setAttribute("d", MOUTH.open); },
-    topup: () => { applyEyes({}); mouth.setAttribute("d", MOUTH.open); },
-    hold: () => { applyEyes({ open: 0.12 }); mouth.setAttribute("d", MOUTH.closed); },
-    exhale: () => { applyEyes({ open: 0.35 }); mouth.setAttribute("d", MOUTH.closed); },
-    proud: () => { applyEyes({ open: 0.35 }); mouth.setAttribute("d", MOUTH.smile); },
-    sleepy: () => { applyEyes({ lidFrac: 0.6, dy: 1.5 }); mouth.setAttribute("d", MOUTH.closed); },
-    bright: () => { applyEyes({ open: 1.25 }); mouth.setAttribute("d", MOUTH.smile); },
-    stretch: () => { applyEyes({ open: 1.1 }); mouth.setAttribute("d", MOUTH.smile); },
-    hum: () => { applyEyes({ open: 0.4 }); mouth.setAttribute("d", MOUTH.flat); },
-    watching: () => { applyEyes({ open: 1.2 }); mouth.setAttribute("d", MOUTH.flat); },
-  };
+  let observer = null;
+  if (win && typeof win.IntersectionObserver === "function") {
+    observer = new win.IntersectionObserver((entries) => {
+      offscreen = entries.every((en) => !en.isIntersecting);
+      if (offscreen) {
+        cancelRaf();
+        detachAll();
+      } else {
+        syncListeners();
+        refresh();
+      }
+    });
+    observer.observe(host);
+  }
+
+  let hiddenObserver = null;
+  if (win && typeof win.MutationObserver === "function") {
+    hiddenObserver = new win.MutationObserver(() => {
+      if (isSuspended()) {
+        cancelRaf();
+        detachAll();
+      } else {
+        syncListeners();
+        refresh();
+      }
+    });
+    const ancestors = [];
+    for (let n = host; n; n = n.parentElement) ancestors.push(n);
+    for (const n of ancestors) {
+      hiddenObserver.observe(n, { attributes: true, attributeFilter: ["hidden"] });
+    }
+  }
+
+  if (media && media.addEventListener) media.addEventListener("change", onMediaChange);
+  else if (media && media.addListener) media.addListener(onMediaChange);
+  doc.addEventListener("visibilitychange", onVisibility);
+  syncListeners();
 
   function setState(name) {
-    state = name;
-    host.dataset.state = name;
-    const puffs = name === "topup";
-    host.classList.toggle("mascot-puff", puffs);
-    host.classList.toggle("mascot-cheeks", name === "hold");
-    host.classList.toggle("mascot-arms", name === "stretch");
-    host.classList.toggle("mascot-wisped", ["exhale", "proud"].includes(name));
-    host.classList.toggle("mascot-humming", name === "hum");
-    host.classList.toggle("mascot-thinking", name === "thinking");
-    (STATES[name] || STATES.idle)();
+    const next = MASCOT_STATES.includes(name) ? name : "idle";
+    if (next !== opts.state) stateEnteredAt = nowSec();
+    opts.state = next;
+    host.dataset.state = next;
+    refresh();
   }
 
   function setBreath(scale01) {
-    if (REDUCED) return;
-    const s = 0.86 + Math.max(0, Math.min(1, scale01)) * 0.18;
-    bodyG.setAttribute("transform", `scale(${s.toFixed(3)})`);
-    bodyG.setAttribute("transform-origin", "50 55");
+    opts.breath = scale01;
+    refresh();
+  }
+
+  function setOptions(partial = {}) {
+    for (const [k, v] of Object.entries(partial)) {
+      if (v === undefined) delete opts[k];
+      else opts[k] = v;
+    }
+    if ("avatar" in partial) {
+      const res = opts.avatar ? validateAvatar(opts.avatar) : { ok: false };
+      avatar = res.ok ? res.value : BRUME_AVATAR;
+      rebuildGeometry();
+    }
+    if ("state" in partial) {
+      const next = MASCOT_STATES.includes(opts.state) ? opts.state : "idle";
+      if (next !== host.dataset.state) stateEnteredAt = nowSec();
+      opts.state = next;
+      host.dataset.state = next;
+    }
+    syncListeners();
+    refresh();
+  }
+
+  function renderAt(timeSeconds, overrides = {}) {
+    const merged = { ...opts, ...(overrides || {}) };
+    applyFrame(sampleMascot(timeSeconds, {
+      avatar,
+      state: merged.state,
+      breath: merged.breath,
+      presence: merged.presence,
+      gaze: merged.gaze,
+      reducedMotion: merged.reducedMotion === true,
+      idleSeconds: merged.idleSeconds !== undefined ? merged.idleSeconds : 0,
+      breathing: merged.breathing,
+      breathPeriod: merged.breathPeriod,
+      stateAge: merged.stateAge !== undefined ? merged.stateAge : timeSeconds,
+    }));
   }
 
   function destroy() {
-    if (blinkTimer) clearTimeout(blinkTimer);
+    if (destroyed) return;
+    destroyed = true;
+    cancelRaf();
+    if (observer) observer.disconnect();
+    if (hiddenObserver) hiddenObserver.disconnect();
+    if (media && media.removeEventListener) media.removeEventListener("change", onMediaChange);
+    else if (media && media.removeListener) media.removeListener(onMediaChange);
+    doc.removeEventListener("visibilitychange", onVisibility);
+    detachAll();
     svg.remove();
+    host.classList.remove("mascot");
+    host.removeAttribute("data-mascot");
   }
 
-  setState("idle");
-  if (!REDUCED) scheduleBlink();
-  return { setState, setBreath, destroy };
+  if (opts.avatar) {
+    const res = validateAvatar(opts.avatar);
+    if (res.ok) avatar = res.value;
+  }
+  rebuildGeometry();
+  setState(opts.state && MASCOT_STATES.includes(opts.state) ? opts.state : "idle");
+  return { setState, setBreath, setOptions, renderAt, destroy };
 }

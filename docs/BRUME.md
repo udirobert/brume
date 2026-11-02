@@ -25,7 +25,7 @@ share it. No camera, no scores, no streaks, no account required.
 ## Core loop (retention engine)
 
 1. Open → optional check-in word (Okay / Stretched / A lot / At limit / Overwhelmed) → **"here's a rhythm"**
-2. Guided breathing session — orb and clock only, nothing to get right
+2. Guided breathing session — breathing animation and clock only, nothing to get right
 3. Post-session: practice-time summary → "put it into words" — one honest sentence you can copy or share
 4. /decompress: two unhurried minutes, then the same check-in → words loop
 
@@ -40,6 +40,20 @@ share it. No camera, no scores, no streaks, no account required.
 | Post-session | Practice-time summary + words card (no score or verification marks) |
 | Progress | Sessions and minutes — plain facts, no streaks shown |
 | Paywall | RevenueCat; see below |
+
+### Shared mascot
+
+The mist-sprite mascot on Home, Session, Decompress and error/empty
+surfaces is one shared implementation (2026-11-02):
+`anna/bundle/mascot-engine.js` (frozen `BRUME_AVATAR` geometry +
+`validateAvatar` + pure `sampleMascot` — all 12 expressions, deterministic
+blink, companion idle gaze/doze, reduced-motion static expressions),
+`anna/bundle/mascot.js` (single DOM adapter, `createMascot` →
+`{setState, setBreath, setOptions, renderAt, destroy}`), and
+`anna/bundle/mascot.css` (paint only, colours from `--brume-mascot-*`
+tokens in `brand.css`). The same three files drive the Anna bundle, the
+web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
+surfaces only; other screen animations are unchanged.
 
 ## Monetization (HAMM evidence)
 

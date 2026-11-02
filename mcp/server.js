@@ -17,61 +17,9 @@ import {
   phaseWord,
   cleanReflection,
 } from "../anna/bundle/plan.js";
+import { WIDGET_HTML } from "./widget.js";
 
 const WIDGET_URI = "ui://widget/brume-session.html";
-
-// Self-contained session view: reads the plan from toolOutput and runs
-// the phases itself, so it works before the web /embed route exists.
-const WIDGET_HTML = `<!doctype html>
-<html><head><meta charset="utf-8"><style>
-  html,body{margin:0;height:100%;background:#faf6ef;color:#2f2a33;
-    font-family:system-ui,-apple-system,sans-serif}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-  #orb{width:120px;height:120px;border-radius:50%;
-    background:radial-gradient(circle at 40% 35%,#cbb8f0,#8f7ad8);
-    box-shadow:0 0 60px 12px rgba(143,122,216,.35);
-    transition:transform .9s cubic-bezier(.16,1,.3,1),opacity .9s;
-    transform:scale(.72);opacity:.85}
-  #orb.in{transform:scale(1);opacity:1}
-  #phase{font-size:22px;letter-spacing:.02em;min-height:1.4em}
-  #title{font-size:15px;opacity:.75;max-width:26em;text-align:center}
-  #cue{font-size:13px;opacity:.55;min-height:1.4em}
-  #again{border:1px solid #2f2a33;border-radius:999px;background:none;
-    color:inherit;padding:8px 22px;font:inherit;font-size:14px;cursor:pointer;display:none}
-  @media (prefers-reduced-motion:reduce){#orb{transition:none}}
-</style></head><body>
-  <div id="orb"></div>
-  <div id="phase"></div>
-  <div id="title"></div>
-  <div id="cue"></div>
-  <button id="again">Again</button>
-<script>
-  const data = (window.openai && window.openai.toolOutput) || {};
-  const phases = data.phases || [{word:"Breathe in",seconds:4},{word:"Breathe out",seconds:6}];
-  const cycles = data.cycles || 4;
-  document.getElementById("title").textContent = data.title || "";
-  const orb = document.getElementById("orb"), word = document.getElementById("phase"),
-        cue = document.getElementById("cue"), again = document.getElementById("again");
-  let cueIx = 0;
-  function setCue(){ const c=(data.cues||[])[cueIx++%(data.cues.length||1)]||""; cue.textContent=c; }
-  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-  let stopped = false;
-  async function run(){
-    stopped = false; again.style.display="none"; setCue();
-    for (let c=0;c<cycles && !stopped;c++){
-      for (const ph of phases){
-        if (stopped) break;
-        word.textContent = ph.word;
-        orb.classList.toggle("in", ph.word==="Breathe in"||ph.word==="Top up"||ph.word==="Hold");
-        await sleep(ph.seconds*1000);
-      }
-      if (phases.length && data.cues && data.cues.length>1) setCue();
-    }
-    if(!stopped){ word.textContent="Done"; orb.classList.remove("in"); again.style.display=""; }
-  }
-  again.onclick=()=>run();
-  run();
-</script></body></html>`;
 
 function createServer() {
 const server = new McpServer({ name: "brume", version: "0.0.1" });

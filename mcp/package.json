@@ -6,10 +6,13 @@
   "description": "Brume as an MCP app — the quiet room agents can send people into. See docs/MCP-APP.md.",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/tools.mjs"
+    "test": "node --test test/tools.mjs test/widget.mjs test/widget-dom.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.3"
   }
 }

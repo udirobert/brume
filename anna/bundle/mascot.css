@@ -1,0 +1,31 @@
+/* --- Brume mascot ------------------------------------------------------ */
+.mascot, .brume-mascot {
+  display: inline-block;
+  line-height: 0;
+}
+.mascot-svg { width: 100%; height: 100%; overflow: visible; }
+.mascot-fill { fill: var(--brume-mascot-body, #7c8cc9); }
+.mascot-hl { fill: var(--brume-mascot-hl, #9aa8da); }
+.mascot-halo { fill: none; stroke: var(--brume-mascot-halo, rgba(124,140,201,.18)); stroke-width: 10; }
+.mascot-eye { fill: var(--brume-mascot-face, #26303a); }
+.mascot-lid { fill: var(--brume-mascot-body, #7c8cc9); }
+.mascot-mouth {
+  fill: none;
+  stroke: var(--brume-mascot-face, #26303a);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.mascot-cheek { fill: var(--brume-mascot-hl, #9aa8da); }
+.mascot-arm { stroke: var(--brume-mascot-body, #7c8cc9); stroke-width: 5; stroke-linecap: round; fill: none; }
+.mascot-wisp { fill: var(--brume-mascot-wisp, rgba(221,227,243,.55)); }
+.mascot-wave { fill: none; stroke: var(--brume-mascot-body, #7c8cc9); stroke-width: 2; stroke-linecap: round; }
+.mascot-swirl { fill: none; stroke: var(--brume-mascot-body, #7c8cc9); stroke-width: 2; }
+
+@media (forced-colors: active) {
+  .mascot-fill, .mascot-lid { fill: Canvas; }
+  .mascot-hl, .mascot-cheek { fill: Canvas; }
+  .mascot-halo { stroke: CanvasText; }
+  .mascot-eye { fill: CanvasText; }
+  .mascot-mouth, .mascot-arm, .mascot-wave, .mascot-swirl { stroke: CanvasText; }
+  .mascot-wisp { fill: CanvasText; }
+}

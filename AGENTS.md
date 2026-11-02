@@ -11,6 +11,14 @@ and `anna/bundle/fonts/`; the web app `@import`s the same file and both
 UIs share `--brume-*` daypart tokens. Browser QA: `npm run test:browser`
 in `anna/` (fake host :4618, session brume-preparation-qa).
 
+Mascot is shared three ways: `bundle/mascot-engine.js` (frozen
+`BRUME_AVATAR` + `validateAvatar` + pure `sampleMascot` — all motion),
+`bundle/mascot.js` (single DOM adapter, `createMascot(host, opts)`),
+`bundle/mascot.css` (paint only, `@import`ed by `app.css` and
+`src/components/BrumeMascot.css`); the MCP widget inlines all three via
+`mcp/widget.js`. Colours come from `--brume-mascot-*` tokens in
+`brand.css`. Focused test: `node --test test/mascot.mjs` (in `anna/`).
+
 Verification (run from `anna/`, all free):
 
 ```bash

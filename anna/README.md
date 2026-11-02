@@ -8,13 +8,13 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-10-22): app **0.3.2** rejected on review
-(AI-native core + task recovery), local rework candidate verified and
-unpublished; bundled tool **0.4.4** (binaries in GitHub release
-`brume-executa-v0.4.4`). Listing logo, cover and 5 screenshots set in the
-Developer Console (images served from `anna/listing/` on GitHub). App id 582, slug `brume`, tool id
-`tool-papa-brume-htcxvfcr`. Product context and the full progress log:
-[`docs/ANNA.md`](../docs/ANNA.md) §12.
+Current state (2026-11-02, last console check): app status **Rejected**;
+version **0.3.6** (guarded startup, tool 0.4.4 unchanged) is installed on
+the developer account but **not submitted** for review. The shared-mascot
+rework below is in source only — not published. Bundled tool **0.4.4**
+(binaries in GitHub release `brume-executa-v0.4.4`). App id 582, slug
+`brume`, tool id `tool-papa-brume-htcxvfcr`. Product context and the full
+progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
 ## Layout
 
@@ -37,7 +37,12 @@ Developer Console (images served from `anna/listing/` on GitHub). App id 582, sl
   - `recovery.js` active-task checkpoint store (`brume/active-task`,
     versioned envelope, serialized/coalesced writes, corrupt-safe load)
   - `alertness.js` reaction-time metrics, baseline, bands, note prompt
-  - `mascot.js` inline-SVG mist sprite, 12 states, breath-driven scale
+  - `mascot-engine.js` + `mascot-engine.d.ts` — frozen `BRUME_AVATAR`
+    geometry, `validateAvatar`, pure `sampleMascot` (all motion)
+  - `mascot.js` + `mascot.d.ts` — single DOM adapter (`createMascot`)
+    rendering engine frames; shared with the web app and MCP widget
+  - `mascot.css` — mascot paint only, `@import`ed by `app.css` (and the
+    web's `src/components/BrumeMascot.css`, inlined by `mcp/widget.js`)
   - `session.js` records, storage, prefs, `llm.complete` wrappers
   - `timing.js` monotonic active-time clock + tempo (pause never accrues)
   - `audio.js` WebAudio chime + `audio.speak` voice cues (decoded in memory)
@@ -45,12 +50,37 @@ Developer Console (images served from `anna/listing/` on GitHub). App id 582, sl
   `manifest.json` there is the exported `describe` output (the platform
   syncs it as the protocol manifest; a test enforces equality).
 - `test/smoke.mjs` (node, `mountBundle`), `test/preparation.mjs` +
-  `test/recovery.mjs` (node:test unit tests), `test/plan-cases.json`
+  `test/recovery.mjs` + `test/session-storage.mjs` + `test/experience.mjs`
+  + `test/mascot.mjs` (node:test unit tests), `test/plan-cases.json`
   (shared fixture, also read by `executas/brume/test_plan.py`), and
   `test/fake-host-server.mjs` + `test/fake-sdk.js` (test-only host with
   scripted llm replies + persistent KV for browser QA).
 - `scripts/prompt-check.mjs` — real-LLM prompt check via Featherless.
-- `listing/` — store screenshots, cover, logo (**stale: pre-mascot**).
+- `listing/` — store screenshots, cover, logo; `listing/candidate/`
+  contains the 2026-10-22 fixtures and needs regeneration for the shared
+  mascot before the next release.
+
+## Shared mascot
+
+One contract, three consumers (Anna bundle, web app, MCP widget):
+
+- `mascot-engine.js` — `BRUME_AVATAR` (frozen version:1 geometry: body
+  primitives, highlight, eyes, four mouth paths), `validateAvatar`
+  (strict keys, in-viewBox bounds, safe path-data mouths), and
+  `sampleMascot(t, opts)`: a pure function returning the complete frame —
+  eyes/lids, mouth, body scale, and every accessory value (halo, arms,
+  wisps, waves, swirl, topup puff). Deterministic blink schedule, all 12
+  expressions, companion idle gaze drift and sleepy-slit fade, reduced
+  motion = static expression.
+- `mascot.js` — `createMascot(host, opts)` returns
+  `{setState, setBreath, setOptions, renderAt, destroy}`. Owns the RAF
+  clock, reduced-motion media changes, hidden/offscreen suspension and
+  companion pointer tracking. `renderAt(t, overrides)` samples a fixed
+  time for deterministic frames; `autoAnimate:false` for externally
+  driven clocks.
+- `mascot.css` — paint/structure only (no keyframes); colours via
+  `--brume-mascot-*` tokens in `brand.css` so the sprite follows daypart
+  retunes.
 
 ## The three flows
 
@@ -97,6 +127,9 @@ long chat threads are expensive. Use the tiers in order.
 
 ```bash
 npm install && npm test && npm run test:browser                        # node smoke + shared fixture + preparation/recovery unit tests
+node --test test/mascot.mjs                                            # focused mascot engine tests
+(cd .. && pnpm vitest run src/components/__tests__/BrumeMascot.test.tsx) # adapter + React wrapper
+(cd ../mcp && npm test)                                                # MCP contract + widget tests
 (cd executas/brume && python3 -m unittest test_plan)
 anna-app validate --strict
 ```

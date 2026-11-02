@@ -533,6 +533,8 @@ published or tier-3 tested.
   license); web `src/index.css` consumes the shared vars and the remote
   Google Fonts links are gone. Anna app.css aliases everything to
   `--brume-*`; sprite now uses periwinkle (#7c8cc9) — see mascot.js + BrumeMascot.css, kept in sync.
+  (Superseded: shared mascot foundation in §12.9 — colour now comes from
+  `--brume-mascot-*` tokens and the single adapter/CSS are shared three ways.)
 - **Honesty.** "Planned offline" → truthful basic-plan labels; the
   breathing fallback never calls the model; save failures show
   keep-window-open retry; no fabricated Qualified-Run claims.
@@ -635,3 +637,48 @@ before the next publish.
 - Developer Console: app 582 is **Rejected**; version history has 0.3.3, 0.3.4, 0.3.5 (all cut 22 Oct) and now **0.3.6** (cut 2 Nov, `version_id=1892`, guarded startup; tool unchanged at 0.4.4, executa_version 790). Docs earlier saying "unpublished" were stale: the reviewers' 25 Oct test hit a version with the startup screen (0.3.3+). 0.3.6 is installed on the dev account but **not submitted** for review.
 - BYOK: Featherless and an OpenRouter provider are already added and Verified, and "Apps & plugins use my API Key by default" is ON. Featherless had no models added; `deepseek-ai/DeepSeek-V3-0324` was added (harmless, can stay).
 - **Blocker for the Cloud Agent test:** the Anna account is out of quota (Subscription & Usage: 1,000 / 1,000 used, quota reset "Not available" on the Free plan). A chat message fails with "Quota exhausted, unable to continue using Anna service" even with the BYOK Featherless model selected as Main Model, so the chat itself is gated on Anna quota (BYOK covers app/plugin LLM calls, not this gate). Options: Add-on quota, upgrade, or the weekly developer contribution rewards thread. Main Model was restored to Qwen3.8 Flash.
+
+### 12.9 Shared mascot foundation (2026-11-02)
+
+One mascot contract now serves all three surfaces — shipped in source,
+**not published/deployed** anywhere.
+
+- **Architecture.** `anna/bundle/mascot-engine.js` holds the frozen
+  version:1 `BRUME_AVATAR` definition (cloud body primitives, highlight,
+  eye geometry, four mouth paths), `validateAvatar` (strict keys,
+  type-specific radii, in-viewBox bounds, path-data-only mouths, safe on
+  arbitrary input), and `sampleMascot(t, opts)` — a pure function
+  returning the complete frame (eyes/lids, mouth, body scale, halo, arm
+  sway, wisps, waves, swirl, topup puff). `anna/bundle/mascot.js` is the
+  single DOM adapter (`createMascot` → `{setState, setBreath, setOptions,
+  renderAt, destroy}`) owning the RAF clock; `anna/bundle/mascot.css` is
+  the single paint file imported by Anna `app.css` and the web's
+  `BrumeMascot.css`, and inlined into the MCP widget (`mcp/widget.js`
+  embeds engine + adapter + CSS + brand tokens at startup with
+  fail-closed transform assertions). Colours come from new
+  `--brume-mascot-*` tokens in `brand.css`, mixed from the daypart
+  primary — the sprite follows dawn/dusk/night retunes automatically.
+- **Design preserved.** Same cloud identity, same 12 expressions, same
+  caller behaviour and props (web `BrumeMascot` is a thin wrapper). The
+  old random blink is now a fixed deterministic schedule (4.8 / 10.4 /
+  17.2 s in a 20 s window); autonomous CSS keyframes (bob removed — at
+  rest the sprite lives through subtle blink/gaze only) are computed by
+  the sampler, so a fixed-time frame is complete and testable.
+- **A11y + lifecycle.** prefers-reduced-motion renders static state
+  expressions and reacts live to media changes; companion pointer gaze
+  uses radial/tanh falloff centred on the eyes, companion-only idle
+  drift and a sleepy-slit fade after 120 s of inactivity; hidden
+  documents, `[hidden]` ancestors and offscreen elements suspend RAF and
+  listeners, resuming cleanly; destroy is idempotent with no pending
+  frames or listeners.
+- **Verified locally:** `node --test test/mascot.mjs` (16), web
+  `pnpm vitest run src/components/__tests__/BrumeMascot.test.tsx` (16),
+  `cd mcp && npm test` (15, incl. jsdom widget execution), `npm test`
+  (101), `tsc --noEmit` clean, lint 0 errors, `anna-app validate
+  --strict` pass, real-browser checks on web /decompress, the Anna fake
+  host and the widget (no console errors; reduced-motion and dusk
+  daypart verified live).
+- **Not done:** the async background task ask/reply work is a separate
+  next step, not part of this change. Next release still needs the full
+  browser suite, `listing/candidate/` regeneration with the new sprite,
+  and the tier-3 Cloud Agent run before submit — none of that ran here.

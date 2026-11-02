@@ -49,6 +49,11 @@
   --brume-coral-deep: oklch(50% 0.16 18);
   --brume-mint-soft: oklch(91% 0.06 150);
   --brume-focus: var(--brume-cyan-deep);
+  --brume-mascot-body: color-mix(in oklch, hsl(var(--brume-primary)) 55%, var(--brume-paper) 45%);
+  --brume-mascot-hl: color-mix(in oklch, hsl(var(--brume-primary)) 30%, var(--brume-paper) 70%);
+  --brume-mascot-halo: color-mix(in oklch, hsl(var(--brume-primary)) 18%, transparent);
+  --brume-mascot-wisp: rgb(var(--brume-mist-r) var(--brume-mist-g) var(--brume-mist-b) / .55);
+  --brume-mascot-face: var(--brume-ink);
   --brume-shadow-card: 0 1rem 2.5rem -1.5rem color-mix(in oklch, var(--brume-ink) 28%, transparent);
 }
 

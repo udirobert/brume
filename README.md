@@ -8,7 +8,7 @@
 
 Brume is a mist sprite who breathes with you. Two faces, one character:
 
-- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided patterns, AI coaching, optional camera feedback (video never leaves your device unprocessed), accounts and history.
+- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided patterns, AI coaching, accounts and history. No camera.
 - **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent: AI-planned resets, a 3-minute get-ready before calls and interviews, and a 1-minute alertness check. No camera, no account.
 
 **Core Philosophy:** Progress over perfection, consistency over intensity, mindful awareness over mechanical practice.
@@ -32,11 +32,6 @@ pnpm install --frozen-lockfile
 
 # Start development (includes fallback AI)
 pnpm dev  # Opens http://localhost:4556
-
-# Optional: Enable full AI & vision features
-cd backend/vision-service
-pip install -r requirements.txt
-MODEL_DOWNLOAD_ON_START=false python3 main.py &
 ```
 
 **Works immediately with:** 20+ breathing patterns, progress tracking, offline support
@@ -59,7 +54,7 @@ MODEL_DOWNLOAD_ON_START=false python3 main.py &
 
 ## 🔒 Privacy & Security
 
-**Camera Processing:** Optional camera feedback captures JPEG image frames and sends them to Brume's backend, where MediaPipe estimates face landmarks and movement. It is not breathing verification or a clinical measurement — sessions work fully without a camera.
+**Camera:** The web app does not use your camera. Session history is stored on your device, and in Supabase if you sign in.
 
 **Retention:** Session metrics, preferences, and history may persist (local device and Supabase when signed in). Exact retention/ownership policy needs a backend review — see [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for the current dependency and privacy posture.
 

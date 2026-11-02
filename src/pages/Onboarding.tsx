@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useReducedMotion } from "framer-motion";
-import { Sparkles, Camera, ShieldCheck } from "lucide-react";
+import { Sparkles, Wind, ShieldCheck } from "lucide-react";
 import BreathingAnimation from "@/components/BreathingAnimation";
 import { BrumeMascot } from "@/components/BrumeMascot";
 
@@ -15,7 +15,7 @@ import { BrumeMascot } from "@/components/BrumeMascot";
  * an account. Account creation is deferred until after the first session.
  *
  * The orb is shown in "prepare" mode — no breath signal, dim and
- * mechanical. When they start a camera-enabled session, it comes alive.
+ * mechanical. When they start a session, it comes alive.
  * That contrast IS the pitch.
  */
 export default function Onboarding() {
@@ -58,16 +58,16 @@ export default function Onboarding() {
             <span className="text-gradient">to breathe.</span>
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            Follow a gentle 4-in, 6-out rhythm. No signup needed, and camera
-            feedback is always optional.
+            Follow a gentle 4-in, 6-out rhythm. No signup needed, nothing to
+            get right.
           </p>
         </div>
 
         {/* Trust badges — compact, not slides */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5" />
-            Camera optional
+            <Wind className="w-3.5 h-3.5" />
+            Just breathe
           </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />

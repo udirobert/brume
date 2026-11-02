@@ -174,10 +174,6 @@ const TermsOfService = () => {
                   our Zen AI agent
                 </li>
                 <li>
-                  <strong>Computer Vision:</strong> Optional camera-based
-                  biometric feedback
-                </li>
-                <li>
                   <strong>Progress Tracking:</strong> Session history and
                   wellness metrics
                 </li>
@@ -347,8 +343,8 @@ const TermsOfService = () => {
                 </h3>
                 <ul className="list-disc list-inside space-y-1">
                   <li>
-                    Credentials attest that a practice session was
-                    camera-verified; they are records, not financial assets
+                    Credentials attest that a practice session was recorded;
+                    they are records, not financial assets
                   </li>
                   <li>
                     Credential issuance is recorded on blockchain networks and
@@ -631,11 +627,6 @@ const TermsOfService = () => {
                     AI coaching provides general guidance, not personalized
                     medical advice
                   </li>
-                  <li>
-                    Computer vision features are for entertainment and general
-                    wellness feedback
-                  </li>
-                  <li>Biometric measurements may not be medically accurate</li>
                   <li>
                     Do not rely on our technology for medical diagnosis or
                     monitoring

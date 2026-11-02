@@ -21,7 +21,6 @@ let nowMs = 0;
 const boxConfig = () => ({
   mode: "classic" as const,
   pattern: BREATHING_PATTERNS.box, // 4/4/4/4
-  enableCamera: false,
   enableAudio: true,
   enableAI: false,
 });

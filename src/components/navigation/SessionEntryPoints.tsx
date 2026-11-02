@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { isTouchDevice } from "../../utils/mobile-detection";
-import { Sparkles, Camera, Zap, Heart } from "lucide-react";
+import { Sparkles, Wind, Zap, Heart } from "lucide-react";
 
 interface SessionEntryPointsProps {
   variant?: "mobile" | "desktop";
@@ -41,7 +41,7 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
         "absolute -top-2 -right-2 bg-linear-to-r from-blue-500 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-md",
       features: [
         "4-4-4-4 box breathing pattern",
-        "No camera or signup required",
+        "No signup required",
         "Immediate stress relief",
       ],
     },
@@ -49,9 +49,9 @@ export const SessionEntryPoints: React.FC<SessionEntryPointsProps> = ({
       key: "enhanced",
       title: "Enhanced Experience",
       description:
-        "AI-powered feedback with camera tracking for deeper practice",
+        "AI-powered feedback for deeper practice",
       badge: "Popular",
-      icon: Camera,
+      icon: Wind,
       to: "/session/enhanced",
       buttonClass: isMobile
         ? "w-full text-sm bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 text-purple-800 hover:from-purple-100 hover:to-pink-100"

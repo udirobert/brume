@@ -14,11 +14,6 @@ function when(iso: string): string {
   return format(date, "d MMM");
 }
 
-function stillness(restlessness: number | null | undefined): string {
-  if (typeof restlessness !== "number") return "—";
-  return String(Math.max(0, Math.min(100, Math.round(100 - restlessness))));
-}
-
 export default function Progress() {
   const { history, streak, totalMinutes, preferredPattern, isGuestMode } =
     useSessionHistory();
@@ -95,15 +90,9 @@ export default function Progress() {
             <span className="flex-1 truncate">
               {session.pattern_name || "Session"}
             </span>
-            <span className="tabular-nums text-muted-foreground shrink-0">
-              {stillness(session.restlessness_score)}
-            </span>
           </li>
         ))}
       </ol>
-      <p className="mt-2 w-full text-right text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-        stillness
-      </p>
 
       <Button asChild className="mt-12 rounded-full btn-premium w-full max-w-xs py-6">
         <Link to="/">Breathe</Link>

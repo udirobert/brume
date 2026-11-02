@@ -116,13 +116,13 @@ export const MetricTooltips = {
   },
   presence: {
     title: "Presence Score", 
-    description: "Indicates how consistently your face is detected and tracked by the camera. Higher scores mean better camera positioning.",
-    tip: "Ensure good lighting and keep your face centered in the camera view."
+    description: "Indicates how steadily the session signal held.",
+    tip: "A quiet minute or two is enough."
   },
   confidence: {
     title: "Detection Confidence",
     description: "Technical measure of how accurately the AI can detect your facial features. Higher values indicate clearer tracking.",
-    tip: "Good lighting and a stable camera position improve detection confidence."
+    tip: "Nothing to get right — just follow the rhythm."
   },
   breathingPhase: {
     title: "Breathing Phase",

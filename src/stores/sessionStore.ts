@@ -12,7 +12,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { BreathingPattern } from '../lib/breathingPatterns';
 import { errorReporter } from '../lib/errors/error-reporter';
 import { trackSessionCompleted } from '../lib/notifications/oneSignal';
-import type { SessionPhase, BreathPhase, SessionMode, SessionMetrics, PerformanceMode, VisionMetrics } from '../types/metrics';
+import type { SessionPhase, BreathPhase, SessionMode, SessionMetrics, PerformanceMode } from '../types/metrics';
 import {
   createSessionClock,
   pauseSessionClock,
@@ -28,7 +28,6 @@ import {
 export interface SessionConfig {
   mode: SessionMode;
   pattern: BreathingPattern;
-  enableCamera: boolean;
   enableAudio: boolean;
   enableAI: boolean;
   maxCycles?: number;
@@ -44,13 +43,7 @@ export interface SessionState {
   sessionId: string | null; // Stable session ID
 
   // Media state
-  cameraStream: MediaStream | null;
-  cameraPermissionGranted: boolean;
   audioEnabled: boolean;
-
-  // Vision processing state
-  visionActive: boolean;
-  visionMetrics: VisionMetrics | null;
 
   // Session outcome (set on completion; cleared on reset)
   lastSessionVerified: boolean;
@@ -90,13 +83,7 @@ export interface SessionActions {
   recordPatternPerformance: (patternId: string, completionRate: number, engagement: number) => void;
 
   // Media management
-  setCameraStream: (stream: MediaStream | null) => void;
-  setCameraPermission: (granted: boolean) => void;
   toggleAudio: () => void;
-
-  // Vision processing
-  setVisionActive: (active: boolean) => void;
-  updateVisionMetrics: (metrics: VisionMetrics | null) => void;
 
   // Error handling
   setError: (error: string | null) => void;
@@ -130,11 +117,7 @@ const initialState: SessionState = {
   config: null,
   metrics: initialMetrics,
   sessionId: null,
-  cameraStream: null,
-  cameraPermissionGranted: false,
   audioEnabled: true,
-  visionActive: false,
-  visionMetrics: null,
   lastSessionVerified: false,
   clock: createSessionClock(),
   error: null,
@@ -236,14 +219,13 @@ export const useSessionStore = create<SessionState & SessionActions>()(
       const now = performance.now();
       const clock = pauseSessionClock(state.clock, now);
       const timing = sampleSessionTiming(clock, state.config.pattern, now);
-      // Capture before reset: vision active during the session is our
-      // "verified practice" signal for notification journey tags (Brume v1)
-      const verified = state.visionActive;
+      // No camera, no vision — nothing is "verified" anymore; the tag is
+      // kept false so notification journeys see an honest zero.
+      const verified = false;
       set({
         phase: 'complete',
         clock,
         metrics: { ...state.metrics, ...timing },
-        visionActive: false,
         lastSessionVerified: verified,
       });
       trackSessionCompleted({ verified });
@@ -263,15 +245,7 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     },
 
     resetSession: () => {
-      // NOTE: Camera stream cleanup is now handled by cameraManager
-      // We only reset the store state, not the actual camera stream
-      console.log('🔄 SessionStore: Resetting session state (camera stream managed by cameraManager)');
-
-      set({
-        ...initialState,
-        // Preserve camera permission for better UX
-        cameraPermissionGranted: get().cameraPermissionGranted,
-      });
+      set({ ...initialState });
     },
 
     // Phase management
@@ -323,35 +297,8 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     },
 
     // Media management
-    setCameraStream: (stream) => {
-      set({ cameraStream: stream });
-    },
-
-    setCameraPermission: (granted) => {
-      set({ cameraPermissionGranted: granted });
-    },
-
     toggleAudio: () => {
       set((state) => ({ audioEnabled: !state.audioEnabled }));
-    },
-
-    // Vision processing
-    setVisionActive: (active) => {
-      set({ visionActive: active });
-    },
-
-    updateVisionMetrics: (metrics) => {
-      set((state) => {
-        // Only update if metrics actually changed
-        const currentMetrics = state.visionMetrics;
-        if (currentMetrics && metrics &&
-          currentMetrics.stillness === metrics.stillness &&
-          currentMetrics.presence === metrics.presence &&
-          currentMetrics.posture === metrics.posture) {
-          return state; // No change, don't trigger re-render
-        }
-        return { visionMetrics: metrics };
-      });
     },
 
     // Error handling
@@ -433,14 +380,6 @@ export const useSessionIsPaused = () => useSessionStore((state) => state.phase =
 export const useSessionIsComplete = () => useSessionStore((state) => state.phase === 'complete');
 export const useSessionCurrentMode = () => useSessionStore((state) => state.config?.mode || 'basic');
 export const useSessionCurrentPattern = () => useSessionStore((state) => state.config?.pattern);
-export const useSessionHasCameraStream = () => useSessionStore((state) => !!state.cameraStream);
-export const useSessionCanUseCamera = () => useSessionStore((state) =>
-  state.cameraPermissionGranted && !!state.cameraStream
-);
-export const useSessionHasVisionMetrics = () => useSessionStore((state) => !!state.visionMetrics);
-export const useSessionVisionReady = () => useSessionStore((state) =>
-  state.visionActive && !!state.visionMetrics
-);
 export const useSessionIsOptimalPerformance = () => useSessionStore((state) =>
   state.performanceMode === 'optimal'
 );
@@ -469,7 +408,6 @@ export const sessionSelectors = {
     const maxCycles = state.config?.maxCycles || 10;
     return Math.min((state.metrics.cycleCount / maxCycles) * 100, 100);
   },
-  visionActive: () => useSessionStore.getState().visionActive,
   breathHoldTime: () => useSessionStore.getState().metrics.breathHoldTime,
 };
 
@@ -481,10 +419,6 @@ export const useSessionPhase = () => useSessionStore((state) => state.phase);
 export const useSessionMetrics = () => useSessionStore((state) => state.metrics);
 export const useSessionConfig = () => useSessionStore((state) => state.config);
 export const useSessionError = () => useSessionStore((state) => state.error);
-export const useVisionState = () => useSessionStore((state) => ({
-  active: state.visionActive,
-  metrics: state.visionMetrics,
-}));
 
 // Pattern performance hooks
 export const usePatternPerformance = () => useSessionStore((state) => ({

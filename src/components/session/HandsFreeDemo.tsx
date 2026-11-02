@@ -3,8 +3,8 @@ import { ChevronDown, Hand } from "lucide-react";
 
 /**
  * HandsFreeDemo — a fully local, permission-free simulation of the planned
- * hands-free gesture controls. No camera, no model, no network, no timers.
- * It never touches the real session, camera store, or history.
+ * hands-free gesture controls. No model, no network, no timers.
+ * It never touches the real session or history.
  */
 
 export interface HandsFreeDemoState {
@@ -82,7 +82,7 @@ export const HandsFreeDemo: React.FC<HandsFreeDemoProps> = ({
       {open && (
         <div id={panelId} className="mt-4 rounded-2xl bg-black/40 ring-1 ring-white/10 p-5 space-y-4 text-center">
           <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            Simulation — no camera used
+            Simulated preview
           </p>
           <p className="text-xs text-muted-foreground/70">
             Live gesture controls are not available yet.

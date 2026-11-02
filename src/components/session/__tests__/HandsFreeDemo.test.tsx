@@ -73,7 +73,7 @@ describe("HandsFreeDemo markup", () => {
 
   it("open panel carries a persistent simulation label and live status", () => {
     const html = renderToString(<HandsFreeDemo defaultOpen />);
-    expect(html).toContain("Simulation — no camera used");
+    expect(html).toContain("Simulated preview");
     expect(html).toContain("Live gesture controls are not available yet.");
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');

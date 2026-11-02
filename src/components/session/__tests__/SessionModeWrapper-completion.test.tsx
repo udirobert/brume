@@ -77,7 +77,6 @@ describe("SessionModeWrapper completion payload", () => {
         cycleCount: 0,
         breathHoldTime: 0,
         startTime: realStart,
-        cameraUsed: false,
         sessionType: "enhanced",
       });
     });

@@ -43,7 +43,7 @@ export default function PostSession() {
     try {
       saveSession({
         breathHoldTime: sessionData.breathHoldTime || 0,
-        restlessnessScore: sessionData.restlessnessScore || 0,
+        restlessnessScore: 0,
         sessionDuration: sessionData.sessionDuration || 0,
         patternName: sessionData.patternName,
       });

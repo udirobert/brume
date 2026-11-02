@@ -1,24 +1,17 @@
 /**
- * Responsive Enhanced Session - HONEST UX for all devices
- * 
- * CORE PRINCIPLES APPLIED:
- * - ENHANCEMENT FIRST: Enhanced existing session with better viewport usage
- * - CLEAN: Clear separation of concerns for desktop vs mobile
- * - MODULAR: Reusable components for different layouts
- * - PERFORMANT: Optimized camera handling for mobile
- * - HONEST: Real metrics correlation visible at all times
+ * Responsive Enhanced Session - orb-only for all devices
+ *
+ * No camera, no vision. The breathing animation is the session;
+ * SessionControls end it and report honest timing metrics.
  */
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from '../../hooks/use-mobile';
-import { useStableMetrics } from '../../hooks/useStableMetrics';
 import { useSession } from '../../hooks/useSession';
 import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
 import { useMascotPresence } from '../../hooks/useMascotPresence';
 
-import VideoFeed from '../VideoFeed';
-import { VisionManager } from './VisionManager';
 import BreathingAnimation from '../BreathingAnimation';
 import { BrumeMascot, type BrumeMascotState } from '../BrumeMascot';
 import { SessionControls } from './SessionControls';
@@ -41,18 +34,12 @@ interface ResponsiveEnhancedSessionProps {
     };
     mode: 'classic' | 'enhanced';
   };
-  modeConfig: {
-    enableCamera: boolean;
-    enableVision: boolean;
-  };
   onSessionComplete: (metrics: any) => void;
   onSessionExit: () => void;
-  // AGGRESSIVE CONSOLIDATION: Remove sessionId prop - use sessionStore instead
 }
 
 export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps> = ({
   config,
-  modeConfig,
   onSessionComplete,
   onSessionExit,
 }) => {
@@ -61,26 +48,15 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const { presence: mascotPresence } = useMascotPresence();
   const skipEntranceMotion =
     reduceMotion || (typeof document !== "undefined" && document.hidden);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
+
   // Session phase state - SINGLE SOURCE OF TRUTH
   const sessionPhase = useSessionPhase();
 
-  // Camera and vision state — the session store's accepted stream only,
-  // not the camera store's pending stream.
-  const stableMetrics = useStableMetrics();
   const session = useSession({
     autoStart: false,
-    enableVision: modeConfig.enableVision,
-    targetFPS: isMobile ? 0.5 : 1, // Slower FPS on mobile for performance
-    videoElement: videoRef,
     manageTiming: true,
   });
-  const cameraStream = session.cameraStream;
   const sessionError = useSessionStore((state) => state.error);
-
-  // DRY: Single source of truth for session ID
-  const sessionId = session.getSessionId();
 
   // Normalize the nested-mode pattern into the flat BreathingPattern the
   // store requires — inhale/exhale plus hold and hold_after_exhale.
@@ -98,46 +74,20 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   // ENHANCEMENT FIRST: Initialize session with proper config
   React.useEffect(() => {
     if (!useSessionStore.getState().config) {
-      console.log('🔧 Initializing enhanced session with config:', {
-        pattern: flatPattern.name,
-        mode: config.mode,
-        enableVision: modeConfig.enableVision
-      });
       session.initialize({
         mode: config.mode,
         pattern: flatPattern,
-        enableCamera: false, // actual acquired state, not feature availability
         enableAudio: true,
-        enableAI: modeConfig.enableVision,
+        enableAI: false,
       });
     }
-  }, [session, config, modeConfig, flatPattern]);
+  }, [session, config, flatPattern]);
 
-  // Debug session phase changes
-  React.useEffect(() => {
-    console.log('📊 Session phase changed to:', sessionPhase);
-  }, [sessionPhase]);
-
-  // Handle session start from preparation flow
-  const handleSessionStart = React.useCallback(async (cameraEnabled: boolean) => {
-    console.log('🚀 Starting session with camera:', cameraEnabled);
-    console.log('🔍 Current session state before start:', {
-      phase: session.phase,
-      config: !!session.config,
-      isActive: session.isActive,
-      metrics: session.metrics
-    });
-    
-    // CRITICAL FIX: Use the session's built-in ready transition
-    if (session.phase === 'setup') {
-      console.log('🔄 Session in setup, using session.start() to handle transition');
-    } else {
-      console.log('🚀 Session already ready, starting immediately');
-    }
-    
+  // Handle session start from the preview
+  const handleSessionStart = React.useCallback(() => {
     // Always call session.start() - it handles the ready transition internally
-    session.start(cameraEnabled);
-    
+    session.start();
+
     // CRITICAL FIX: Ensure no return value that could be interpreted as cleanup function
     return undefined;
   }, [session]);
@@ -149,48 +99,6 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     phase: session.metrics?.currentPhase || "inhale",
     progressPercentage: session.getCompletionPercentage ? session.getCompletionPercentage() : 0,
   };
-
-  // Metrics for display
-  const metrics = {
-    stillnessScore: stableMetrics.stillnessScore,
-    presenceScore: stableMetrics.presenceScore,
-    confidenceScore: Math.round(stableMetrics.confidence * 100),
-    showMetrics: modeConfig.enableVision && stableMetrics.hasValidData,
-  };
-
-  // Video feed component
-  const videoFeed = cameraStream ? (
-    <div className="relative w-full h-full">
-      <VideoFeed
-        videoRef={videoRef}
-        isActive={session.isActive}
-        landmarks={session.visionMetrics?.faceLandmarks || []}
-        trackingStatus={(session.visionMetrics?.presence || 0) > 0 ? "TRACKING" : "IDLE"}
-        luxuryMode={false}
-      />
-      <VisionManager
-        enabled={modeConfig.enableVision && cameraStream !== null}
-        videoRef={videoRef}
-        cameraStream={cameraStream}
-        sessionId={sessionId ?? ''}
-        quiet
-        onVisionReady={() => console.log('Vision processing ready')}
-        onVisionError={(error) => console.warn('Vision processing error:', error)}
-      />
-    </div>
-  ) : null;
-
-  // Breathing animation component
-  // The breath signal from useStableMetrics drives the orb's quality
-  // (glow, stability, color) — making verification visible in real time.
-  const breathSignal = modeConfig.enableVision
-    ? {
-        stillness: stableMetrics.stillnessScore,
-        confidence: Math.round(stableMetrics.confidence * 100),
-        faceDetected: stableMetrics.hasValidData,
-        hasValidData: stableMetrics.hasValidData,
-      }
-    : undefined;
 
   const breathingAnimation = (
     <BreathingAnimation
@@ -205,7 +113,6 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       text={session.phase === 'paused' ? 'Paused' : undefined}
       cycleCount={session.metrics?.cycleCount || 0}
       phaseProgress={session.metrics?.phaseProgress || 0}
-      breathSignal={breathSignal}
       sessionInfo={{
         duration: sessionInfo.duration,
         progressPercentage: sessionInfo.progressPercentage,
@@ -251,12 +158,6 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         session.complete();
         const finalMetrics = useSessionStore.getState().metrics;
         const durationSeconds = finalMetrics.duration || 0;
-        const lastStillness =
-          session.visionMetrics?.stillness != null
-            ? Math.round(session.visionMetrics.stillness)
-            : stableMetrics.hasValidData
-              ? stableMetrics.stillnessScore
-              : null;
 
         const sessionMetrics = {
           duration: durationSeconds,
@@ -265,11 +166,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
           cycleCount: finalMetrics.cycleCount || 0,
           startTime: finalMetrics.startTime,
           breathHoldTime: 0,
-          stillnessScore: lastStillness,
-          restlessnessScore: lastStillness != null ? 100 - lastStillness : null,
-          cameraUsed: finalMetrics.cameraUsed,
           sessionType: config.mode === "classic" ? "classic" : "enhanced",
-          visionSessionId: sessionId,
           patternName: config.pattern.name,
         };
 
@@ -299,13 +196,10 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
               exhale: config.pattern.phases.exhale,
               pause: config.pattern.phases.pause,
             },
-            benefits: config.pattern.benefits || ['Improved focus', 'Stress reduction'],
-            description: config.pattern.description || `Experience the ${config.pattern.name} breathing technique with enhanced AI feedback.`
+            benefits: config.pattern.benefits,
+            description: config.pattern.description,
           }}
-          enableCamera={modeConfig.enableCamera}
           sessionError={sessionError}
-          capture={videoFeed}
-          onEnableCamera={session.requestCamera}
           onStart={handleSessionStart}
           onCancel={onSessionExit}
         />
@@ -319,11 +213,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         className="min-h-screen"
       >
         <EnhancedSessionLayout
-          videoFeed={videoFeed}
-          showVideo={!!cameraStream}
-          seen={stableMetrics.hasValidData}
           breathingAnimation={animationWithMascot}
-          metrics={metrics}
           sessionInfo={sessionInfo}
           controls={controls}
           isMobile={isMobile}

@@ -20,7 +20,6 @@ const render = (entry: string) =>
       <SessionPreview
         patternName="Reset"
         pattern={pattern}
-        enableCamera
         onStart={() => {}}
       />
     </MemoryRouter>
@@ -30,15 +29,15 @@ describe("SessionPreview invitation landing", () => {
   it("shows the invitation line when ?via=invite", () => {
     const html = render("/session?pattern=reset&via=invite");
     expect(html).toContain("Someone passed you a break");
-    // Recipient still has exactly one obvious action, camera-free.
-    expect(html).toContain("Breathe without camera");
+    // Recipient still has exactly one obvious action.
+    expect(html).toContain("Begin");
     expect(html).toContain("Reset");
   });
 
   it("stays quiet without the flag", () => {
     const html = render("/session?pattern=reset");
     expect(html).not.toContain("Someone passed you a break");
-    expect(html).toContain("Breathe without camera");
+    expect(html).toContain("Begin");
   });
 
   it("ignores other via values", () => {

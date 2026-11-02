@@ -1,6 +1,6 @@
 /**
  * PrivacyPolicy — camera copy must match the real implementation:
- * frames go to the backend; nothing is claimed to stay on-device.
+ * the web app does not use the camera at all.
  */
 import { describe, it, expect } from "vitest";
 import React from "react";
@@ -15,17 +15,16 @@ const html = renderToString(
 );
 
 describe("PrivacyPolicy camera copy", () => {
-  it("discloses backend frame processing", () => {
-    expect(html).toContain("sent to Brume&#x27;s backend for processing");
-    expect(html).toContain("MediaPipe");
-    expect(html).toContain("not a clinical measurement");
+  it("states the camera is not used", () => {
+    expect(html).toContain("does not use your camera");
+    expect(html).toContain("never requests camera access");
   });
 
-  it("makes no local-only or identification claims", () => {
-    expect(html).not.toContain("entirely on your device");
-    expect(html).not.toContain("Never transmitted to our servers");
-    expect(html).not.toContain("personally identifiable visual information");
-    expect(html).not.toContain("happens locally on your device");
+  it("describes no frame capture or processing", () => {
+    expect(html).not.toContain("MediaPipe");
+    expect(html).not.toContain("sent to Brume&#x27;s backend for processing");
+    expect(html).not.toContain("face landmarks");
+    expect(html).not.toContain("camera feedback");
   });
 
   it("pins the last-updated date", () => {

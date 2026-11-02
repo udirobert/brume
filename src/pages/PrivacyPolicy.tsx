@@ -38,7 +38,6 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-green-700 dark:text-green-300 mb-2">✅ What We DO</h3>
                 <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                  <li>• Process optional camera frames on our backend to estimate movement</li>
                   <li>• Store breathing session metrics</li>
                   <li>• Sync preferences across devices</li>
                   <li>• Enable social features (with consent)</li>
@@ -62,7 +61,7 @@ const PrivacyPolicy = () => {
             <nav className="space-y-2 text-blue-600 dark:text-blue-400">
               <a href="#information-we-collect" className="block hover:underline">1. Information We Collect</a>
               <a href="#how-we-use-information" className="block hover:underline">2. How We Use Your Information</a>
-              <a href="#video-camera-data" className="block hover:underline">3. Video and Camera Data</a>
+              <a href="#video-camera-data" className="block hover:underline">3. Camera</a>
               <a href="#blockchain-data" className="block hover:underline">4. Blockchain and Web3 Data</a>
               <a href="#data-storage" className="block hover:underline">5. Data Storage and Security</a>
               <a href="#sharing" className="block hover:underline">6. Information Sharing</a>
@@ -131,40 +130,20 @@ const PrivacyPolicy = () => {
           {/* Section 3 */}
           <section id="video-camera-data" className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              3. Video and Camera Data
+              3. Camera
             </h2>
             <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 mb-4">
               <p className="text-green-800 dark:text-green-200 font-medium">
-                🛡️ Camera feedback is optional — you can practise fully without it
+                🛡️ The web app does not use your camera
               </p>
             </div>
             <div className="space-y-4 text-gray-600 dark:text-gray-300">
-              <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Camera Access</h3>
-                <p>We request camera access only to provide optional camera feedback during sessions. Camera access is:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Always optional and requires your explicit permission</li>
-                  <li>Used when you enable camera feedback, including during session setup</li>
-                  <li>Captured as image (JPEG) frames and sent to Brume's backend for processing</li>
-                  <li>Processed with MediaPipe to estimate face landmarks and movement</li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Face Landmark and Movement Estimates</h3>
-                <p>When enabled, we use computer vision to:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Estimate face landmarks and movement from camera frames</li>
-                  <li>Provide visual feedback during the session</li>
-                  <li>Produce session summary metrics for your history</li>
-                </ul>
-                <p className="mt-2">Camera feedback is not a clinical measurement and does not measure breath quality.</p>
-              </div>
-
-              <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Data Processing</h3>
-                <p>Camera frames contain your face and are processed on our backend during the session. Session landmarks and movement metrics are held temporarily in backend memory; session summary metrics may be kept so they appear in your history.</p>
-              </div>
+              <p>
+                Brume never requests camera access. No image or video is
+                captured, sent, or processed — sessions are guided breathing
+                only. Session history is stored on your device, and in
+                Supabase if you sign in.
+              </p>
             </div>
           </section>
 
@@ -219,7 +198,7 @@ const PrivacyPolicy = () => {
                   <li><strong>Local Storage:</strong> Session data cached on your device for offline access</li>
                   <li><strong>Supabase (Cloud):</strong> Encrypted user data and preferences for cross-device sync</li>
                   <li><strong>IPFS:</strong> Decentralized storage for public content and credential metadata</li>
-                  <li><strong>Hetzner Servers:</strong> EU-based servers for AI processing and vision analysis</li>
+                  <li><strong>Hetzner Servers:</strong> EU-based servers for AI processing</li>
                 </ul>
               </div>
 
@@ -306,7 +285,6 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Privacy Settings</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Camera access: Enable/disable in browser settings</li>
                   <li>AI features: Opt out of advanced AI analysis</li>
                   <li>Social features: Control profile visibility and sharing</li>
                   <li>Communications: Unsubscribe from optional emails</li>

@@ -2,8 +2,7 @@
  * Session Mode Wrapper — single session route, no mode picker.
  *
  * Consolidated from three modes (classic/enhanced/mobile) to one.
- * Camera permission is asked in-session via SessionPreview. If granted
- * → verified. If denied → unverified. The orb shows the difference.
+ * No camera, no vision — the orb is the whole session.
  * Mobile layout is auto-deted by ResponsiveEnhancedSession.
  *
  * Navigates to /post-session on completion (not /results).
@@ -32,7 +31,6 @@ const useSessionCompletion = () => {
       pattern: any;
       cycleCount: number;
       breathHoldTime: number;
-      restlessnessScore?: number;
       elapsedTime: number;
       phaseAccuracy?: number;
       rhythmConsistency?: number;
@@ -40,17 +38,13 @@ const useSessionCompletion = () => {
       duration?: number;
       patternName?: string;
       sessionType?: string;
-      cameraUsed?: boolean;
       aiUsed?: boolean;
-      visionSessionId?: string;
-      stillnessScore?: number | null;
       startTime?: Date;
     }) => {
       const {
         pattern,
         cycleCount,
         breathHoldTime,
-        restlessnessScore,
         phaseAccuracy,
         rhythmConsistency,
         patternName,
@@ -82,15 +76,13 @@ const useSessionCompletion = () => {
         duration: durationSeconds,
         cycleCount,
         breathHoldTime,
-        restlessnessScore: restlessnessScore || 0,
+        restlessnessScore: 0,
         completed: true,
       });
 
       navigate("/post-session", {
         state: {
           breathHoldTime,
-          restlessnessScore: restlessnessScore ?? null,
-          stillnessScore: sessionData.stillnessScore,
           patternId: pattern.id || "custom",
           patternName: patternName || pattern.name,
           sessionDuration: durationSeconds,
@@ -101,9 +93,7 @@ const useSessionCompletion = () => {
           rhythmConsistency,
           targetCycles: 10,
           sessionType: sessionData.sessionType,
-          cameraUsed: sessionData.cameraUsed,
           aiUsed: sessionData.aiUsed,
-          visionSessionId: sessionData.visionSessionId,
         },
       });
     },
@@ -193,16 +183,10 @@ export const SessionModeWrapper: React.FC = () => {
     mode: 'enhanced' as 'classic' | 'enhanced',
   };
 
-  const modeConfig = {
-    enableCamera: true,
-    enableVision: true,
-  };
-
   return (
     <SessionErrorBoundary>
       <ResponsiveEnhancedSession
         config={responsiveConfig}
-        modeConfig={modeConfig}
         onSessionComplete={onSessionComplete}
         onSessionExit={() => navigate("/")}
       />

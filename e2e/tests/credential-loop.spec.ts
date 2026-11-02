@@ -2,7 +2,7 @@
  * Credential-loop smoke test — Brume's core differentiator journey.
  *
  * Covers: home → state check-in → session preview → progress.
- * Camera verification can't run headless; this guards the loop skeleton
+ * There is no camera; this guards the loop skeleton
  * and the consolidation invariant (no links to buried surfaces).
  */
 import { test, expect } from "@playwright/test";
@@ -26,8 +26,8 @@ test.describe("Brume core loop", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Stressed" }).click();
     await expect(page).toHaveURL(/\/session/);
-    await expect(page.getByText(/Your check-in · breath science/)).toBeVisible();
-    await expect(page.getByRole("button", { name: /Breathe without camera|Begin/ })).toBeVisible();
+    await expect(page.getByText(/From how you feel/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /Begin/ })).toBeVisible();
 
     expect(errors.filter((m) => m.includes("WagmiProvider") || m.includes("useConfig"))).toEqual([]);
   });

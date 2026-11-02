@@ -41,6 +41,21 @@ the same product — "agent-friendly, not agentic" (see `docs/AGENTIC.md`).
 - Already scaffolded; Android icons still need the purple mascot.
 - Crowded category; an ASO play, not a November play.
 
+## Live: AssemblyAI Voice Hackathon Week (ends Nov 7, 11:00 AM PT)
+
+- "Hack into speech" — online, teams 1–4, **free** ($100 + $50 in TTS API
+  credits), $2,000 across 20 winners (Visa gift cards). Original window
+  Oct 15–23 paused for a TTS update; corrected dates Oct 27 – Nov 7.
+- Submission: Google Form (forms.gle/XCW2RdZGbarVLnKEA). Extra points for
+  using their agent builder and posting on LinkedIn/X tagging AssemblyAI.
+- Our entry: **"Brume speaks"** — spoken breathing cues so a reset works
+  with eyes closed (their stated themes: in-app assistants that talk
+  back, accessibility). Declare the pre-existing codebase honestly.
+- Architecture: pre-render the fixed cue library to WAV offline with
+  their TTS (script: `scripts/generate-voice.mjs`, assets in
+  `public/voice/`), `speechSynthesis` as runtime fallback. Live
+  synthesis for dynamic text would need a proxy — skip for v1.
+
 ## Skipped (with reasons)
 
 - **Colosseum / crypto hackathons:** no onchain component. The only bridge

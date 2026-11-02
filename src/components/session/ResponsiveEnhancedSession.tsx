@@ -18,6 +18,7 @@ import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
 import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
+import { preloadCues, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
 
 interface ResponsiveEnhancedSessionProps {
   config: {
@@ -99,6 +100,28 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       : session.metrics?.currentPhase) || "inhale";
   const breathProgress01 = (session.metrics?.phaseProgress || 0) / 100;
   const sessionActive = session.phase === 'active';
+  const audioEnabled = session.audioEnabled;
+
+  // Brume speaks: spoken breath cues so a session works with eyes closed.
+  // The store emits "pause" for the hold_after_exhale phase — the same phase
+  // the UI displays as "Rest".
+  React.useEffect(() => {
+    preloadCues();
+    return () => stopCues();
+  }, []);
+
+  React.useEffect(() => {
+    setVoiceEnabled(audioEnabled);
+  }, [audioEnabled]);
+
+  React.useEffect(() => {
+    if (session.phase === 'paused' || session.phase === 'complete') {
+      stopCues();
+      return;
+    }
+    if (!sessionActive || !audioEnabled) return;
+    speakCue(breathPhase === 'hold_after_exhale' ? 'pause' : breathPhase);
+  }, [breathPhase, sessionActive, session.phase, audioEnabled]);
 
   // Brume IS the breath: centred in the orb, same eased curve.
   const mascotState: BrumeMascotState =

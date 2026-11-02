@@ -121,7 +121,8 @@ Candidate order for "communicate without typing", cheapest first:
    copy invites it.
 2. **Brume speaks** — extend `anna/bundle/audio.js`-style cues to the web
    session (spoken phase words instead of on-screen text). Serves the real
-   hands-free case: eyes closed.
+   hands-free case: eyes closed. **Promoted 2026-11-02** — building now for
+   the AssemblyAI voice hackathon (see `docs/DISTRIBUTION.md`).
 3. **Optional voice input** — Web Speech API "say how you feel" check-in;
    free, on-device where supported, opt-in.
 4. **Gaze/head control** — the Winq move; revisit only if it controls

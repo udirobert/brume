@@ -70,7 +70,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         };
 
   const meta = [
-    metrics.cycles != null ? `${metrics.cycles} cycles` : null,
+    metrics.cycles != null && metrics.cycles > 0 ? `${metrics.cycles} cycles` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -120,32 +120,34 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         >
           Done
         </Button>
-        {patternId && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void handleInvite()}
-            className="w-full rounded-full py-6 text-base"
-          >
-            Pass this break on
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setWordsOpen((v) => !v)}
+          aria-expanded={wordsOpen}
+          className="w-full rounded-full py-6 text-base"
+        >
+          Put it into words
+        </Button>
         <div className="flex items-center gap-3 text-sm">
+          {patternId && (
+            <>
+              <button
+                type="button"
+                onClick={() => void handleInvite()}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Pass this break on
+              </button>
+              <span className="text-muted-foreground/30">·</span>
+            </>
+          )}
           <button
             type="button"
             onClick={onSeeProgress}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Progress
-          </button>
-          <span className="text-muted-foreground/30">·</span>
-          <button
-            type="button"
-            onClick={() => setWordsOpen((v) => !v)}
-            aria-expanded={wordsOpen}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Put it into words
           </button>
         </div>
         {wordsOpen && (

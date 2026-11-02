@@ -43,12 +43,9 @@ export default function Onboarding() {
               phases: { inhale: 4, hold: 0, exhale: 6, hold_after_exhale: 0 },
             }}
             compactMode
-          />
-          <BrumeMascot
-            state="idle"
-            size={72}
-            className="absolute -bottom-3 -right-3"
-          />
+          >
+            <BrumeMascot state="idle" size={112} breathing />
+          </BreathingAnimation>
         </div>
 
         <div className="space-y-3">

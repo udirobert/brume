@@ -569,8 +569,15 @@ published or tier-3 tested.
    (UI demo only, not model-QA evidence); still needs upload in the
    Developer Console.
 6. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
-7. Post the forum report on the 0.3.0 → 0.3.1 missing-tool delay
-   (`https://forum.anna.partners`, per the review team's request).
+7. ~~Post the forum report on the 0.3.0 → 0.3.1 missing-tool delay~~ —
+   **posted 2026-11-02** in Developers with tag `executa`, titled
+   "[Bug Report] Bundled Executa tools missing from the agent for 3+
+   minutes after upgrading an app version (0.3.0 → 0.3.1); model runs
+   the tool name as a shell command". Shows as **Pending (1)** under
+   `/u/papa/activity/pending` — awaiting moderator approval; no public
+   URL until approved. Covers App ID 582, `tool-papa-brume-htcxvfcr`,
+   the >3 min delay, the `exec_run brume_get_ready` symptom, and the
+   quota blocker.
 8. ~~Submit 0.3.x for review~~ — **0.3.2 (tool 0.4.4) submitted
    2026-10-19, rejected.** The local candidate in §12.6 is the resubmission
    path: publish → tier-3 Cloud Agent run → submit. Next after that:

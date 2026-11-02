@@ -26,7 +26,7 @@ import { toast } from "sonner";
 export default function PostSession() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { streak, saveSession } = useSessionHistory();
+  const { saveSession } = useSessionHistory();
   const { user } = useAuth();
   const hasSavedRef = useRef(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -66,7 +66,6 @@ export default function PostSession() {
             patternName: sessionData.patternName,
             duration: sessionData.sessionDuration || 0,
             cycles: sessionData.cycleCount,
-            streak,
           }}
           patternId={sessionData.patternId}
           insight={`You practised ${sessionData.patternName}.`}
@@ -86,7 +85,7 @@ export default function PostSession() {
           <SheetHeader className="text-center space-y-2 mb-6">
             <BrumeMascot state="proud" size={64} className="mb-2" />
             <SheetTitle className="text-2xl font-bold tracking-tight">
-              Keep this streak
+              Keep this practice
             </SheetTitle>
             <SheetDescription className="text-[15px]">
               An email is enough. This session stays on screen.
@@ -97,7 +96,7 @@ export default function PostSession() {
             intent="save-session"
             defaultSignUp
             onComplete={() => {
-              toast.success("Saved. This streak is yours.");
+              toast.success("Saved.");
               setSaveOpen(false);
             }}
           />

@@ -49,16 +49,9 @@ MODEL_DOWNLOAD_ON_START=false python3 main.py &
 
 ## 🌟 Key Features
 
-### 🤖 AI-Powered Coaching
-- **Optional camera feedback** — image frames are sent to Brume's backend and processed with MediaPipe for face-landmark and movement estimates (not a clinical or breath-quality measurement)
-- **Personalized insights** powered by Cerebras & Llama AI models
-- **Zen AI agent** for adaptive guidance and encouragement
-- **Session intelligence** - Detailed metrics and progress tracking
-
 ### 📱 Progressive Web App
 - Works offline after first load
 - Mobile-optimized responsive design
-- Camera integration for vision features
 
 ### ⛓️ Trust layer (quiet by design)
 - **Flow Blockchain / Lens Protocol** — legacy credential plumbing exists in the codebase, but camera presence does not verify breathing and post-session credential minting is currently not user-facing. Don't treat it as proof of practice.

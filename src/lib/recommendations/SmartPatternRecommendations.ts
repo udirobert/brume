@@ -96,10 +96,10 @@ export class SmartPatternRecommendations {
       return [{
         patternId: "box",
         pattern: BREATHING_PATTERNS.box,
-        reason: "Perfect for beginners - proven to work in 30 seconds",
+        reason: "Four counts each way. Easy to hold onto.",
         confidence: 1.0,
         timeToEffect: "30 seconds",
-        bestFor: ["First-time users", "Immediate stress relief"],
+        bestFor: ["First sessions", "An easy start"],
         priority: "high"
       }];
     }
@@ -140,19 +140,19 @@ export class SmartPatternRecommendations {
         {
           patternId: "energy",
           pattern: BREATHING_PATTERNS.energy,
-          reason: "Perfect morning energizer to start your day strong",
+          reason: "Short counts, a little quicker. A bright start.",
           confidence: 0.9,
           timeToEffect: "2 minutes",
-          bestFor: ["Morning activation", "Natural energy boost"],
+          bestFor: ["Early hours", "A quicker rhythm"],
           priority: "high"
         },
         {
           patternId: "box",
           pattern: BREATHING_PATTERNS.box,
-          reason: "Reliable morning stress relief and mental clarity",
+          reason: "Four equal sides. A steady shape when things feel fast.",
           confidence: 0.8,
           timeToEffect: "30 seconds",
-          bestFor: ["Morning anxiety", "Pre-work preparation"],
+          bestFor: ["Steady mornings", "Before the day starts"],
           priority: "medium"
         }
       ];
@@ -164,19 +164,19 @@ export class SmartPatternRecommendations {
         {
           patternId: "box",
           pattern: BREATHING_PATTERNS.box,
-          reason: "Enhance focus and productivity during peak hours",
+          reason: "Four equal sides. A steady shape between tasks.",
           confidence: 0.9,
           timeToEffect: "30 seconds",
-          bestFor: ["Work focus", "Mental clarity"],
+          bestFor: ["Between tasks", "A quiet pause"],
           priority: "high"
         },
         {
           patternId: "mindfulness",
           pattern: BREATHING_PATTERNS.mindfulness,
-          reason: "Maintain present-moment awareness during busy periods",
+          reason: "Even counts, in and out. Nothing to get right.",
           confidence: 0.7,
           timeToEffect: "2 minutes",
-          bestFor: ["Mindful productivity", "Stress prevention"],
+          bestFor: ["A slower minute", "Noticing the breath"],
           priority: "medium"
         }
       ];
@@ -188,19 +188,19 @@ export class SmartPatternRecommendations {
         {
           patternId: "energy",
           pattern: BREATHING_PATTERNS.energy,
-          reason: "Combat afternoon energy dip naturally",
+          reason: "Short counts, a little quicker. For the middle of the afternoon.",
           confidence: 0.8,
           timeToEffect: "2 minutes",
-          bestFor: ["Afternoon slump", "Natural energy"],
+          bestFor: ["Mid-afternoon", "A quicker rhythm"],
           priority: "high"
         },
         {
           patternId: "wim_hof",
           pattern: BREATHING_PATTERNS.wim_hof,
-          reason: "Powerful afternoon reset for advanced practitioners",
+          reason: "Fuller breaths, round after round. For when you want intensity.",
           confidence: 0.6,
           timeToEffect: "3 minutes",
-          bestFor: ["Energy boost", "Mental reset"],
+          bestFor: ["A bigger breath", "Experienced practisers"],
           priority: "medium"
         }
       ];
@@ -212,19 +212,19 @@ export class SmartPatternRecommendations {
         {
           patternId: "relaxation",
           pattern: BREATHING_PATTERNS.relaxation,
-          reason: "Perfect evening wind-down after a busy day",
+          reason: "Longer out than in. A way to put the day down.",
           confidence: 0.9,
           timeToEffect: "3 minutes",
-          bestFor: ["Evening relaxation", "Stress release"],
+          bestFor: ["End of the day", "Slowing down"],
           priority: "high"
         },
         {
           patternId: "box",
           pattern: BREATHING_PATTERNS.box,
-          reason: "Gentle transition from work to personal time",
+          reason: "Four equal sides. An even edge between work and rest.",
           confidence: 0.7,
           timeToEffect: "30 seconds",
-          bestFor: ["Work-life transition", "Evening calm"],
+          bestFor: ["Between work and rest", "Evenings"],
           priority: "medium"
         }
       ];
@@ -235,19 +235,19 @@ export class SmartPatternRecommendations {
       {
         patternId: "sleep",
         pattern: BREATHING_PATTERNS.sleep,
-        reason: "Scientifically designed to prepare your body for sleep",
+        reason: "A long exhale, then a pause. Slower on purpose.",
         confidence: 0.9,
         timeToEffect: "5 minutes",
-        bestFor: ["Sleep preparation", "Insomnia relief"],
+        bestFor: ["Before sleep", "The last thing at night"],
         priority: "high"
       },
       {
         patternId: "relaxation",
         pattern: BREATHING_PATTERNS.relaxation,
-        reason: "Deep relaxation to release the day's tension",
+        reason: "Longer out than in. A way to put the day down.",
         confidence: 0.8,
         timeToEffect: "3 minutes",
-        bestFor: ["Deep relaxation", "Bedtime routine"],
+        bestFor: ["Laying the day down", "Before bed"],
         priority: "medium"
       }
     ];
@@ -263,19 +263,19 @@ export class SmartPatternRecommendations {
           {
             patternId: "box",
             pattern: BREATHING_PATTERNS.box,
-            reason: "Most effective for immediate stress relief",
+            reason: "Four equal sides. A steady shape when things feel fast.",
             confidence: 0.95,
             timeToEffect: "30 seconds",
-            bestFor: ["Acute stress", "Anxiety relief"],
+            bestFor: ["Fast days", "Holding steady"],
             priority: "high"
           },
           {
             patternId: "relaxation",
             pattern: BREATHING_PATTERNS.relaxation,
-            reason: "Deep stress release and nervous system reset",
+            reason: "Longer out than in. A way to put the day down.",
             confidence: 0.9,
             timeToEffect: "3 minutes",
-            bestFor: ["Chronic stress", "Deep relaxation"],
+            bestFor: ["Letting go", "A slower pace"],
             priority: "high"
           }
         ];
@@ -285,19 +285,19 @@ export class SmartPatternRecommendations {
           {
             patternId: "energy",
             pattern: BREATHING_PATTERNS.energy,
-            reason: "Specifically designed for natural energy boost",
+            reason: "Short counts, a little quicker.",
             confidence: 0.9,
             timeToEffect: "2 minutes",
-            bestFor: ["Natural energy", "Morning activation"],
+            bestFor: ["A quicker rhythm", "Early hours"],
             priority: "high"
           },
           {
             patternId: "wim_hof",
             pattern: BREATHING_PATTERNS.wim_hof,
-            reason: "Powerful energizing technique for advanced users",
+            reason: "Fuller breaths, round after round.",
             confidence: 0.8,
             timeToEffect: "3 minutes",
-            bestFor: ["High energy", "Cold tolerance"],
+            bestFor: ["A bigger breath", "Experienced practisers"],
             priority: "medium"
           }
         ];
@@ -307,19 +307,19 @@ export class SmartPatternRecommendations {
           {
             patternId: "sleep",
             pattern: BREATHING_PATTERNS.sleep,
-            reason: "Scientifically optimized for sleep preparation",
+            reason: "A long exhale, then a pause. Slower on purpose.",
             confidence: 0.95,
             timeToEffect: "5 minutes",
-            bestFor: ["Sleep quality", "Insomnia"],
+            bestFor: ["Before sleep", "Bedtime"],
             priority: "high"
           },
           {
             patternId: "relaxation",
             pattern: BREATHING_PATTERNS.relaxation,
-            reason: "Gentle relaxation to ease into sleep",
+            reason: "Longer out than in. A way to put the day down.",
             confidence: 0.8,
             timeToEffect: "3 minutes",
-            bestFor: ["Bedtime routine", "Anxiety relief"],
+            bestFor: ["Bedtime", "Slowing down"],
             priority: "medium"
           }
         ];
@@ -329,19 +329,19 @@ export class SmartPatternRecommendations {
           {
             patternId: "box",
             pattern: BREATHING_PATTERNS.box,
-            reason: "Proven to enhance concentration and mental clarity",
+            reason: "Four equal sides. Easy to hold onto.",
             confidence: 0.9,
             timeToEffect: "30 seconds",
-            bestFor: ["Work focus", "Study sessions"],
+            bestFor: ["Steady attention", "One thing at a time"],
             priority: "high"
           },
           {
             patternId: "mindfulness",
             pattern: BREATHING_PATTERNS.mindfulness,
-            reason: "Cultivates sustained attention and awareness",
+            reason: "Even counts, in and out. Nothing to get right.",
             confidence: 0.8,
             timeToEffect: "2 minutes",
-            bestFor: ["Meditation", "Present moment"],
+            bestFor: ["Noticing the breath", "Sitting still"],
             priority: "medium"
           }
         ];
@@ -361,10 +361,10 @@ export class SmartPatternRecommendations {
           {
             patternId: "box",
             pattern: BREATHING_PATTERNS.box,
-            reason: "Immediate stress relief in 30 seconds",
+            reason: "Four equal sides. A steady shape when things feel fast.",
             confidence: 0.95,
             timeToEffect: "30 seconds",
-            bestFor: ["Acute stress", "Emergency calm"],
+            bestFor: ["Fast days", "A steady shape"],
             priority: "high"
           }
         ];
@@ -374,10 +374,10 @@ export class SmartPatternRecommendations {
           {
             patternId: "energy",
             pattern: BREATHING_PATTERNS.energy,
-            reason: "Natural energy boost without caffeine",
+            reason: "Short counts, a little quicker.",
             confidence: 0.9,
             timeToEffect: "2 minutes",
-            bestFor: ["Fatigue", "Natural alertness"],
+            bestFor: ["Low battery", "A quicker rhythm"],
             priority: "high"
           }
         ];
@@ -387,10 +387,10 @@ export class SmartPatternRecommendations {
           {
             patternId: "relaxation",
             pattern: BREATHING_PATTERNS.relaxation,
-            reason: "Activates parasympathetic nervous system",
+            reason: "Longer out than in. A way to put the day down.",
             confidence: 0.9,
             timeToEffect: "3 minutes",
-            bestFor: ["Anxiety relief", "Nervous system reset"],
+            bestFor: ["When it's a lot", "A slower pace"],
             priority: "high"
           }
         ];
@@ -700,9 +700,9 @@ export class SmartPatternRecommendations {
     }
 
     if (factors.userHistory >= 90) {
-      explanations.push("Your proven favorite");
+      explanations.push("One you keep coming back to");
     } else if (factors.userHistory >= 80) {
-      explanations.push("Successful in your history");
+      explanations.push("Familiar from your history");
     }
 
     if (factors.difficultyFit >= 90) {
@@ -750,26 +750,26 @@ export class SmartPatternRecommendations {
     const hour = context.timeOfDay || new Date().getHours();
 
     if (hour >= 6 && hour < 10 && patternId === "energy") {
-      return "Perfect morning energizer to start your day strong";
+      return "Short counts, a little quicker. A bright start.";
     }
 
     if (hour >= 10 && hour < 14 && patternId === "box") {
-      return "Enhance focus and productivity during peak hours";
+      return "Four equal sides. A steady shape between tasks.";
     }
 
     if (hour >= 14 && hour < 18 && patternId === "energy") {
-      return "Combat afternoon energy dip naturally";
+      return "Short counts, a little quicker. For the middle of the afternoon.";
     }
 
     if (hour >= 18 && hour < 22 && patternId === "relaxation") {
-      return "Perfect evening wind-down after a busy day";
+      return "Longer out than in. A way to put the day down.";
     }
 
     if (patternId === "sleep") {
-      return "Scientifically designed to prepare your body for sleep";
+      return "A long exhale, then a pause. Slower on purpose.";
     }
 
-    return "Balanced breathing pattern for your wellness goals";
+    return "An even rhythm, any time of day.";
   }
 
   /**
@@ -793,15 +793,15 @@ export class SmartPatternRecommendations {
    */
   private static getBestFor(patternId: string): string[] {
     const bestForMap: Record<string, string[]> = {
-      box: ["Stress relief", "Mental clarity", "Focus"],
-      relaxation: ["Deep relaxation", "Anxiety relief", "Sleep preparation"],
-      wim_hof: ["Energy boost", "Cold tolerance", "Mental reset"],
-      energy: ["Natural energy", "Alertness", "Morning activation"],
-      sleep: ["Sleep quality", "Insomnia relief", "Bedtime routine"],
-      mindfulness: ["Present awareness", "Meditation", "Stress prevention"]
+      box: ["Steady", "Even counts", "Between tasks"],
+      relaxation: ["Long exhale", "Slowing down", "Before bed"],
+      wim_hof: ["Fuller breaths", "Rounds", "Intensity"],
+      energy: ["Quicker counts", "Early hours", "A bright start"],
+      sleep: ["Before sleep", "Long exhale", "Bedtime"],
+      mindfulness: ["Even counts", "Stillness", "Noticing the breath"]
     };
 
-    return bestForMap[patternId] || ["General wellness"];
+    return bestForMap[patternId] || ["Any time"];
   }
 
   /**
@@ -823,10 +823,10 @@ export class SmartPatternRecommendations {
       return [BREATHING_PATTERNS.energy, BREATHING_PATTERNS.box].map((pattern, index) => ({
         patternId: pattern.id,
         pattern,
-        reason: index === 0 ? "Morning energy boost" : "Reliable stress relief",
+        reason: index === 0 ? "A quicker start to the day" : "Steady and even",
         confidence: index === 0 ? 0.9 : 0.8,
         timeToEffect: index === 0 ? "2 minutes" : "30 seconds",
-        bestFor: index === 0 ? ["Morning activation"] : ["Stress relief"],
+        bestFor: index === 0 ? ["Early hours"] : ["Steady"],
         priority: "high" as const
       }));
     }
@@ -835,22 +835,22 @@ export class SmartPatternRecommendations {
       return [BREATHING_PATTERNS.relaxation, BREATHING_PATTERNS.sleep].map((pattern, index) => ({
         patternId: pattern.id,
         pattern,
-        reason: index === 0 ? "Evening wind-down" : "Sleep preparation",
+        reason: index === 0 ? "A slower end to the day" : "Long exhale, before sleep",
         confidence: 0.9,
         timeToEffect: index === 0 ? "3 minutes" : "5 minutes",
-        bestFor: index === 0 ? ["Evening relaxation"] : ["Better sleep"],
+        bestFor: index === 0 ? ["Evenings"] : ["Before sleep"],
         priority: "high" as const
       }));
     }
 
-    // Default to stress relief patterns
+    // Default to the steadiest rhythm
     return [{
       patternId: "box",
       pattern: BREATHING_PATTERNS.box,
-      reason: "Most reliable for immediate stress relief",
+      reason: "Steady and even.",
       confidence: 0.95,
       timeToEffect: "30 seconds",
-      bestFor: ["Stress relief", "Mental clarity"],
+      bestFor: ["Steady", "Even counts"],
       priority: "high"
     }];
   }
@@ -873,11 +873,11 @@ export class SmartPatternRecommendations {
           userHistory: 75,
           difficultyFit: 80
         },
-        explanation: index === 0 ? "Perfect morning timing" : "Reliable stress relief",
+        explanation: index === 0 ? "A good fit for mornings" : "Steady and even",
         trend: 'stable' as const,
-        reason: index === 0 ? "Morning energy boost" : "Reliable stress relief",
+        reason: index === 0 ? "A quicker start to the day" : "Steady and even",
         timeToEffect: index === 0 ? "2 minutes" : "30 seconds",
-        bestFor: index === 0 ? ["Morning activation"] : ["Stress relief"],
+        bestFor: index === 0 ? ["Early hours"] : ["Steady"],
         priority: "high" as const
       }));
     }
@@ -894,16 +894,16 @@ export class SmartPatternRecommendations {
           userHistory: 75,
           difficultyFit: 80
         },
-        explanation: index === 0 ? "Perfect evening timing" : "Excellent sleep preparation",
+        explanation: index === 0 ? "A good fit for evenings" : "A long exhale before sleep",
         trend: 'stable' as const,
-        reason: index === 0 ? "Evening wind-down" : "Sleep preparation",
+        reason: index === 0 ? "A slower end to the day" : "Long exhale, before sleep",
         timeToEffect: index === 0 ? "3 minutes" : "5 minutes",
-        bestFor: index === 0 ? ["Evening relaxation"] : ["Better sleep"],
+        bestFor: index === 0 ? ["Evenings"] : ["Before sleep"],
         priority: "high" as const
       }));
     }
 
-    // Default to stress relief patterns
+    // Default to the steadiest rhythm
     return [{
       patternId: "box",
       pattern: BREATHING_PATTERNS.box,
@@ -915,11 +915,11 @@ export class SmartPatternRecommendations {
         userHistory: 75,
         difficultyFit: 80
       },
-      explanation: "Most reliable option",
+      explanation: "An even rhythm",
       trend: 'stable' as const,
-      reason: "Most reliable for immediate stress relief",
+      reason: "Steady and even.",
       timeToEffect: "30 seconds",
-      bestFor: ["Stress relief", "Mental clarity"],
+      bestFor: ["Steady", "Even counts"],
       priority: "high"
     }];
   }

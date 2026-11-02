@@ -52,6 +52,7 @@ export default function Progress() {
   }
 
   const meta = [
+    `${history.length} ${history.length === 1 ? "session" : "sessions"}`,
     totalMinutes > 0 ? `${totalMinutes} min` : null,
     preferredPattern &&
     preferredPattern !== "None" &&
@@ -65,7 +66,7 @@ export default function Progress() {
     <div className="w-full max-w-md mx-auto flex flex-col items-center text-center px-2 py-4">
       <BrumeMascot state="proud" size={88} className="mb-3" />
       <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-        {streak > 0 ? `Day ${streak}.` : "Your practice."}
+        Your practice.
       </h1>
       <p className="mt-2 text-muted-foreground">
         One check-in, one session — that's the whole practice.

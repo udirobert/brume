@@ -6,7 +6,6 @@ import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
 import { Button } from "@/components/ui/button";
-import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
@@ -15,12 +14,11 @@ import { roomWhisper } from "@/lib/atmosphere/dayPart";
  * Home — reset-first.
  *
  * One obvious action: a guided Reset (in 4, out 6). No check-in
- * required, camera optional. The mood check-in stays available below
+ * required, no camera. The mood check-in stays available below
  * as the secondary path for anyone who wants a matched pattern.
  */
 export default function Index() {
   const { user } = useAuth();
-  const { streak } = useSessionHistory();
   const isGuest = !user;
   const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
   const dayPart = useDayPart();
@@ -28,9 +26,6 @@ export default function Index() {
   const companion = presence === "companion";
 
   const headline = useMemo((): WordPart[] => {
-    if (streak > 0) {
-      return [`Day ${streak}. Keep it breathing.`];
-    }
     if (isGuest) {
       return [
         "A little room to ",
@@ -38,7 +33,7 @@ export default function Index() {
       ];
     }
     return ["Welcome back."];
-  }, [isGuest, streak]);
+  }, [isGuest]);
 
   return (
     <div className="w-full flex flex-col items-center px-2">
@@ -79,13 +74,11 @@ export default function Index() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
         >
-          {streak > 0
-            ? "One check-in, one session — that's the whole practice."
-            : roomWhisper(dayPart)}
+          {roomWhisper(dayPart)}
         </motion.p>
       </div>
 
-      {/* Primary: a guided Reset. No check-in, camera optional. */}
+      {/* Primary: a guided Reset. No check-in required. */}
       <motion.div
         className="mt-10 flex flex-col items-center w-full max-w-xs"
         initial={reduceMotion ? false : { opacity: 0, y: 6 }}
@@ -105,7 +98,7 @@ export default function Index() {
           </Link>
         </Button>
         <p className="mt-3 text-sm text-muted-foreground">
-          In for 4, out for 6 · camera optional
+          In for 4, out for 6 · nothing to get right
         </p>
       </motion.div>
 

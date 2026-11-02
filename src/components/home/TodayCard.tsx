@@ -2,7 +2,7 @@
  * TodayCard — "What do you need today?" on the Home surface.
  *
  * One-tap entry: tap a state → session starts immediately. The reason
- * ("Box Breathing · works in ~2 min · calms the vagus nerve") is passed
+ * (the pattern name and a line about its rhythm) is passed
  * as location state to the session preview, where it shows as a brief
  * caption before the session begins. No intermediate card, no second
  * button — the state check-in IS the first step of the session.
@@ -42,9 +42,9 @@ export function TodayCard({ className }: { className?: string }) {
     if (top) {
       navigate(`/session?pattern=${top.pattern.id}`, {
         state: {
-          reason: `${top.pattern.name} · works in ${top.timeToEffect}`,
+          reason: top.pattern.name,
           reasonDetail: top.reason,
-          source: "Your check-in · breath science",
+          source: "From how you feel",
         },
       });
     } else {

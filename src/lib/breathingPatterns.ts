@@ -42,67 +42,67 @@ export const BREATHING_PATTERNS: Record<string, BreathingPattern> = {
   box: {
     id: 'box',
     name: 'Box Breathing',
-    description: 'Equal duration for all phases - excellent for focus and stress reduction',
+    description: 'Four equal sides — in, hold, out, hold — four counts each',
     inhale: 4,
     hold: 4,
     exhale: 4,
     hold_after_exhale: 4,
-    benefits: ['Stress reduction', 'Improved focus', 'Mental clarity']
+    benefits: ['Steady', 'Even counts', 'Between tasks']
   },
 
   relaxation: {
     id: 'relaxation',
     name: 'Relaxation Breath',
-    description: 'Longer exhale promotes relaxation and parasympathetic response',
+    description: 'A short hold, then a long exhale — 4 in, 7 held, 8 out',
     inhale: 4,
     hold: 7,
     exhale: 8,
     hold_after_exhale: 0,
-    benefits: ['Anxiety relief', 'Better sleep', 'Relaxation', 'Stress reduction']
+    benefits: ['Long exhale', 'Slowing down', 'Before bed']
   },
 
   wim_hof: {
     id: 'wim_hof',
     name: 'Wim Hof Method',
-    description: 'Powerful breathing technique for energy and immune system strength',
+    description: 'Full, quick breaths in rounds, at your own pace',
     inhale: 6,
     hold: 0,
     exhale: 6,
     hold_after_exhale: 0,
-    benefits: ['Energy increase', 'Immune system boost', 'Cold tolerance']
+    benefits: ['Fuller breaths', 'Rounds', 'Intensity']
   },
 
   energy: {
     id: 'energy',
     name: 'Energy Breath',
-    description: 'Quick, energizing breath pattern to increase alertness',
+    description: 'A quicker, lighter rhythm — short in, shorter hold, out',
     inhale: 3,
     hold: 2,
     exhale: 4,
     hold_after_exhale: 1,
-    benefits: ['Energy boost', 'Increased alertness', 'Morning activation']
+    benefits: ['A quicker rhythm', 'Early hours', 'A bright start']
   },
 
   sleep: {
     id: 'sleep',
     name: 'Sleep Breath',
-    description: 'Calming pattern designed to prepare the body for sleep',
+    description: 'A long exhale and a quiet pause — the last thing before sleep',
     inhale: 4,
     hold: 6,
     exhale: 8,
     hold_after_exhale: 3,
-    benefits: ['Improved sleep quality', 'Reduced insomnia', 'Evening relaxation']
+    benefits: ['Before sleep', 'Long exhale', 'Bedtime']
   },
 
   mindfulness: {
     id: 'mindfulness',
     name: 'Mindfulness Breath',
-    description: 'Simple pattern for meditation and present-moment awareness',
+    description: 'Five in, five out. Even counts, nothing to get right',
     inhale: 5,
     hold: 0,
     exhale: 5,
     hold_after_exhale: 0,
-    benefits: ['Meditation support', 'Present moment awareness', 'Anxiety reduction']
+    benefits: ['Even counts', 'Stillness', 'A moment between tasks']
   }
 };
 

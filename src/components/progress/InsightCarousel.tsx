@@ -34,11 +34,7 @@ function dailySeries(
   return buckets;
 }
 
-function buildInsights(
-  history: SessionLike[],
-  streak: number,
-  preferredPattern: string,
-): Insight[] {
+function buildInsights(history: SessionLike[]): Insight[] {
   const out: Insight[] = [];
 
   const minutes = dailySeries(history, 14, (s) => (s.session_duration ?? 0) / 60);
@@ -58,50 +54,17 @@ function buildInsights(
     });
   }
 
-  const calmRaw = history.filter((s) => typeof s.restlessness_score === "number");
-  if (calmRaw.length >= 4) {
-    const calm = dailySeries(calmRaw, 14, (s) => s.restlessness_score ?? 0);
-    const recent = calm.slice(7).filter((v) => v > 0);
-    const prior = calm.slice(0, 7).filter((v) => v > 0);
-    if (recent.length && prior.length) {
-      const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
-      const down = avg(recent) < avg(prior);
-      out.push({
-        key: "calm",
-        prose: down
-          ? "Sessions are settling you faster than last week."
-          : "A little more restless lately. Shorter usually beats heroic.",
-        points: calm,
-        valueLabel: down ? "Calmer lately" : "More restless lately",
-      });
-    }
-  }
-
-  if (streak >= 2) {
-    out.push({
-      key: "streak",
-      prose: `${streak} days in a row${preferredPattern && preferredPattern !== "None" ? `, mostly ${preferredPattern}` : ""}. Showing up again is the whole point.`,
-      points: dailySeries(history, 14, () => 1),
-      valueLabel: `${streak}-day streak`,
-    });
-  }
-
   return out;
 }
 
 export function InsightCarousel({
   history,
-  streak,
-  preferredPattern,
 }: {
   history: SessionLike[];
   streak: number;
   preferredPattern: string;
 }) {
-  const insights = useMemo(
-    () => buildInsights(history, streak, preferredPattern),
-    [history, streak, preferredPattern],
-  );
+  const insights = useMemo(() => buildInsights(history), [history]);
   const [page, setPage] = useState(0);
 
   if (insights.length === 0) return null;

@@ -61,7 +61,6 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         patternName: metrics.patternName,
         duration: metrics.duration,
         cycles: metrics.cycles,
-        streak: metrics.streak,
       });
 
       if (result === "shared") {
@@ -88,9 +87,6 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         };
 
   const meta = [
-    typeof metrics.streak === "number" && metrics.streak > 0
-      ? `Day ${metrics.streak}`
-      : null,
     metrics.cycles != null ? `${metrics.cycles} cycles` : null,
   ].filter(Boolean) as string[];
 
@@ -127,7 +123,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
           >
             Create an account
           </button>{" "}
-          to keep this streak across devices.
+          to keep this practice across devices.
         </motion.p>
       )}
 

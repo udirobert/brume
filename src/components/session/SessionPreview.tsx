@@ -54,7 +54,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   const reason = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reason;
   const reasonDetail = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reasonDetail;
   const source =
-    (location.state as { source?: string } | null)?.source || "Your check-in · breath science";
+    (location.state as { source?: string } | null)?.source || "From how you feel";
 
   const {
     stream: cameraStream,

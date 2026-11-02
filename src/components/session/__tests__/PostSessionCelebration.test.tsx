@@ -66,26 +66,14 @@ describe("PostSessionCelebration", () => {
     expect(without).not.toContain("cycles");
   });
 
-  it("shows streak only when it is a positive supplied number", () => {
+  it("never renders a streak, even when one is supplied", () => {
     const streaked = renderToString(
       <PostSessionCelebration
         metrics={{ patternName: "Box Breathing", duration: 60, streak: 3 }}
       />,
     );
-    expect(streaked).toContain("Day 3");
-
-    const zero = renderToString(
-      <PostSessionCelebration
-        metrics={{ patternName: "Box Breathing", duration: 60, streak: 0 }}
-      />,
-    );
-    expect(zero).not.toContain("Day 1");
-    expect(zero).not.toContain("Day 0");
-
-    const unknown = renderToString(
-      <PostSessionCelebration metrics={{ patternName: "Box Breathing", duration: 60 }} />,
-    );
-    expect(unknown).not.toContain("Day 1");
+    expect(streaked).not.toContain("Day 3");
+    expect(streaked).not.toContain("streak");
   });
 
   it("uses the factual insight passed in", () => {

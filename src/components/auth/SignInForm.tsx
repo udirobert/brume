@@ -27,10 +27,10 @@ const COPY: Record<
   },
   progress: {
     title: "Save your progress",
-    subtitle: "Keep your streak on this device and the next.",
+    subtitle: "Keep your practice on this device and the next.",
   },
   "save-session": {
-    title: "Keep this streak",
+    title: "Keep this practice",
     subtitle: "An email is enough. This session stays on screen.",
   },
 };

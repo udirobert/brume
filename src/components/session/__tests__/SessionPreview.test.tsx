@@ -30,7 +30,23 @@ describe("SessionPreview", () => {
     expect(html).not.toContain("see your breath");
   });
 
-  it("offers the collapsed hands-free simulation", () => {
+  it("surfaces the spoken-cues choice before first play", () => {
+    const html = render(
+      <SessionPreview
+        patternName="Box Breathing"
+        pattern={pattern}
+        onStart={() => {}}
+        audioEnabled={true}
+        onToggleAudio={() => {}}
+      />,
+    );
+    expect(html).toContain("Spoken breath cues");
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Hear a spoken cue");
+    expect(html).toContain("nothing is sent anywhere");
+  });
+
+  it("hides the spoken-cues row when the parent does not pass the choice", () => {
     const html = render(
       <SessionPreview
         patternName="Box Breathing"
@@ -38,6 +54,6 @@ describe("SessionPreview", () => {
         onStart={() => {}}
       />,
     );
-    expect(html).toContain("Try hands-free preview");
+    expect(html).not.toContain("Spoken breath cues");
   });
 });

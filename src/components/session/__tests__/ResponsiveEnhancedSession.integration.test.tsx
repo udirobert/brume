@@ -88,13 +88,8 @@ describe("ResponsiveEnhancedSession integration", () => {
     expect(gum).not.toHaveBeenCalled();
     expect(container.textContent).not.toMatch(/camera/i);
 
-    await act(async () => {
-      byText(container, "Try hands-free preview")?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true }),
-      );
-    });
+    expect(container.textContent).toContain("Spoken breath cues");
     expect(gum).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Simulated preview");
 
     await act(async () => {
       byText(container, "Begin")?.dispatchEvent(

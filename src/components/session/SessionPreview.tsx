@@ -9,8 +9,8 @@ import { useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ContextCards } from "@/components/primitives/ContextCard";
 import { formatPhases } from "@/lib/breathingPatterns";
-import { HandsFreeDemo } from "./HandsFreeDemo";
-import { AlertCircle } from "lucide-react";
+import { previewCue } from "@/lib/voiceCues";
+import { AlertCircle, Volume2 } from "lucide-react";
 
 interface SessionPreviewProps {
   patternName: string;
@@ -29,6 +29,9 @@ interface SessionPreviewProps {
   onCancel?: () => void;
   /** Session-level error (e.g. unavailable pattern) — rendered as an alert. */
   sessionError?: string | null;
+  /** Spoken breath cues choice — surfaced here before first play. */
+  audioEnabled?: boolean;
+  onToggleAudio?: () => void;
 }
 
 export const SessionPreview: React.FC<SessionPreviewProps> = ({
@@ -37,6 +40,8 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   onStart,
   onCancel,
   sessionError,
+  audioEnabled,
+  onToggleAudio,
 }) => {
   const location = useLocation();
   // Cosmetic only: `?via=invite` means someone handed this break to you.
@@ -101,7 +106,34 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
           </button>
         )}
 
-        <HandsFreeDemo />
+        {audioEnabled !== undefined && onToggleAudio && (
+          <div className="flex flex-col items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={audioEnabled}
+                aria-label="Spoken breath cues"
+                onClick={onToggleAudio}
+                className="brume-toggle"
+              >
+                <span className="brume-toggle__dot" aria-hidden="true" />
+                Spoken breath cues {audioEnabled ? "on" : "off"}
+              </button>
+              <button
+                type="button"
+                aria-label="Hear a spoken cue"
+                title="Hear it"
+                onClick={() => previewCue("inhale")}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+              >
+                <Volume2 size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground/70 text-center">
+              Plays from files on this device — nothing is sent anywhere.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

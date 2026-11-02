@@ -42,8 +42,8 @@ function speakFallback(text: string) {
   synth.speak(utterance);
 }
 
-export function speakCue(id: string): void {
-  if (!voiceEnabled || typeof window === "undefined") return;
+function playCue(id: string, preview: boolean): void {
+  if ((!preview && !voiceEnabled) || typeof window === "undefined") return;
   const cue = VOICE_CUES[id as VoiceCueId];
   if (!cue) return;
 
@@ -58,7 +58,7 @@ export function speakCue(id: string): void {
 
   const giveUp = () => {
     if (currentAudio === audio) currentAudio = null;
-    if (serial === cueSerial && voiceEnabled) speakFallback(cue.text);
+    if (serial === cueSerial && (preview || voiceEnabled)) speakFallback(cue.text);
   };
 
   currentAudio = audio;
@@ -81,6 +81,16 @@ export function speakCue(id: string): void {
     if (audio.error) missing.add(id);
     giveUp();
   }
+}
+
+export function speakCue(id: string): void {
+  playCue(id, false);
+}
+
+// Hear-it preview on the session preview screen: plays even when voice is
+// off — that's the point, you audition the cue before enabling it.
+export function previewCue(id: string): void {
+  playCue(id, true);
 }
 
 export function stopCues(): void {

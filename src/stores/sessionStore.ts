@@ -112,12 +112,22 @@ const initialMetrics: SessionMetrics = {
   phaseProgress: 0,
 };
 
+// The user's "Spoken breath cues" choice persists across sessions.
+const AUDIO_PREF_KEY = 'brume.audioEnabled';
+function storedAudioEnabled(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(AUDIO_PREF_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
 const initialState: SessionState = {
   phase: 'setup',
   config: null,
   metrics: initialMetrics,
   sessionId: null,
-  audioEnabled: true,
+  audioEnabled: storedAudioEnabled(),
   lastSessionVerified: false,
   clock: createSessionClock(),
   error: null,
@@ -298,7 +308,15 @@ export const useSessionStore = create<SessionState & SessionActions>()(
 
     // Media management
     toggleAudio: () => {
-      set((state) => ({ audioEnabled: !state.audioEnabled }));
+      set((state) => {
+        const audioEnabled = !state.audioEnabled;
+        try {
+          globalThis.localStorage?.setItem(AUDIO_PREF_KEY, String(audioEnabled));
+        } catch {
+          // private-mode storage is best-effort
+        }
+        return { audioEnabled };
+      });
     },
 
     // Error handling

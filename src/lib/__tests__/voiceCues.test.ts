@@ -167,4 +167,20 @@ describe("voiceCues", () => {
     expect(FakeAudio.instances).toHaveLength(0);
     expect(synth.speak).not.toHaveBeenCalled();
   });
+
+  it("previewCue plays even while voice is off — you audition before enabling", () => {
+    mod.setVoiceEnabled(false);
+    mod.previewCue("inhale");
+    expect(FakeAudio.instances).toHaveLength(1);
+    expect(FakeAudio.instances[0].playCount).toBe(1);
+  });
+
+  it("previewCue still falls back on a missing asset while voice is off", async () => {
+    mod.setVoiceEnabled(false);
+    FakeAudio.failAsMissing = true;
+    mod.previewCue("exhale");
+    await flush();
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    expect(utterances[0].text).toBe("Breathe out");
+  });
 });

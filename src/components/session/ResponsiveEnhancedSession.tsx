@@ -101,6 +101,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const breathProgress01 = (session.metrics?.phaseProgress || 0) / 100;
   const sessionActive = session.phase === 'active';
   const audioEnabled = session.audioEnabled;
+  const toggleAudio = useSessionStore((s) => s.toggleAudio);
 
   // Brume speaks: spoken breath cues so a session works with eyes closed.
   // The store emits "pause" for the hold_after_exhale phase — the same phase
@@ -204,6 +205,8 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
             description: config.pattern.description,
           }}
           sessionError={sessionError}
+          audioEnabled={audioEnabled}
+          onToggleAudio={toggleAudio}
           onStart={handleSessionStart}
           onCancel={onSessionExit}
         />

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../ui/button";
-import { Heart, BarChart3, User } from "lucide-react";
+import { Heart, BarChart3, User, Wind } from "lucide-react";
 
 interface NavItem {
   id: string;
@@ -38,6 +38,16 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
     color: "",
     activeColor: "",
     description: "Your practice",
+  },
+  {
+    id: "decompress",
+    label: "Decompress",
+    icon: Wind,
+    path: "/decompress",
+    isActive: locationPathname.startsWith("/decompress"),
+    color: "",
+    activeColor: "",
+    description: "Two minutes, no explaining",
   },
   {
     id: "profile",

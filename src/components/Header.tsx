@@ -10,7 +10,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, User, LogOut } from "lucide-react";
+import { Sparkles, BarChart3, Wind, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStatus } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
@@ -64,6 +64,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2">
             {navLink("/progress", "Progress", BarChart3)}
+            {navLink("/decompress", "Decompress", Wind)}
             {isAuthenticated && navLink("/profile", "Profile", User)}
           </div>
           {isAuthenticated ? (

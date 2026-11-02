@@ -3,24 +3,12 @@ import { Link } from "react-router-dom";
 import { BrumeMascot, type BrumeMascotState } from "@/components/BrumeMascot";
 import { startDecompressTrack } from "@/lib/decompressAudio";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
-import {
-  CHECK_IN_LABELS,
-  CHECK_IN_SHORT_LABELS,
-  DECOMPRESS_SECONDS,
-  composeDecompressMessage,
-  getDecompressStep,
-  type SupportChoice,
-} from "@/lib/decompress";
+import { DECOMPRESS_SECONDS, getDecompressStep } from "@/lib/decompress";
+import { CheckInWords } from "@/components/checkin/CheckInWords";
+import { WordsCard } from "@/components/checkin/WordsCard";
 import "./Decompress.css";
 
 type DecompressStage = "arrive" | "pause" | "checkin" | "done";
-
-const SUPPORT_OPTIONS: Array<{ id: SupportChoice; label: string }> = [
-  { id: "company", label: "Company" },
-  { id: "space", label: "A little space" },
-  { id: "listening", label: "Listening" },
-  { id: "unsure", label: "Not sure" },
-];
 
 const formatRemaining = (elapsed: number) => {
   const remaining = Math.max(0, Math.ceil(DECOMPRESS_SECONDS - elapsed));
@@ -33,15 +21,11 @@ export default function Decompress() {
   const [stage, setStage] = useState<DecompressStage>("arrive");
   const [elapsed, setElapsed] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [musicOn, setMusicOn] = useState(true);
+  const [musicOn, setMusicOn] = useState(false);
   const [audioAvailable, setAudioAvailable] = useState(true);
   const [checkInIndex, setCheckInIndex] = useState(2);
   const [checkInTouched, setCheckInTouched] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [supportChoice, setSupportChoice] = useState<SupportChoice | null>(null);
-  const [message, setMessage] = useState("");
-  const [messageEdited, setMessageEdited] = useState(false);
-  const [shareFeedback, setShareFeedback] = useState("");
   const [sparkKey, setSparkKey] = useState(0);
   const { presence, setPresence } = useMascotPresence();
   const [nudgeState, setNudgeState] = useState<BrumeMascotState | null>(null);
@@ -53,9 +37,6 @@ export default function Decompress() {
   const stopAudioRef = useRef<(() => void) | null>(null);
 
   const step = useMemo(() => getDecompressStep(elapsed), [elapsed]);
-  const checkInLabel = CHECK_IN_LABELS[checkInIndex];
-  const canNativeShare =
-    typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   const setRoomDepth = useCallback((depth: number) => {
     const room = roomRef.current;
@@ -144,7 +125,6 @@ export default function Decompress() {
     setRoomDepth(0);
     setElapsed(0);
     setShareOpen(false);
-    setShareFeedback("");
     setStage("pause");
     setIsPaused(false);
     if (musicOn) beginMusic();
@@ -183,46 +163,10 @@ export default function Decompress() {
   const chooseCheckIn = (index: number) => {
     setCheckInIndex(index);
     setCheckInTouched(true);
-    if (!messageEdited) {
-      setMessage(composeDecompressMessage(index, supportChoice));
-    }
   };
 
   const openShare = () => {
     setShareOpen(true);
-    setShareFeedback("");
-    if (!messageEdited) {
-      setMessage(composeDecompressMessage(checkInIndex, supportChoice));
-    }
-  };
-
-  const chooseSupport = (choice: SupportChoice) => {
-    const next = supportChoice === choice ? null : choice;
-    setSupportChoice(next);
-    if (!messageEdited) {
-      setMessage(composeDecompressMessage(checkInIndex, next));
-    }
-  };
-
-  const copyMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(message);
-      setShareFeedback("Copied. Nothing was sent.");
-      setSparkKey((key) => key + 1);
-    } catch {
-      setShareFeedback("Copy is unavailable here. You can still select the message.");
-    }
-  };
-
-  const shareMessage = async () => {
-    try {
-      await navigator.share({ text: message });
-      setShareFeedback("Shared only because you chose to.");
-      setSparkKey((key) => key + 1);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setShareFeedback("Sharing is unavailable here. You can copy the message instead.");
-    }
   };
 
   const nudgeBrume = () => {
@@ -328,7 +272,7 @@ export default function Decompress() {
                 onClick={toggleMusic}
               >
                 <span className="brume-toggle__dot" aria-hidden="true" />
-                {musicOn ? "Rhythm on" : "Rhythm off"}
+                {musicOn ? "Rhythm on" : "Add a rhythm"}
               </button>
             </div>
               </>
@@ -338,6 +282,7 @@ export default function Decompress() {
               <p className="dc-eyebrow">Check in</p>
               <h1>How is it for you right now?</h1>
               <p className="dc-room__text">You don’t have to explain it.</p>
+              <p className="dc-field-note">Nothing leaves this page unless you choose to share it.</p>
             </div>
 
             <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
@@ -358,30 +303,12 @@ export default function Decompress() {
               </svg>
             </div>
 
-            <div className="dc-words" role="radiogroup" aria-label="How is it for you right now?">
-              {CHECK_IN_SHORT_LABELS.map((label, index) => (
-                <label
-                  key={label}
-                  className={`dc-word ${checkInTouched && checkInIndex === index ? "is-chosen" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="dc-checkin"
-                    value={index}
-                    checked={checkInTouched && checkInIndex === index}
-                    onChange={() => chooseCheckIn(index)}
-                    aria-label={CHECK_IN_LABELS[index]}
-                  />
-                  <span className="dc-word__dot" aria-hidden="true" />
-                  <span className="dc-word__text">{label}</span>
-                </label>
-              ))}
-            </div>
-
             <div className="dc-room__status">
-              <span className="dc-slider-current" aria-live="polite">
-                {checkInTouched ? checkInLabel : "Choose a point"}
-              </span>
+              <CheckInWords
+                index={checkInIndex}
+                touched={checkInTouched}
+                onChoose={chooseCheckIn}
+              />
               <p className="dc-field-note" id="dc-share-help">
                 {checkInTouched ? "That can be enough." : "Pick a point — or just leave it there."}
               </p>
@@ -395,62 +322,21 @@ export default function Decompress() {
                 type="button"
                 className="brume-btn brume-btn--soft"
                 onClick={openShare}
-                disabled={!checkInTouched}
                 aria-describedby="dc-share-help"
               >
                 Put it into words
               </button>
             </div>
 
-            {shareOpen && checkInTouched && (
+            {shareOpen && (
               <div className="dc-room__share-wrap">
-              <section className="dc-share-card dc-room__share" aria-label="Share message">
-                <div className="dc-share-card__head">
-                  <h2>If you want to let someone in</h2>
-                  <p>Preview it first. Nothing is sent unless you choose.</p>
+                <div className="dc-room__share">
+                  <WordsCard
+                    checkInIndex={checkInTouched ? checkInIndex : null}
+                    onCopied={() => setSparkKey((key) => key + 1)}
+                    onShared={() => setSparkKey((key) => key + 1)}
+                  />
                 </div>
-
-                <div className="dc-support" aria-label="What would help">
-                  {SUPPORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={`brume-pill ${supportChoice === option.id ? "is-selected" : ""}`}
-                      aria-pressed={supportChoice === option.id}
-                      onClick={() => chooseSupport(option.id)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <label className="dc-message-label" htmlFor="dc-share-message">
-                  Your words
-                </label>
-                <textarea
-                  id="dc-share-message"
-                  className="dc-textarea"
-                  value={message}
-                  rows={4}
-                  onChange={(event) => {
-                    setMessage(event.target.value);
-                    setMessageEdited(true);
-                  }}
-                />
-                <p className="dc-field-note dc-field-note--reserved" aria-live="polite">
-                  {shareFeedback || "You can edit this before copying or sharing."}
-                </p>
-                <div className="dc-actions">
-                  <button type="button" className="brume-btn brume-btn--push" onClick={copyMessage}>
-                    Copy message
-                  </button>
-                  {canNativeShare && (
-                    <button type="button" className="brume-btn brume-btn--soft" onClick={shareMessage}>
-                      Share…
-                    </button>
-                  )}
-                </div>
-              </section>
               </div>
             )}
               </>
@@ -515,7 +401,7 @@ export default function Decompress() {
                   onClick={toggleMusic}
                 >
                   <span className="brume-toggle__dot" aria-hidden="true" />
-                  {musicOn ? "Rhythm on" : "Rhythm off"}
+                  {musicOn ? "Rhythm on" : "Add a rhythm"}
                 </button>
                 <div className="dc-presence" role="group" aria-label="Brume presence">
                   <button

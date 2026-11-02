@@ -24,6 +24,7 @@ import { SessionErrorBoundary } from "../../lib/errors/error-boundary";
  */
 const useSessionCompletion = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { saveSession, syncStatus } = useOfflineManager();
 
   return useCallback(
@@ -94,10 +95,15 @@ const useSessionCompletion = () => {
           targetCycles: 10,
           sessionType: sessionData.sessionType,
           aiUsed: sessionData.aiUsed,
+          checkInIndex:
+            typeof (location.state as { checkInIndex?: number } | null)
+              ?.checkInIndex === "number"
+              ? (location.state as { checkInIndex: number }).checkInIndex
+              : null,
         },
       });
     },
-    [navigate, saveSession, syncStatus.isOnline]
+    [navigate, saveSession, syncStatus.isOnline, location.state]
   );
 };
 

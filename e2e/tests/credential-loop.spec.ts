@@ -24,7 +24,7 @@ test.describe("Brume core loop", () => {
     page.on("pageerror", (err) => errors.push(err.message));
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Stressed" }).click();
+    await page.getByRole("button", { name: "Overwhelmed" }).click();
     await expect(page).toHaveURL(/\/session/);
     await expect(page.getByText(/From how you feel/)).toBeVisible();
     await expect(page.getByRole("button", { name: /Begin/ })).toBeVisible();

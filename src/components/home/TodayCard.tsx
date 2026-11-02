@@ -9,15 +9,18 @@
  */
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { SmartPatternRecommendations } from "@/lib/recommendations/SmartPatternRecommendations";
+import { getPattern } from "@/lib/breathingPatterns";
+import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
 import { cn } from "@/lib/utils";
 
-const STATE_CHIPS = [
-  { id: "stressed", label: "Stressed", mood: "stressed" },
-  { id: "anxious", label: "Anxious", mood: "anxious" },
-  { id: "tired", label: "Tired", mood: "tired" },
-  { id: "restless", label: "Restless", mood: "anxious" },
-  { id: "good", label: "Good", mood: "calm" },
+/** Check-in word index → pattern id. "Overwhelmed" lands on the reset:
+ *  the shortest rhythm with no holds. */
+export const CHECK_IN_PATTERN_IDS = [
+  "mindfulness",
+  "box",
+  "relaxation",
+  "relaxation",
+  "reset",
 ] as const;
 
 const RHYTHMS = [
@@ -31,25 +34,20 @@ export function TodayCard({ className }: { className?: string }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
 
-  const handleStateSelect = (mood: "stressed" | "anxious" | "tired" | "calm") => {
-    const top = SmartPatternRecommendations.getRecommendations({
-      currentMood: mood,
-      timeOfDay: new Date().getHours(),
-      userLevel: "beginner",
-      sessionType: "classic",
-    })[0];
-
-    if (top) {
-      navigate(`/session?pattern=${top.pattern.id}`, {
-        state: {
-          reason: top.pattern.name,
-          reasonDetail: top.reason,
-          source: "From how you feel",
-        },
-      });
-    } else {
+  const handleStateSelect = (index: number) => {
+    const pattern = getPattern(CHECK_IN_PATTERN_IDS[index]);
+    if (!pattern) {
       navigate("/session?pattern=box");
+      return;
     }
+    navigate(`/session?pattern=${pattern.id}`, {
+      state: {
+        reason: pattern.name,
+        reasonDetail: pattern.description,
+        source: "From how you feel",
+        checkInIndex: index,
+      },
+    });
   };
 
   const handleRhythmSelect = (patternId: string, name: string) => {
@@ -65,23 +63,23 @@ export function TodayCard({ className }: { className?: string }) {
   return (
     <div className={cn("w-full max-w-2xl", className)}>
       <p className="text-sm font-medium text-foreground text-center">
-        Choose how you feel
+        How is it for you right now?
       </p>
       <p className="text-sm text-muted-foreground mt-1 mb-3 text-center">
-        We&apos;ll suggest a rhythm, or you can choose one below.
+        Pick one and we&apos;ll suggest a rhythm, or choose one below.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
-        {STATE_CHIPS.map((c) => (
+        {CHECK_IN_SHORT_LABELS.map((label, index) => (
           <motion.button
-            key={c.id}
+            key={label}
             type="button"
-            onClick={() => handleStateSelect(c.mood)}
+            onClick={() => handleStateSelect(index)}
             whileHover={reduceMotion ? undefined : { scale: 1.04, borderRadius: 22 }}
             whileTap={reduceMotion ? undefined : { scale: 0.97, borderRadius: 28 }}
             transition={{ type: "spring", stiffness: 380, damping: 22 }}
             className={cn("brume-btn brume-btn--soft px-5 py-2.5 min-h-0 text-sm")}
           >
-            {c.label}
+            {label}
           </motion.button>
         ))}
       </div>

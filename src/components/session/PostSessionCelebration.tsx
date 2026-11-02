@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
-import { trackCredentialShared } from "@/lib/notifications/oneSignal";
-import { shareProofCard } from "@/lib/proofCard";
+import { WordsCard } from "@/components/checkin/WordsCard";
 import { shareInvitation } from "@/lib/invitation";
 import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
@@ -20,6 +19,8 @@ interface PostSessionCelebrationProps {
   };
   /** Registry id of the pattern just practised — enables the invite link. */
   patternId?: string;
+  /** Word chosen on the check-in path, if any. */
+  checkInIndex?: number | null;
   insight?: string;
   isGuest?: boolean;
   onContinue?: () => void;
@@ -31,6 +32,7 @@ interface PostSessionCelebrationProps {
 export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   metrics,
   patternId,
+  checkInIndex,
   insight,
   isGuest = false,
   onContinue,
@@ -38,6 +40,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   onSaveProgress,
 }) => {
   const reduceMotion = useReducedMotion();
+  const [wordsOpen, setWordsOpen] = useState(false);
 
   // "Pass this break on" — the useful share: a bare /session?pattern=<id>&via=invite
   // link. No mood, history, camera data, or reflection in the URL.
@@ -50,27 +53,6 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         toast.success("Break passed on");
       } else {
         toast.success("Invite link copied — send it to someone");
-      }
-    } catch {
-      /* share sheet dismissed */
-    }
-  };
-  const handleShare = async () => {
-    try {
-      const result = await shareProofCard({
-        patternName: metrics.patternName,
-        duration: metrics.duration,
-        cycles: metrics.cycles,
-      });
-
-      if (result === "shared") {
-        trackCredentialShared();
-      } else if (result === "downloaded") {
-        toast.success("Saved — share it anywhere");
-        trackCredentialShared();
-      } else {
-        toast.success("Copied — paste it anywhere");
-        trackCredentialShared();
       }
     } catch {
       /* share sheet dismissed */
@@ -158,12 +140,18 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
           <span className="text-muted-foreground/30">·</span>
           <button
             type="button"
-            onClick={() => void handleShare()}
+            onClick={() => setWordsOpen((v) => !v)}
+            aria-expanded={wordsOpen}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            Share
+            Put it into words
           </button>
         </div>
+        {wordsOpen && (
+          <div className="w-full max-w-sm mt-2">
+            <WordsCard checkInIndex={checkInIndex ?? null} />
+          </div>
+        )}
       </motion.div>
     </div>
   );

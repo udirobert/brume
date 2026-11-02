@@ -6,6 +6,14 @@
 import { describe, it, expect } from "vitest";
 import { SmartPatternRecommendations } from "../recommendations/SmartPatternRecommendations";
 import { BREATHING_PATTERNS } from "../breathingPatterns";
+import {
+  CHECK_IN_LABELS,
+  CHECK_IN_SHORT_LABELS,
+  CHECK_IN_PHRASES,
+  FOR_OPTIONS,
+  SUPPORT_SENTENCES,
+  composeCheckInMessage,
+} from "../checkin";
 
 const BANNED =
   /proven|scientific|nervous system|anxiety|insomnia|immune|cortisol|vagus|stress relief|sleep quality|energy boost|parasympathetic|biometric/i;
@@ -52,4 +60,28 @@ describe("pattern copy", () => {
       }
     }
   });
+
+describe("check-in copy", () => {
+  it("uses no banned language", () => {
+    const strings: string[] = [
+      ...CHECK_IN_LABELS,
+      ...CHECK_IN_SHORT_LABELS,
+      ...CHECK_IN_PHRASES,
+      ...Object.values(SUPPORT_SENTENCES),
+      ...FOR_OPTIONS.map((o) => o.label),
+    ];
+    for (let i = 0; i < CHECK_IN_LABELS.length; i++) {
+      for (const support of Object.keys(SUPPORT_SENTENCES)) {
+        strings.push(
+          composeCheckInMessage(i, support as never, "work"),
+          composeCheckInMessage(i, support as never, "someone_close"),
+        );
+      }
+    }
+    strings.push(composeCheckInMessage(null, null));
+    for (const str of strings) {
+      expect(str, `"${str}"`).not.toMatch(BANNED);
+    }
+  });
+});
 });

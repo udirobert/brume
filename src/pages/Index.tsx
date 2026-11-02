@@ -107,6 +107,15 @@ export default function Index() {
         <p className="mt-3 text-sm text-muted-foreground">
           In for 4, out for 6 · nothing to get right
         </p>
+        <Link
+          to="/decompress"
+          className="brume-btn brume-btn--soft mt-4 w-full py-4 text-base"
+        >
+          Take two minutes
+        </Link>
+        <p className="mt-2 text-xs text-muted-foreground/80">
+          Shoulders, a soft rhythm, and one easy way to say how it is.
+        </p>
       </motion.div>
 
       {/* Secondary: the check-in path — still here, just not the lead. */}

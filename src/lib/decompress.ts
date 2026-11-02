@@ -46,39 +46,6 @@ export const DECOMPRESS_STEPS: DecompressStep[] = [
   },
 ];
 
-export const CHECK_IN_LABELS = [
-  "Okay as I am",
-  "A little stretched",
-  "A lot on my mind",
-  "Near my limit",
-  "Overwhelmed",
-] as const;
-
-export const CHECK_IN_SHORT_LABELS = [
-  "Okay",
-  "Stretched",
-  "A lot",
-  "At limit",
-  "Overwhelmed",
-] as const;
-
-export type SupportChoice = "company" | "space" | "listening" | "unsure";
-
-const CHECK_IN_PHRASES = [
-  "okay as I am",
-  "a little stretched",
-  "carrying a lot",
-  "near my limit",
-  "quietly overwhelmed",
-] as const;
-
-const SUPPORT_SENTENCES: Record<SupportChoice, string> = {
-  company: "Some company would be enough.",
-  space: "A little space would help.",
-  listening: "Listening would help; I don't need it solved.",
-  unsure: "I'm not sure what would help yet.",
-};
-
 export function getDecompressStep(elapsedSeconds: number): DecompressStep {
   const elapsed = Math.max(0, Math.min(DECOMPRESS_SECONDS, elapsedSeconds));
   return (
@@ -87,13 +54,21 @@ export function getDecompressStep(elapsedSeconds: number): DecompressStep {
   );
 }
 
+// Check-in vocabulary moved to ./checkin — re-exported for compatibility.
+export {
+  CHECK_IN_LABELS,
+  CHECK_IN_SHORT_LABELS,
+  CHECK_IN_PHRASES,
+  SUPPORT_SENTENCES,
+  composeCheckInMessage,
+  type SupportChoice,
+} from "./checkin";
+
+import { composeCheckInMessage, type SupportChoice, type ForChoice } from "./checkin";
+
 export function composeDecompressMessage(
   checkInIndex: number,
   support: SupportChoice | null,
 ): string {
-  const index = Math.max(0, Math.min(CHECK_IN_PHRASES.length - 1, checkInIndex));
-  const supportSentence = support
-    ? SUPPORT_SENTENCES[support]
-    : "I don't need it solved; I just wanted you to know.";
-  return `I'm ${CHECK_IN_PHRASES[index]} today. ${supportSentence}`;
+  return composeCheckInMessage(checkInIndex, support, null as ForChoice | null);
 }

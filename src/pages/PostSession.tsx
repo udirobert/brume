@@ -68,6 +68,7 @@ export default function PostSession() {
             cycles: sessionData.cycleCount,
           }}
           patternId={sessionData.patternId}
+          checkInIndex={sessionData.checkInIndex ?? null}
           insight={`You practised ${sessionData.patternName}.`}
           isGuest={!user}
           onContinue={() => navigate("/")}

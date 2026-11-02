@@ -40,23 +40,33 @@ ChatGPT / MCP host
 - No scores, streaks, camera, microphone, accounts.
 - Nothing sent anywhere by default; check-in words stay on device.
 
-## Build list for Nov 13–15
+## Status (2026-11-02)
 
-1. `mcp/` server: tool schemas + validation + widget resource (~done in
-   scaffold; needs deployment URL).
-2. Web app `/embed/reset` route: the session orb running headless from
-   query params (`pattern`, `seconds`, `embed=1`); no nav, no chrome.
-3. Test against ChatGPT developer mode (custom MCP app) or the MCPJam
-   inspector.
-4. Devpost submission: description ("who does this measurably help, and
-   how?"), repo link, demo video, "built with", Responsible AI note —
-   declare the pre-existing codebase honestly.
-5. After the event: OpenAI app submission (verified developer, privacy
-   policy, demo account not needed — no auth).
+- `mcp/` scaffold done and verified end-to-end: `initialize`,
+  `tools/list`, `tools/call` for both tools over Streamable HTTP,
+  including through a public HTTPS tunnel. 6 contract tests pass
+  (`cd mcp && npm test`).
+- Public dev endpoint: `cloudflared tunnel --url http://localhost:4619`
+  quick tunnel in front of `node server.js` — free, no account, real
+  streaming. Ephemeral URL each run; fine for dev-mode testing.
+- GTransformer declined ($50 fee) — the MCP app is now the main track.
+
+## Build list (free path)
+
+1. ~~`mcp/` server~~ — done.
+2. Test in ChatGPT developer mode via the quick tunnel (needs the owner's
+   ChatGPT account; developer mode availability may depend on plan).
+3. Web app `/embed/reset` route (optional polish — the widget is already
+   self-contained): session orb driven by query params, no nav/chrome.
+4. Permanent free hosting for submission: Cloudflare Workers free tier or
+   a Netlify function (SSE buffering needs checking) — the quick tunnel
+   can't be the submitted URL.
+5. OpenAI app submission: verified developer + privacy policy; no auth /
+   demo account needed.
 
 ## Open questions
 
-- Hosting for the MCP endpoint (Netlify function vs small always-on
-  server; ChatGPT needs a public HTTPS URL).
+- Permanent hosting for the MCP endpoint (Cloudflare Workers free tier is
+  the best fit for a tiny stateless endpoint).
 - Whether the widget embed needs `window.openai` bridge integration or a
   plain iframe suffices for v1.

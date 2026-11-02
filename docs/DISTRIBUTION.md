@@ -6,23 +6,10 @@ the same product — "agent-friendly, not agentic" (see `docs/AGENTIC.md`).
 
 ## Ranked opportunities
 
-### 1. GTransformer AI Buildathon — Nov 13–15, 2026 (online OK)
-- Devpost: `gtransformer-buildathon-2026.devpost.com`, "AI for Global Good".
-- Theme 1 is Wellbeing ("emotional awareness, burnout … before problems
-  become crises"); Responsible AI is mandatory across all projects — which
-  is exactly Brume's story (no claims, no scores, no surveillance).
-- Open to all (not students-only), hybrid with online participation,
-  $1,000 prizes, small field (~7 registered when checked 2026-11-02).
-- **Rules (checked 2026-11-02):** confirmed Luma registration with a **$50
-  fee** is required (luma.com/292hfwwk). "Projects must be built during
-  the buildathon" — so the submission should be the *new component* (the
-  MCP app) built on the existing codebase, declared transparently.
-- Submission needs: name + description answering "who does this measurably
-  help, and how?"; repo link; demo video or live demo link; "built with"
-  list; short Responsible AI note (safety, privacy, bias, accessibility,
-  transparency, unintended harm).
-- Judging: impact, working prototype, responsible AI, innovation,
-  presentation. Deadline **Nov 15, 12:00 PM PST**; winners same day ~7 PM.
+### 1. ~~GTransformer AI Buildathon — Nov 13–15, 2026~~ DECLINED
+- Good thematic fit (Wellbeing theme, mandatory Responsible AI), but
+  participation requires a **$50 Luma registration** — declined 2026-11-02.
+  Everything below is the free-only plan.
 
 ### 2. ChatGPT app directory via Apps SDK (MCP) — biggest channel
 - OpenAI accepts app submissions; apps are plugins built on the Apps SDK
@@ -62,12 +49,16 @@ the same product — "agent-friendly, not agentic" (see `docs/AGENTIC.md`).
   verify is the old problem reintroduced).
 - **Slack/Teams B2B:** real demand, but months of effort.
 - **Most Devpost wellness hackathons:** students-only or closed
-  (StartWell, Hack2Heal). GTransformer is the exception.
+  (StartWell, Hack2Heal); GTransformer was the exception but costs $50.
 
-## Sequence
+## Sequence (free only)
 
-1. This week: GTransformer submission prep (Nov 13–15 window).
-2. In parallel: spec + build the MCP port of the Anna toolset toward a
-   ChatGPT app.
-3. Near Nov 30: Product Hunt launch, seeded by a DEV post on the
-   honest-repositioning story.
+1. **Now:** finish the MCP app — deploy the endpoint publicly (free tier),
+   test in ChatGPT developer mode, then submit to the app directory
+   (verified developer + privacy policy are the gates).
+2. **Next:** DEV post telling the honest-repositioning story ("we removed
+   the camera, the streaks and the claims from our own wellness app") —
+   free, and seeds the Product Hunt launch.
+3. **Near Nov 30:** Product Hunt launch for the MAU push.
+4. **Later:** Chrome new-tab extension (one-time $5 store fee — owner's
+   call); Capacitor stores are paid too, so they wait.

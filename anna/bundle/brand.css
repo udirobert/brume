@@ -8,35 +8,62 @@
 :root {
   color-scheme: light;
   --brume-font: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --brume-background: 204 25% 98%;
-  --brume-foreground: 210 15% 20%;
-  --brume-primary: 204 28% 45%;
-  --brume-muted: 210 12% 45%;
-  --brume-border: 204 20% 88%;
-  --brume-surface: 204 25% 100%;
-  --brume-mist-r: 147; --brume-mist-g: 197; --brume-mist-b: 253;
-  --brume-calm-1: 204 30% 98%;
-  --brume-calm-2: 204 22% 95%;
-  --brume-calm-3: 210 20% 98%;
+
+  /* Warm paper/ink brand — the HSL triplets below feed hsl(var(--x)) in
+     index.css/tailwind.config; they mirror the oklch tokens used by
+     .decompress-page via tokens.css aliases. */
+  --brume-background: 78 24% 95%;   /* ≈ oklch(96% .018 95)  paper */
+  --brume-foreground: 228 22% 16%;  /* ≈ oklch(23% .018 252) ink   */
+  --brume-primary: 232 34% 28%;     /* deep ink-blue, ~7.5:1 on paper */
+  --brume-muted: 224 13% 38%;       /* ≈ oklch(43% .025 248) */
+  --brume-border: 76 9% 80%;        /* ≈ oklch(83% .025 95)  rule  */
+  --brume-surface: 78 22% 97%;      /* ≈ oklch(98% .012 94)  card  */
+  --brume-mist-r: 233; --brume-mist-g: 224; --brume-mist-b: 184;
+  --brume-calm-1: 78 26% 96%;
+  --brume-calm-2: 76 22% 93%;
+  --brume-calm-3: 82 20% 96%;
   --brume-radius: .75rem;
   --brume-control-radius: 999px;
+  --brume-radius-card: 1.75rem;
+  --brume-radius-panel: 2rem;
   --brume-space-1: .5rem;
   --brume-space-2: 1rem;
   --brume-space-3: 1.5rem;
+
+  /* Full-color accent tokens (oklch) — the single source for tokens.css
+     aliases and the shared .brume-* controls. */
+  --brume-paper: oklch(96% 0.018 95);
+  --brume-paper-2: oklch(93% 0.026 96);
+  --brume-card: oklch(98% 0.012 94);
+  --brume-ink: oklch(23% 0.018 252);
+  --brume-ink-muted: oklch(43% 0.025 248);
+  --brume-rule: oklch(83% 0.025 95);
+  --brume-pear: oklch(86% 0.18 95);
+  --brume-pear-soft: oklch(92% 0.09 95);
+  --brume-pear-deep: oklch(62% 0.14 95);
+  --brume-cyan: oklch(67% 0.15 235);
+  --brume-cyan-soft: oklch(91% 0.05 235);
+  --brume-cyan-deep: oklch(46% 0.11 235);
+  --brume-coral: oklch(67% 0.2 18);
+  --brume-coral-soft: oklch(91% 0.07 18);
+  --brume-coral-deep: oklch(50% 0.16 18);
+  --brume-mint-soft: oklch(91% 0.06 150);
+  --brume-focus: var(--brume-cyan-deep);
+  --brume-shadow-card: 0 1rem 2.5rem -1.5rem color-mix(in oklch, var(--brume-ink) 28%, transparent);
 }
 
 html[data-daypart='dawn'] {
-  --brume-mist-r: 176; --brume-mist-g: 214; --brume-mist-b: 242;
-  --brume-calm-1: 200 32% 98%; --brume-calm-2: 204 20% 96%; --brume-calm-3: 210 18% 98%;
+  --brume-mist-r: 244; --brume-mist-g: 231; --brume-mist-b: 196;
+  --brume-calm-1: 80 30% 97%; --brume-calm-2: 78 24% 95%; --brume-calm-3: 84 22% 97%;
 }
 html[data-daypart='dusk'] {
-  --brume-mist-r: 186; --brume-mist-g: 168; --brume-mist-b: 216;
-  --brume-calm-1: 250 22% 97%; --brume-calm-2: 230 16% 95%; --brume-calm-3: 210 18% 97%;
-  --brume-primary: 250 16% 42%;
+  --brume-mist-r: 243; --brume-mist-g: 208; --brume-mist-b: 184;
+  --brume-calm-1: 30 30% 96%; --brume-calm-2: 26 24% 93%; --brume-calm-3: 40 22% 96%;
+  --brume-primary: 14 34% 34%;
 }
 html[data-daypart='night'] {
-  --brume-mist-r: 112; --brume-mist-g: 148; --brume-mist-b: 204;
-  --brume-calm-1: 214 24% 94%; --brume-calm-2: 216 20% 91%; --brume-calm-3: 218 18% 94%;
-  --brume-background: 214 22% 94%;
-  --brume-primary: 214 22% 40%;
+  --brume-mist-r: 168; --brume-mist-g: 175; --brume-mist-b: 150;
+  --brume-calm-1: 76 14% 90%; --brume-calm-2: 78 12% 87%; --brume-calm-3: 80 14% 90%;
+  --brume-background: 76 14% 89%;
+  --brume-primary: 230 28% 26%;
 }

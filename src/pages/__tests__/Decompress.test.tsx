@@ -46,5 +46,7 @@ describe("Decompress page", () => {
     expect(html).not.toContain("How are you really");
     expect(html).not.toContain("score");
     expect(html).not.toContain("streak");
+    expect(html).not.toContain("quiet prototype");
+    expect(html).not.toContain("1.0");
   });
 });

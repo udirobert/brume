@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
-import { Button } from "@/components/ui/button";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
@@ -29,7 +28,7 @@ export default function Index() {
     if (isGuest) {
       return [
         "A little room to ",
-        { text: "breathe.", className: "text-gradient" },
+        { text: "breathe.", className: "brume-hl" },
       ];
     }
     return ["Welcome back."];
@@ -44,7 +43,7 @@ export default function Index() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="flex flex-col items-center gap-2">
+          <div className="brume-mascot-card w-56" data-presence={presence}>
             <BrumeMascot
               state="idle"
               size={104}
@@ -52,16 +51,25 @@ export default function Index() {
               breathing={companion}
               trackPointer={companion}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-pressed={companion}
-              onClick={() => setPresence(companion ? "quiet" : "companion")}
-              className="h-7 rounded-full px-3 text-xs text-muted-foreground"
-            >
-              Brume: {companion ? "Company" : "Quiet"}
-            </Button>
+            <p>Brume can keep you company.</p>
+            <div className="flex gap-2" role="group" aria-label="Brume presence">
+              <button
+                type="button"
+                className={`brume-pill ${!companion ? "is-selected" : ""}`}
+                aria-pressed={!companion}
+                onClick={() => setPresence("quiet")}
+              >
+                Quiet
+              </button>
+              <button
+                type="button"
+                className={`brume-pill ${companion ? "is-selected" : ""}`}
+                aria-pressed={companion}
+                onClick={() => setPresence("companion")}
+              >
+                Company
+              </button>
+            </div>
           </div>
         </motion.div>
         <WordReveal
@@ -85,18 +93,17 @@ export default function Index() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Button asChild size="lg" className="w-full rounded-full btn-premium py-6 text-base">
-          <Link
-            to="/session?pattern=reset"
-            state={{
-              reason: "Reset · 4 in, 6 out",
-              reasonDetail: "In for 4, out for 6. A moment between tasks.",
-              source: "Your reset",
-            }}
-          >
-            Start a breathing reset
-          </Link>
-        </Button>
+        <Link
+          to="/session?pattern=reset"
+          className="brume-btn brume-btn--push w-full py-4 text-base"
+          state={{
+            reason: "Reset · 4 in, 6 out",
+            reasonDetail: "In for 4, out for 6. A moment between tasks.",
+            source: "Your reset",
+          }}
+        >
+          Start a breathing reset
+        </Link>
         <p className="mt-3 text-sm text-muted-foreground">
           In for 4, out for 6 · nothing to get right
         </p>
@@ -109,7 +116,7 @@ export default function Index() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, delay: 0.18 }}
       >
-        <div className="w-full max-w-2xl rounded-3xl border border-border/70 bg-card/35 px-4 py-6 md:px-7">
+        <div className="w-full max-w-2xl brume-card px-4 py-6 md:px-7">
           <TodayCard />
         </div>
       </motion.div>

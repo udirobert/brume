@@ -23,14 +23,14 @@ export interface ProofCardData {
 const W = 1080;
 const H = 1920;
 
-// Brand colors
-const BG_DEEP = "#0a0e1a";
-const BG_MID = "#121829";
-const MIST_BLUE = "rgba(147, 197, 253, 0.35)";
-const MIST_BLUE_DIM = "rgba(147, 197, 253, 0.12)";
-const TEXT_PRIMARY = "#f0f4ff";
-const TEXT_SECONDARY = "rgba(240, 244, 255, 0.55)";
-const ACCENT = "#93c5fd";
+// Brand colors — warm paper/ink/pear
+const BG_DEEP = "#f4f0e2";
+const BG_MID = "#efe9d6";
+const MIST_BLUE = "rgba(198, 214, 60, 0.35)";
+const MIST_BLUE_DIM = "rgba(198, 214, 60, 0.12)";
+const TEXT_PRIMARY = "#1e2237";
+const TEXT_SECONDARY = "rgba(30, 34, 55, 0.55)";
+const ACCENT = "#5f6b2a";
 
 /**
  * Render the share card to a canvas and return a Blob (image/png).
@@ -60,7 +60,7 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
 
   // Smaller inner glow
   const innerGrad = ctx.createRadialGradient(W / 2, 400, 0, W / 2, 400, 250);
-  innerGrad.addColorStop(0, "rgba(147, 197, 253, 0.25)");
+  innerGrad.addColorStop(0, "rgba(198, 214, 60, 0.22)");
   innerGrad.addColorStop(1, "transparent");
   ctx.fillStyle = innerGrad;
   ctx.fillRect(0, 150, W, 500);
@@ -78,7 +78,7 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
   ctx.fillText("a quiet moment to breathe", W / 2, 160);
 
   // --- Session mark — simple ring, no verification claims ---
-  ctx.strokeStyle = `rgba(147, 197, 253, 0.3)`;
+  ctx.strokeStyle = `rgba(198, 214, 60, 0.35)`;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(W / 2, 500, 120, 0, Math.PI * 2);
@@ -125,7 +125,7 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
   });
 
   // --- Divider ---
-  ctx.strokeStyle = "rgba(147, 197, 253, 0.15)";
+  ctx.strokeStyle = "rgba(198, 214, 60, 0.18)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(200, 1120);

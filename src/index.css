@@ -2,6 +2,7 @@
 
 @import "tailwindcss";
 @config "../tailwind.config.ts";
+@import "./styles/brume-controls.css";
 
 /* v4 removed the container theme options — keep the v3 behavior explicitly */
 @utility container {
@@ -30,14 +31,14 @@
     --primary: var(--brume-primary);
     --primary-foreground: var(--brume-background);
 
-    --secondary: 204 25% 92%;
-    --secondary-foreground: 204 28% 35%;
+    --secondary: 78 18% 90%;
+    --secondary-foreground: 224 20% 30%;
 
-    --muted: 204 25% 92%;
+    --muted: 78 18% 90%;
     --muted-foreground: var(--brume-muted);
 
-    --accent: 204 30% 88%;
-    --accent-foreground: 210 15% 20%;
+    --accent: 80 24% 88%;
+    --accent-foreground: 228 22% 16%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -146,9 +147,14 @@
     @apply bg-black/5 backdrop-blur-md border border-black/5;
   }
 
-  /* Premium Gradients */
+  /* Warm brand accents — the pear highlighter is the brand gradient */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/70;
+    background-image: linear-gradient(var(--brume-pear-soft) 0 0);
+    background-repeat: no-repeat;
+    background-position: 0 82%;
+    background-size: 100% 0.32em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
   
   /* Mobile-specific utilities */
@@ -300,9 +306,21 @@
     height: 100dvh; /* Dynamic viewport height for mobile */
   }
   
-  /* Interactive Polish */
+  /* Interactive Polish — the pear push button is the brand primary */
   .btn-premium {
-    @apply transition-[box-shadow,background-color] duration-200 ease-out shadow-lg hover:shadow-primary/20 bg-primary text-white;
+    background: var(--brume-pear);
+    color: var(--brume-ink);
+    font-weight: 800;
+    box-shadow: 0 0.25rem 0 0 var(--brume-pear-deep), 0 0.375rem 0.75rem -0.1875rem color-mix(in oklch, var(--brume-pear-deep) 34%, transparent);
+    transition: transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .btn-premium:hover {
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.375rem 0 0 var(--brume-pear-deep), 0 0.75rem 1.375rem -0.25rem color-mix(in oklch, var(--brume-pear-deep) 34%, transparent);
+  }
+  .btn-premium:active {
+    transform: translateY(0.1875rem);
+    box-shadow: 0 0.0625rem 0 0 var(--brume-pear-deep);
   }
 
   /* Custom tooltips/badges */

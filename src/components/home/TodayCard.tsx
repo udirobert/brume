@@ -79,11 +79,7 @@ export function TodayCard({ className }: { className?: string }) {
             whileHover={reduceMotion ? undefined : { scale: 1.04, borderRadius: 22 }}
             whileTap={reduceMotion ? undefined : { scale: 0.97, borderRadius: 28 }}
             transition={{ type: "spring", stiffness: 380, damping: 22 }}
-            className={cn(
-              "rounded-full px-5 py-2.5 text-sm font-medium",
-              "bg-card/80 text-foreground border border-border/80",
-              "hover:border-primary/40 hover:bg-primary/5",
-            )}
+            className={cn("brume-btn brume-btn--soft px-5 py-2.5 min-h-0 text-sm")}
           >
             {c.label}
           </motion.button>
@@ -99,11 +95,7 @@ export function TodayCard({ className }: { className?: string }) {
             whileHover={reduceMotion ? undefined : { scale: 1.03 }}
             whileTap={reduceMotion ? undefined : { scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 24 }}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium",
-              "text-muted-foreground border border-transparent",
-              "hover:border-border hover:text-foreground",
-            )}
+            className={cn("brume-pill px-3 py-1.5 min-h-0 text-xs")}
           >
             {r.label}
           </motion.button>

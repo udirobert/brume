@@ -287,7 +287,7 @@ export default function Decompress() {
             {stage === "pause" ? (
               <>
             <div className="dc-room__cue">
-              <p className="dc-eyebrow">1.0 · Settle</p>
+              <p className="dc-eyebrow">Settle</p>
               <h1 key={step.title}>{step.title}</h1>
               <p key={`${step.title}-cue`} className="dc-room__text">{step.cue}</p>
             </div>
@@ -315,19 +315,19 @@ export default function Decompress() {
 
             <p className="dc-room__time">{formatRemaining(elapsed)} left · move only within comfort</p>
             <div className="dc-room__controls">
-              <button type="button" className="dc-btn dc-btn--soft" onClick={togglePause}>
+              <button type="button" className="brume-btn brume-btn--soft" onClick={togglePause}>
                 {isPaused ? "Resume" : "Pause"}
               </button>
-              <button type="button" className="dc-btn dc-btn--outline" onClick={moveToCheckIn}>
+              <button type="button" className="brume-btn brume-btn--outline" onClick={moveToCheckIn}>
                 Check in now
               </button>
               <button
                 type="button"
-                className="dc-toggle"
+                className="brume-toggle"
                 aria-pressed={musicOn}
                 onClick={toggleMusic}
               >
-                <span className="dc-toggle__dot" aria-hidden="true" />
+                <span className="brume-toggle__dot" aria-hidden="true" />
                 {musicOn ? "Rhythm on" : "Rhythm off"}
               </button>
             </div>
@@ -335,7 +335,7 @@ export default function Decompress() {
             ) : (
               <>
             <div className="dc-room__cue dc-room__cue--checkin">
-              <p className="dc-eyebrow">2.0 · Check in</p>
+              <p className="dc-eyebrow">Check in</p>
               <h1>How is it for you right now?</h1>
               <p className="dc-room__text">You don’t have to explain it.</p>
             </div>
@@ -388,12 +388,12 @@ export default function Decompress() {
             </div>
 
             <div className="dc-room__controls">
-              <button type="button" className="dc-btn dc-btn--push" onClick={finish}>
+              <button type="button" className="brume-btn brume-btn--push" onClick={finish}>
                 Leave it here
               </button>
               <button
                 type="button"
-                className="dc-btn dc-btn--soft"
+                className="brume-btn brume-btn--soft"
                 onClick={openShare}
                 disabled={!checkInTouched}
                 aria-describedby="dc-share-help"
@@ -415,7 +415,7 @@ export default function Decompress() {
                     <button
                       key={option.id}
                       type="button"
-                      className={`dc-support__option ${supportChoice === option.id ? "is-selected" : ""}`}
+                      className={`brume-pill ${supportChoice === option.id ? "is-selected" : ""}`}
                       aria-pressed={supportChoice === option.id}
                       onClick={() => chooseSupport(option.id)}
                     >
@@ -441,11 +441,11 @@ export default function Decompress() {
                   {shareFeedback || "You can edit this before copying or sharing."}
                 </p>
                 <div className="dc-actions">
-                  <button type="button" className="dc-btn dc-btn--push" onClick={copyMessage}>
+                  <button type="button" className="brume-btn brume-btn--push" onClick={copyMessage}>
                     Copy message
                   </button>
                   {canNativeShare && (
-                    <button type="button" className="dc-btn dc-btn--soft" onClick={shareMessage}>
+                    <button type="button" className="brume-btn brume-btn--soft" onClick={shareMessage}>
                       Share…
                     </button>
                   )}
@@ -460,21 +460,21 @@ export default function Decompress() {
           <>
         <ol className="dc-rail" aria-label="Decompress flow">
           <li className={`dc-rail__item dc-rail__item--pear ${activeRail === 0 ? "is-active" : ""}`} aria-current={activeRail === 0 ? "step" : undefined}>
-            <span className="dc-rail__number">1.0</span>
+            <span className="dc-rail__dot" aria-hidden="true" />
             <span className="dc-rail__copy">
               <strong>Settle</strong>
               <span>Two minutes with nothing to get right.</span>
             </span>
           </li>
           <li className={`dc-rail__item dc-rail__item--cyan ${activeRail === 1 ? "is-active" : ""}`} aria-current={activeRail === 1 ? "step" : undefined}>
-            <span className="dc-rail__number">2.0</span>
+            <span className="dc-rail__dot" aria-hidden="true" />
             <span className="dc-rail__copy">
               <strong>Check in</strong>
               <span>Name the moment without explaining it.</span>
             </span>
           </li>
           <li className={`dc-rail__item dc-rail__item--coral ${activeRail === 2 ? "is-active" : ""}`} aria-current={activeRail === 2 ? "step" : undefined}>
-            <span className="dc-rail__number">3.0</span>
+            <span className="dc-rail__dot" aria-hidden="true" />
             <span className="dc-rail__copy">
               <strong>Choose</strong>
               <span>Share it, copy it, or leave it here.</span>
@@ -488,39 +488,39 @@ export default function Decompress() {
           {stage === "arrive" && (
             <div className="dc-stage dc-stage--arrive">
               <div className="dc-stage__copy">
-                <p className="dc-eyebrow">Brume · quiet prototype</p>
-                <h1>A little room <span className="dc-hl">for you.</span></h1>
+                <p className="dc-eyebrow">Brume</p>
+                <h1>A little room <span className="brume-hl">for you.</span></h1>
                 <p className="dc-lede">
                   Two minutes, a soft rhythm, and one easy way to say how the
                   moment feels. No account. Nothing saved.
                 </p>
                 <div className="dc-actions">
-                  <button type="button" className="dc-btn dc-btn--push" onClick={beginPause}>
+                  <button type="button" className="brume-btn brume-btn--push" onClick={beginPause}>
                     Take a moment
                   </button>
-                  <button type="button" className="dc-btn dc-btn--soft" onClick={moveToCheckIn}>
+                  <button type="button" className="brume-btn brume-btn--soft" onClick={moveToCheckIn}>
                     Just check in
                   </button>
                 </div>
                 <p className="dc-note">Small comfortable movements only. Skip anything that hurts.</p>
               </div>
 
-              <div className="dc-mascot-card" data-presence={presence}>
+              <div className="brume-mascot-card" data-presence={presence}>
                 <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} />
                 <p>Brume can keep you company.</p>
                 <button
                   type="button"
-                  className="dc-toggle"
+                  className="brume-toggle"
                   aria-pressed={musicOn}
                   onClick={toggleMusic}
                 >
-                  <span className="dc-toggle__dot" aria-hidden="true" />
+                  <span className="brume-toggle__dot" aria-hidden="true" />
                   {musicOn ? "Rhythm on" : "Rhythm off"}
                 </button>
                 <div className="dc-presence" role="group" aria-label="Brume presence">
                   <button
                     type="button"
-                    className={`dc-support__option ${presence === "quiet" ? "is-selected" : ""}`}
+                    className={`brume-pill ${presence === "quiet" ? "is-selected" : ""}`}
                     aria-pressed={presence === "quiet"}
                     onClick={() => setPresence("quiet")}
                   >
@@ -528,7 +528,7 @@ export default function Decompress() {
                   </button>
                   <button
                     type="button"
-                    className={`dc-support__option ${presence === "companion" ? "is-selected" : ""}`}
+                    className={`brume-pill ${presence === "companion" ? "is-selected" : ""}`}
                     aria-pressed={presence === "companion"}
                     onClick={() => setPresence("companion")}
                   >
@@ -546,14 +546,14 @@ export default function Decompress() {
             <div className="dc-stage dc-stage--done">
               <div className="dc-done-card">
                 <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} />
-                <p className="dc-eyebrow">3.0 · Choose</p>
+                <p className="dc-eyebrow">Choose</p>
                 <h1>You can go now.</h1>
                 <p className="dc-lede">That can be enough.</p>
                 <div className="dc-actions dc-actions--center">
-                  <button type="button" className="dc-btn dc-btn--soft" onClick={() => setStage("checkin")}>
+                  <button type="button" className="brume-btn brume-btn--soft" onClick={() => setStage("checkin")}>
                     Stay a moment
                   </button>
-                  <Link to="/" className="dc-btn dc-btn--outline">
+                  <Link to="/" className="brume-btn brume-btn--outline">
                     Back to Brume
                   </Link>
                 </div>
@@ -569,7 +569,7 @@ export default function Decompress() {
         <p className="dc-footer__line">A pause can be enough.</p>
         <div className="dc-footer__meta">
           <span>Brume</span>
-          <span>quiet prototype · nothing saved</span>
+          <span>nothing saved</span>
         </div>
       </footer>
     </div>

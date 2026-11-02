@@ -23,7 +23,7 @@ export default {
 		},
 		extend: {
       fontFamily: {
-        sans: ['Manrope', 'sans-serif'],
+        sans: ['var(--brume-font)'],
       },
 			colors: {
 				brume: {

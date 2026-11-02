@@ -1,0 +1,269 @@
+/* Shared Brume controls — the warm paper/pear button, pill, highlighter
+   and mascot card used by Home and Decompress. Token values live in
+   anna/bundle/brand.css (--brume-*). */
+
+.brume-btn {
+  --btn-face: var(--brume-pear);
+  --btn-ink: var(--brume-ink);
+  --btn-edge: var(--brume-pear-deep);
+  --btn-cast: color-mix(in oklch, var(--brume-pear-deep) 34%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--btn-face);
+  color: var(--btn-ink);
+  box-shadow: 0 0.25rem 0 0 var(--btn-edge), 0 0.375rem 0.75rem -0.1875rem var(--btn-cast);
+  cursor: pointer;
+  font-family: var(--brume-font);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transform: translateY(0);
+  transition: transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 140ms cubic-bezier(0.2, 0.7, 0.3, 1), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.brume-btn:hover {
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.375rem 0 0 var(--btn-edge), 0 0.75rem 1.375rem -0.25rem var(--btn-cast);
+}
+
+.brume-btn:active {
+  transform: translateY(0.1875rem);
+  box-shadow: 0 0.0625rem 0 0 var(--btn-edge), 0 0.125rem 0.375rem -0.125rem var(--btn-cast);
+  transition-duration: 70ms;
+}
+
+.brume-btn:focus-visible {
+  outline: 3px solid var(--brume-focus);
+  outline-offset: 3px;
+}
+
+.brume-btn:disabled,
+.brume-btn[aria-disabled="true"] {
+  opacity: 0.52;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  box-shadow: 0 0.25rem 0 0 var(--btn-edge);
+}
+
+.brume-btn--soft {
+  --btn-face: var(--brume-cyan-soft);
+  --btn-edge: color-mix(in oklch, var(--brume-cyan-deep) 55%, var(--brume-rule));
+  --btn-cast: color-mix(in oklch, var(--brume-cyan-deep) 20%, transparent);
+  color: var(--brume-cyan-deep);
+}
+
+.brume-btn--outline {
+  --btn-face: var(--brume-card);
+  --btn-edge: var(--brume-rule);
+  --btn-cast: color-mix(in oklch, var(--brume-ink) 12%, transparent);
+  border: 1px solid var(--brume-rule);
+  color: var(--brume-ink);
+}
+
+/* Pill — the small selected/unselected option (presence, mood chips). */
+.brume-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--brume-rule);
+  border-radius: 999px;
+  background: var(--brume-card);
+  color: var(--brume-ink-muted);
+  cursor: pointer;
+  font-family: var(--brume-font);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.brume-pill.is-selected,
+.brume-pill[aria-pressed="true"] {
+  background: var(--brume-mint-soft);
+  color: var(--brume-ink);
+}
+
+.brume-pill:hover {
+  transform: translateY(-0.0625rem);
+}
+
+.brume-pill:active {
+  transform: translateY(0.0625rem);
+}
+
+.brume-pill:focus-visible {
+  outline: 2px solid var(--brume-focus);
+  outline-offset: 2px;
+}
+
+.brume-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Toggle — pill with a status dot (e.g. "Rhythm on"). */
+.brume-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--brume-rule);
+  border-radius: 999px;
+  background: var(--brume-card);
+  color: var(--brume-ink-muted);
+  cursor: pointer;
+  font-family: var(--brume-font);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.brume-toggle__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 999px;
+  background: var(--brume-ink-muted);
+}
+
+.brume-toggle[aria-pressed="true"] {
+  background: var(--brume-mint-soft);
+  color: var(--brume-ink);
+}
+
+.brume-toggle[aria-pressed="true"] .brume-toggle__dot {
+  background: var(--brume-cyan-deep);
+}
+
+.brume-toggle:hover {
+  transform: translateY(-0.0625rem);
+}
+
+.brume-toggle:active {
+  transform: translateY(0.0625rem);
+}
+
+.brume-toggle:focus-visible {
+  outline: 2px solid var(--brume-focus);
+  outline-offset: 2px;
+}
+
+.brume-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Pear highlighter for headline words. */
+.brume-hl {
+  background-image: linear-gradient(var(--brume-pear-soft) 0 0);
+  background-repeat: no-repeat;
+  background-position: 0 82%;
+  background-size: 100% 0.32em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Warm paper card — the shared surface for grouped content. */
+.brume-card {
+  border: 1px solid var(--brume-rule);
+  border-radius: var(--brume-radius-card, 1.75rem);
+  background: var(--brume-card);
+  box-shadow: var(--brume-shadow-card);
+}
+
+/* Mascot card — pear field, halo ring when Brume is in company mode. */
+.brume-mascot-card {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1.5rem 1rem;
+  border: 1px solid var(--brume-rule);
+  border-radius: var(--brume-radius-card, 1.75rem);
+  position: relative;
+  overflow: hidden;
+  background: var(--brume-pear-soft);
+  text-align: center;
+}
+
+.brume-mascot-card::before,
+.brume-mascot-card::after {
+  content: "";
+  position: absolute;
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.brume-mascot-card::before {
+  background: var(--brume-card);
+  opacity: 0.58;
+}
+
+.brume-mascot-card::after {
+  border: 1px solid var(--brume-cyan-deep);
+  opacity: 0;
+  transform: scale(0.86);
+}
+
+.brume-mascot-card[data-presence="companion"]::before {
+  animation: brume-breath-halo 7s ease-in-out infinite;
+}
+
+.brume-mascot-card[data-presence="companion"][data-rhythm="true"]::after {
+  animation: brume-beat-pulse 1.224s ease-out infinite;
+}
+
+.brume-mascot-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.brume-mascot-card p {
+  margin: 0;
+  color: var(--brume-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+@keyframes brume-breath-halo {
+  0%, 100% { transform: scale(0.94); opacity: 0.58; }
+  50% { transform: scale(1.04); opacity: 0.34; }
+}
+
+@keyframes brume-beat-pulse {
+  0% { transform: scale(0.86); opacity: 0.55; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brume-mascot-card::before,
+  .brume-mascot-card::after {
+    animation: none !important;
+  }
+  .brume-btn,
+  .brume-pill,
+  .brume-toggle {
+    transition: none;
+  }
+}

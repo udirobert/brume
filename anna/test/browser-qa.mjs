@@ -580,6 +580,38 @@ try {
     assert.equal(await ev('document.getElementById("prep-opening").value'), "o");
   });
 
+  await ok("poisoned hydrate checkpoint: home + corrupt banner, never hangs", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await cli("open", `${BASE}/?poison=hydrate`);
+    await sleep(5000); // watchdog short-circuit not needed; fix lands well under this
+    const r = await ev('JSON.stringify({panel:!document.getElementById("startup-panel").hidden,screen:[...document.querySelectorAll(".screen")].filter(s=>!s.hidden).map(s=>s.id),banner:document.getElementById("task-banner-text").textContent})');
+    assert.equal(r.panel, false, "startup panel must not stay up");
+    assert.equal(r.screen[0], "screen-home");
+    assert.ok(r.banner.includes("can't restore"), r.banner);
+  });
+
+  await ok("boot watchdog forces retryable error instead of hanging", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__startup", { delayMs: 60000 });
+    await cli("open", `${BASE}/?watchdogms=2500`);
+    // Either the watchdog or the bounded connect timeout must land on a
+    // retryable error — never a silent permanent hang.
+    let r;
+    for (let i = 0; i < 14; i++) {
+      await sleep(1000);
+      r = await ev('JSON.stringify({screen:[...document.querySelectorAll(".screen")].filter(s=>!s.hidden).map(s=>s.id),retry:!document.getElementById("btn-startup-retry").hidden,msg:document.getElementById("startup-message").textContent})');
+      if (r.retry || r.screen.length) break;
+    }
+    assert.ok(r.retry || r.screen.length, "boot must reach a terminal state");
+    assert.notEqual(r.msg, "Connecting to Anna…");
+    assert.notEqual(r.msg, "Checking for unfinished work…");
+    await post("/__startup", { delayMs: 0, fail: false });
+  });
+
   console.log(`\n${passed} passed, ${failures.length} failed`);
   for (const f of failures) console.log(`FAILED: ${f.name}\n  ${f.err}`);
   process.exitCode = failures.length ? 1 : 0;

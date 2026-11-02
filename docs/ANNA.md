@@ -600,17 +600,23 @@ hangs forever on "Checking for unfinished work…"**. The 25 Oct email did not
 re-raise the AI-native issue; that suggests, but does not confirm, that the
 conversation-preparation rework was accepted.
 
-Startup hang, hypothesis (not yet reproduced): `initializeHost()`
-(`bundle/app.js`) sets "Checking for unfinished work…" and then runs
-`loadActiveTask({ apply: true })` -> `hydrateTask()` with no try/catch and
-no `.catch` on the `initializeHost()` call. Connect and storage reads both
-have 8 s timeouts, so a slow host errors out; an exception thrown while
-validating or hydrating a restored checkpoint would leave the startup panel
-up forever. Reproduce first with the fake host (poisoned or old-shape
-`brume/active-task`), then fix with a guarded boot (try/finally, an overall
-watchdog, error + Retry + "start fresh" that never erases a corrupt
-checkpoint) and tests for throwing hydrate, throwing/never-resolving
-`storage.get`.
+Startup hang, defect CONFIRMED, reviewer trigger NOT yet confirmed:
+`initializeHost()` (`bundle/app.js`) set "Checking for unfinished work…"
+then ran `loadActiveTask({ apply: true })` -> `hydrateTask()` with no
+try/catch and no `.catch` on the call. Any exception there rejected
+`initializeHost()` unhandled and left the panel up forever — the reviewer's
+symptom. Reproduced only with a synthetic non-enumerable throwing field
+(`?poison=hydrate` in `test/fake-sdk.js`); 12+ ordinary malformed
+checkpoints (plain JSON) took the corrupt -> Home path and did not hang, so
+we do not know what the reviewer's environment actually hit. Other
+candidates: a different unhandled throw on the real host, or heavily
+throttled timers (hidden/background iframe) delaying the 8 s timeouts and
+the watchdog. The tier-3 Cloud Agent run (fresh install, then reopen with a
+leftover checkpoint) is what will settle it. Fixed: `initializeHost` wrapped in try/catch -> error +
+Retry, 15 s boot watchdog (localhost-only `__BRUME_BOOT_WATCHDOG_MS`
+override), `loadActiveTask` treats validate/hydrate throws as corrupt
+checkpoint (raw kept, never erased), `.catch` on both call sites,
+`loadOptionalData` wrapped. Two new browser-qa cases.
 
 Note: since 22 Oct the shared `brand.css` was retuned warm (web alignment,
 2 Nov); re-run `npm run test:browser` and regenerate `listing/candidate/`

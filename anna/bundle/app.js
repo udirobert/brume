@@ -2139,7 +2139,14 @@ function applyEntryPayload(payload) {
 
 async function loadActiveTask({ apply = false } = {}) {
   if (!taskStore) return null;
-  const checkpoint = await taskStore.load();
+  let checkpoint;
+  try {
+    checkpoint = await taskStore.load();
+  } catch {
+    // validation/unwrap threw — treat like a corrupt checkpoint.
+    // NEVER erase the stored value; it is kept for inspection.
+    taskStore.lastLoad = { state: "corrupt", raw: null };
+  }
   const state = taskStore.lastLoad.state;
   if (state === "error") {
     bannerMode = "error";
@@ -2153,7 +2160,20 @@ async function loadActiveTask({ apply = false } = {}) {
   }
   bannerMode = null;
   task = checkpoint;
-  if (task && apply) hydrateTask(task);
+  if (task && apply) {
+    try {
+      hydrateTask(task);
+    } catch {
+      // A checkpoint that passed validation but broke restore is corrupt —
+      // drop it from memory, reset half-applied work, keep the stored raw.
+      task = null;
+      bannerMode = "corrupt";
+      taskStore.lastLoad = { state: "corrupt", raw: checkpoint };
+      try { invalidateTaskWork(); } catch { /* half-applied cleanup */ }
+      updateTaskBanner();
+      return null;
+    }
+  }
   if (!task && pendingChoice?.payload) {
     const p = pendingChoice.payload;
     pendingChoice = null;
@@ -2379,9 +2399,41 @@ applyDaypart();
 setInterval(applyDaypart, 60000);
 
 const boundRuntimes = new WeakSet();
+const BOOT_WATCHDOG_MS = 15000;
 async function initializeHost() {
   const gen = ++bootGeneration;
   bootState = "loading";
+  // Overall boot watchdog — if anything after this stalls without reaching
+  // ready/error, the app shows a retryable error instead of hanging.
+  let watchdogMs = BOOT_WATCHDOG_MS;
+  try {
+    const h = location.hostname;
+    if ((h === "localhost" || h === "127.0.0.1")
+        && Number.isFinite(window.__BRUME_BOOT_WATCHDOG_MS)) {
+      watchdogMs = window.__BRUME_BOOT_WATCHDOG_MS;
+    }
+  } catch { /* test hook is optional */ }
+  const watchdog = setTimeout(() => {
+    if (gen === bootGeneration && bootState === "loading") {
+      bootState = "error";
+      setBootMessage("Brume couldn't start.", { error: true });
+      updateHomeNav();
+    }
+  }, watchdogMs);
+  try {
+    await initializeHostInner(gen);
+  } catch {
+    if (gen === bootGeneration) {
+      bootState = "error";
+      setBootMessage("Brume couldn't start.", { error: true });
+      updateHomeNav();
+    }
+  } finally {
+    clearTimeout(watchdog);
+  }
+}
+
+async function initializeHostInner(gen) {
   setBootMessage("Connecting to Anna…");
   let runtime = null;
   try {
@@ -2432,6 +2484,11 @@ async function initializeHost() {
 }
 
 function loadOptionalData(gen) {
+  try {
+    loadOptionalDataInner(gen);
+  } catch { /* best-effort; boot already succeeded */ }
+}
+function loadOptionalDataInner(gen) {
   const rt = anna;
   const soundRev = ++soundRevision;
   if (rt) {
@@ -2674,7 +2731,15 @@ async function main() {
     }
     requestNewTask(startPreparation);
   });
-  els.btnStartupRetry.addEventListener("click", () => { initializeHost(); });
+  els.btnStartupRetry.addEventListener("click", () => {
+    initializeHost().catch(() => {
+      if (bootState === "loading") {
+        bootState = "error";
+        setBootMessage("Brume couldn't start.", { error: true });
+        updateHomeNav();
+      }
+    });
+  });
   els.btnPrefSave.addEventListener("click", () => doPrefSave(els.wordingSelect.value));
   els.btnPrefForget.addEventListener("click", doPrefForget);
   els.btnPrefRetry.addEventListener("click", () => {
@@ -2891,7 +2956,13 @@ async function main() {
     pauseAndSnapshotCurrent();
   });
 
-  initializeHost();
+  initializeHost().catch(() => {
+    if (bootState === "loading") {
+      bootState = "error";
+      setBootMessage("Brume couldn't start.", { error: true });
+      updateHomeNav();
+    }
+  });
   if (!task && !els.screens.home.hidden) updateTaskBanner();
   // The home screen is visible before any show() call — create its
   // mascot (and any other already-visible screen's) explicitly.

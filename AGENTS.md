@@ -33,8 +33,23 @@ Rules:
   "Brume Executa Binaries" GitHub workflow.
 - No health, medical or hormone claims in copy or prompts; no scores,
   streaks, camera or microphone.
+- Web app copy follows the same rule as Anna: no health/medical/hormone or
+  outcome claims, no scores, streaks, camera or microphone.
+  `src/lib/__tests__/copy-claims.test.ts` enforces this for pattern,
+  recommendation and check-in strings — extend it when adding copy sources.
 - `anna-app apps publish` uploads a new version (not a review submission);
   submitting for review is done by the owner in the Developer Console.
+
+## Web app (`src/`)
+
+Shared brand tokens live in `anna/bundle/brand.css` (both UIs import the
+same file — retuning affects the Anna bundle too). Shared controls are in
+`src/styles/brume-controls.css` and `src/styles/brume-checkin.css`; the
+check-in vocabulary/message builder is `src/lib/checkin.ts`. The web app
+has no camera, no streaks UI and no scores; core loop is a breathing reset
+or `/decompress` → check-in word → optional one-sentence message.
+
+Verification: `pnpm vitest run`, `npx tsc --noEmit`, `pnpm lint`.
 
 ## Secrets
 

@@ -1,6 +1,6 @@
 # Brume
 
-> A calm little companion for breathing breaks, getting ready, and checking how sharp you are.
+> A calm companion for the two minutes between things. Nothing to get right, nothing to prove.
 
 **Live Demo**: [Try Now](https://brumeapp.netlify.app) | **Anna App Store**: @papa/brume
 
@@ -8,7 +8,7 @@
 
 Brume is a mist sprite who breathes with you. Two faces, one character:
 
-- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided patterns, AI coaching, accounts and history. No camera.
+- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided breathing patterns, a two-minute Decompress check-in, and session history — no camera, no account needed.
 - **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent: AI-planned resets, a 3-minute get-ready before calls and interviews, and a 1-minute alertness check. No camera, no account.
 
 **Core Philosophy:** Progress over perfection, consistency over intensity, mindful awareness over mechanical practice.
@@ -82,7 +82,6 @@ Frontend startup requires the public Supabase values in `.env.local`, including 
 
 ### ✅ Completed
 - Core breathing patterns and AI coaching
-- Computer vision system with three performance tiers
 - Flow blockchain integration for NFTs
 - Mobile-first responsive design
 - Lens Protocol social features

@@ -576,3 +576,12 @@ published or tier-3 tested.
    path: publish → tier-3 Cloud Agent run → submit. Next after that:
    distribution — store browse alone won't reach 200 MAU before
    2026-11-30.
+
+### 2026-11-02 — web app alignment
+
+The web app (src/) was repositioned to match Anna's stance: no camera, no
+streaks, no scores, no outcome claims. The shared brand tokens in
+`anna/bundle/brand.css` are now the warm paper/ink/pear palette — this
+affects the Anna bundle visuals too, since the iframe links the same file.
+Run `npm run test:browser` in `anna/` before the next publish to check the
+bundle still looks right.

@@ -1,3 +1,5 @@
+> **Superseded (2026-11):** the camera-verification thesis in sections 2-4 no longer reflects the product. See `docs/BRUME.md`. Kept for history.
+
 # Strategy: Creative Monopoly & Wedge
 
 > v3 — Thiel/PG consolidation pass. Decisions locked: revenue model is **agent-native**

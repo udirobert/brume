@@ -622,3 +622,9 @@ Note: since 22 Oct the shared `brand.css` was retuned warm (web alignment,
 2 Nov); re-run `npm run test:browser` and regenerate `listing/candidate/`
 before the next publish.
 
+
+#### 12.8 status, 2026-11-02 (console check)
+
+- Developer Console: app 582 is **Rejected**; version history has 0.3.3, 0.3.4, 0.3.5 (all cut 22 Oct) and now **0.3.6** (cut 2 Nov, `version_id=1892`, guarded startup; tool unchanged at 0.4.4, executa_version 790). Docs earlier saying "unpublished" were stale: the reviewers' 25 Oct test hit a version with the startup screen (0.3.3+). 0.3.6 is installed on the dev account but **not submitted** for review.
+- BYOK: Featherless and an OpenRouter provider are already added and Verified, and "Apps & plugins use my API Key by default" is ON. Featherless had no models added; `deepseek-ai/DeepSeek-V3-0324` was added (harmless, can stay).
+- **Blocker for the Cloud Agent test:** the Anna account is out of quota (Subscription & Usage: 1,000 / 1,000 used, quota reset "Not available" on the Free plan). A chat message fails with "Quota exhausted, unable to continue using Anna service" even with the BYOK Featherless model selected as Main Model, so the chat itself is gated on Anna quota (BYOK covers app/plugin LLM calls, not this gate). Options: Add-on quota, upgrade, or the weekly developer contribution rewards thread. Main Model was restored to Qwen3.8 Flash.

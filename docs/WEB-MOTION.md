@@ -19,6 +19,7 @@ deform-along-velocity principle, MotionSites' spec-and-freeze-frame loop.
 | Companion glide (core journey) | 0.5s signature ease between anchors · immediate on scroll/resize · opacity-only under reduced motion | `src/components/companion/JourneyCompanion.tsx` |
 | Feeling flip (paired chips) | inner face rotateX −72° → 0 in 0.32s, button stays put · opacity-only under reduced motion | `src/components/checkin/PairedFeelings.tsx` |
 | Session handover (preview ↔ breath) | opacity-only, outgoing pops out of layout so the anchor rect is real | `ResponsiveEnhancedSession` `AnimatePresence mode="popLayout"` |
+| Post-session panels | in-place morph, never a growing drawer — main ↔ words ↔ details swap at 0.28s opacity+rise (opacity-only reduced) | `PostSessionCelebration.tsx` `AnimatePresence mode="wait"` |
 
 ## Rules that don't move
 

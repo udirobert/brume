@@ -1,9 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { toast } from "sonner";
-import { WordsCard } from "@/components/checkin/WordsCard";
+import { PostSessionWords } from "./PostSessionWords";
 import { shareInvitation } from "@/lib/invitation";
 import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
@@ -34,6 +34,11 @@ interface PostSessionCelebrationProps {
   onClose?: () => void;
 }
 
+/** The three faces of the bottom region — it morphs in place, never grows. */
+type View = "main" | "words" | "details";
+
+const MORPH_SECONDS = 0.28;
+
 export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   metrics,
   patternId,
@@ -45,12 +50,13 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
   onSaveProgress,
 }) => {
   const reduceMotion = useReducedMotion();
-  const [wordsOpen, setWordsOpen] = useState(false);
+  const [view, setView] = useState<View>("main");
   const [after, setAfter] = useState<AfterPracticeChoiceId | null>(null);
   const [afterReaction, setAfterReaction] = useState<
     { name: MascotReaction; key: number } | undefined
   >();
-  const wordsRef = useRef<HTMLDivElement>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
+  const firstRender = useRef(true);
 
   const feel = feelAt(checkInIndex);
 
@@ -79,23 +85,20 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
     });
   };
 
-  const openWords = () => {
-    setWordsOpen((v) => !v);
-  };
-
-  React.useEffect(() => {
-    if (!wordsOpen) return;
-    const raf = requestAnimationFrame(() => {
-      const el = wordsRef.current;
-      if (!el) return;
-      el.scrollIntoView({
-        block: "nearest",
-        behavior: reduceMotion ? "auto" : "smooth",
-      });
-      el.focus({ preventScroll: true });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [wordsOpen, reduceMotion]);
+  // After each morph, move focus to the new panel's heading (or the panel
+  // itself when it has none) so the swap is announced, not lost.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const region = regionRef.current;
+    if (!region) return;
+    const target =
+      region.querySelector<HTMLElement>("[data-panel-heading]") ??
+      region.querySelector<HTMLElement>("[data-panel]");
+    target?.focus({ preventScroll: true });
+  }, [view]);
 
   const fade = (delay: number) =>
     reduceMotion || (typeof document !== "undefined" && document.hidden)
@@ -105,6 +108,21 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
           animate: { opacity: 1, y: 0 },
           transition: { duration: DURATION.standard, delay: delay * 0.55, ease: EASE },
         };
+
+  // Panel morph — opacity + a short rise; reduced motion drops the rise.
+  const panelMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: MORPH_SECONDS, ease: EASE },
+      }
+    : {
+        initial: { opacity: 0, y: 6 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 6 },
+        transition: { duration: MORPH_SECONDS, ease: EASE },
+      };
 
   const mascotState =
     after === "lighter"
@@ -157,86 +175,124 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         <p className="text-sm text-muted-foreground">You can leave it here.</p>
       </motion.div>
 
-      <motion.div
-        className="mt-10 w-full max-w-xs flex flex-col items-center gap-5"
-        {...fade(0.28)}
-      >
-        <Button
-          onClick={onContinue}
-          className="w-full rounded-full btn-premium py-6 text-base"
-        >
-          Done
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={openWords}
-          aria-expanded={wordsOpen}
-          className="w-full rounded-full py-6 text-base"
-        >
-          Put it into words
-        </Button>
-
-        <details className="brume-practice-details w-full text-left">
-          <summary className="text-sm text-muted-foreground cursor-pointer text-center">
-            Practice details
-          </summary>
-          <div className="mt-4 flex flex-col items-center gap-3 text-center">
-            <p className="text-3xl font-light tabular-nums tracking-tight leading-none">
-              {formatPracticeDuration(metrics.duration)}
-            </p>
-            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-              practice time
-            </p>
-            {meta.length > 0 && (
-              <p className="text-sm text-muted-foreground">{meta.join(" · ")}</p>
-            )}
-            <div className="flex items-center gap-3 text-sm pt-1">
-              {patternId && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => void handleInvite()}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Pass this break on
-                  </button>
-                  <span className="text-muted-foreground/30">·</span>
-                </>
-              )}
-              <button
-                type="button"
-                onClick={onSeeProgress}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+      <motion.div className="mt-10 w-full flex flex-col items-center" {...fade(0.28)}>
+        <div ref={regionRef} className="w-full flex flex-col items-center">
+          <AnimatePresence mode="wait" initial={false}>
+            {view === "main" && (
+              <motion.div
+                key="main"
+                data-panel
+                tabIndex={-1}
+                className="w-full max-w-xs flex flex-col items-center gap-5 outline-none"
+                {...panelMotion}
               >
-                Progress
-              </button>
-              {isGuest && (
-                <>
-                  <span className="text-muted-foreground/30">·</span>
+                <Button
+                  onClick={onContinue}
+                  className="w-full rounded-full btn-premium py-6 text-base"
+                >
+                  Done
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setView("words")}
+                  className="w-full rounded-full py-6 text-base"
+                >
+                  Put it into words
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setView("details")}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Practice details
+                </button>
+              </motion.div>
+            )}
+
+            {view === "details" && (
+              <motion.div
+                key="details"
+                data-panel
+                className="w-full max-w-xs flex flex-col items-center gap-3 text-center"
+                {...panelMotion}
+              >
+                <h3
+                  data-panel-heading
+                  tabIndex={-1}
+                  className="text-sm text-muted-foreground outline-none"
+                >
+                  Practice details
+                </h3>
+                <p className="text-3xl font-light tabular-nums tracking-tight leading-none">
+                  {formatPracticeDuration(metrics.duration)}
+                </p>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                  practice time
+                </p>
+                {meta.length > 0 && (
+                  <p className="text-sm text-muted-foreground">{meta.join(" · ")}</p>
+                )}
+                <div className="flex items-center gap-3 text-sm pt-1">
+                  {patternId && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void handleInvite()}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Pass this break on
+                      </button>
+                      <span className="text-muted-foreground/30">·</span>
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={onSaveProgress}
+                    onClick={onSeeProgress}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Create an account
+                    Progress
                   </button>
-                </>
-              )}
-            </div>
-          </div>
-        </details>
+                  {isGuest && (
+                    <>
+                      <span className="text-muted-foreground/30">·</span>
+                      <button
+                        type="button"
+                        onClick={onSaveProgress}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Create an account
+                      </button>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView("main")}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors pt-2"
+                >
+                  Back
+                </button>
+              </motion.div>
+            )}
 
-        {wordsOpen && (
-          <div
-            ref={wordsRef}
-            tabIndex={-1}
-            className="w-full max-w-sm mt-2 outline-none"
-            aria-label="Put it into words"
-          >
-            <WordsCard checkInIndex={checkInIndex ?? null} />
-          </div>
-        )}
+            {view === "words" && (
+              <motion.div
+                key="words"
+                data-panel
+                className="w-full flex flex-col items-center"
+                {...panelMotion}
+              >
+                <PostSessionWords
+                  checkInIndex={checkInIndex ?? null}
+                  orbMist={feel?.orbMist}
+                  patternName={metrics.patternName}
+                  onBack={() => setView("main")}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
     </div>
   );

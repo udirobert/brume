@@ -98,7 +98,7 @@ describe("ResponsiveEnhancedSession integration", () => {
     expect(gum).not.toHaveBeenCalled();
     expect(container.textContent).not.toMatch(/camera/i);
 
-    expect(container.textContent).toContain("Spoken breath cues");
+    expect(container.textContent).toContain("Breath cues");
     expect(gum).not.toHaveBeenCalled();
 
     await act(async () => {

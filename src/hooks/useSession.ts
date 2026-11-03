@@ -52,6 +52,9 @@ export const useSession = (options: UseSessionOptions = {}) => {
   const isPaused = sessionSelectors.isPaused();
   const isComplete = sessionSelectors.isComplete();
   const audioEnabled = useSessionStore((state) => state.audioEnabled);
+  const cueStyle = useSessionStore((state) => state.cueStyle);
+  const setCueStyle = useSessionStore((state) => state.setCueStyle);
+  const setAudioEnabled = useSessionStore((state) => state.setAudioEnabled);
 
   // ========================================================================
   // SESSION LIFECYCLE
@@ -137,6 +140,7 @@ export const useSession = (options: UseSessionOptions = {}) => {
     isPaused,
     isComplete,
     audioEnabled,
+    cueStyle,
 
     // Actions
     initialize,
@@ -146,6 +150,8 @@ export const useSession = (options: UseSessionOptions = {}) => {
     complete,
     reset,
     toggleAudio,
+    setAudioEnabled,
+    setCueStyle,
   };
 };
 

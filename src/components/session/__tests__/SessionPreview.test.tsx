@@ -30,23 +30,26 @@ describe("SessionPreview", () => {
     expect(html).not.toContain("see your breath");
   });
 
-  it("surfaces the spoken-cues choice before first play", () => {
+  it("surfaces the breath-cues choice before first play", () => {
     const html = render(
       <SessionPreview
         patternName="Box Breathing"
         pattern={pattern}
         onStart={() => {}}
         audioEnabled={true}
-        onToggleAudio={() => {}}
+        cueStyle="spoken"
+        onChooseCues={() => {}}
       />,
     );
-    expect(html).toContain("Spoken breath cues");
+    expect(html).toContain("Breath cues");
+    expect(html).toContain("spoken");
+    expect(html).toContain("breath");
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain("Hear a spoken cue");
+    expect(html).toContain("Hear a cue");
     expect(html).toContain("nothing is sent anywhere");
   });
 
-  it("hides the spoken-cues row when the parent does not pass the choice", () => {
+  it("hides the cues row when the parent does not pass the choice", () => {
     const html = render(
       <SessionPreview
         patternName="Box Breathing"
@@ -54,6 +57,6 @@ describe("SessionPreview", () => {
         onStart={() => {}}
       />,
     );
-    expect(html).not.toContain("Spoken breath cues");
+    expect(html).not.toContain("Breath cues");
   });
 });

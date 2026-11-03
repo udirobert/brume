@@ -13,6 +13,17 @@ export const VOICE_CUES = {
 
 export type VoiceCueId = keyof typeof VOICE_CUES;
 
+export type CueStyle = "spoken" | "breath";
+
+// Breath-shaped cues: the sound's edge marks the change — an inhale
+// that runs out IS the hold beginning, so hold and rest need no cue.
+const BREATH_CUES: Partial<Record<VoiceCueId, string>> = {
+  inhale: "/voice/breath-in.mp3",
+  exhale: "/voice/breath-out.mp3",
+};
+
+let cueStyle: CueStyle = "spoken";
+
 let voiceEnabled = true;
 let cueSerial = 0;
 let currentAudio: HTMLAudioElement | null = null;
@@ -42,23 +53,19 @@ function speakFallback(text: string) {
   synth.speak(utterance);
 }
 
-function playCue(id: string, preview: boolean): void {
-  if ((!preview && !voiceEnabled) || typeof window === "undefined") return;
-  const cue = VOICE_CUES[id as VoiceCueId];
-  if (!cue) return;
-
+function playFile(id: string, file: string, fallback?: () => void): void {
   stopCues();
   const serial = ++cueSerial;
 
-  const audio = missing.has(id) ? null : audioFor(id, cue.file);
+  const audio = missing.has(id) ? null : audioFor(id, file);
   if (!audio) {
-    speakFallback(cue.text);
+    fallback?.();
     return;
   }
 
   const giveUp = () => {
     if (currentAudio === audio) currentAudio = null;
-    if (serial === cueSerial && (preview || voiceEnabled)) speakFallback(cue.text);
+    if (serial === cueSerial) fallback?.();
   };
 
   currentAudio = audio;
@@ -81,6 +88,22 @@ function playCue(id: string, preview: boolean): void {
     if (audio.error) missing.add(id);
     giveUp();
   }
+}
+
+function playCue(id: string, preview: boolean): void {
+  if ((!preview && !voiceEnabled) || typeof window === "undefined") return;
+
+  if (cueStyle === "breath") {
+    const file = BREATH_CUES[id as VoiceCueId];
+    // No speech fallback here — a missing breath file stays quiet;
+    // silence around the two edges is part of the design.
+    if (file) playFile(`breath:${id}`, file);
+    return;
+  }
+
+  const cue = VOICE_CUES[id as VoiceCueId];
+  if (!cue) return;
+  playFile(id, cue.file, () => speakFallback(cue.text));
 }
 
 export function speakCue(id: string): void {
@@ -111,14 +134,21 @@ export function stopCues(): void {
   }
 }
 
+export function setVoiceEnabled(enabled: boolean): void {
+  voiceEnabled = enabled;
+  if (!enabled) stopCues();
+}
+
+export function setCueStyle(style: CueStyle): void {
+  cueStyle = style;
+}
+
 export function preloadCues(): void {
   if (typeof window === "undefined") return;
   for (const [id, cue] of Object.entries(VOICE_CUES)) {
     audioFor(id, cue.file);
   }
-}
-
-export function setVoiceEnabled(enabled: boolean): void {
-  voiceEnabled = enabled;
-  if (!enabled) stopCues();
+  for (const [id, file] of Object.entries(BREATH_CUES)) {
+    audioFor(`breath:${id}`, file);
+  }
 }

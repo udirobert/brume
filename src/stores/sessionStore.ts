@@ -43,6 +43,7 @@ export interface SessionState {
 
   // Media state
   audioEnabled: boolean;
+  cueStyle: CueStyle;
 
   // Monotonic active-time clock driving duration/rhythm/cycles
   clock: SessionClock;
@@ -68,6 +69,8 @@ export interface SessionActions {
 
   // Media management
   toggleAudio: () => void;
+  setAudioEnabled: (on: boolean) => void;
+  setCueStyle: (style: CueStyle) => void;
 }
 
 // ============================================================================
@@ -83,11 +86,22 @@ const initialMetrics: SessionMetrics = {
 
 // The user's "Spoken breath cues" choice persists across sessions.
 const AUDIO_PREF_KEY = 'brume.audioEnabled';
+const CUE_STYLE_KEY = 'brume.cueStyle';
+export type CueStyle = 'spoken' | 'breath';
 function storedAudioEnabled(): boolean {
   try {
     return globalThis.localStorage?.getItem(AUDIO_PREF_KEY) !== 'false';
   } catch {
     return true;
+  }
+}
+function storedCueStyle(): CueStyle {
+  try {
+    return globalThis.localStorage?.getItem(CUE_STYLE_KEY) === 'breath'
+      ? 'breath'
+      : 'spoken';
+  } catch {
+    return 'spoken';
   }
 }
 
@@ -97,6 +111,7 @@ const initialState: SessionState = {
   metrics: initialMetrics,
   sessionId: null,
   audioEnabled: storedAudioEnabled(),
+  cueStyle: storedCueStyle(),
   clock: createSessionClock(),
   error: null,
 };
@@ -222,16 +237,24 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     },
 
     // Media management
-    toggleAudio: () => {
-      set((state) => {
-        const audioEnabled = !state.audioEnabled;
-        try {
-          globalThis.localStorage?.setItem(AUDIO_PREF_KEY, String(audioEnabled));
-        } catch {
-          // private-mode storage is best-effort
-        }
-        return { audioEnabled };
-      });
+    toggleAudio: () => get().setAudioEnabled(!get().audioEnabled),
+
+    setAudioEnabled: (on) => {
+      try {
+        globalThis.localStorage?.setItem(AUDIO_PREF_KEY, String(on));
+      } catch {
+        // private-mode storage is best-effort
+      }
+      set({ audioEnabled: !!on });
+    },
+
+    setCueStyle: (style) => {
+      try {
+        globalThis.localStorage?.setItem(CUE_STYLE_KEY, style);
+      } catch {
+        // private-mode storage is best-effort
+      }
+      set({ cueStyle: style });
     },
   }))
 );

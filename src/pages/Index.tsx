@@ -70,7 +70,9 @@ export default function Index() {
   const mascotCardRef = useRef<HTMLDivElement>(null);
   const feel = feelingAt(feelTap);
   const audioEnabled = useSessionStore((s) => s.audioEnabled);
-  const toggleAudio = useSessionStore((s) => s.toggleAudio);
+  const cueStyle = useSessionStore((s) => s.cueStyle);
+  const setCueStyle = useSessionStore((s) => s.setCueStyle);
+  const setAudioEnabled = useSessionStore((s) => s.setAudioEnabled);
 
   const selectedPattern =
     getPattern(patternOverride ?? feel?.patternId ?? "reset");
@@ -153,17 +155,30 @@ export default function Index() {
         <summary>{HOME_FEELING_COPY.options}</summary>
         <div className="brume-home-options__content">
           <div className="brume-home-options__row">
-            <span>Sound</span>
-            <button
-              type="button"
-              aria-pressed={audioEnabled}
-              aria-label="Spoken breath cues"
-              onClick={toggleAudio}
-              className="brume-toggle"
-            >
-              <span className="brume-toggle__dot" aria-hidden="true" />
-              Spoken cues {audioEnabled ? "on" : "off"}
-            </button>
+            <span>Breath cues</span>
+            <div className="flex gap-2" role="group" aria-label="Breath cues">
+              {(["spoken", "breath", "off"] as const).map((kind) => {
+                const pressed =
+                  kind === "off" ? !audioEnabled : audioEnabled && cueStyle === kind;
+                return (
+                  <button
+                    key={kind}
+                    type="button"
+                    className={`brume-pill ${pressed ? "is-selected" : ""}`}
+                    aria-pressed={pressed}
+                    onClick={() => {
+                      if (kind === "off") setAudioEnabled(false);
+                      else {
+                        setCueStyle(kind);
+                        setAudioEnabled(true);
+                      }
+                    }}
+                  >
+                    {kind}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="brume-home-options__row">
             <span>Brume</span>

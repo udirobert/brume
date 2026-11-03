@@ -31,9 +31,10 @@ interface SessionPreviewProps {
   onCancel?: () => void;
   /** Session-level error (e.g. unavailable pattern) — rendered as an alert. */
   sessionError?: string | null;
-  /** Spoken breath cues choice — surfaced here before first play. */
+  /** Breath cues — spoken words, breath-shaped sounds, or off. */
   audioEnabled?: boolean;
-  onToggleAudio?: () => void;
+  cueStyle?: "spoken" | "breath";
+  onChooseCues?: (choice: "spoken" | "breath" | "off") => void;
   /** One quiet line naming the session's own ending, under the phases. */
   landingNote?: string;
   /** Brume waits with you — rendered above the pattern name. */
@@ -47,7 +48,8 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   onCancel,
   sessionError,
   audioEnabled,
-  onToggleAudio,
+  cueStyle,
+  onChooseCues,
   landingNote,
   mascot,
 }) => {
@@ -144,21 +146,32 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
           </button>
         )}
 
-        {audioEnabled !== undefined && onToggleAudio && (
+        {audioEnabled !== undefined && cueStyle && onChooseCues && (
           <p className="text-xs text-muted-foreground/70 text-center mt-1">
-            <button
-              type="button"
-              aria-pressed={audioEnabled}
-              aria-label="Spoken breath cues"
-              onClick={onToggleAudio}
-              className="hover:text-foreground transition-colors underline-offset-2 hover:underline"
-            >
-              Spoken breath cues {audioEnabled ? "on" : "off"}
-            </button>
+            Breath cues:{" "}
+            {(["spoken", "breath", "off"] as const).map((kind, i) => {
+              const pressed =
+                kind === "off" ? !audioEnabled : audioEnabled && cueStyle === kind;
+              return (
+                <React.Fragment key={kind}>
+                  {i > 0 && " · "}
+                  <button
+                    type="button"
+                    aria-pressed={pressed}
+                    onClick={() => onChooseCues(kind)}
+                    className={`transition-colors underline-offset-2 hover:underline ${
+                      pressed ? "text-foreground underline" : "hover:text-foreground"
+                    }`}
+                  >
+                    {kind}
+                  </button>
+                </React.Fragment>
+              );
+            })}
             {" · "}
             <button
               type="button"
-              aria-label="Hear a spoken cue"
+              aria-label="Hear a cue"
               onClick={() => previewCue("inhale")}
               className="hover:text-foreground transition-colors underline-offset-2 hover:underline"
             >

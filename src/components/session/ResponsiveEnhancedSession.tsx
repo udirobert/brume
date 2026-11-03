@@ -21,7 +21,7 @@ import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
 import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
-import { preloadCues, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
+import { preloadCues, setCueStyle as setVoiceCueStyle, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
 import { applyFeel, feelAt } from '../../lib/feelTheme';
 import { demeanorForFeel } from '../../lib/roomExperience';
 
@@ -156,7 +156,6 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const breathProgress01 = (session.metrics?.phaseProgress || 0) / 100;
   const sessionActive = session.phase === 'active';
   const audioEnabled = session.audioEnabled;
-  const toggleAudio = useSessionStore((s) => s.toggleAudio);
 
   // Brume speaks: spoken breath cues so a session works with eyes closed.
   // The store emits "pause" for the hold_after_exhale phase — the same phase
@@ -169,6 +168,10 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   React.useEffect(() => {
     setVoiceEnabled(audioEnabled);
   }, [audioEnabled]);
+
+  React.useEffect(() => {
+    setVoiceCueStyle(session.cueStyle);
+  }, [session.cueStyle]);
 
   React.useEffect(() => {
     if (session.phase === 'paused' || session.phase === 'complete') {
@@ -361,7 +364,15 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
             }}
             sessionError={sessionError}
             audioEnabled={audioEnabled}
-            onToggleAudio={toggleAudio}
+            cueStyle={session.cueStyle}
+            onChooseCues={(choice) => {
+              if (choice === "off") {
+                session.setAudioEnabled(false);
+              } else {
+                session.setCueStyle(choice);
+                session.setAudioEnabled(true);
+              }
+            }}
             landingNote={LANDING_NOTE}
             onStart={handleSessionStart}
             onCancel={onSessionExit}

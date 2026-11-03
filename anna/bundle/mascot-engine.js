@@ -427,6 +427,7 @@ export function sampleMascot(timeSeconds, options = {}) {
       }
     }
   }
+  root.rotate += fin(opts.lean, 0);
 
   let halo = { opacity: 1, scale: 1 };
   if (!reduced && companion) {

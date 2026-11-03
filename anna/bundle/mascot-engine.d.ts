@@ -39,6 +39,8 @@ export interface SampleMascotOptions {
   breath?: number;
   presence?: MascotPresence;
   gaze?: { x?: number; y?: number };
+  /** Static root tilt in degrees — used for the flight lean. */
+  lean?: number;
   reducedMotion?: boolean;
   idleSeconds?: number;
   breathing?: boolean;

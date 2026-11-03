@@ -56,7 +56,18 @@ the frozen displayed pose, mouths morph), a gentle bob runs on an inner
 `g.mascot-root` (halved while breath-driven, off under reduced motion),
 blinks and gaze drift run in every state except `hold`/`sleepy`, and
 one-shot `react("hop"|"settle"|"celebrate")` calls layer on top.
-The same three files drive the Anna bundle, the
+Brume is also a *travelling companion*: a shared framer-motion
+`layoutId="brume-companion"` makes the sprite glide between mount
+points instead of unmount/remount — PageLoader → Onboarding/Auth → Home
+card → session preview (`watching`, it waits with you) → the breath orb
+→ post-session pride. `LayoutGroup` + `MotionConfig
+reducedMotion="user"` wrap the router in `App.tsx`; only one
+companion-id mascot per screen. Mid-flight, the sprite keeps its
+previous face (the engine's pose blend morphs it en route), leads with
+its gaze and leans into the travel direction (`lean`, released after
+~700 ms). Roadmap: backdrop/daypart shifts and
+contextual suggestions (insights, techniques) driven through the same
+companion. The same three files drive the Anna bundle, the
 web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
 surfaces only; other screen animations are unchanged.
 

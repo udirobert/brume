@@ -165,6 +165,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         reaction={mascotReaction}
         presence={mascotPresence}
         size={isMobile ? 140 : 176}
+        layoutId="brume-companion"
         className="absolute z-10"
       />
     </BreathingAnimation>
@@ -208,6 +209,17 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         className="min-h-screen flex flex-col"
       >
         <SessionPreview
+          mascot={
+            <BrumeMascot
+              state="watching"
+              presence={mascotPresence}
+              trackPointer={mascotPresence === "companion"}
+              breathing
+              size={112}
+              layoutId="brume-companion"
+              className="block mx-auto mb-2"
+            />
+          }
           patternName={config.pattern.name}
           pattern={{
             name: config.pattern.name,

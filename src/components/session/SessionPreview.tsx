@@ -32,6 +32,8 @@ interface SessionPreviewProps {
   /** Spoken breath cues choice — surfaced here before first play. */
   audioEnabled?: boolean;
   onToggleAudio?: () => void;
+  /** Brume waits with you — rendered above the pattern name. */
+  mascot?: React.ReactNode;
 }
 
 export const SessionPreview: React.FC<SessionPreviewProps> = ({
@@ -42,6 +44,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   sessionError,
   audioEnabled,
   onToggleAudio,
+  mascot,
 }) => {
   const location = useLocation();
   // Cosmetic only: `?via=invite` means someone handed this break to you.
@@ -57,6 +60,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   return (
     <div className="flex-grow flex flex-col items-center justify-center p-6 space-y-8">
       <div className="text-center space-y-2 max-w-md">
+        {mascot}
         {isInvite && (
           <p className="text-sm text-muted-foreground/80">Someone passed you a break.</p>
         )}

@@ -51,6 +51,7 @@ export default function Index() {
               presence={presence}
               breathing={companion}
               trackPointer={companion}
+              layoutId="brume-companion"
             />
             <p>Brume can keep you company.</p>
             <div className="flex gap-2" role="group" aria-label="Brume presence">

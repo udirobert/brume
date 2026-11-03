@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { LayoutGroup, MotionConfig } from "framer-motion";
 
 // Core components that should load immediately
 import MainLayout from "@/components/MainLayout";
@@ -50,7 +51,7 @@ const PageLoader = () => (
     role="status"
     aria-label="Loading"
   >
-    <BrumeMascot state="thinking" size={88} breathing />
+    <BrumeMascot state="thinking" size={88} breathing layoutId="brume-companion" />
     <span className="sr-only">Loading</span>
   </div>
 );
@@ -76,7 +77,9 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
+      <MotionConfig reducedMotion="user">
+        <LayoutGroup>
+          <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Main Application Routes with Header — no Web3 */}
           <Route element={<MainLayout />}>
@@ -132,7 +135,9 @@ function App() {
         </Routes>
 
         <Toaster />
-      </Suspense>
+          </Suspense>
+        </LayoutGroup>
+      </MotionConfig>
     </BrowserRouter>
   );
 }

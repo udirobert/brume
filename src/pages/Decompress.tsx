@@ -239,7 +239,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} />
+              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} layoutId="brume-companion" />
               <span>with you · tap me</span>
             </button>
 
@@ -288,7 +288,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} />
+              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} layoutId="brume-companion" />
             </button>
 
             <div

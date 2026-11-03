@@ -75,7 +75,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
 
   return (
     <div className="flex flex-col items-center text-center">
-      <BrumeMascot state="proud" size={96} className="mb-4" />
+      <BrumeMascot state="proud" size={96} className="mb-4" layoutId="brume-companion" />
       <motion.div className="space-y-3 px-4" {...fade(0)}>
         <h2 className="text-3xl font-bold tracking-tight">
           {metrics.isFirstSession ? "Your first breath." : "Session complete."}

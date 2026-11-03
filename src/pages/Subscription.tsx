@@ -72,7 +72,7 @@ const Subscription: React.FC = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-8">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <BrumeMascot state="bright" size={88} className="mb-4" />
+          <BrumeMascot state="bright" size={88} className="mb-4" layoutId="brume-companion" />
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-linear-to-br from-purple-500 to-blue-500 rounded-2xl">
               <Sparkles className="h-8 w-8 text-white" />

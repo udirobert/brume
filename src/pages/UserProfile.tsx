@@ -102,7 +102,7 @@ const UserProfilePage = () => {
           className="absolute inset-0 -z-10 rounded-full bg-primary/15 blur-3xl scale-150"
           aria-hidden="true"
         />
-        <BrumeMascot state="proud" size={116} />
+        <BrumeMascot state="proud" size={116} layoutId="brume-companion" />
         {user.profile.avatar && (
           <Avatar className="absolute -bottom-1 -right-1 h-11 w-11 border-2 border-background">
             <AvatarImage src={user.profile.avatar} alt={displayName} />

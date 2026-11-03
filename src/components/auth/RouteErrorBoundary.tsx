@@ -5,7 +5,7 @@ import { BrumeMascot } from "@/components/BrumeMascot";
 
 export const RouteErrorFallback: React.FC<{ retry: () => void }> = ({ retry }) => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
-    <BrumeMascot state="sleepy" size={88} className="mb-4" />
+    <BrumeMascot state="sleepy" size={88} className="mb-4" layoutId="brume-companion" />
     <h2 className="text-xl font-semibold mb-2">Something slipped.</h2>
     <p className="text-muted-foreground mb-6 max-w-md">
       Your breath is fine. Try again, or head home.

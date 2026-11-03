@@ -44,7 +44,7 @@ export default function Onboarding() {
             }}
             compactMode
           >
-            <BrumeMascot state="idle" size={112} breathing />
+            <BrumeMascot state="idle" size={112} breathing layoutId="brume-companion" />
           </BreathingAnimation>
         </div>
 

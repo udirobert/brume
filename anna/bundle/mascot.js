@@ -198,6 +198,7 @@ export function createMascot(host, options = {}) {
         : undefined,
       presence: opts.presence,
       gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
+      lean: opts.lean,
       reducedMotion: isReduced(),
       idleSeconds: opts.idleSeconds !== undefined
         ? opts.idleSeconds
@@ -408,6 +409,7 @@ export function createMascot(host, options = {}) {
       breath: merged.breath,
       presence: merged.presence,
       gaze: merged.gaze,
+      lean: merged.lean,
       reducedMotion: merged.reducedMotion === true,
       idleSeconds: merged.idleSeconds !== undefined ? merged.idleSeconds : 0,
       breathing: merged.breathing,

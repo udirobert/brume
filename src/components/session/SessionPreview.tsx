@@ -5,10 +5,12 @@
  * No camera, nothing to get right. The breath itself is orb-only.
  */
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ContextCards } from "@/components/primitives/ContextCard";
-import { formatPhases } from "@/lib/breathingPatterns";
+import { formatPhases, getPattern } from "@/lib/breathingPatterns";
+import { CHECK_IN_PATTERN_IDS } from "@/components/home/TodayCard";
+import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
 import { previewCue } from "@/lib/voiceCues";
 import { AlertCircle, Volume2 } from "lucide-react";
 
@@ -47,6 +49,26 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   mascot,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const checkInIndex = typeof (location.state as { checkInIndex?: number } | null)
+    ?.checkInIndex === "number"
+    ? (location.state as { checkInIndex: number }).checkInIndex
+    : null;
+
+  // Re-pick the feeling → swap the pattern preview without leaving.
+  const pickFeel = (index: number) => {
+    const next = getPattern(CHECK_IN_PATTERN_IDS[index]);
+    if (!next) return;
+    navigate(`/session?pattern=${next.id}`, {
+      replace: true,
+      state: {
+        reason: next.name,
+        reasonDetail: next.description,
+        source: "From how you feel",
+        checkInIndex: index,
+      },
+    });
+  };
   // Cosmetic only: `?via=invite` means someone handed this break to you.
   // No tracking — the flag just explains how you got here.
   const isInvite = new URLSearchParams(location.search).get("via") === "invite";
@@ -89,6 +111,31 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
             },
           ]}
         />
+      )}
+
+      {checkInIndex !== null && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            You said:{" "}
+            <span className="font-medium text-foreground">
+              {CHECK_IN_SHORT_LABELS[checkInIndex]}
+            </span>
+          </p>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {CHECK_IN_SHORT_LABELS.map((label, i) =>
+              i === checkInIndex ? null : (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => pickFeel(i)}
+                  className="brume-pill px-3 py-1 min-h-0 text-xs"
+                >
+                  {label}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
       )}
 
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">

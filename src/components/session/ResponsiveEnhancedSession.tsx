@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from '../../hooks/use-mobile';
 import { useSession } from '../../hooks/useSession';
@@ -19,6 +20,7 @@ import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
 import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
 import { preloadCues, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
+import { applyFeel, clearFeel, feelAt } from '../../lib/feelTheme';
 
 interface ResponsiveEnhancedSessionProps {
   config: {
@@ -48,6 +50,18 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
   const { presence: mascotPresence } = useMascotPresence();
+  const location = useLocation();
+  const checkInIndex = typeof (location.state as { checkInIndex?: number } | null)
+    ?.checkInIndex === "number"
+    ? (location.state as { checkInIndex: number }).checkInIndex
+    : null;
+
+  // The room takes the feeling's tint for as long as the flow runs;
+  // leaving the flow releases it back to the daypart default.
+  React.useEffect(() => {
+    applyFeel(checkInIndex);
+    return () => clearFeel();
+  }, [checkInIndex]);
   const skipEntranceMotion =
     reduceMotion || (typeof document !== "undefined" && document.hidden);
 
@@ -211,7 +225,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         <SessionPreview
           mascot={
             <BrumeMascot
-              state="watching"
+              state={feelAt(checkInIndex)?.state ?? "watching"}
               presence={mascotPresence}
               trackPointer={mascotPresence === "companion"}
               breathing

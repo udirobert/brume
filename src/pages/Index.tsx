@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
@@ -9,6 +9,7 @@ import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
+import { applyFeel, feelAt } from "@/lib/feelTheme";
 
 /**
  * Home — reset-first.
@@ -24,6 +25,8 @@ export default function Index() {
   const dayPart = useDayPart();
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
+  const [feelTap, setFeelTap] = useState<number | null>(null);
+  const feel = feelAt(feelTap);
 
   const headline = useMemo((): WordPart[] => {
     if (isGuest) {
@@ -46,12 +49,13 @@ export default function Index() {
         >
           <div className="brume-mascot-card w-56" data-presence={presence}>
             <BrumeMascot
-              state="idle"
+              state={feel?.state ?? "idle"}
               size={104}
               presence={presence}
               breathing={companion}
               trackPointer={companion}
               layoutId="brume-companion"
+              reaction={feel?.reaction ? { name: feel.reaction, key: feelTap ?? -1 } : undefined}
             />
             <p>Brume can keep you company.</p>
             <div className="flex gap-2" role="group" aria-label="Brume presence">
@@ -119,7 +123,7 @@ export default function Index() {
         transition={{ duration: DURATION.standard, delay: 0.18, ease: EASE }}
       >
         <div className="w-full max-w-2xl brume-card px-4 py-6 md:px-7">
-          <TodayCard />
+          <TodayCard onFeel={(i) => { setFeelTap(i); applyFeel(i); }} />
         </div>
         <Link
           to="/decompress"

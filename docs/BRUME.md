@@ -65,9 +65,12 @@ reducedMotion="user"` wrap the router in `App.tsx`; only one
 companion-id mascot per screen. Mid-flight, the sprite keeps its
 previous face (the engine's pose blend morphs it en route), leads with
 its gaze and leans into the travel direction (`lean`, released after
-~700 ms). Roadmap: backdrop/daypart shifts and
-contextual suggestions (insights, techniques) driven through the same
-companion. The same three files drive the Anna bundle, the
+~700 ms). The check-in word now echoes through
+the journey: `feelTheme.ts` maps it to a mascot expression + reaction +
+`--brume-orb-mist` tint (tap → acknowledged on Home, carried by the
+flight, orb holds the tint until the flow ends), and the preview repeats
+the word with re-pick chips that swap the pattern in place. Still ahead:
+deeper backdrop shifts and contextual suggestions. The same three files drive the Anna bundle, the
 web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
 surfaces only; other screen animations are unchanged.
 

@@ -64,7 +64,8 @@ const MistOrb: React.FC<{
   const cloudSize = compactMode ? "min(240px, 56vw)" : "min(320px, 70vw)";
   const coreSize = compactMode ? "min(140px, 34vw)" : "min(190px, 42vw)";
   const ringSize = compactMode ? "min(260px, 60vw)" : "min(340px, 66vw)";
-  const mist = "rgb(124, 140, 201)";
+  // --brume-orb-mist is set by feelTheme when a check-in word tints the room.
+  const mist = "var(--brume-orb-mist, rgb(124 140 201))";
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">

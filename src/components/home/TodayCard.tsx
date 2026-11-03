@@ -31,24 +31,37 @@ const RHYTHMS = [
   { id: "sleep", label: "Sleep" },
 ] as const;
 
-export function TodayCard({ className }: { className?: string }) {
+export function TodayCard({
+  className,
+  onFeel,
+}: {
+  className?: string;
+  /** Fired when a check-in word is tapped, before navigation. */
+  onFeel?: (index: number) => void;
+}) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
 
   const handleStateSelect = (index: number) => {
     const pattern = getPattern(CHECK_IN_PATTERN_IDS[index]);
-    if (!pattern) {
-      navigate("/session?pattern=box");
-      return;
-    }
-    navigate(`/session?pattern=${pattern.id}`, {
-      state: {
-        reason: pattern.name,
-        reasonDetail: pattern.description,
-        source: "From how you feel",
-        checkInIndex: index,
-      },
-    });
+    onFeel?.(index);
+    const go = () => {
+      if (!pattern) {
+        navigate("/session?pattern=box");
+        return;
+      }
+      navigate(`/session?pattern=${pattern.id}`, {
+        state: {
+          reason: pattern.name,
+          reasonDetail: pattern.description,
+          source: "From how you feel",
+          checkInIndex: index,
+        },
+      });
+    };
+    // A beat for Brume to acknowledge the word before it flies on.
+    if (onFeel && !reduceMotion) window.setTimeout(go, 450);
+    else go();
   };
 
   const handleRhythmSelect = (patternId: string, name: string) => {

@@ -14,6 +14,7 @@
   stroke: var(--brume-mascot-face, #26303a);
   stroke-width: 2;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .mascot-cheek { fill: var(--brume-mascot-hl, #9aa8da); }
 .mascot-arm { stroke: var(--brume-mascot-body, #7c8cc9); stroke-width: 5; stroke-linecap: round; fill: none; }

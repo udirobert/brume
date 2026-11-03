@@ -69,11 +69,15 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
   (strict keys, in-viewBox bounds, safe path-data mouths), and
   `sampleMascot(t, opts)`: a pure function returning the complete frame —
   eyes/lids, mouth, body scale, and every accessory value (halo, arms,
-  wisps, waves, swirl, topup puff). Deterministic blink schedule, all 12
-  expressions, companion idle gaze drift and sleepy-slit fade, reduced
+  wisps, waves, swirl, topup puff) plus a `pose` used for 0.5 s
+  easeOutQuint blends between states (mouths morph via `blendPath`).
+  Deterministic blink schedule in every state except `hold`/`sleepy`,
+  gaze drift + per-state look offsets, a gentle root bob (halved while
+  breath-driven), `breathAmount` easing, one-shot `reaction`s
+  (`hop`/`settle`/`celebrate`), companion sleepy-slit fade, reduced
   motion = static expression.
 - `mascot.js` — `createMascot(host, opts)` returns
-  `{setState, setBreath, setOptions, renderAt, destroy}`. Owns the RAF
+  `{setState, setBreath, setOptions, react, renderAt, destroy}`. Owns the RAF
   clock, reduced-motion media changes, hidden/offscreen suspension and
   companion pointer tracking. `renderAt(t, overrides)` samples a fixed
   time for deterministic frames; `autoAnimate:false` for externally

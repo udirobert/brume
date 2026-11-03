@@ -29,6 +29,7 @@ export default function Decompress() {
   const [sparkKey, setSparkKey] = useState(0);
   const { presence, setPresence } = useMascotPresence();
   const [nudgeState, setNudgeState] = useState<BrumeMascotState | null>(null);
+  const [nudgeReaction, setNudgeReaction] = useState<{ name: "hop"; key: number } | undefined>();
 
   const elapsedOffsetRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -171,6 +172,7 @@ export default function Decompress() {
 
   const nudgeBrume = () => {
     setNudgeState("topup");
+    setNudgeReaction({ name: "hop", key: Date.now() });
     window.setTimeout(() => setNudgeState(null), 950);
   };
 
@@ -237,7 +239,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} />
+              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} />
               <span>with you · tap me</span>
             </button>
 
@@ -286,7 +288,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} />
+              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} />
             </button>
 
             <div

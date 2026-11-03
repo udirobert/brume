@@ -6,7 +6,7 @@
 // sleepy | bright | stretch | hum | watching. prefers-reduced-motion
 // renders static expressions (no scaling, bob, blinks or particles).
 
-import { BRUME_AVATAR, MASCOT_STATES, validateAvatar, sampleMascot } from "./mascot-engine.js";
+import { BRUME_AVATAR, MASCOT_STATES, MASCOT_REACTIONS, MASCOT_REACTION_DURATIONS, validateAvatar, sampleMascot } from "./mascot-engine.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -36,8 +36,11 @@ export function createMascot(host, options = {}) {
   const svg = el(doc, "svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
   svg.classList.add("mascot-svg");
 
+  const rootG = el(doc, "g", { class: "mascot-root" });
+  svg.appendChild(rootG);
+
   const halo = el(doc, "circle", { cx: HALO.cx, cy: HALO.cy, r: HALO.r, class: "mascot-halo" });
-  svg.appendChild(halo);
+  rootG.appendChild(halo);
 
   const bodyG = el(doc, "g", { class: "mascot-body" });
   const primG = el(doc, "g", { class: "mascot-prims" });
@@ -69,7 +72,7 @@ export function createMascot(host, options = {}) {
   const mouth = el(doc, "path", { class: "mascot-mouth" });
   mouthG.appendChild(mouth);
   bodyG.appendChild(mouthG);
-  svg.appendChild(bodyG);
+  rootG.appendChild(bodyG);
 
   // Mist wisps for exhale / thinking / hum / proud.
   const wispsG = el(doc, "g", { class: "mascot-wisps" });
@@ -78,16 +81,16 @@ export function createMascot(host, options = {}) {
     wispsG.appendChild(c);
     return c;
   });
-  svg.appendChild(wispsG);
+  rootG.appendChild(wispsG);
 
   // Sound-wave lines for hum.
   const wavesG = el(doc, "g", { class: "mascot-waves" });
   for (const d of WAVE_PATHS) wavesG.appendChild(el(doc, "path", { d, class: "mascot-wave" }));
-  svg.appendChild(wavesG);
+  rootG.appendChild(wavesG);
 
   // Thinking swirl.
   const swirl = el(doc, "path", { d: SWIRL.d, class: "mascot-swirl" });
-  svg.appendChild(swirl);
+  rootG.appendChild(swirl);
 
   host.appendChild(svg);
 
@@ -113,6 +116,9 @@ export function createMascot(host, options = {}) {
   let destroyed = false;
   let offscreen = false;
   let stateEnteredAt = nowSec();
+  let poseFrom = null;
+  let reactionName = null;
+  let reactionStart = 0;
 
   const media = win && win.matchMedia ? win.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
@@ -135,7 +141,13 @@ export function createMascot(host, options = {}) {
   }
 
   function applyFrame(frame) {
-    svg.setAttribute("transform", scaleAround(frame.svg.originX, frame.svg.originY, frame.svg.scale));
+    const r = frame.root;
+    rootG.setAttribute(
+      "transform",
+      `translate(0 ${r.y}) rotate(${r.rotate} 50 58) `
+        + `translate(${r.originX} ${r.originY}) scale(${r.sx} ${r.sy}) `
+        + `translate(${-r.originX} ${-r.originY})`,
+    );
     halo.setAttribute("opacity", String(frame.accessories.halo.opacity));
     halo.setAttribute(
       "transform",
@@ -180,6 +192,10 @@ export function createMascot(host, options = {}) {
       avatar,
       state: opts.state,
       breath: opts.breath,
+      from: poseFrom,
+      reaction: reactionName
+        ? { name: reactionName, age: t - reactionStart }
+        : undefined,
       presence: opts.presence,
       gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
       reducedMotion: isReduced(),
@@ -193,6 +209,9 @@ export function createMascot(host, options = {}) {
   }
 
   function render(t) {
+    if (reactionName && t - reactionStart >= MASCOT_REACTION_DURATIONS[reactionName]) {
+      reactionName = null;
+    }
     applyFrame(liveFrame(t));
   }
 
@@ -339,9 +358,15 @@ export function createMascot(host, options = {}) {
   doc.addEventListener("visibilitychange", onVisibility);
   syncListeners();
 
+  function freezePose() {
+    const t = nowSec();
+    poseFrom = isReduced() ? null : liveFrame(t).pose;
+    stateEnteredAt = t;
+  }
+
   function setState(name) {
     const next = MASCOT_STATES.includes(name) ? name : "idle";
-    if (next !== opts.state) stateEnteredAt = nowSec();
+    if (next !== opts.state) freezePose();
     opts.state = next;
     host.dataset.state = next;
     refresh();
@@ -353,6 +378,10 @@ export function createMascot(host, options = {}) {
   }
 
   function setOptions(partial = {}) {
+    if ("state" in partial) {
+      const next = MASCOT_STATES.includes(partial.state) ? partial.state : "idle";
+      if (next !== opts.state) freezePose();
+    }
     for (const [k, v] of Object.entries(partial)) {
       if (v === undefined) delete opts[k];
       else opts[k] = v;
@@ -364,7 +393,6 @@ export function createMascot(host, options = {}) {
     }
     if ("state" in partial) {
       const next = MASCOT_STATES.includes(opts.state) ? opts.state : "idle";
-      if (next !== host.dataset.state) stateEnteredAt = nowSec();
       opts.state = next;
       host.dataset.state = next;
     }
@@ -385,7 +413,16 @@ export function createMascot(host, options = {}) {
       breathing: merged.breathing,
       breathPeriod: merged.breathPeriod,
       stateAge: merged.stateAge !== undefined ? merged.stateAge : timeSeconds,
+      from: merged.from,
+      reaction: merged.reaction,
     }));
+  }
+
+  function react(name) {
+    if (!MASCOT_REACTIONS.includes(name)) return;
+    reactionName = name;
+    reactionStart = nowSec();
+    refresh();
   }
 
   function destroy() {
@@ -409,5 +446,5 @@ export function createMascot(host, options = {}) {
   }
   rebuildGeometry();
   setState(opts.state && MASCOT_STATES.includes(opts.state) ? opts.state : "idle");
-  return { setState, setBreath, setOptions, renderAt, destroy };
+  return { setState, setBreath, setOptions, renderAt, react, destroy };
 }

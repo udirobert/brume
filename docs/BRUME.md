@@ -49,9 +49,14 @@ surfaces is one shared implementation (2026-11-02):
 `validateAvatar` + pure `sampleMascot` — all 12 expressions, deterministic
 blink, companion idle gaze/doze, reduced-motion static expressions),
 `anna/bundle/mascot.js` (single DOM adapter, `createMascot` →
-`{setState, setBreath, setOptions, renderAt, destroy}`), and
+`{setState, setBreath, setOptions, react, renderAt, destroy}`), and
 `anna/bundle/mascot.css` (paint only, colours from `--brume-mascot-*`
-tokens in `brand.css`). The same three files drive the Anna bundle, the
+tokens in `brand.css`). Expressions blend over 0.5 s (easeOutQuint from
+the frozen displayed pose, mouths morph), a gentle bob runs on an inner
+`g.mascot-root` (halved while breath-driven, off under reduced motion),
+blinks and gaze drift run in every state except `hold`/`sleepy`, and
+one-shot `react("hop"|"settle"|"celebrate")` calls layer on top.
+The same three files drive the Anna bundle, the
 web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
 surfaces only; other screen animations are unchanged.
 

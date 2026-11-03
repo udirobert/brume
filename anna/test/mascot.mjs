@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 import {
   BRUME_AVATAR,
   MASCOT_STATES,
+  MASCOT_REACTIONS,
   validateAvatar,
   sampleMascot,
+  blendPath,
+  breathAmount,
 } from "../bundle/mascot-engine.js";
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -31,11 +34,11 @@ test("all 12 states produce valid, distinct expressions", () => {
     const f = sampleMascot(3.21, { state });
     assert.equal(f.state, state);
     seen.add(`${f.mouth.d}|${f.eyes.left.ry}|${f.eyes.lidLeft.height}|${f.eyes.left.cy}`);
-    for (const v of [f.eyes.left.cx, f.eyes.left.ry, f.body.scale, f.svg.scale]) {
+    for (const v of [f.eyes.left.cx, f.eyes.left.ry, f.body.scale, f.root.sx]) {
       assert.ok(Number.isFinite(v), `${state}: non-finite value`);
     }
   }
-  assert.equal(seen.size, MASCOT_STATES.length - 1);
+  assert.equal(seen.size, MASCOT_STATES.length);
 });
 
 test("unknown state falls back to idle; malformed args clamp or default", () => {
@@ -61,6 +64,19 @@ test("deterministic blink closes and reopens on the fixed schedule", () => {
   assert.equal(open(3.0), 4, "open between blinks");
   assert.equal(open(4.8), open(24.8), "same phase same frame");
   assert.equal(sampleMascot(4.8, { state: "hold" }).eyes.left.ry, 4 * 0.12);
+});
+
+test("blink runs in session states but not hold or sleepy", () => {
+  for (const state of ["inhale", "exhale", "watching"]) {
+    const open = sampleMascot(4.8, { state }).eyes.left.ry;
+    const rested = sampleMascot(3.0, { state }).eyes.left.ry;
+    assert.ok(open < rested, `${state} should blink`);
+  }
+  for (const state of ["hold", "sleepy"]) {
+    const at = sampleMascot(4.8, { state }).eyes.left.ry;
+    const between = sampleMascot(3.0, { state }).eyes.left.ry;
+    assert.equal(at, between, `${state} should not blink`);
+  }
 });
 
 test("gaze shifts eyes and lids, mouth follows at 35%", () => {
@@ -99,8 +115,19 @@ test("companion motion vs quiet stillness for accessories", () => {
 });
 
 test("topup puff fires once after state entry then settles", () => {
-  assert.equal(sampleMascot(10, { state: "topup", stateAge: 0.25 }).svg.scale > 1, true);
-  assert.equal(sampleMascot(10, { state: "topup", stateAge: 5 }).svg.scale, 1);
+  assert.equal(sampleMascot(10, { state: "topup", stateAge: 0.25 }).root.sx > 1, true);
+  assert.equal(sampleMascot(10, { state: "topup", stateAge: 5 }).root.sx, 1);
+});
+
+test("idle bob moves the root group unless reduced", () => {
+  const ys = [0.4, 1.7, 3.1, 4.9].map((t) => sampleMascot(t, { state: "idle" }).root.y);
+  assert.ok(new Set(ys.map((y) => y.toFixed(6))).size > 1, "bob should vary over t");
+  assert.ok(ys.every((y) => y <= 0), "bob dips, never rises");
+  const still = sampleMascot(2.6, { state: "idle", reducedMotion: true });
+  assert.deepEqual(
+    { y: still.root.y, rotate: still.root.rotate, sx: still.root.sx, sy: still.root.sy },
+    { y: 0, rotate: 0, sx: 1, sy: 1 },
+  );
 });
 
 test("reduced motion is a static expression for every state", () => {
@@ -111,7 +138,8 @@ test("reduced motion is a static expression for every state", () => {
       gaze: { x: 9, y: 9 }, idleSeconds: 500, breath: 0.9, breathing: true,
     });
     assert.deepEqual(a, b, `${state} moved under reduced motion`);
-    assert.equal(a.svg.scale, 1);
+    assert.equal(a.root.sx, 1);
+    assert.equal(a.root.y, 0);
     assert.equal(a.body.scale, 1);
     assert.equal(a.breath, null);
     if (state === "proud") assert.equal(a.mouth.d, BRUME_AVATAR.mouths.smile);
@@ -213,4 +241,73 @@ test("sampleMascot does not mutate options or the avatar", () => {
   const before = JSON.stringify({ opts, avatar: BRUME_AVATAR });
   sampleMascot(5, opts);
   assert.equal(JSON.stringify({ opts, avatar: BRUME_AVATAR }), before);
+});
+
+test("transitions blend from a frozen pose over 0.5s", () => {
+  const t = 3.0;
+  const idlePose = sampleMascot(t, { state: "idle" }).pose;
+  const atStart = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0 });
+  assert.deepEqual(atStart.pose, idlePose);
+  const target = sampleMascot(t, { state: "proud" });
+  const atEnd = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0.5 });
+  assert.deepEqual(atEnd.pose, target.pose);
+  const mid = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0.25 });
+  assert.ok(mid.pose.open > target.pose.open && mid.pose.open < idlePose.open);
+  assert.notEqual(mid.pose.mouth, idlePose.mouth);
+  assert.notEqual(mid.pose.mouth, target.pose.mouth);
+  const noFrom = sampleMascot(t, { state: "proud", stateAge: 0 });
+  assert.deepEqual(noFrom.pose, target.pose);
+});
+
+test("blendPath lerps matching structures and swaps mismatched at 0.5", () => {
+  assert.equal(blendPath("M 0 0 L 10 10", "M 0 0 L 20 30", 0.5), "M 0 0 L 15 20");
+  const a = "M 0 0 L 1 1";
+  const b = "M 0 0 Q 1 1 2 2 Z";
+  assert.equal(blendPath(a, b, 0.4), a);
+  assert.equal(blendPath(a, b, 0.6), b);
+});
+
+test("all four default mouths share one structure so they morph", () => {
+  const mouths = Object.values(BRUME_AVATAR.mouths);
+  for (const a of mouths) {
+    for (const b of mouths) {
+      if (a === b) continue;
+      const mid = blendPath(a, b, 0.5);
+      assert.notEqual(mid, a);
+      assert.notEqual(mid, b);
+    }
+  }
+});
+
+test("reactions are one-shots layered on the frame", () => {
+  assert.deepEqual(MASCOT_REACTIONS, ["hop", "settle", "celebrate"]);
+  const t = 3.0;
+  const base = sampleMascot(t, { state: "idle" });
+  const hop = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.25 } });
+  assert.ok(hop.root.y < base.root.y, "hop lifts the root");
+  const over = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.5 } });
+  assert.deepEqual(over, base);
+  const unknown = sampleMascot(t, { state: "idle", reaction: { name: "wiggle", age: 0.1 } });
+  assert.deepEqual(unknown, base);
+  const reduced = sampleMascot(t, {
+    state: "idle", reducedMotion: true, reaction: { name: "hop", age: 0.25 },
+  });
+  assert.deepEqual(reduced, sampleMascot(t, { state: "idle", reducedMotion: true }));
+  const cheer = sampleMascot(t, { state: "idle", reaction: { name: "celebrate", age: 0.45 } });
+  assert.equal(cheer.mouth.d, BRUME_AVATAR.mouths.smile);
+  assert.ok(cheer.root.y < base.root.y);
+});
+
+test("breathAmount maps phase progress to the eased 0..1 curve", () => {
+  assert.equal(breathAmount("inhale", 0), 0);
+  assert.equal(breathAmount("inhale", 1), 1);
+  assert.ok(Math.abs(breathAmount("inhale", 0.5) - 0.5) < 1e-9);
+  assert.equal(breathAmount("topup", 0.4), 1);
+  assert.equal(breathAmount("hold", 0.4), 1);
+  assert.equal(breathAmount("exhale", 0), 1);
+  assert.equal(breathAmount("exhale", 1), 0);
+  assert.equal(breathAmount("pause", 0.5), 0);
+  assert.equal(breathAmount("whatever", 0.5), 0);
+  assert.equal(breathAmount("inhale", NaN), 0);
+  assert.equal(breathAmount("inhale", 7), 1);
 });

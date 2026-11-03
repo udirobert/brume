@@ -45,6 +45,7 @@ import {
 } from "./session.js";
 import { ChimePlayer, VoiceGuide, VoiceUnavailable } from "./audio.js";
 import { createMascot } from "./mascot.js";
+import { breathAmount } from "./mascot-engine.js";
 import {
   runAlertness, baselineMedian, bandFor, updateAlertSummary,
   alertnessNotePrompt, ALERTNESS_FALLBACK_NOTE, CHECK_SECONDS,
@@ -230,7 +231,7 @@ const mascots = {};
 function mascot(name) {
   const host = $(`#mascot-${name}`);
   if (!host) return null;
-  if (!mascots[name]) mascots[name] = createMascot(host);
+  if (!mascots[name]) mascots[name] = createMascot(host, { presence: "companion" });
   return mascots[name];
 }
 
@@ -243,6 +244,7 @@ let plan = null; // {pattern, seconds, title, opening, cues, why, planSource}
 let context = "";
 let soundMode = "off";
 let clock = null;
+let sessionWasRunning = false;
 let tracker = null;
 let paceIdx = 1;
 let timer = null;
@@ -725,7 +727,7 @@ function previewBreath(patternId) {
       el -= ms;
     }
     m.setState(phase === "pause" ? "idle" : phase);
-    m.setBreath(prog);
+    m.setBreath(breathAmount(phase, prog));
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -818,11 +820,15 @@ function tick() {
   els.phase.textContent = isClockRunning(clock)
     ? phaseWord(plan.pattern, snap.currentPhase)
     : "Paused";
+  const running = isClockRunning(clock);
   const m = mascot("session");
   if (m) {
-    m.setState(isClockRunning(clock) ? snap.currentPhase : "idle");
-    m.setBreath(snap.phaseProgress / 100);
+    if (running && !sessionWasRunning) m.react("hop");
+    else if (!running && sessionWasRunning) m.react("settle");
+    m.setState(running ? snap.currentPhase : "idle");
+    m.setBreath(breathAmount(snap.currentPhase, snap.phaseProgress / 100));
   }
+  sessionWasRunning = running;
   if (snap.currentPhase !== lastPhase) {
     lastPhase = snap.currentPhase;
     if (isClockRunning(clock)) {
@@ -879,6 +885,7 @@ function begin() {
   lastPhase = null;
   tickCount = 0;
   clock = resumeSessionClock(createSessionClock(), now());
+  sessionWasRunning = false;
   tracker = createTempoTracker();
   paceIdx = 1;
   els.pause.textContent = "Pause";
@@ -1009,6 +1016,7 @@ async function completeResult(felt) {
 
   els.resultHeading.textContent = interrupted ? "Ended early" : "Reset complete";
   mascot("result")?.setState(interrupted ? "idle" : "proud");
+  if (!interrupted) mascot("result")?.react("celebrate");
   renderResult({
     heading: els.resultHeading.textContent,
     pattern: pat.name,
@@ -2082,6 +2090,7 @@ async function showLastPreparation() {
   els.btnCardDone.hidden = true;
   els.btnCardHome.hidden = false;
   show(els.screens.prepCard);
+  mascot("prep-card")?.react("celebrate");
 }
 
 // --- entry_payload ------------------------------------------------------------
@@ -2221,6 +2230,7 @@ function hydrateReset(screen, data) {
     finishing = false;
     lastPhase = null;
     tickCount = 0;
+    sessionWasRunning = false;
     els.pause.textContent = "Resume";
     els.sessionPattern.textContent = `${PATTERNS[plan.pattern].name} · ${plan.title}`;
     els.target.textContent = fmtSeconds(effectiveLength().effectiveSeconds);
@@ -2271,6 +2281,7 @@ function hydrateReset(screen, data) {
     const pending = resultState.reflectionStatus === "pending";
     els.resultHeading.textContent = pendingResult.interrupted ? "Ended early" : "Reset complete";
     mascot("result")?.setState(pendingResult.interrupted ? "idle" : "proud");
+    if (!pendingResult.interrupted) mascot("result")?.react("celebrate");
     renderResult({
       heading: els.resultHeading.textContent,
       pattern: pat.name,

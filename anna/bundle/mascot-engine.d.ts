@@ -4,6 +4,23 @@ export type BrumeMascotState =
 
 export type MascotPresence = "quiet" | "companion";
 
+export type MascotReaction = "hop" | "settle" | "celebrate";
+
+export interface MascotPose {
+  open: number;
+  dy: number;
+  lid: number;
+  lookX: number;
+  lookY: number;
+  mouth: string;
+  cheek: number;
+  arms: number;
+  wisps: number;
+  waves: number;
+  swirl: number;
+  bodyScale: number;
+}
+
 export type AvatarPrimitive =
   | { readonly type: "ellipse"; readonly cx: number; readonly cy: number; readonly rx: number; readonly ry: number; readonly opacity?: number }
   | { readonly type: "circle"; readonly cx: number; readonly cy: number; readonly r: number; readonly opacity?: number };
@@ -27,6 +44,8 @@ export interface SampleMascotOptions {
   breathing?: boolean;
   breathPeriod?: number;
   stateAge?: number;
+  from?: MascotPose;
+  reaction?: { name: MascotReaction | string; age: number };
 }
 
 export interface MascotFrame {
@@ -35,7 +54,8 @@ export interface MascotFrame {
   reduced: boolean;
   breath: number | null;
   avatar: BrumeAvatar;
-  svg: { scale: number; originX: number; originY: number };
+  root: { y: number; rotate: number; sx: number; sy: number; originX: number; originY: number };
+  pose: MascotPose;
   body: { scale: number; originX: number; originY: number };
   eyes: {
     left: { cx: number; cy: number; rx: number; ry: number };
@@ -62,7 +82,12 @@ export interface MascotFrame {
 }
 
 export const MASCOT_STATES: readonly BrumeMascotState[];
+export const MASCOT_REACTIONS: readonly MascotReaction[];
+export const MASCOT_REACTION_DURATIONS: Readonly<Record<MascotReaction, number>>;
 export const BRUME_AVATAR: BrumeAvatar;
+
+export function blendPath(a: string, b: string, k: number): string;
+export function breathAmount(phase: string, progress01: number): number;
 
 export function validateAvatar(
   value: unknown,

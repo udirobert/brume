@@ -36,10 +36,10 @@ export const BRUME_AVATAR = Object.freeze({
   highlight: Object.freeze({ type: "ellipse", cx: 56, cy: 30, rx: 8, ry: 5, opacity: 0.8 }),
   eyes: Object.freeze({ leftX: 41, rightX: 59, y: 52, rx: 3.2, ry: 4 }),
   mouths: Object.freeze({
-    closed: "M 44 60 Q 50 63 56 60",
-    smile: "M 43 58 Q 50 65 57 58",
+    closed: "M 44 60 Q 50 63 56 60 Q 50 63 44 60 Z",
+    smile: "M 43 58 Q 50 65 57 58 Q 50 65 43 58 Z",
     open: "M 47 59 Q 50 63 53 59 Q 50 65 47 59 Z",
-    flat: "M 45 61 L 55 61",
+    flat: "M 45 61 Q 50 61 55 61 Q 50 61 45 61 Z",
   }),
 });
 
@@ -203,6 +203,48 @@ const IDLE_SLEEP_FADE = 60;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const fin = (v, fallback = 0) => (isFiniteNum(v) ? v : fallback);
+const lerp = (a, b, k) => a + (b - a) * k;
+const easeOutQuint = (x) => 1 - Math.pow(1 - x, 5);
+
+export const MASCOT_REACTIONS = Object.freeze(["hop", "settle", "celebrate"]);
+export const MASCOT_REACTION_DURATIONS = Object.freeze({
+  hop: 0.5,
+  settle: 0.9,
+  celebrate: 0.9,
+});
+
+const LOOK_OFFSETS = Object.freeze({
+  inhale: Object.freeze({ x: 0, y: -0.6 }),
+  exhale: Object.freeze({ x: 0, y: 0.8 }),
+  thinking: Object.freeze({ x: 1, y: -1.2 }),
+});
+
+function pathTokens(d) {
+  return typeof d === "string" ? d.match(PATH_TOKEN_RE) || [] : [];
+}
+
+export function blendPath(a, b, k) {
+  const ta = pathTokens(a);
+  const tb = pathTokens(b);
+  const sameShape = ta.length === tb.length
+    && ta.every((tok, i) => (tok in PATH_ARITY) === (tb[i] in PATH_ARITY)
+      && (!(tok in PATH_ARITY) || tok === tb[i]));
+  if (!sameShape || ta.length === 0) return k < 0.5 ? a : b;
+  return ta
+    .map((tok, i) => (tok in PATH_ARITY ? tok : String(lerp(Number(tok), Number(tb[i]), k))))
+    .join(" ");
+}
+
+export function breathAmount(phase, progress01) {
+  const p = (1 - Math.cos(Math.PI * clamp(fin(progress01, 0), 0, 1))) / 2;
+  switch (phase) {
+    case "inhale": return p;
+    case "topup": return 1;
+    case "hold": return 1;
+    case "exhale": return 1 - p;
+    default: return 0;
+  }
+}
 
 function blinkOpen(t) {
   const m = ((t % BLINK_PERIOD) + BLINK_PERIOD) % BLINK_PERIOD;
@@ -241,19 +283,21 @@ export function sampleMascot(timeSeconds, options = {}) {
   let open = expr.open;
   let dy = expr.dy;
   const lid = expr.lid;
-  let gazeX = 0;
-  let gazeY = 0;
+
+  let lookX = 0;
+  let lookY = 0;
+  if (!reduced && opts.gaze && typeof opts.gaze === "object") {
+    lookX = clamp(fin(opts.gaze.x, 0), -GAZE_MAX_X, GAZE_MAX_X);
+    lookY = clamp(fin(opts.gaze.y, 0), -GAZE_MAX_Y, GAZE_MAX_Y);
+  }
+  const lookOff = LOOK_OFFSETS[state];
+  if (lookOff) {
+    lookX = clamp(lookX + lookOff.x, -GAZE_MAX_X, GAZE_MAX_X);
+    lookY = clamp(lookY + lookOff.y, -GAZE_MAX_Y, GAZE_MAX_Y);
+  }
 
   if (!reduced) {
-    if (opts.gaze && typeof opts.gaze === "object") {
-      gazeX = clamp(fin(opts.gaze.x, 0), -GAZE_MAX_X, GAZE_MAX_X);
-      gazeY = clamp(fin(opts.gaze.y, 0), -GAZE_MAX_Y, GAZE_MAX_Y);
-    }
     if (idle && companion) {
-      gazeX += 1.1 * Math.sin((2 * Math.PI * t) / 9);
-      gazeY += 0.6 * Math.sin((2 * Math.PI * t) / 13 + 1);
-      gazeX = clamp(gazeX, -GAZE_MAX_X, GAZE_MAX_X);
-      gazeY = clamp(gazeY, -GAZE_MAX_Y, GAZE_MAX_Y);
       const idleFor = Math.max(0, fin(opts.idleSeconds, 0));
       if (idleFor >= IDLE_SLEEP_AFTER) {
         const k = clamp((idleFor - IDLE_SLEEP_AFTER) / IDLE_SLEEP_FADE, 0, 1);
@@ -261,35 +305,128 @@ export function sampleMascot(timeSeconds, options = {}) {
         dy += 1.2 * k;
       }
     }
-    if (idle) open *= blinkOpen(t);
+    if (state !== "hold" && state !== "sleepy") open *= blinkOpen(t);
+  }
+
+  const bodyScaleTarget = breath === null ? 1 : 0.86 + breath * 0.18;
+  const cheekTarget = state === "hold"
+    ? 0.6
+    : companion && (state === "proud" || state === "watching") ? 0.42 : 0;
+  const wisped = state === "exhale" || state === "proud";
+
+  const target = {
+    open,
+    dy,
+    lid,
+    lookX,
+    lookY,
+    mouth: avatar.mouths[expr.mouth],
+    cheek: cheekTarget,
+    arms: state === "stretch" ? 1 : 0,
+    wisps: wisped ? 1 : 0,
+    waves: state === "hum" ? 0.8 : 0,
+    swirl: state === "thinking" ? 0.8 : 0,
+    bodyScale: bodyScaleTarget,
+  };
+
+  const stateAge = Math.max(0, fin(opts.stateAge, Infinity));
+  const from = !reduced && opts.from && typeof opts.from === "object" ? opts.from : null;
+  const k = from ? easeOutQuint(clamp(stateAge / 0.5, 0, 1)) : 1;
+  const num = (key) => (from && isFiniteNum(from[key]) ? lerp(from[key], target[key], k) : target[key]);
+  const pose = {
+    open: num("open"),
+    dy: num("dy"),
+    lid: num("lid"),
+    lookX: num("lookX"),
+    lookY: num("lookY"),
+    mouth: from && typeof from.mouth === "string"
+      ? blendPath(from.mouth, target.mouth, k)
+      : target.mouth,
+    cheek: num("cheek"),
+    arms: num("arms"),
+    wisps: num("wisps"),
+    waves: num("waves"),
+    swirl: num("swirl"),
+    bodyScale: num("bodyScale"),
+  };
+
+  const rName = opts.reaction && typeof opts.reaction === "object"
+      && MASCOT_REACTIONS.includes(opts.reaction.name)
+    ? opts.reaction.name
+    : null;
+  const rp = rName && !reduced
+    ? fin(opts.reaction.age, -1) / MASCOT_REACTION_DURATIONS[rName]
+    : -1;
+  const rActive = rp >= 0 && rp < 1;
+  const rs = rActive ? Math.sin(Math.PI * rp) : 0;
+
+  if (rActive) {
+    if (rName === "hop") pose.open *= 1 + 0.15 * rs;
+    else if (rName === "settle") pose.open *= 1 - 0.5 * rs;
+    else if (rName === "celebrate") {
+      pose.mouth = avatar.mouths.smile;
+      pose.cheek = Math.max(pose.cheek, 0.5 * rs);
+      pose.wisps = Math.max(pose.wisps, 0.6 * rs);
+    }
+  }
+
+  let gazeX = pose.lookX;
+  let gazeY = pose.lookY;
+  if (!reduced) {
+    const ampX = companion ? (idle ? 1.1 : 0.6) : 0.5;
+    const ampY = companion ? (idle ? 0.6 : 0.35) : 0.3;
+    gazeX = clamp(gazeX + ampX * Math.sin((2 * Math.PI * t) / 9), -GAZE_MAX_X, GAZE_MAX_X);
+    gazeY = clamp(gazeY + ampY * Math.sin((2 * Math.PI * t) / 13 + 1), -GAZE_MAX_Y, GAZE_MAX_Y);
   }
 
   const eyeBase = avatar.eyes;
-  const ry = Math.max(0.4, eyeBase.ry * open);
-  const lidHeight = 9 * lid;
+  const ry = Math.max(0.4, eyeBase.ry * pose.open);
+  const lidHeight = 9 * pose.lid;
   const eyes = {
-    left: { cx: eyeBase.leftX + gazeX, cy: eyeBase.y + dy + gazeY, rx: eyeBase.rx, ry },
-    right: { cx: eyeBase.rightX + gazeX, cy: eyeBase.y + dy + gazeY, rx: eyeBase.rx, ry },
+    left: { cx: eyeBase.leftX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: eyeBase.rx, ry },
+    right: { cx: eyeBase.rightX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: eyeBase.rx, ry },
     lidLeft: {
       x: eyeBase.leftX + gazeX - 4,
-      y: eyeBase.y - 4 + dy + gazeY,
+      y: eyeBase.y - 4 + pose.dy + gazeY,
       width: 8,
       height: lidHeight,
     },
     lidRight: {
       x: eyeBase.rightX + gazeX - 4,
-      y: eyeBase.y - 4 + dy + gazeY,
+      y: eyeBase.y - 4 + pose.dy + gazeY,
       width: 8,
       height: lidHeight,
     },
   };
 
-  const bodyScale = breath === null ? 1 : 0.86 + breath * 0.18;
-
-  const stateAge = Math.max(0, fin(opts.stateAge, Infinity));
-  const puff = state === "topup" && !reduced
-    ? 1 + 0.04 * Math.sin(Math.PI * clamp(stateAge / 0.5, 0, 1))
-    : 1;
+  const root = { y: 0, rotate: 0, sx: 1, sy: 1, originX: 50, originY: 84 };
+  if (!reduced) {
+    const bobHalf = isFiniteNum(opts.breath) ? 0.5 : 1;
+    if (companion) {
+      const cyc = (((t % 7) + 7) % 7) / 7;
+      root.y = -1.5 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+      root.rotate = 1 * bobHalf * Math.sin(cyc * Math.PI * 2);
+    } else {
+      const cyc = (((t % 6) + 6) % 6) / 6;
+      root.y = -1.0 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+    }
+    const puff = state === "topup"
+      ? 1 + 0.04 * Math.sin(Math.PI * clamp(stateAge / 0.5, 0, 1))
+      : 1;
+    root.sx = puff;
+    root.sy = puff;
+    if (rActive) {
+      if (rName === "hop") {
+        root.y += -5 * rs;
+        root.sy *= 1 + 0.04 * rs;
+        root.sx *= 1 - 0.02 * rs;
+      } else if (rName === "settle") {
+        root.y += 2 * rs;
+      } else if (rName === "celebrate") {
+        root.y += -4 * Math.abs(Math.sin(2 * Math.PI * rp));
+      }
+    }
+  }
 
   let halo = { opacity: 1, scale: 1 };
   if (!reduced && companion) {
@@ -304,29 +441,23 @@ export function sampleMascot(timeSeconds, options = {}) {
     return -7 * Math.sin((cyc / 2.8) * Math.PI * 2);
   };
   const arms = {
-    opacity: state === "stretch" ? 1 : 0,
+    opacity: pose.arms,
     rotateLeft: armSway(0),
     rotateRight: armSway(0.28),
     pivotLeft: { x: 30, y: 52 },
     pivotRight: { x: 70, y: 52 },
   };
 
-  const cheekOpacity = state === "hold"
-    ? 0.6
-    : companion && (state === "proud" || state === "watching") ? 0.42 : 0;
-
-  const wisped = state === "exhale" || state === "proud";
   const wisps = [0, 0.9, 1.8, 2.6].map((delay) => {
-    if (!wisped) return { dy: 0, opacity: 0 };
-    if (reduced) return { dy: 0, opacity: 0.6 };
+    if (reduced) return { dy: 0, opacity: 0.6 * pose.wisps };
     const cyc = (((t - delay) % 3.4) + 3.4) % 3.4;
     const p = cyc / 3.4;
     const ease = 1 - (1 - p) * (1 - p);
-    return { dy: -26 * ease, opacity: 0.6 * (1 - p) };
+    return { dy: -26 * ease, opacity: 0.6 * (1 - p) * pose.wisps };
   });
 
-  const waves = { opacity: state === "hum" ? 0.8 : 0 };
-  let swirl = { opacity: state === "thinking" ? 0.8 : 0, rotate: 0 };
+  const waves = { opacity: pose.waves };
+  let swirl = { opacity: pose.swirl, rotate: 0 };
   if (!reduced && state === "thinking") {
     const cyc = (((t % 1.6) + 1.6) % 1.6) / 1.6;
     swirl.rotate = 6 * Math.sin(cyc * Math.PI * 2);
@@ -338,11 +469,12 @@ export function sampleMascot(timeSeconds, options = {}) {
     reduced,
     breath,
     avatar,
-    svg: { scale: puff, originX: 50, originY: 58 },
-    body: { scale: bodyScale, originX: 50, originY: 55 },
+    root,
+    pose: Object.freeze(pose),
+    body: { scale: pose.bodyScale, originX: 50, originY: 55 },
     eyes,
-    mouth: { d: avatar.mouths[expr.mouth], dx: gazeX * 0.35, dy: gazeY * 0.35 },
+    mouth: { d: pose.mouth, dx: gazeX * 0.35, dy: gazeY * 0.35 },
     gaze: { x: gazeX, y: gazeY },
-    accessories: { halo, arms, cheeks: { opacity: cheekOpacity }, wisps, waves, swirl },
+    accessories: { halo, arms, cheeks: { opacity: pose.cheek }, wisps, waves, swirl },
   });
 }

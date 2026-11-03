@@ -34,7 +34,8 @@ ChatGPT / MCP host
   widget resource.
 - **Widget** — reads `window.openai.toolOutput`, runs the phases itself:
   phase word → mascot state (inhale/topup/hold/exhale/Rest→idle), breath
-  progress eases continuously across each phase, `proud` on completion,
+  progress eases continuously across each phase, `proud` + `celebrate`
+  on completion,
   `Again` restarts a single guarded loop, `pagehide` cancels
   timers/RAF/listeners and destroys the mascot, reduced-motion renders
   static expressions. The shared mist sprite replaces the old generic

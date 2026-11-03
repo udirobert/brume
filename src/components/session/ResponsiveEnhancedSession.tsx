@@ -13,7 +13,7 @@ import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
 import { useMascotPresence } from '../../hooks/useMascotPresence';
 
 import BreathingAnimation from '../BreathingAnimation';
-import { BrumeMascot, type BrumeMascotState } from '../BrumeMascot';
+import { BrumeMascot, type BrumeMascotState, type MascotReaction } from '../BrumeMascot';
 import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
@@ -136,6 +136,21 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     ? breathAmount(breathPhase, breathProgress01, true)
     : undefined;
 
+  const prevPhaseRef = React.useRef(session.phase);
+  const [mascotReaction, setMascotReaction] = React.useState<
+    { name: MascotReaction; key: number } | undefined
+  >();
+  React.useEffect(() => {
+    if (session.phase === prevPhaseRef.current) return;
+    prevPhaseRef.current = session.phase;
+    const name: MascotReaction | null =
+      session.phase === 'active' ? 'hop'
+      : session.phase === 'paused' ? 'settle'
+      : session.phase === 'complete' ? 'celebrate'
+      : null;
+    if (name) setMascotReaction({ name, key: Date.now() });
+  }, [session.phase]);
+
   const animationWithMascot = (
     <BreathingAnimation
       phase={breathPhase}
@@ -147,6 +162,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       <BrumeMascot
         state={mascotState}
         breath={mascotBreath}
+        reaction={mascotReaction}
         presence={mascotPresence}
         size={isMobile ? 140 : 176}
         className="absolute z-10"

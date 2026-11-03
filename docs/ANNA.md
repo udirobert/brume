@@ -678,7 +678,47 @@ One mascot contract now serves all three surfaces — shipped in source,
   --strict` pass, real-browser checks on web /decompress, the Anna fake
   host and the widget (no console errors; reduced-motion and dusk
   daypart verified live).
-- **Not done:** the async background task ask/reply work is a separate
-  next step, not part of this change. Next release still needs the full
+
+### 12.10 Mascot life: blends, bob and reactions (2026-11-03)
+
+Bringing the mascot to life (informed by bloub's blend-from-frame
+transitions and grokbot-desktop's event reactions); still source-only.
+
+- **Motion lives on an inner root.** All svg children sit under
+  `g.mascot-root`; bob/rotate/squash apply there instead of a
+  `transform` attribute on the outer `<svg>` (browsers treat that as a
+  CSS px-space transform — a topup puff shifted the whole sprite).
+  Engine frame `svg` → `root: {y, rotate, sx, sy}`.
+- **Bob is back.** Removed by the §12.9 refactor; now engine-computed
+  (quiet 6 s / 1 unit, companion 7 s / 1.5 units + 1° tilt, halved when
+  breath is externally driven, zero under reduced motion).
+- **Life in every state.** Blinks run in all states except `hold` and
+  `sleepy`; gaze micro-drift everywhere (companion-idle keeps the old
+  1.1/0.6 amplitude, other states ~half, quiet smaller still) plus
+  purposeful look offsets (up on inhale, down on exhale, up-right when
+  thinking). In `hold` the sprite is deliberately still.
+- **State changes blend.** Every frame exposes a numeric `pose`; on a
+  real change the adapter freezes the displayed pose and eases to the
+  target over 0.5 s (easeOutQuint, no overshoot). The four mouth paths
+  now share one two-quad closed structure so `blendPath` lerps them
+  (mismatched structures still swap at k=0.5). Chained mid-fade changes
+  stay continuous. Reduced motion = no blend.
+- **One-shot reactions.** `react("hop" | "settle" | "celebrate")`
+  (grokbot-style) layers on the live frame and clears itself: hop on
+  session start/resume and decompress taps, settle on pause, celebrate
+  on result/prep-card. Web takes a `reaction={{name, key}}` prop that
+  fires on key change.
+- **Anna breath fix.** The session tick and pattern preview passed raw
+  phase progress to `setBreath`, so the body grew during exhale/hold and
+  snapped — now `breathAmount(phase, p)` (eased: inhale→p, topup/hold→1,
+  exhale→1−p, else 0), matching the web. Anna mascots now run
+  `presence:"companion"`.
+- **Verified locally:** `node --test test/mascot.mjs` (23),
+  `pnpm vitest run` (178; BrumeMascot.test 19 incl. mid-fade continuity
+  + reaction prop), `npm test` (108), `cd mcp && npm test` (15),
+  `tsc --noEmit`, lint 0 errors; browser-checked on web /session and
+  /decompress and the Anna fake host (hop/bob/blends/breath observed
+  live).
+- **Still needed for release:** the full
   browser suite, `listing/candidate/` regeneration with the new sprite,
   and the tier-3 Cloud Agent run before submit — none of that ran here.

@@ -5,11 +5,11 @@
 
 import { useEffect, useRef } from "react";
 import { createMascot } from "../../anna/bundle/mascot.js";
-import type { MascotHandle, BrumeMascotState } from "../../anna/bundle/mascot.js";
+import type { MascotHandle, BrumeMascotState, MascotReaction } from "../../anna/bundle/mascot.js";
 import type { MascotPresence } from "@/lib/mascotPresence";
 import "./BrumeMascot.css";
 
-export type { BrumeMascotState, MascotHandle };
+export type { BrumeMascotState, MascotHandle, MascotReaction };
 
 export interface BrumeMascotProps {
   state?: BrumeMascotState;
@@ -21,6 +21,8 @@ export interface BrumeMascotProps {
   trackPointer?: boolean;
   breathing?: boolean;
   breathPeriod?: number;
+  /** One-shot reaction; fires when `key` changes (not on first mount). */
+  reaction?: { name: MascotReaction; key: string | number };
 }
 
 export function BrumeMascot({
@@ -32,9 +34,12 @@ export function BrumeMascot({
   trackPointer = false,
   breathing = false,
   breathPeriod = 7,
+  reaction,
 }: BrumeMascotProps) {
   const hostRef = useRef<HTMLSpanElement>(null);
   const handleRef = useRef<MascotHandle | null>(null);
+  const reactionSeen = useRef(false);
+  const prevReactionKey = useRef<string | number | undefined>(undefined);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -59,6 +64,15 @@ export function BrumeMascot({
   useEffect(() => {
     handleRef.current?.setState(state);
   }, [state]);
+
+  useEffect(() => {
+    if (!reactionSeen.current) {
+      reactionSeen.current = true;
+    } else if (reaction && reaction.key !== prevReactionKey.current) {
+      handleRef.current?.react(reaction.name);
+    }
+    prevReactionKey.current = reaction?.key;
+  }, [reaction]);
 
   return (
     <span

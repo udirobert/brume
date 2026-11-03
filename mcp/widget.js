@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const BUNDLE = path.resolve(fileURLToPath(new URL(".", import.meta.url)), "../anna/bundle");
-const ADAPTER_IMPORT = 'import { BRUME_AVATAR, MASCOT_STATES, validateAvatar, sampleMascot } from "./mascot-engine.js";';
+const ADAPTER_IMPORT = 'import { BRUME_AVATAR, MASCOT_STATES, MASCOT_REACTIONS, MASCOT_REACTION_DURATIONS, validateAvatar, sampleMascot } from "./mascot-engine.js";';
 
 function readBundle(name) {
   return readFileSync(path.join(BUNDLE, name), "utf8");
@@ -117,6 +117,7 @@ ${adapter}
       mascot.setBreath(0);
       mascot.setState("proud");
       mascot.setOptions({ autoAnimate: true });
+      mascot.react("celebrate");
       word.textContent="Done"; again.style.display="block";
     }
   }

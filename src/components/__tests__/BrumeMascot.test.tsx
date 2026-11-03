@@ -7,6 +7,25 @@ import { createMascot } from "../../../anna/bundle/mascot.js";
 import type { BrumeAvatar } from "../../../anna/bundle/mascot-engine.js";
 import { BrumeMascot } from "../BrumeMascot";
 
+const reactCalls: string[] = [];
+vi.mock("../../../anna/bundle/mascot.js", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../../../anna/bundle/mascot.js")>();
+  return {
+    ...mod,
+    createMascot: (host: HTMLElement, opts?: Parameters<typeof mod.createMascot>[1]) => {
+      const handle = mod.createMascot(host, opts);
+      const react = handle.react;
+      return {
+        ...handle,
+        react: (name: string) => {
+          reactCalls.push(name);
+          react(name as Parameters<typeof react>[0]);
+        },
+      };
+    },
+  };
+});
+
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
 function svgOf(host: HTMLElement) {
@@ -275,6 +294,39 @@ describe("createMascot adapter", () => {
     m.destroy();
   });
 
+  it("transform lives on a mascot-root group, not the svg element", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const m = createMascot(host, { autoAnimate: false });
+    m.renderAt(1.2);
+    const svg = host.querySelector("svg")!;
+    expect(svg.getAttribute("transform")).toBeNull();
+    const root = host.querySelector("g.mascot-root")!;
+    expect(root).not.toBeNull();
+    expect(root.getAttribute("transform")).toContain("translate(0");
+    m.destroy();
+  });
+
+  it("a state change mid-fade freezes the displayed pose, so chained changes are continuous", () => {
+    let nowMs = 1000;
+    vi.spyOn(window.performance, "now").mockImplementation(() => nowMs);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const m = createMascot(host, { autoAnimate: false });
+    nowMs = 1100;
+    m.setState("proud");
+    nowMs = 1350;
+    m.setOptions({});
+    const midFade = svgOf(host);
+    m.setState("exhale");
+    expect(svgOf(host)).toBe(midFade);
+    nowMs = 1600;
+    m.setOptions({});
+    expect(svgOf(host)).not.toBe(midFade);
+    m.destroy();
+    vi.restoreAllMocks();
+  });
+
   it("intersection observer suspends and resumes", () => {
     let ioCallback: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
     class FakeIO {
@@ -338,5 +390,25 @@ describe("BrumeMascot React wrapper", () => {
     });
     expect(host.querySelector("svg")).toBe(svg);
     expect(host.getAttribute("data-state")).toBe("sleepy");
+  });
+
+  it("reaction prop fires react when the key changes, never on mount", async () => {
+    reactCalls.length = 0;
+    await act(async () => {
+      root.render(<BrumeMascot reaction={{ name: "hop", key: "a" }} />);
+    });
+    expect(reactCalls).toHaveLength(0);
+    await act(async () => {
+      root.render(<BrumeMascot reaction={{ name: "hop", key: "b" }} />);
+    });
+    expect(reactCalls).toEqual(["hop"]);
+    await act(async () => {
+      root.render(<BrumeMascot reaction={{ name: "settle", key: "b" }} />);
+    });
+    expect(reactCalls).toEqual(["hop"]);
+    await act(async () => {
+      root.render(<BrumeMascot reaction={{ name: "settle", key: "c" }} />);
+    });
+    expect(reactCalls).toEqual(["hop", "settle"]);
   });
 });

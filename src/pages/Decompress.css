@@ -313,14 +313,17 @@ body:has(.decompress-page) {
 .dc-words {
   position: absolute;
   z-index: 2;
-  top: 50%;
+  bottom: 100%;
   left: 50%;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
   align-items: center;
   justify-content: center;
-  width: min(100% - 2rem, 40rem);
+  /* Sized to the viewport, not the containing block — it lives inside
+     the slim .dc-room__status cell, so % would collapse to its width. */
+  width: min(90vw, 40rem);
+  margin-bottom: var(--space-md);
   transform: translateX(-50%);
 }
 

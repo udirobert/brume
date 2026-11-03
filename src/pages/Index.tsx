@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { viewTransitionTo, vtClick } from "@/lib/viewTransition";
+import { Magnetic } from "@/lib/Magnetic";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot, type MascotReaction } from "@/components/BrumeMascot";
@@ -189,6 +190,7 @@ export default function Index() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: DURATION.standard, delay: 0.12, ease: EASE }}
       >
+        <Magnetic className="w-full">
         <Link
           to="/session?pattern=reset"
           className="brume-btn brume-btn--push w-full py-4 text-base"
@@ -211,6 +213,7 @@ export default function Index() {
         >
           Start a breathing reset
         </Link>
+        </Magnetic>
         <p className="mt-3 text-sm text-muted-foreground">
           In for 4, out for 6 · nothing to get right
         </p>

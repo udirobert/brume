@@ -1,2 +1,32 @@
 /* Brume mascot — mirrored from anna/bundle/app.css. Keep in sync. */
 @import "../../anna/bundle/mascot.css";
+
+/* Touch — the creature has weight: a contact squash under the pointer
+   and one soft halo ring outward. Web-only interaction chrome; the
+   shared bundle paint file stays untouched. */
+.brume-mascot[data-tap] {
+  cursor: pointer;
+  position: relative;
+}
+.brume-mascot[data-tap]:active {
+  transform: translateY(3px) scaleX(1.02) scaleY(0.96);
+  transition: transform 70ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.brume-mascot--pulse::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 2px solid var(--brume-mascot-halo, rgb(120 150 220 / .35));
+  opacity: 0;
+  pointer-events: none;
+  animation: brume-halo-ring 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes brume-halo-ring {
+  0% { transform: scale(0.6); opacity: 0.45; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-mascot[data-tap]:active { transform: none; transition: none; }
+  .brume-mascot--pulse::after { animation: none; }
+}

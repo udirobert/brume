@@ -75,6 +75,13 @@ export function BrumeMascot({
     tapTimes.current.push(now);
     const n = tapTimes.current.length;
     handleRef.current?.react(n >= 5 ? "celebrate" : n >= 3 ? "hop" : tapReaction);
+    // Halo ring — one soft pulse outward from the body.
+    const host = hostRef.current;
+    if (host) {
+      host.classList.remove("brume-mascot--pulse");
+      void host.offsetWidth;
+      host.classList.add("brume-mascot--pulse");
+    }
   };
 
   useLayoutEffect(() => {
@@ -156,6 +163,7 @@ export function BrumeMascot({
       layoutId={layoutId}
       className={`brume-mascot ${className || ""}`}
       data-presence={presence}
+      data-tap={tapReaction ? "" : undefined}
       style={{ width: size, height: size }}
       role={tapReaction ? "button" : undefined}
       tabIndex={tapReaction ? 0 : undefined}

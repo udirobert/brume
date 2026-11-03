@@ -2,16 +2,22 @@ import React, { useEffect, useRef } from "react";
 
 /**
  * Slow mist folds + pointer-lifted motes behind the practice shell.
- * Color follows html[data-daypart] via --mist-r/g/b.
+ * Color follows html[data-daypart] via --mist-r/g/b; a check-in word
+ * can override that through feelTheme — the room retints, stills and
+ * thickens for heavier words (absorbed, never alarmed).
  * Session never mounts this.
  */
 const rgb = { r: 147, g: 197, b: 253 };
+const rgbTarget = { r: 147, g: 197, b: 253 };
+let weightTarget = 0;
+let weight = 0;
 
 function readMist() {
   const s = getComputedStyle(document.documentElement);
-  rgb.r = Number(s.getPropertyValue("--mist-r")) || 147;
-  rgb.g = Number(s.getPropertyValue("--mist-g")) || 197;
-  rgb.b = Number(s.getPropertyValue("--mist-b")) || 253;
+  rgbTarget.r = Number(s.getPropertyValue("--mist-r")) || 147;
+  rgbTarget.g = Number(s.getPropertyValue("--mist-g")) || 197;
+  rgbTarget.b = Number(s.getPropertyValue("--mist-b")) || 253;
+  weightTarget = Number(s.getPropertyValue("--brume-feel-weight")) || 0;
 }
 
 const FOLDS = [
@@ -168,23 +174,41 @@ export function MistField() {
 
     const paint = (t: number) => {
       readMist();
-      const breathe = reduceMotion.matches ? 1 : 0.97 + Math.sin(t * 0.00022) * 0.03;
+      if (reduceMotion.matches) {
+        rgb.r = rgbTarget.r;
+        rgb.g = rgbTarget.g;
+        rgb.b = rgbTarget.b;
+        weight = weightTarget;
+      } else {
+        // The room settles into the feeling over ~1s — absorb, not snap.
+        rgb.r += (rgbTarget.r - rgb.r) * 0.05;
+        rgb.g += (rgbTarget.g - rgb.g) * 0.05;
+        rgb.b += (rgbTarget.b - rgb.b) * 0.05;
+        weight += (weightTarget - weight) * 0.045;
+      }
+      const still = 1 - weight * 0.55;
+      const lift = Math.max(0, 0.35 - weight) * 0.5;
+      const amp = still + lift;
+      const dense = 1 + (weight - 0.35) * 0.4;
+      const reach = 1 - weight * 0.5;
+      const depth = 0.03 + weight * 0.02;
+      const breathe = reduceMotion.matches ? 1 : 1 - depth + Math.sin(t * 0.00022) * depth;
       ctx.clearRect(0, 0, width, height);
       ctx.globalCompositeOperation = "screen";
 
       for (const fold of FOLDS) {
         const driftX = reduceMotion.matches
           ? 0
-          : Math.sin(t * fold.speed + fold.phase) * fold.amp;
+          : Math.sin(t * fold.speed + fold.phase) * fold.amp * amp;
         const driftY = reduceMotion.matches
           ? 0
-          : Math.cos(t * fold.speed * 0.85 + fold.phase) * fold.amp * 0.55;
-        const parallax = 10 + fold.depth * 14;
+          : Math.cos(t * fold.speed * 0.85 + fold.phase) * fold.amp * 0.55 * amp;
+        const parallax = (10 + fold.depth * 14) * reach;
         const x = fold.x * width + driftX + pointer.x * parallax;
         const y = fold.y * height + driftY + pointer.y * parallax * 0.7;
         const rx = fold.rx * width * breathe;
         const ry = fold.ry * height * breathe;
-        drawFold(x, y, rx, ry, 0.32 + fold.depth * 0.14);
+        drawFold(x, y, rx, ry, (0.32 + fold.depth * 0.14) * dense);
       }
 
       drawMotes();

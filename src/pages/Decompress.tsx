@@ -6,6 +6,7 @@ import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { DECOMPRESS_SECONDS, getDecompressStep } from "@/lib/decompress";
 import { CheckInWords } from "@/components/checkin/CheckInWords";
 import { WordsCard } from "@/components/checkin/WordsCard";
+import { applyFeel, clearFeel, feelAt } from "@/lib/feelTheme";
 import "./Decompress.css";
 
 type DecompressStage = "arrive" | "pause" | "checkin" | "done";
@@ -92,6 +93,10 @@ export default function Decompress() {
     };
   }, []);
 
+  // A chosen word tints the room while this page holds it; leaving
+  // releases the room back to the daypart.
+  useEffect(() => () => clearFeel(), []);
+
   useEffect(() => stopMusic, []);
 
   useEffect(() => {
@@ -164,6 +169,7 @@ export default function Decompress() {
   const chooseCheckIn = (index: number) => {
     setCheckInIndex(index);
     setCheckInTouched(true);
+    applyFeel(index);
   };
 
   const openShare = () => {
@@ -194,7 +200,7 @@ export default function Decompress() {
     stage === "done"
       ? "proud"
       : stage === "checkin"
-        ? "watching"
+        ? (checkInTouched ? (feelAt(checkInIndex)?.state ?? "watching") : "watching")
         : stage === "pause"
           ? step.mascot
           : "idle";

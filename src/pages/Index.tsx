@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
+import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { useDayPart } from "@/hooks/useDayPart";
 import { roomWhisper } from "@/lib/atmosphere/dayPart";
@@ -26,7 +27,32 @@ export default function Index() {
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
   const [feelTap, setFeelTap] = useState<number | null>(null);
+  const [droplet, setDroplet] = useState<{
+    key: number;
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    color: string;
+  } | null>(null);
+  const mascotCardRef = useRef<HTMLDivElement>(null);
   const feel = feelAt(feelTap);
+
+  // The chip sheds its word into the room: a droplet melts toward the
+  // mascot while the mist takes the feeling's colour and weight.
+  const handleFeel = (index: number, chip: HTMLElement) => {
+    setFeelTap(index);
+    applyFeel(index);
+    const next = feelAt(index);
+    const card = mascotCardRef.current;
+    if (reduceMotion || !next || !card) return;
+    const a = chip.getBoundingClientRect();
+    const b = card.getBoundingClientRect();
+    setDroplet({
+      key: Date.now(),
+      from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
+      to: { x: b.left + b.width / 2, y: b.top + b.height / 2 },
+      color: next.orbMist,
+    });
+  };
 
   const headline = useMemo((): WordPart[] => {
     if (isGuest) {
@@ -47,7 +73,7 @@ export default function Index() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: DURATION.standard, delay: 0.04, ease: EASE }}
         >
-          <div className="brume-mascot-card w-56" data-presence={presence}>
+          <div className="brume-mascot-card w-56" data-presence={presence} ref={mascotCardRef}>
             <BrumeMascot
               state={feel?.state ?? "idle"}
               size={104}
@@ -123,7 +149,7 @@ export default function Index() {
         transition={{ duration: DURATION.standard, delay: 0.18, ease: EASE }}
       >
         <div className="w-full max-w-2xl brume-card px-4 py-6 md:px-7">
-          <TodayCard onFeel={(i) => { setFeelTap(i); applyFeel(i); }} />
+          <TodayCard onFeel={handleFeel} />
         </div>
         <Link
           to="/decompress"
@@ -150,6 +176,16 @@ export default function Index() {
             </Link>
           </p>
         </motion.div>
+      )}
+
+      {droplet && (
+        <AbsorbDroplet
+          key={droplet.key}
+          from={droplet.from}
+          to={droplet.to}
+          color={droplet.color}
+          onDone={() => setDroplet(null)}
+        />
       )}
     </div>
   );

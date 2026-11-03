@@ -37,14 +37,14 @@ export function TodayCard({
 }: {
   className?: string;
   /** Fired when a check-in word is tapped, before navigation. */
-  onFeel?: (index: number) => void;
+  onFeel?: (index: number, chip: HTMLElement) => void;
 }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
 
-  const handleStateSelect = (index: number) => {
+  const handleStateSelect = (index: number, chip: HTMLElement) => {
     const pattern = getPattern(CHECK_IN_PATTERN_IDS[index]);
-    onFeel?.(index);
+    onFeel?.(index, chip);
     const go = () => {
       if (!pattern) {
         navigate("/session?pattern=box");
@@ -59,8 +59,8 @@ export function TodayCard({
         },
       });
     };
-    // A beat for Brume to acknowledge the word before it flies on.
-    if (onFeel && !reduceMotion) window.setTimeout(go, 450);
+    // A beat for the room to absorb the word before it flies on.
+    if (onFeel && !reduceMotion) window.setTimeout(go, 600);
     else go();
   };
 
@@ -87,7 +87,7 @@ export function TodayCard({
           <motion.button
             key={label}
             type="button"
-            onClick={() => handleStateSelect(index)}
+            onClick={(event) => handleStateSelect(index, event.currentTarget)}
             whileHover={reduceMotion ? undefined : { scale: 1.02 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             transition={{ duration: DURATION.quick, ease: EASE }}

@@ -67,10 +67,18 @@ previous face (the engine's pose blend morphs it en route), leads with
 its gaze and leans into the travel direction (`lean`, released after
 ~700 ms). The check-in word now echoes through
 the journey: `feelTheme.ts` maps it to a mascot expression + reaction +
-`--brume-orb-mist` tint (tap → acknowledged on Home, carried by the
-flight, orb holds the tint until the flow ends), and the preview repeats
-the word with re-pick chips that swap the pattern in place. Still ahead:
-deeper backdrop shifts and contextual suggestions. The same three files drive the Anna bundle, the
+`--brume-orb-mist` tint + a room response — `--brume-mist-r/g/b`
+retints the MistField live and `--brume-feel-weight` tells it how
+still and dense to go (heavier words: drift slows, folds thicken,
+parallax recedes, the room breath deepens — absorbed, never alarmed).
+On tap the chip also sheds a goo droplet (`AbsorbDroplet`, SVG
+`feGaussianBlur`+`feColorMatrix`, WAAPI) that melts toward the mascot
+as the retint settles; reduced motion skips the droplet and snaps the
+tint. The preview repeats the word with re-pick chips that swap the
+pattern in place; the orb holds the tint until the flow ends, and
+`--brume-mascot-wisp` picks the colour up too (it reads the same
+mist tokens). Decompress tints the room on check-in as well and
+releases it on unmount. Still ahead: contextual suggestions. The same three files drive the Anna bundle, the
 web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
 surfaces only; other screen animations are unchanged.
 

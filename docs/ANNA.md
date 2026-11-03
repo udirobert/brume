@@ -722,3 +722,16 @@ transitions and grokbot-desktop's event reactions); still source-only.
 - **Still needed for release:** the full
   browser suite, `listing/candidate/` regeneration with the new sprite,
   and the tier-3 Cloud Agent run before submit — none of that ran here.
+
+#### 12.10 status, 2026-11-03 (publish)
+
+- `anna-app apps publish --bump patch` cut **0.3.7**
+  (`version_id=1902`, executa_version 790 frozen again — tool unchanged
+  at 0.4.4; all four binaries deduped/cached). `app.json` bumped to
+  match. 20/20 `npm run test:browser` cases passed on the new sprite;
+  `listing/candidate/*.png` regenerated with it.
+- **`apps release 0.3.7` is refused while status is Rejected** — the
+  console path is `submit-review` → pending → approval → release. So
+  0.3.7 is an immutable, installable cut but NOT live and NOT
+  submitted. That stays the plan until the tier-3 Cloud Agent run can
+  go (account quota still the gate — §12.8).

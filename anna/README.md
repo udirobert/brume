@@ -8,10 +8,11 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-11-02, last console check): app status **Rejected**;
-version **0.3.6** (guarded startup, tool 0.4.4 unchanged) is installed on
-the developer account but **not submitted** for review. The shared-mascot
-rework below is in source only — not published. Bundled tool **0.4.4**
+Current state (2026-11-03, last console check): app status **Rejected**;
+version **0.3.7** (shared animated mascot + mascot life, guarded
+startup, tool 0.4.4 unchanged) is cut and installable but **not
+submitted** for review (`release` is gated on `submit-review`, which
+waits for the quota-blocked tier-3 run). Bundled tool **0.4.4**
 (binaries in GitHub release `brume-executa-v0.4.4`). App id 582, slug
 `brume`, tool id `tool-papa-brume-htcxvfcr`. Product context and the full
 progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.

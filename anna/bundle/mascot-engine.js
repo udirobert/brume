@@ -411,9 +411,11 @@ function reactionCurve(name, rawP) {
     // neutral. Act three — ground: a hair of settle into readiness.
     if (p < 0.28) {
       const k = outQuad(segP(0, 0.28));
+      // A blink at the touch — it felt that, then it softens.
+      const flinch = p < 0.1 ? Math.sin(Math.PI * (p / 0.1)) : 0;
       return {
         dy: 2.4 * k, sx: 1 + 0.02 * k, sy: 1 - 0.04 * k,
-        open: 1 - 0.1 * k, cheek: 0, wisps: 0, mouth: null,
+        open: 1 - 0.1 * k - 0.65 * flinch, cheek: 0, wisps: 0, mouth: null,
       };
     }
     if (p < 0.72) {

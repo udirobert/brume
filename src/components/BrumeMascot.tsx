@@ -65,6 +65,17 @@ export function BrumeMascot({
   const liveRef = useRef(false);
   const mountIdRef = useRef(0);
   if (!mountIdRef.current) mountIdRef.current = allocMountId();
+  // Poke-response personality: a gentle touch grounds it; rapid
+  // poking plays. Taps within 1.6s escalate ready → hop → celebrate.
+  const tapTimes = useRef<number[]>([]);
+  const onTap = () => {
+    if (!tapReaction) return;
+    const now = performance.now();
+    tapTimes.current = tapTimes.current.filter((t) => now - t < 1600);
+    tapTimes.current.push(now);
+    const n = tapTimes.current.length;
+    handleRef.current?.react(n >= 5 ? "celebrate" : n >= 3 ? "hop" : tapReaction);
+  };
 
   useLayoutEffect(() => {
     // Skip until the mount effect ran — the trail still holds the
@@ -148,12 +159,12 @@ export function BrumeMascot({
       style={{ width: size, height: size }}
       role={tapReaction ? "button" : undefined}
       tabIndex={tapReaction ? 0 : undefined}
-      onPointerDown={tapReaction ? () => handleRef.current?.react(tapReaction) : undefined}
+      onPointerDown={tapReaction ? onTap : undefined}
       onKeyDown={tapReaction
         ? (e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              handleRef.current?.react(tapReaction);
+              onTap();
             }
           }
         : undefined}

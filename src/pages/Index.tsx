@@ -142,6 +142,7 @@ export default function Index() {
             />
             <p>Brume can keep you company.</p>
             <div className="flex gap-2" role="group" aria-label="Brume presence">
+              <Magnetic pull={0.15} radius={110}>
               <button
                 type="button"
                 className={`brume-pill ${!companion ? "is-selected" : ""}`}
@@ -154,6 +155,8 @@ export default function Index() {
               >
                 Quiet
               </button>
+              </Magnetic>
+              <Magnetic pull={0.15} radius={110}>
               <button
                 type="button"
                 className={`brume-pill ${companion ? "is-selected" : ""}`}
@@ -166,6 +169,7 @@ export default function Index() {
               >
                 Company
               </button>
+              </Magnetic>
             </div>
           </div>
         </motion.div>

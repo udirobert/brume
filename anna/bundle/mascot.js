@@ -284,10 +284,20 @@ export function createMascot(host, options = {}) {
     syncListeners();
     refresh();
   }
+  let hiddenAt = 0;
   function onVisibility() {
     syncListeners();
-    if (doc.hidden) cancelRaf();
-    else refresh();
+    if (doc.hidden) {
+      hiddenAt = nowSec();
+      cancelRaf();
+      return;
+    }
+    refresh();
+    // Welcome-back perk — it noticed you came back, after a real absence.
+    if (hiddenAt && nowSec() - hiddenAt > 20 && companionActive()) {
+      react("hop");
+    }
+    hiddenAt = 0;
   }
 
   const markActivity = () => { lastActivity = nowSec(); };

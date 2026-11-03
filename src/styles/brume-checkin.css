@@ -68,6 +68,16 @@
   background: var(--brume-pear-soft);
   color: var(--brume-ink);
   box-shadow: 0 0.25rem 0 0 var(--brume-pear-deep);
+  /* The word leaps once, then sits — same three-act grammar. */
+  animation: dc-word-arc 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes dc-word-arc {
+  0% { transform: translateY(0.125rem) scaleX(1.02) scaleY(0.97); }
+  45% { transform: translateY(-0.3rem) scaleY(1.03); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dc-word.is-chosen { animation: none; }
 }
 
 .dc-word.is-chosen .dc-word__dot {

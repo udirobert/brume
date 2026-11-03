@@ -57,7 +57,7 @@ MCP widget — one engine, one painter in `mascot.js`).
 | Idle stillness | companion: bob −0.45 + rotate ±0.35° (7s) · quiet: bob −0.35 (6s) — the body holds nearly still; life comes from the gaze |
 | Gaze wander | slow sinusoids (9s / 13s periods), amplitude by presence |
 | The glance | deterministic look-away every 6.4s (`LOOK_PERIOD`), fade in 0.25s, out 0.35s so it wraps continuously; non-companion presence ×0.55 |
-| Reactions | three-act curves in `reactionCurve` — **hop** 0.5s (crouch 0–0.14 → apex stretch 0.14–0.55 → fall → touchdown squash 0.86–0.97), **settle** 0.9s (gather 0–0.15 → sink 0.15–0.7 → `outBack` overshoot 0.7–0.97), **celebrate** 0.9s (three shrinking bounces + touchdown squashes, face envelope in/out). Last 3% parks on `REACTION_REST` so every reaction lands exactly — never a snap, never a creep |
+| Reactions | three-act curves in `reactionCurve` — **hop** 0.5s (crouch 0–0.14 → apex stretch 0.14–0.55 → fall → touchdown squash 0.86–0.97), **settle** 0.9s (gather 0–0.15 → sink 0.15–0.7 → `outBack` overshoot 0.7–0.97), **celebrate** 0.9s (three shrinking bounces + touchdown squashes, face envelope in/out), **ready** 1.4s (soften 0–0.28 → exhale release 0.28–0.72 → ground 0.72–1 — the pre-performance routine embodied). Last 3% parks on `REACTION_REST` so every reaction lands exactly — never a snap, never a creep |
 | Silhouette | `BODY_POSES` per-state deltas on the three body primitives (`sx`/`sy`/`dy`), emitted as `frame.body.prims`, painted per-primitive in `mascot.js`; part of `pose`, so states morph through the frozen-pose blend |
 | Flight smear | the sprite deforms along its velocity between screens: stretch 1+0.18·a along, squash 1−0.11·a across, a = strength·(1−age/0.55s)²; `smearFrom({x,y,strength})` is a one-shot like `react`, wired from `flightVector` (strength = 0.35 floor + scaled to 1 by 400px, so even a hop reads as a dart) |
 | Attention | the companion reads HOW you come (no camera): pointer-speed EMA + nearness — fast & near = agitation → `hush` eases toward 1 (bob, wander, glance all quiet); slow & near for 0.6s = arrival → it settles with you, once per approach |
@@ -68,7 +68,8 @@ real moments): check-in word → feel-mapped reaction (`feelTheme.ts`),
 session phase → hop/settle/celebrate (`ResponsiveEnhancedSession`),
 presence toggle → hop on Company, settle on Quiet (`Index.tsx`),
 flight → smear (mount-time, `BrumeMascot.tsx`), pointer agitation →
-hush, pointer arrival → settle (`mascot.js` attention layer).
+hush, pointer arrival → settle (`mascot.js` attention layer),
+tap the mascot → `ready` arc (`tapReaction`, `Index.tsx`).
 
 Pinned by `anna/test/mascot.mjs` (31 tests): purity, no option/avatar
 mutation, reactions equal base at expiry, silhouette is state-driven

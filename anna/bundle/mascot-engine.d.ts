@@ -4,7 +4,7 @@ export type BrumeMascotState =
 
 export type MascotPresence = "quiet" | "companion";
 
-export type MascotReaction = "hop" | "settle" | "celebrate";
+export type MascotReaction = "hop" | "settle" | "celebrate" | "ready";
 
 export interface MascotPose {
   open: number;

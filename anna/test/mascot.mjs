@@ -280,7 +280,7 @@ test("all four default mouths share one structure so they morph", () => {
 });
 
 test("reactions are one-shots layered on the frame", () => {
-  assert.deepEqual(MASCOT_REACTIONS, ["hop", "settle", "celebrate"]);
+  assert.deepEqual(MASCOT_REACTIONS, ["hop", "settle", "celebrate", "ready"]);
   const t = 3.0;
   const base = sampleMascot(t, { state: "idle" });
   const hop = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.25 } });
@@ -434,6 +434,16 @@ test("flight smears along the travel direction and relaxes to rest", () => {
     smear: { x: 1, y: 0, strength: 1, age: 0 },
   });
   assert.deepEqual(still.root.smear, { angle: 0, sx: 1, sy: 1 }, "reduced motion is never smeared");
+});
+
+test("ready arc gathers, exhales, grounds — and lands", () => {
+  const base = sampleMascot(3, { state: "idle" });
+  const gather = sampleMascot(3, { state: "idle", reaction: { name: "ready", age: 0.2 } });
+  assert.ok(gather.root.y > base.root.y, "soften sinks the body down");
+  const exhale = sampleMascot(3, { state: "idle", reaction: { name: "ready", age: 0.7 } });
+  assert.ok(exhale.root.y < gather.root.y, "exhale releases back up");
+  const landed = sampleMascot(3, { state: "idle", reaction: { name: "ready", age: 1.4 } });
+  assert.deepEqual(landed, base, "ready parks on exact rest at expiry");
 });
 
 test("hush stills the body — bob, wander and glance all quiet", () => {

@@ -301,6 +301,10 @@ const REACTION_REST = Object.freeze({
  *                spring back with one overshoot 0.7–0.97.
  * celebrate (0.9s): three shrinking hops with touchdown squashes
  *                between, face envelope roaring in and easing out.
+ * ready (1.4s):   the pre-performance routine, embodied — gather
+ *                softly 0–0.28 (the body drops its shoulders),
+ *                release on an exhale 0.28–0.72, ground into
+ *                readiness 0.72–1.
  */
 const REACTIONS_LAND_PCT = 0.97;
 
@@ -401,14 +405,45 @@ function reactionCurve(name, rawP) {
     };
   }
 
+  if (name === "ready") {
+    // Act one — soften: the body gathers downward, like shoulders
+    // dropping. Act two — the exhale: a slow release back toward
+    // neutral. Act three — ground: a hair of settle into readiness.
+    if (p < 0.28) {
+      const k = outQuad(segP(0, 0.28));
+      return {
+        dy: 2.4 * k, sx: 1 + 0.02 * k, sy: 1 - 0.04 * k,
+        open: 1 - 0.1 * k, cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    if (p < 0.72) {
+      const k = outQuad(segP(0.28, 0.72));
+      return {
+        dy: lerp(2.4, 0.4, k), sx: lerp(1.02, 1, k), sy: lerp(0.96, 1.02, k),
+        open: lerp(0.9, 1.05, k), cheek: 0.15 * Math.sin(Math.PI * k),
+        wisps: 0.3 * Math.sin(Math.PI * k), mouth: null,
+      };
+    }
+    if (p < 0.97) {
+      const k = outBack(segP(0.72, 0.97));
+      return {
+        dy: lerp(0.4, -0.2, k) * (1 - segP(0.9, 0.97)), sx: 1,
+        sy: lerp(1.02, 1, k), open: lerp(1.05, 1, k),
+        cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    return REACTION_REST;
+  }
+
   return REACTION_REST;
 }
 
-export const MASCOT_REACTIONS = Object.freeze(["hop", "settle", "celebrate"]);
+export const MASCOT_REACTIONS = Object.freeze(["hop", "settle", "celebrate", "ready"]);
 export const MASCOT_REACTION_DURATIONS = Object.freeze({
   hop: 0.5,
   settle: 0.9,
   celebrate: 0.9,
+  ready: 1.4,
 });
 
 /**

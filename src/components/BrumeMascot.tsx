@@ -32,6 +32,8 @@ export interface BrumeMascotProps {
   breathPeriod?: number;
   /** One-shot reaction; fires when `key` changes (not on first mount). */
   reaction?: { name: MascotReaction; key: string | number };
+  /** Touch the creature: pointer/keyboard tap fires this reaction. */
+  tapReaction?: MascotReaction;
   /** Shared layoutId makes the sprite travel between mount points. */
   layoutId?: string;
 }
@@ -53,6 +55,7 @@ export function BrumeMascot({
   breathing = false,
   breathPeriod = 7,
   reaction,
+  tapReaction,
   layoutId,
 }: BrumeMascotProps) {
   const hostRef = useRef<HTMLSpanElement>(null);
@@ -143,6 +146,17 @@ export function BrumeMascot({
       className={`brume-mascot ${className || ""}`}
       data-presence={presence}
       style={{ width: size, height: size }}
+      role={tapReaction ? "button" : undefined}
+      tabIndex={tapReaction ? 0 : undefined}
+      onPointerDown={tapReaction ? () => handleRef.current?.react(tapReaction) : undefined}
+      onKeyDown={tapReaction
+        ? (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleRef.current?.react(tapReaction);
+            }
+          }
+        : undefined}
     />
   );
 }

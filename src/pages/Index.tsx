@@ -137,6 +137,7 @@ export default function Index() {
               trackPointer={companion}
               layoutId="brume-companion"
               reaction={mascotReaction}
+              tapReaction="ready"
             />
             <p>Brume can keep you company.</p>
             <div className="flex gap-2" role="group" aria-label="Brume presence">

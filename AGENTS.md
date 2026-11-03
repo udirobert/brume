@@ -17,7 +17,7 @@ Mascot is shared three ways: `bundle/mascot-engine.js` (frozen
 `bundle/mascot.css` (paint only, `@import`ed by `app.css` and
 `src/components/BrumeMascot.css`); the MCP widget inlines all three via
 `mcp/widget.js`. Frames blend between states over 0.5 s (easeOutQuint,
-from the frozen displayed pose), and one-shot `react("hop"|"settle"|"celebrate")`
+from the frozen displayed pose), and one-shot `react("hop"|"settle"|"celebrate"|"ready")`
 layers on top; reduced motion disables bob, blinks, drift, blends and
 reactions. Colours come from `--brume-mascot-*` tokens in
 `brand.css`. Focused test: `node --test test/mascot.mjs` (in `anna/`).

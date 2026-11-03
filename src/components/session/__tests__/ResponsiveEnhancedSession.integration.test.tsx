@@ -38,6 +38,7 @@ const nestedBox = {
 function mount(
   config: Record<string, unknown> = {},
   routeState: Record<string, unknown> | null = null,
+  props: Record<string, unknown> = {},
 ) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -55,6 +56,7 @@ function mount(
           config: { pattern: nestedBox, mode: "enhanced", ...config },
           onSessionComplete: vi.fn(),
           onSessionExit: vi.fn(),
+          ...props,
         }),
       ),
     );
@@ -76,6 +78,7 @@ describe("ResponsiveEnhancedSession integration", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.useRealTimers();
   });
 
   it("mount initializes flat pattern with real id/phases and no media requests", async () => {
@@ -113,6 +116,62 @@ describe("ResponsiveEnhancedSession integration", () => {
     expect(state().phase).toBe("active");
   });
 
+  it("startImmediately revives a leftover paused session into a fresh active one", async () => {
+    // Someone left mid-breath earlier: the store still holds their
+    // paused session. A new Begin must never land them back in that
+    // paused limbo demanding a second play press.
+    act(() => {
+      state().initializeSession({
+        mode: "enhanced",
+        pattern: {
+          id: "box",
+          name: "Box",
+          description: "",
+          benefits: [],
+          inhale: 4,
+          hold: 4,
+          exhale: 4,
+          hold_after_exhale: 4,
+        },
+        enableAudio: false,
+        enableAI: false,
+      });
+      state().startSession();
+      state().pauseSession();
+    });
+    expect(state().phase).toBe("paused");
+
+    ({ container, root } = mount({}, { startImmediately: true }));
+    await act(async () => {});
+    expect(state().phase).toBe("active");
+    expect(state().metrics.cycleCount).toBe(0);
+  });
+
+  it("a ready-phase entry waits at the preview, not a dead session screen", async () => {
+    act(() => {
+      state().initializeSession({
+        mode: "enhanced",
+        pattern: {
+          id: "box",
+          name: "Box",
+          description: "",
+          benefits: [],
+          inhale: 4,
+          hold: 4,
+          exhale: 4,
+          hold_after_exhale: 4,
+        },
+        enableAudio: false,
+        enableAI: false,
+      });
+      state().setSessionReady();
+    });
+    expect(state().phase).toBe("ready");
+    ({ container, root } = mount({}));
+    await act(async () => {});
+    expect(container.textContent).toContain("Begin");
+  });
+
   it("an unflagged entry waits for Begin and a word pick alone does not start", async () => {
     ({ container, root } = mount({}, { checkInIndex: 2 }));
     await act(async () => {});
@@ -124,5 +183,91 @@ describe("ResponsiveEnhancedSession integration", () => {
     await act(async () => {});
     expect(state().phase).not.toBe("active");
     expect(container.textContent).toContain("Begin");
+  });
+
+  it("offers a soft landing past the anchor, then lets itself down", async () => {
+    const onSessionComplete = vi.fn();
+    ({ container, root } = mount(
+      {},
+      { startImmediately: true },
+      { onSessionComplete },
+    ));
+    await act(async () => {});
+    expect(state().phase).toBe("active");
+
+    // Fake the clock before the landing is offered so its let-down
+    // timer is ours to advance.
+    vi.useFakeTimers();
+
+    // Past the anchor, at the next inhale boundary.
+    act(() => {
+      useSessionStore.setState((s) => ({
+        metrics: {
+          ...s.metrics,
+          duration: 95,
+          currentPhase: "inhale",
+          phaseProgress: 2,
+        },
+      }));
+    });
+    await act(async () => {});
+    expect(state().phase).toBe("paused");
+
+    await act(async () => {
+      vi.advanceTimersByTime(11_000);
+    });
+
+    expect(onSessionComplete).toHaveBeenCalledTimes(1);
+    expect(state().phase).toBe("complete");
+  });
+
+  it("a resume during the landing picks the breath back up and never re-offers", async () => {
+    const onSessionComplete = vi.fn();
+    ({ container, root } = mount(
+      {},
+      { startImmediately: true },
+      { onSessionComplete },
+    ));
+    await act(async () => {});
+
+    act(() => {
+      useSessionStore.setState((s) => ({
+        metrics: {
+          ...s.metrics,
+          duration: 95,
+          currentPhase: "inhale",
+          phaseProgress: 2,
+        },
+      }));
+    });
+    await act(async () => {});
+    expect(state().phase).toBe("paused");
+
+    act(() => {
+      state().resumeSession();
+    });
+    await act(async () => {});
+    expect(state().phase).toBe("active");
+
+    vi.useFakeTimers();
+    await act(async () => {
+      vi.advanceTimersByTime(11_000);
+    });
+    vi.useRealTimers();
+    expect(onSessionComplete).not.toHaveBeenCalled();
+
+    // Still active past the anchor — the offer was spent.
+    act(() => {
+      useSessionStore.setState((s) => ({
+        metrics: {
+          ...s.metrics,
+          duration: 120,
+          currentPhase: "inhale",
+          phaseProgress: 2,
+        },
+      }));
+    });
+    await act(async () => {});
+    expect(state().phase).toBe("active");
   });
 });

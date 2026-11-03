@@ -88,6 +88,10 @@ describe("check-in copy", () => {
       ...AFTER_PRACTICE_CHOICES.map((c) => c.label),
       "How is it now?",
       "You can leave it here.",
+      "The word you carried can rest here.",
+      "The breath can rest here.",
+      "Tap to keep breathing",
+      "About a minute and a half — then the breath offers to rest.",
       "Practice details",
       "practice time",
     );

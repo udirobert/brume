@@ -12,7 +12,7 @@ import { CHECK_IN_PATTERN_IDS } from "@/components/home/TodayCard";
 import { feelingAt } from "@/lib/feelings";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
 import { previewCue } from "@/lib/voiceCues";
-import { AlertCircle, Volume2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface SessionPreviewProps {
   patternName: string;
@@ -34,6 +34,8 @@ interface SessionPreviewProps {
   /** Spoken breath cues choice — surfaced here before first play. */
   audioEnabled?: boolean;
   onToggleAudio?: () => void;
+  /** One quiet line naming the session's own ending, under the phases. */
+  landingNote?: string;
   /** Brume waits with you — rendered above the pattern name. */
   mascot?: React.ReactNode;
 }
@@ -46,6 +48,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   sessionError,
   audioEnabled,
   onToggleAudio,
+  landingNote,
   mascot,
 }) => {
   const location = useLocation();
@@ -86,6 +89,9 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
         )}
         <h2 className="text-3xl font-light tracking-tight text-foreground">{patternName}</h2>
         <p className="text-sm text-muted-foreground font-mono">{phases}</p>
+        {landingNote && (
+          <p className="text-xs text-muted-foreground/70">{landingNote}</p>
+        )}
       </div>
 
       {sessionError && (
@@ -139,32 +145,27 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
         )}
 
         {audioEnabled !== undefined && onToggleAudio && (
-          <div className="flex flex-col items-center gap-1.5 mt-1">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={audioEnabled}
-                aria-label="Spoken breath cues"
-                onClick={onToggleAudio}
-                className="brume-toggle"
-              >
-                <span className="brume-toggle__dot" aria-hidden="true" />
-                Spoken breath cues {audioEnabled ? "on" : "off"}
-              </button>
-              <button
-                type="button"
-                aria-label="Hear a spoken cue"
-                title="Hear it"
-                onClick={() => previewCue("inhale")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-              >
-                <Volume2 size={18} aria-hidden="true" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground/70 text-center">
-              Plays from files on this device — nothing is sent anywhere.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground/70 text-center mt-1">
+            <button
+              type="button"
+              aria-pressed={audioEnabled}
+              aria-label="Spoken breath cues"
+              onClick={onToggleAudio}
+              className="hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              Spoken breath cues {audioEnabled ? "on" : "off"}
+            </button>
+            {" · "}
+            <button
+              type="button"
+              aria-label="Hear a spoken cue"
+              onClick={() => previewCue("inhale")}
+              className="hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              hear it
+            </button>
+            {" — plays from files on this device, nothing is sent anywhere."}
+          </p>
         )}
       </div>
     </div>

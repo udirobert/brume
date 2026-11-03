@@ -25,6 +25,16 @@ import { preloadCues, setVoiceEnabled, speakCue, stopCues } from '../../lib/voic
 import { applyFeel, feelAt } from '../../lib/feelTheme';
 import { demeanorForFeel } from '../../lib/roomExperience';
 
+// The session keeps its own ending: past a quiet anchor it pauses itself
+// at the next full-breath boundary — the landing. A tap on the mist picks
+// the breath back up; left alone for one slow beat, it lets itself down
+// into the post-session landing. The anchor matches the fullness the
+// room's practice meter uses (practiceProgress in roomExperience).
+const LANDING_SECONDS = 90;
+const LANDING_HOLD_MS = 10_000;
+const LANDING_NOTE =
+  "About a minute and a half — then the breath offers to rest.";
+
 interface ResponsiveEnhancedSessionProps {
   config: {
     pattern: {
@@ -118,12 +128,26 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     if (!flagged || startConsumedRef.current) return;
     if (!useSessionStore.getState().config) return;
     startConsumedRef.current = true;
+    // One tap on Begin = one commitment: the session must be underway.
+    // A leftover paused/complete session from an earlier visit must never
+    // surface as a paused landing that demands a second play press —
+    // restart the chosen rhythm from the top instead.
+    const stalePhase = useSessionStore.getState().phase;
+    if (stalePhase !== 'setup') {
+      useSessionStore.getState().resetSession();
+      session.initialize({
+        mode: config.mode,
+        pattern: flatPattern,
+        enableAudio: true,
+        enableAI: false,
+      });
+    }
     session.start();
     navigate(location.pathname + location.search, {
       replace: true,
       state: { ...(location.state as object), startImmediately: false },
     });
-  }, [location.state, location.pathname, location.search, session, navigate]);
+  }, [location.state, location.pathname, location.search, session, navigate, config.mode, flatPattern]);
 
   const breathPhase: BreathPhase =
     (session.metrics?.currentPhase === "pause"
@@ -194,53 +218,102 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     if (name) setMascotReaction({ name, key: `${reactionScope}-${++reactionSerial.current}` });
   }, [session.phase, heavy, reactionScope]);
 
+  const endSession = React.useCallback(() => {
+    // Complete first: the store freezes the monotonic clock and writes
+    // the final timing snapshot before we read it.
+    session.complete();
+    const finalMetrics = useSessionStore.getState().metrics;
+    const durationSeconds = finalMetrics.duration || 0;
+
+    onSessionComplete({
+      duration: durationSeconds,
+      sessionDuration: durationSeconds,
+      elapsedTime: durationSeconds * 1000,
+      cycleCount: finalMetrics.cycleCount || 0,
+      startTime: finalMetrics.startTime,
+      breathHoldTime: 0,
+      sessionType: config.mode === "classic" ? "classic" : "enhanced",
+      patternName: config.pattern.name,
+    });
+  }, [session, onSessionComplete, config.mode, config.pattern.name]);
+  const endSessionRef = React.useRef(endSession);
+  endSessionRef.current = endSession;
+
+  // Offered once per session — a resume means open-ended was chosen.
+  const [landing, setLanding] = React.useState(false);
+  const landingOffered = React.useRef(false);
+
+  const atRestingPoint =
+    sessionActive && breathPhase === "inhale" && breathProgress01 <= 0.1;
+
+  React.useEffect(() => {
+    if (landing || landingOffered.current || !atRestingPoint) return;
+    if ((session.metrics?.duration ?? 0) < LANDING_SECONDS) return;
+    landingOffered.current = true;
+    session.pause();
+    setLanding(true);
+  }, [atRestingPoint, landing, session]);
+
+  // A fresh session (setup/ready after a store reset) re-arms the offer.
+  React.useEffect(() => {
+    if (session.phase === "setup" || session.phase === "ready") {
+      landingOffered.current = false;
+      setLanding(false);
+    }
+  }, [session.phase]);
+
+  // Resuming cancels the landing; left alone, it lets itself down.
+  React.useEffect(() => {
+    if (!landing) return;
+    if (session.phase !== "paused") {
+      setLanding(false);
+      return;
+    }
+    const hold = window.setTimeout(
+      () => endSessionRef.current(),
+      LANDING_HOLD_MS,
+    );
+    return () => window.clearTimeout(hold);
+  }, [landing, session.phase]);
+
+  // Paused is a user-stop, and the way back is the orb itself: tapping
+  // the mist resumes the breath (the icon button stays the keyboard path).
+  const pausedResume = session.phase === 'paused';
   const animationWithMascot = (
-    <BreathingAnimation
-      phase={breathPhase}
-      pattern={config.pattern}
-      isActive={sessionActive}
-      isPaused={session.phase === 'paused'}
-      phaseProgress={session.metrics?.phaseProgress || 0}
+    <div
+      onClick={pausedResume ? session.resume : undefined}
+      className={pausedResume ? "cursor-pointer" : undefined}
     >
-      <CompanionAnchor
-        state={mascotState}
-        breath={mascotBreath}
-        reaction={mascotReaction}
-        presence={mascotPresence}
-        demeanor={sessionDemeanor}
-        size={isMobile ? 140 : 176}
-        className="absolute z-10"
-      />
-    </BreathingAnimation>
+      <BreathingAnimation
+        phase={breathPhase}
+        pattern={config.pattern}
+        isActive={sessionActive}
+        isPaused={session.phase === 'paused'}
+        landing={landing}
+        phaseProgress={session.metrics?.phaseProgress || 0}
+      >
+        <CompanionAnchor
+          state={mascotState}
+          breath={mascotBreath}
+          reaction={mascotReaction}
+          presence={mascotPresence}
+          demeanor={sessionDemeanor}
+          size={isMobile ? 140 : 176}
+          className="absolute z-10"
+        />
+      </BreathingAnimation>
+    </div>
   );
 
   // Session controls component
   const controls = (
-    <SessionControls
-      onEndSession={() => {
-        // Complete first: the store freezes the monotonic clock and writes
-        // the final timing snapshot before we read it.
-        session.complete();
-        const finalMetrics = useSessionStore.getState().metrics;
-        const durationSeconds = finalMetrics.duration || 0;
-
-        const sessionMetrics = {
-          duration: durationSeconds,
-          sessionDuration: durationSeconds,
-          elapsedTime: durationSeconds * 1000,
-          cycleCount: finalMetrics.cycleCount || 0,
-          startTime: finalMetrics.startTime,
-          breathHoldTime: 0,
-          sessionType: config.mode === "classic" ? "classic" : "enhanced",
-          patternName: config.pattern.name,
-        };
-
-        onSessionComplete(sessionMetrics);
-      }}
-    />
+    <SessionControls onEndSession={() => endSessionRef.current()} />
   );
 
-  const showPreview = ['setup', 'preparation', 'camera_setup'].includes(sessionPhase);
+  // 'ready' must wait at the preview like 'setup' — the session screen
+  // out here is active/paused territory only; a ready-phase landing used
+  // to render a dead play button (pause() no-ops when not yet active).
+  const showPreview = ['setup', 'preparation', 'camera_setup', 'ready'].includes(sessionPhase);
 
   // The preview and the session hand over with both halves now: the
   // outgoing screen lifts away briefly (AnimatePresence) before the
@@ -289,6 +362,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
             sessionError={sessionError}
             audioEnabled={audioEnabled}
             onToggleAudio={toggleAudio}
+            landingNote={LANDING_NOTE}
             onStart={handleSessionStart}
             onCancel={onSessionExit}
           />

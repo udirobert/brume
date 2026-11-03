@@ -26,6 +26,8 @@ interface BreathingAnimationProps {
   isActive?: boolean;
   /** Session paused — the word still shows, orb stays inactive. */
   isPaused?: boolean;
+  /** Programmatic landing — the session paused itself at a resting point. */
+  landing?: boolean;
   countdownValue?: number;
   phaseProgress?: number;
   compactMode?: boolean;
@@ -130,6 +132,7 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
     pattern,
     isActive = false,
     isPaused = false,
+    landing = false,
     countdownValue,
     phaseProgress = 0,
     compactMode = false,
@@ -139,10 +142,10 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
       if (phase === "countdown" && countdownValue !== undefined) {
         return countdownValue > 0 ? countdownValue.toString() : "Begin";
       }
-      if (isPaused) return "Take your time";
+      if (isPaused) return landing ? "The breath can rest here." : "Take your time";
       if (text && text !== "prepare" && text !== phase) return text;
       return PHASE_WORDS[phase] ?? "";
-    }, [phase, text, countdownValue, isPaused]);
+    }, [phase, text, countdownValue, isPaused, landing]);
 
     const showWord = isActive || isPaused || phase === "countdown";
 
@@ -184,6 +187,14 @@ const BreathingAnimation = React.memo<BreathingAnimationProps>(
             </p>
           ) : null}
         </div>
+
+        {/* Paused is a stop the user chose — the way back is stated, not
+            hidden in a small icon: tap the mist (or the play icon). */}
+        {isPaused && (
+          <p className="relative z-10 mt-1 text-sm text-muted-foreground/70">
+            {landing ? "Tap to keep breathing" : "Tap when you're ready"}
+          </p>
+        )}
       </div>
     );
   },

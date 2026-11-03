@@ -24,6 +24,21 @@ describe("BreathingAnimation paused state", () => {
       />,
     );
     expect(html).toContain("Take your time");
+    // The way back out of the pause is stated, not hidden in an icon.
+    expect(html).toContain("Tap when you"); 
+  });
+
+  it("does not show the resume hint while breathing", () => {
+    const html = renderToString(
+      <BreathingAnimation
+        phase="inhale"
+        pattern={pattern}
+        isActive
+        isPaused={false}
+        phaseProgress={30}
+      />,
+    );
+    expect(html).not.toContain(" Tap when ");
   });
 
   it("shows the phase word while breathing — no counters", () => {

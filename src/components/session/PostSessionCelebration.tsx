@@ -8,7 +8,7 @@ import { shareInvitation } from "@/lib/invitation";
 import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
 import { AFTER_PRACTICE_CHOICES, type AfterPracticeChoiceId } from "@/lib/checkin";
-import { feelAt } from "@/lib/feelTheme";
+import { clearFeel, feelAt } from "@/lib/feelTheme";
 import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import type { MascotReaction } from "@/components/BrumeMascot";
 import type { RoomDemeanor } from "@/lib/roomExperience";
@@ -83,6 +83,9 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
       name: id === "lighter" ? "celebrate" : "settle",
       key: Date.now(),
     });
+    // Answering is the letting-go gesture — the room releases the word's
+    // tint and eases back to the daypart mist.
+    clearFeel();
   };
 
   // After each morph, move focus to the new panel's heading (or the panel
@@ -172,7 +175,11 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
             </button>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">You can leave it here.</p>
+        <p className="text-sm text-muted-foreground">
+          {after && feel
+            ? "The word you carried can rest here."
+            : "You can leave it here."}
+        </p>
       </motion.div>
 
       <motion.div className="mt-10 w-full flex flex-col items-center" {...fade(0.28)}>

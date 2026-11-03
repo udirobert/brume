@@ -38,29 +38,11 @@ export interface MeditationMetrics {
 export interface SessionMetrics {
   duration: number; // seconds
   cycleCount: number;
-  breathHoldTime?: number;
-  stillnessScore?: number; // 0-100 (calculated from restlessness)
-  cameraUsed: boolean;
-  sessionType: string;
-  
-  // UNIFIED: Vision session ID for AI integration (DRY principle)
-  visionSessionId?: string;
-  visionMetrics?: {
-    averageStillness: number;
-    faceDetectionRate: number;
-    postureScore: number;
-  };
-  
-  // Pattern-specific performance tracking
-  patternId?: string;
-  completionRate?: number; // 0-100
-  userEngagement?: number; // 0-100
-  effectivenessScore?: number; // 0-100
-  
+
   // Phase tracking
   currentPhase?: BreathPhase;
   phaseProgress?: number; // 0-100
-  startTime?: Date; // FIXED: Use Date object for proper serialization
+  startTime?: Date;
 }
 
 // ============================================================================
@@ -147,7 +129,6 @@ export interface VisionMetrics {
 export type BreathPhase = 'inhale' | 'hold' | 'exhale' | 'pause' | 'hold_after_exhale';
 export type SessionPhase = 'setup' | 'preparation' | 'camera_setup' | 'ready' | 'active' | 'paused' | 'complete';
 export type SessionMode = 'classic' | 'enhanced' | 'advanced' | 'mobile';
-export type PerformanceMode = 'optimal' | 'balanced' | 'minimal';
 export type VisionStatus = 'idle' | 'initializing' | 'ready' | 'active' | 'error' | 'paused';
 
 // ============================================================================

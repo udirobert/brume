@@ -12,7 +12,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { BreathingPattern } from '../lib/breathingPatterns';
 import { errorReporter } from '../lib/errors/error-reporter';
 import { trackSessionCompleted } from '../lib/notifications/oneSignal';
-import type { SessionPhase, BreathPhase, SessionMode, SessionMetrics, PerformanceMode } from '../types/metrics';
+import type { SessionPhase, SessionMode, SessionMetrics } from '../types/metrics';
 import {
   createSessionClock,
   pauseSessionClock,
@@ -30,7 +30,6 @@ export interface SessionConfig {
   pattern: BreathingPattern;
   enableAudio: boolean;
   enableAI: boolean;
-  maxCycles?: number;
 }
 
 // SessionMetrics now imported from types/metrics.ts
@@ -45,18 +44,11 @@ export interface SessionState {
   // Media state
   audioEnabled: boolean;
 
-  // Session outcome (set on completion; cleared on reset)
-  lastSessionVerified: boolean;
-
   // Monotonic active-time clock driving duration/rhythm/cycles
   clock: SessionClock;
 
-  // Error and warning state
+  // Error state
   error: string | null;
-  warnings: string[];
-
-  // Performance state
-  performanceMode: PerformanceMode;
 }
 
 // ============================================================================
@@ -74,29 +66,8 @@ export interface SessionActions {
   resetSession: () => void;
   tickSession: () => void;
 
-  // Phase management
-  updateBreathPhase: (phase: BreathPhase, progress: number) => void;
-  incrementCycle: () => void;
-
-  // Pattern performance tracking
-  updatePatternMetrics: (metrics: Partial<SessionMetrics>) => void;
-  recordPatternPerformance: (patternId: string, completionRate: number, engagement: number) => void;
-
   // Media management
   toggleAudio: () => void;
-
-  // Error handling
-  setError: (error: string | null) => void;
-  addWarning: (warning: string) => void;
-  clearWarnings: () => void;
-
-  // Performance
-  setPerformanceMode: (mode: PerformanceMode) => void;
-
-  // Utilities
-  getSessionDuration: () => string;
-  getCompletionPercentage: () => number;
-  getSessionId: () => string | null;
 }
 
 // ============================================================================
@@ -106,8 +77,6 @@ export interface SessionActions {
 const initialMetrics: SessionMetrics = {
   duration: 0,
   cycleCount: 0,
-  cameraUsed: false,
-  sessionType: 'basic',
   currentPhase: 'inhale',
   phaseProgress: 0,
 };
@@ -128,11 +97,8 @@ const initialState: SessionState = {
   metrics: initialMetrics,
   sessionId: null,
   audioEnabled: storedAudioEnabled(),
-  lastSessionVerified: false,
   clock: createSessionClock(),
   error: null,
-  warnings: [],
-  performanceMode: 'optimal',
 };
 
 // ============================================================================
@@ -153,7 +119,6 @@ export const useSessionStore = create<SessionState & SessionActions>()(
         metrics: { ...initialMetrics },
         clock: createSessionClock(),
         error: null,
-        warnings: [],
       });
       
       // MODULAR: Notify error reporter of new session
@@ -231,14 +196,12 @@ export const useSessionStore = create<SessionState & SessionActions>()(
       const timing = sampleSessionTiming(clock, state.config.pattern, now);
       // No camera, no vision — nothing is "verified" anymore; the tag is
       // kept false so notification journeys see an honest zero.
-      const verified = false;
       set({
         phase: 'complete',
         clock,
         metrics: { ...state.metrics, ...timing },
-        lastSessionVerified: verified,
       });
-      trackSessionCompleted({ verified });
+      trackSessionCompleted({ verified: false });
     },
 
     tickSession: () => {
@@ -258,54 +221,6 @@ export const useSessionStore = create<SessionState & SessionActions>()(
       set({ ...initialState });
     },
 
-    // Phase management
-    updateBreathPhase: (phase, progress) => {
-      set((state) => {
-        if (state.phase !== 'active') return state;
-        const currentDuration = state.config
-          ? sampleSessionTiming(state.clock, state.config.pattern, performance.now()).duration
-          : state.metrics.duration;
-
-        const roundedProgress = Math.round(progress);
-
-        // Debug logging for phase updates
-        const phaseChanged = state.metrics.currentPhase !== phase;
-        const progressChanged = Math.abs((state.metrics.phaseProgress || 0) - roundedProgress) >= 1; // Reduced threshold
-        const durationChanged = state.metrics.duration !== currentDuration;
-
-        if (phaseChanged) {
-          console.log(`🔄 Phase changed: ${state.metrics.currentPhase} → ${phase}`);
-        }
-
-        // Always update if phase changed, or if progress/duration changed
-        if (phaseChanged || progressChanged || durationChanged) {
-          return {
-            metrics: {
-              ...state.metrics,
-              currentPhase: phase,
-              phaseProgress: roundedProgress,
-              duration: currentDuration,
-            },
-          };
-        }
-
-        return state; // No significant change
-      });
-    },
-
-    incrementCycle: () => {
-      set((state) => {
-        const newCycleCount = state.metrics.cycleCount + 1;
-        console.log(`🔄 Cycle incremented: ${state.metrics.cycleCount} → ${newCycleCount}`);
-        return {
-          metrics: {
-            ...state.metrics,
-            cycleCount: newCycleCount,
-          },
-        };
-      });
-    },
-
     // Media management
     toggleAudio: () => {
       set((state) => {
@@ -318,73 +233,6 @@ export const useSessionStore = create<SessionState & SessionActions>()(
         return { audioEnabled };
       });
     },
-
-    // Error handling
-    setError: (error) => {
-      set({ error });
-    },
-
-    addWarning: (warning) => {
-      set((state) => ({
-        warnings: [...state.warnings, warning],
-      }));
-    },
-
-    clearWarnings: () => {
-      set({ warnings: [] });
-    },
-
-    // Performance
-    setPerformanceMode: (mode) => {
-      set({ performanceMode: mode });
-    },
-
-    // Pattern performance tracking
-    updatePatternMetrics: (metrics) => {
-      set((state) => ({
-        metrics: {
-          ...state.metrics,
-          ...metrics,
-        },
-      }));
-    },
-
-    recordPatternPerformance: (patternId, completionRate, engagement) => {
-      const effectivenessScore = (completionRate + engagement) / 2;
-      set((state) => ({
-        metrics: {
-          ...state.metrics,
-          patternId,
-          completionRate,
-          userEngagement: engagement,
-          effectivenessScore,
-        },
-      }));
-    },
-
-    // Utilities
-    getSessionDuration: () => {
-      const { metrics } = get();
-      const totalSeconds = metrics.duration;
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    },
-
-    getCompletionPercentage: () => {
-      const { metrics, config } = get();
-      if (!config) return 0;
-
-      // Estimate completion based on typical 5-minute session
-      const targetDuration = 300; // 5 minutes
-      const percentage = Math.min((metrics.duration / targetDuration) * 100, 100);
-      // Fix floating point precision issues
-      return Math.round(percentage * 100) / 100;
-    },
-
-    getSessionId: () => {
-      return get().sessionId;
-    },
   }))
 );
 
@@ -392,41 +240,10 @@ export const useSessionStore = create<SessionState & SessionActions>()(
 // SELECTORS - Optimized state access
 // ============================================================================
 
-// Custom hooks for session selectors
-export const useSessionIsActive = () => useSessionStore((state) => state.phase === 'active');
-export const useSessionIsPaused = () => useSessionStore((state) => state.phase === 'paused');
-export const useSessionIsComplete = () => useSessionStore((state) => state.phase === 'complete');
-export const useSessionCurrentMode = () => useSessionStore((state) => state.config?.mode || 'basic');
-export const useSessionCurrentPattern = () => useSessionStore((state) => state.config?.pattern);
-export const useSessionIsOptimalPerformance = () => useSessionStore((state) =>
-  state.performanceMode === 'optimal'
-);
-export const useSessionCurrentPatternId = () => useSessionStore((state) => state.metrics.patternId);
-export const useSessionPatternCompletionRate = () => useSessionStore((state) => state.metrics.completionRate);
-export const useSessionPatternEngagement = () => useSessionStore((state) => state.metrics.userEngagement);
-export const useSessionPatternEffectiveness = () => useSessionStore((state) => state.metrics.effectivenessScore);
-export const useSessionHasError = () => useSessionStore((state) => !!state.error);
-export const useSessionHasWarnings = () => useSessionStore((state) => state.warnings.length > 0);
-
-// ============================================================================
-// SELECTORS - Optimized state access
-// ============================================================================
-
 export const sessionSelectors = {
   isActive: () => useSessionStore.getState().phase !== 'setup',
-  isRunning: () => ['inhale', 'hold', 'exhale', 'pause'].includes(useSessionStore.getState().phase),
   isPaused: () => useSessionStore.getState().phase === 'paused',
   isComplete: () => useSessionStore.getState().phase === 'complete',
-  hasError: () => !!useSessionStore.getState().error,
-  hasWarnings: () => useSessionStore.getState().warnings.length > 0,
-  currentCycle: () => useSessionStore.getState().metrics.cycleCount,
-  totalCycles: () => useSessionStore.getState().config?.maxCycles || 10,
-  progress: () => {
-    const state = useSessionStore.getState();
-    const maxCycles = state.config?.maxCycles || 10;
-    return Math.min((state.metrics.cycleCount / maxCycles) * 100, 100);
-  },
-  breathHoldTime: () => useSessionStore.getState().metrics.breathHoldTime,
 };
 
 // ============================================================================
@@ -436,14 +253,5 @@ export const sessionSelectors = {
 export const useSessionPhase = () => useSessionStore((state) => state.phase);
 export const useSessionMetrics = () => useSessionStore((state) => state.metrics);
 export const useSessionConfig = () => useSessionStore((state) => state.config);
-export const useSessionError = () => useSessionStore((state) => state.error);
-
-// Pattern performance hooks
-export const usePatternPerformance = () => useSessionStore((state) => ({
-  patternId: state.metrics.patternId,
-  completionRate: state.metrics.completionRate,
-  engagement: state.metrics.userEngagement,
-  effectiveness: state.metrics.effectivenessScore,
-}));
 
 export default useSessionStore;

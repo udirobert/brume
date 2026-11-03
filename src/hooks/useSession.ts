@@ -42,9 +42,6 @@ export const useSession = (options: UseSessionOptions = {}) => {
     completeSession,
     resetSession,
     toggleAudio,
-    getSessionDuration,
-    getCompletionPercentage,
-    getSessionId,
   } = useSessionStore();
 
   const phase = useSessionPhase();
@@ -149,11 +146,6 @@ export const useSession = (options: UseSessionOptions = {}) => {
     complete,
     reset,
     toggleAudio,
-
-    // Utilities
-    getSessionDuration,
-    getCompletionPercentage,
-    getSessionId,
   };
 };
 

@@ -17,7 +17,7 @@ export const EnhancedSessionLayout: React.FC<EnhancedSessionLayoutProps> = ({
   onExit,
 }) => {
   return (
-    <div className="relative flex flex-col h-[100dvh] min-h-screen bg-calm-gradient overflow-hidden">
+    <div className="relative flex flex-col h-[100dvh] min-h-screen overflow-hidden">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/15 rounded-full blur-[120px] -z-10" />
 
       {onExit && (

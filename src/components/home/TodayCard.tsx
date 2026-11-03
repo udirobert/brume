@@ -12,32 +12,31 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE, EASE_SETTLE, PRESS } from "@/lib/motion";
 import { useNavigate } from "react-router-dom";
-import { viewTransitionTo } from "@/lib/viewTransition";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
 import { cn } from "@/lib/utils";
 
 /** Check-in word index → pattern id. "Overwhelmed" lands on the reset:
  *  the shortest rhythm with no holds. */
-export const CHECK_IN_PATTERN_IDS = [
-  "mindfulness",
-  "box",
-  "relaxation",
-  "relaxation",
-  "reset",
-] as const;
+import { FEELINGS, LEGACY_FEEL_INDICES } from "@/lib/feelings";
+
+export const CHECK_IN_PATTERN_IDS = FEELINGS.map((f) => f.patternId);
 
 export function TodayCard({
   className,
   onFeel,
+  initialIndex = null,
+  showContinue = true,
 }: {
   className?: string;
   /** A word is let go (index) or put back down (null). */
   onFeel?: (index: number | null, chip?: HTMLElement) => void;
+  initialIndex?: number | null;
+  showContinue?: boolean;
 }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(initialIndex);
   const pattern = picked === null ? null : getPattern(CHECK_IN_PATTERN_IDS[picked]);
 
   // First tap: the word is let go — the room absorbs it and the
@@ -57,7 +56,7 @@ export function TodayCard({
   // "Take it into a breath" — the opt-in that carries it forward.
   // After the droplet settles, this control view-transitions into the
   // session preview's Begin button (its [data-vt-entry] mark).
-  const handleContinue = (btn: HTMLButtonElement) => {
+  const handleContinue = () => {
     if (picked === null) return;
     const index = picked;
     const go = () => {
@@ -74,9 +73,7 @@ export function TodayCard({
         },
       });
     };
-    if (!reduceMotion) {
-      window.setTimeout(() => viewTransitionTo(go, { origin: btn }), 280);
-    } else go();
+    go();
   };
 
   return (
@@ -89,8 +86,10 @@ export function TodayCard({
           ? "Pick one and Brume suggests a rhythm."
           : `${pattern.name} · ${formatPhases(pattern)}`}
       </p>
-      <div className="flex justify-center gap-1.5">
-        {CHECK_IN_SHORT_LABELS.map((label, index) => (
+      <div className="flex flex-wrap justify-center gap-2">
+        {LEGACY_FEEL_INDICES.map((index) => {
+          const label = CHECK_IN_SHORT_LABELS[index];
+          return (
           <motion.button
             key={label}
             type="button"
@@ -103,11 +102,12 @@ export function TodayCard({
               // releases on the settle ease (one small overshoot pass).
               : { ...PRESS.chipSquash, transition: { duration: 0.3, ease: EASE_SETTLE } }}
             transition={{ duration: DURATION.quick, ease: EASE }}
-            className={cn("brume-btn brume-btn--soft px-3 py-2 min-h-0 text-xs whitespace-nowrap")}
+            className={cn("brume-choice")}
           >
-            {label}
-          </motion.button>
-        ))}
+              {label}
+            </motion.button>
+          );
+        })}
       </div>
 
       {picked !== null && (
@@ -124,13 +124,15 @@ export function TodayCard({
           >
             ‹ choose again
           </button>
-          <button
-            type="button"
-            className="brume-btn brume-btn--push px-5 py-2.5 min-h-0 text-sm"
-            onClick={(event) => handleContinue(event.currentTarget)}
-          >
-            Take it into a breath
-          </button>
+          {showContinue && (
+            <button
+              type="button"
+              className="brume-btn brume-btn--push px-5 py-2.5 min-h-0 text-sm"
+              onClick={() => handleContinue()}
+            >
+              Take it into a breath
+            </button>
+          )}
         </motion.div>
       )}
     </div>

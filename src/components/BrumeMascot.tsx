@@ -16,6 +16,8 @@ import {
   FLIGHT_RELEASE_MS,
 } from "@/lib/mascotFlight";
 import type { MascotPresence } from "@/lib/mascotPresence";
+import { avatarForDemeanor } from "@/lib/mascotDemeanor";
+import type { RoomDemeanor } from "@/lib/roomExperience";
 import "./BrumeMascot.css";
 
 export type { BrumeMascotState, MascotHandle, MascotReaction };
@@ -34,6 +36,8 @@ export interface BrumeMascotProps {
   reaction?: { name: MascotReaction; key: string | number };
   /** Touch the creature: pointer/keyboard tap fires this reaction. */
   tapReaction?: MascotReaction;
+  demeanor?: RoomDemeanor;
+  allowTapEscalation?: boolean;
   /** Shared layoutId makes the sprite travel between mount points. */
   layoutId?: string;
 }
@@ -56,9 +60,11 @@ export function BrumeMascot({
   breathPeriod = 7,
   reaction,
   tapReaction,
+  demeanor = "open",
+  allowTapEscalation = true,
   layoutId,
 }: BrumeMascotProps) {
-  const hostRef = useRef<HTMLSpanElement>(null);
+  const hostRef = useRef<HTMLElement>(null);
   const handleRef = useRef<MascotHandle | null>(null);
   const reactionSeen = useRef(false);
   const prevReactionKey = useRef<string | number | undefined>(undefined);
@@ -74,7 +80,10 @@ export function BrumeMascot({
     tapTimes.current = tapTimes.current.filter((t) => now - t < 1600);
     tapTimes.current.push(now);
     const n = tapTimes.current.length;
-    handleRef.current?.react(n >= 5 ? "celebrate" : n >= 3 ? "hop" : tapReaction);
+    const escalate = allowTapEscalation && demeanor === "open";
+    handleRef.current?.react(
+      escalate ? (n >= 5 ? "celebrate" : n >= 3 ? "hop" : tapReaction) : tapReaction,
+    );
     // Halo ring — one soft pulse outward from the body.
     const host = hostRef.current;
     if (host) {
@@ -111,7 +120,9 @@ export function BrumeMascot({
         : null;
     handleRef.current = createMascot(
       host,
-      flight ? { state: flight.fromState, gaze: flight.gaze, lean: flight.lean } : {},
+      flight
+        ? { state: flight.fromState, gaze: flight.gaze, lean: flight.lean, avatar: avatarForDemeanor(demeanor) }
+        : { avatar: avatarForDemeanor(demeanor) },
     );
     let release = 0;
     if (flight) {
@@ -145,6 +156,10 @@ export function BrumeMascot({
   }, [presence, trackPointer, breathing, breathPeriod, breath]);
 
   useEffect(() => {
+    handleRef.current?.setOptions({ avatar: avatarForDemeanor(demeanor) });
+  }, [demeanor]);
+
+  useEffect(() => {
     handleRef.current?.setState(state);
   }, [state]);
 
@@ -159,24 +174,26 @@ export function BrumeMascot({
 
   return (
     <motion.span
-      ref={hostRef}
       layoutId={layoutId}
-      className={`brume-mascot ${className || ""}`}
-      data-presence={presence}
+      className={`brume-mascot-frame ${className || ""}`}
       data-tap={tapReaction ? "" : undefined}
+      data-demeanor={demeanor}
       style={{ width: size, height: size }}
-      role={tapReaction ? "button" : undefined}
-      tabIndex={tapReaction ? 0 : undefined}
-      onPointerDown={tapReaction ? onTap : undefined}
-      onKeyDown={tapReaction
-        ? (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onTap();
-            }
-          }
-        : undefined}
-    />
+    >
+      <span
+        ref={hostRef as React.Ref<HTMLSpanElement>}
+        className="brume-mascot"
+        data-presence={presence}
+      />
+      {tapReaction && (
+        <button
+          type="button"
+          className="brume-mascot-frame__tap"
+          aria-label="Give Brume a gentle nudge"
+          onClick={onTap}
+        />
+      )}
+    </motion.span>
   );
 }
 

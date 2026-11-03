@@ -1,0 +1,207 @@
+.brume-room {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: hsl(var(--brume-background));
+}
+
+.brume-room__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.brume-room__fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.brume-room[data-renderer="fallback"] .brume-room__canvas {
+  display: none;
+}
+
+.brume-room[data-renderer="fallback"] .brume-room__fallback {
+  display: block;
+}
+
+.brume-room[data-renderer="fallback"][data-material="mist"] .brume-room__fallback {
+  background:
+    radial-gradient(120% 90% at 30% 15%, rgb(207 216 238 / .45), transparent 60%),
+    radial-gradient(110% 80% at 75% 90%, rgb(159 173 214 / .30), transparent 65%),
+    hsl(var(--brume-background));
+}
+
+.brume-room[data-renderer="fallback"][data-material="waves"] .brume-room__fallback {
+  background:
+    repeating-linear-gradient(168deg, rgb(127 180 180 / .22) 0 2.4rem, transparent 2.4rem 5.6rem),
+    radial-gradient(120% 90% at 70% 20%, rgb(127 180 180 / .28), transparent 60%),
+    #f2eee2;
+}
+
+.brume-room[data-renderer="fallback"][data-material="sand"] .brume-room__fallback {
+  background:
+    repeating-linear-gradient(178deg, rgb(169 130 78 / .16) 0 1.8rem, rgb(220 191 138 / .22) 1.8rem 4.4rem),
+    radial-gradient(130% 100% at 50% 110%, rgb(220 191 138 / .35), transparent 70%),
+    #f3ead6;
+}
+
+.brume-room[data-renderer="fallback"][data-material="cells"] .brume-room__fallback {
+  background:
+    radial-gradient(9rem 7rem at 20% 75%, rgb(185 167 196 / .30), transparent 70%),
+    radial-gradient(11rem 8rem at 78% 68%, rgb(127 160 142 / .26), transparent 70%),
+    radial-gradient(7rem 6rem at 55% 88%, rgb(185 167 196 / .22), transparent 70%),
+    #f4efe6;
+}
+
+.brume-room[data-renderer="fallback"][data-material="snow"] .brume-room__fallback {
+  background:
+    radial-gradient(140% 80% at 50% 105%, rgb(204 212 236 / .45), transparent 70%),
+    repeating-linear-gradient(176deg, rgb(141 156 200 / .10) 0 2.6rem, transparent 2.6rem 6.4rem),
+    #f4f4f7;
+}
+
+.brume-room[data-renderer="fallback"][data-material="ink"] .brume-room__fallback {
+  background:
+    radial-gradient(90% 70% at 8% 30%, rgb(75 83 144 / .28), transparent 65%),
+    radial-gradient(95% 75% at 95% 75%, rgb(138 147 201 / .30), transparent 60%),
+    #f5efe2;
+}
+
+.brume-room-controls {
+  position: fixed;
+  z-index: 40;
+  top: 80px;
+  right: max(1rem, env(safe-area-inset-right));
+  font-family: var(--brume-font);
+}
+
+.brume-room-controls > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.25rem 0.875rem;
+  border: 1px solid var(--brume-rule);
+  border-radius: 999px;
+  background: var(--brume-card);
+  color: var(--brume-ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--brume-shadow-card, none);
+}
+
+.brume-room-controls > summary::-webkit-details-marker {
+  display: none;
+}
+
+.brume-room-controls > summary:focus-visible {
+  outline: 2px solid var(--brume-focus);
+  outline-offset: 2px;
+}
+
+.brume-room-controls__pop {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 15rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem;
+  border: 1px solid var(--brume-rule);
+  border-radius: 1rem;
+  background: var(--brume-card);
+  box-shadow: var(--brume-shadow-card, 0 0.5rem 1.5rem rgb(0 0 0 / .08));
+}
+
+.brume-room-controls__item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brume-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.brume-room-controls__item:hover {
+  background: var(--brume-mint-soft);
+}
+
+.brume-room-controls__item[aria-pressed="true"] {
+  background: var(--brume-mint-soft);
+  border-color: var(--brume-cyan-deep);
+}
+
+.brume-room-controls__item:focus-visible {
+  outline: 2px solid var(--brume-focus);
+  outline-offset: 2px;
+}
+
+.brume-room-controls__still {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--brume-rule);
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding-top: 0.625rem;
+}
+
+html:has(.brume-room) .decompress-page {
+  background: transparent;
+}
+
+html:has(.brume-room) .decompress-page::before,
+html:has(.brume-room) .dc-room__mist,
+html:has(.brume-room) .dc-room__wisp {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .brume-room-controls {
+    top: auto;
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+  .brume-room-controls:not(.brume-room-controls--immersive) .brume-room-controls__pop {
+    top: auto;
+    bottom: calc(100% + 0.375rem);
+  }
+}
+
+.brume-room-controls--immersive {
+  top: 20px;
+  right: 20px;
+  bottom: auto;
+}
+
+.brume-room-controls--decompress {
+  top: 76px;
+}
+
+.brume-room-controls--inline {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  margin-top: 1rem;
+}
+
+.brume-room-controls--inline .brume-room-controls__pop {
+  top: auto;
+  bottom: calc(100% + 0.375rem);
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}

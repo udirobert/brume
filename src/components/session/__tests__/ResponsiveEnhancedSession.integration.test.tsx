@@ -35,7 +35,10 @@ const nestedBox = {
   description: "box",
 };
 
-function mount(config: Record<string, unknown> = {}) {
+function mount(
+  config: Record<string, unknown> = {},
+  routeState: Record<string, unknown> | null = null,
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -43,7 +46,11 @@ function mount(config: Record<string, unknown> = {}) {
     root.render(
       React.createElement(
         MemoryRouter,
-        null,
+        {
+          initialEntries: [
+            { pathname: "/session", state: routeState ?? undefined },
+          ],
+        },
         React.createElement(ResponsiveEnhancedSession, {
           config: { pattern: nestedBox, mode: "enhanced", ...config },
           onSessionComplete: vi.fn(),
@@ -98,5 +105,24 @@ describe("ResponsiveEnhancedSession integration", () => {
     });
     expect(state().phase).toBe("active");
     expect(gum).not.toHaveBeenCalled();
+  });
+
+  it("startImmediately consumes once into an active session", async () => {
+    ({ container, root } = mount({}, { startImmediately: true }));
+    await act(async () => {});
+    expect(state().phase).toBe("active");
+  });
+
+  it("an unflagged entry waits for Begin and a word pick alone does not start", async () => {
+    ({ container, root } = mount({}, { checkInIndex: 2 }));
+    await act(async () => {});
+    expect(state().phase).not.toBe("active");
+  });
+
+  it("a consumed flag does not auto-start on revisit", async () => {
+    ({ container, root } = mount({}, { startImmediately: false }));
+    await act(async () => {});
+    expect(state().phase).not.toBe("active");
+    expect(container.textContent).toContain("Begin");
   });
 });

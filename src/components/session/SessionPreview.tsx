@@ -7,10 +7,10 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-import { ContextCards } from "@/components/primitives/ContextCard";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_PATTERN_IDS } from "@/components/home/TodayCard";
-import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
+import { feelingAt } from "@/lib/feelings";
+import { PairedFeelings } from "@/components/checkin/PairedFeelings";
 import { previewCue } from "@/lib/voiceCues";
 import { AlertCircle, Volume2 } from "lucide-react";
 
@@ -74,8 +74,6 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   const isInvite = new URLSearchParams(location.search).get("via") === "invite";
   const reason = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reason;
   const reasonDetail = (location.state as { reason?: string; reasonDetail?: string; source?: string } | null)?.reasonDetail;
-  const source =
-    (location.state as { source?: string } | null)?.source || "From how you feel";
 
   const phases = formatPhases(pattern.phases);
 
@@ -101,16 +99,9 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
       )}
 
       {(reason || reasonDetail) && (
-        <ContextCards
-          className="max-w-sm"
-          chunks={[
-            {
-              title: reason || patternName,
-              body: reasonDetail || pattern.description || "A pattern matched to how you feel right now.",
-              source,
-            },
-          ]}
-        />
+        <p className="text-sm text-muted-foreground max-w-sm text-center">
+          {reasonDetail || pattern.description || "A pattern matched to how you feel right now."}
+        </p>
       )}
 
       {checkInIndex !== null && (
@@ -118,23 +109,10 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
           <p className="text-sm text-muted-foreground">
             You said:{" "}
             <span className="font-medium text-foreground">
-              {CHECK_IN_SHORT_LABELS[checkInIndex]}
+              {feelingAt(checkInIndex)?.label}
             </span>
           </p>
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {CHECK_IN_SHORT_LABELS.map((label, i) =>
-              i === checkInIndex ? null : (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => pickFeel(i)}
-                  className="brume-pill px-3 py-1 min-h-0 text-xs"
-                >
-                  {label}
-                </button>
-              ),
-            )}
-          </div>
+          <PairedFeelings selectedIndex={checkInIndex} onChoose={pickFeel} showHint={false} />
         </div>
       )}
 

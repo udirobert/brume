@@ -16,7 +16,6 @@ import {
 import { BREATHING_PATTERNS } from "../../lib/breathingPatterns";
 import { useOfflineManager } from "../../lib/offline/OfflineManager";
 import { useSessionStore } from "@/stores/sessionStore";
-import { viewTransitionTo } from "@/lib/viewTransition";
 import { ResponsiveEnhancedSession } from "./ResponsiveEnhancedSession";
 import { SessionErrorBoundary } from "../../lib/errors/error-boundary";
 
@@ -84,8 +83,7 @@ const useSessionCompletion = () => {
 
       // The completion handover is a page change with both halves:
       // the session surface eases out while /post-session settles in.
-      viewTransitionTo(() =>
-        navigate("/post-session", {
+      navigate("/post-session", {
           state: {
             breathHoldTime,
             patternId: pattern.id || "custom",
@@ -105,8 +103,7 @@ const useSessionCompletion = () => {
                 ? (location.state as { checkInIndex: number }).checkInIndex
                 : null,
           },
-        }),
-      );
+        });
     },
     [navigate, saveSession, syncStatus.isOnline, location.state]
   );
@@ -199,7 +196,7 @@ export const SessionModeWrapper: React.FC = () => {
       <ResponsiveEnhancedSession
         config={responsiveConfig}
         onSessionComplete={onSessionComplete}
-        onSessionExit={() => viewTransitionTo(() => navigate("/"))}
+        onSessionExit={() => navigate("/")}
       />
     </SessionErrorBoundary>
   );

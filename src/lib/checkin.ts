@@ -3,31 +3,23 @@
  * Shared by Decompress, Home and the post-session words card.
  */
 
-export const CHECK_IN_LABELS = [
-  "Okay as I am",
-  "A little stretched",
-  "A lot on my mind",
-  "Near my limit",
-  "Overwhelmed",
-] as const;
+import { FEELINGS, feelingAt } from "./feelings";
 
-export const CHECK_IN_SHORT_LABELS = [
-  "Okay",
-  "Stretched",
-  "A lot",
-  "At limit",
-  "Overwhelmed",
-] as const;
+export const CHECK_IN_LABELS = FEELINGS.map((f) => f.longLabel);
+
+export const CHECK_IN_SHORT_LABELS = FEELINGS.map((f) => f.label);
 
 export type SupportChoice = "company" | "space" | "listening" | "unsure";
 
-export const CHECK_IN_PHRASES = [
-  "okay as I am",
-  "a little stretched",
-  "carrying a lot",
-  "near my limit",
-  "quietly overwhelmed",
+export const AFTER_PRACTICE_CHOICES = [
+  { id: "lighter", label: "A little lighter" },
+  { id: "same", label: "About the same" },
+  { id: "heavy", label: "Still a lot" },
 ] as const;
+
+export type AfterPracticeChoiceId = (typeof AFTER_PRACTICE_CHOICES)[number]["id"];
+
+export const CHECK_IN_PHRASES = FEELINGS.map((f) => f.phrase);
 
 export const SUPPORT_SENTENCES: Record<SupportChoice, string> = {
   company: "Some company would be enough.",
@@ -47,9 +39,7 @@ export const FOR_OPTIONS: Array<{ id: ForChoice; label: string }> = [
 const NEUTRAL_PHRASE = "not sure how I am";
 
 function phraseFor(checkInIndex: number | null): string {
-  if (checkInIndex == null || checkInIndex < 0) return NEUTRAL_PHRASE;
-  const index = Math.max(0, Math.min(CHECK_IN_PHRASES.length - 1, checkInIndex));
-  return CHECK_IN_PHRASES[index];
+  return feelingAt(checkInIndex)?.phrase ?? NEUTRAL_PHRASE;
 }
 
 function openerFor(phrase: string, forChoice: ForChoice | null): string {

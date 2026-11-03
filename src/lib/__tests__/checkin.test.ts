@@ -36,18 +36,24 @@ describe("composeCheckInMessage", () => {
     }
   });
 
-  it("clamps out-of-range indexes", () => {
-    expect(composeCheckInMessage(99, null)).toContain(
-      CHECK_IN_PHRASES[CHECK_IN_PHRASES.length - 1],
-    );
+  it("invalid indexes fall back to the neutral phrase", () => {
+    expect(composeCheckInMessage(99, null)).toContain("not sure how I am");
+    expect(composeCheckInMessage(-2, null)).toContain("not sure how I am");
   });
 });
 
 describe("check-in vocab", () => {
   it("labels, phrases and short labels line up", () => {
-    expect(CHECK_IN_LABELS).toHaveLength(5);
-    expect(CHECK_IN_SHORT_LABELS).toHaveLength(5);
-    expect(CHECK_IN_PHRASES).toHaveLength(5);
+    expect(CHECK_IN_LABELS).toHaveLength(14);
+    expect(CHECK_IN_SHORT_LABELS).toHaveLength(14);
+    expect(CHECK_IN_PHRASES).toHaveLength(14);
+    expect(CHECK_IN_SHORT_LABELS.slice(0, 5)).toEqual([
+      "Okay",
+      "Stretched",
+      "A lot",
+      "At limit",
+      "Overwhelmed",
+    ]);
   });
 
   it("FOR_OPTIONS covers the three registers", () => {
@@ -67,6 +73,7 @@ describe("TodayCard mapping", () => {
     }
     // Overwhelmed → shortest, no holds
     expect(CHECK_IN_PATTERN_IDS[4]).toBe("reset");
+    expect(CHECK_IN_PATTERN_IDS[13]).toBe("reset");
   });
 });
 

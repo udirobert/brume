@@ -82,6 +82,21 @@ rounded style; no lucide sparkles/charts in navigation).
 Accessibility: `src/styles/brume-a11y.css` covers forced-colors and
 prefers-contrast; reduced motion = opacity only.
 
+Web-only room + companion experiment (Anna bundle and shared mascot
+engine unchanged): `src/lib/feelings.ts` is the 14-feeling catalog
+(index 0–4 keep their legacy meanings; pairs 5–14 power the select-then-flip
+chips in `src/components/checkin/PairedFeelings.tsx` — positive faces may
+hop/celebrate, heavy never do). `src/lib/roomExperience.ts` holds the
+in-memory feel→material store;
+`src/components/atmosphere/RoomEnvironment.tsx` + `src/lib/atmosphere/roomRenderer.ts`
+render one persistent WebGL1 canvas on core routes with a CSS fallback;
+`RoomControls` is the material/still override on non-home routes.
+`src/components/companion/JourneyCompanion.tsx` mounts ONE mascot
+outside the routes and glides it between `CompanionAnchor`s.
+Core-loop navigation is direct — no `viewTransitionTo` snapshots.
+Focused tests:
+`pnpm vitest run src/lib/__tests__/feelings.test.ts src/lib/__tests__/roomExperience.test.ts src/lib/__tests__/mascotDemeanor.test.ts src/components/atmosphere/__tests__/RoomEnvironment.test.tsx src/components/checkin/__tests__/PairedFeelings.test.tsx src/components/home/__tests__/Home.test.tsx`.
+
 ## Secrets
 
 Never commit keys. Local secrets live in gitignored env files

@@ -6,7 +6,9 @@
 import { describe, it, expect } from "vitest";
 import { SmartPatternRecommendations } from "../recommendations/SmartPatternRecommendations";
 import { BREATHING_PATTERNS } from "../breathingPatterns";
+import { ROOM_LABELS } from "../roomExperience";
 import {
+  AFTER_PRACTICE_CHOICES,
   CHECK_IN_LABELS,
   CHECK_IN_SHORT_LABELS,
   CHECK_IN_PHRASES,
@@ -14,6 +16,7 @@ import {
   SUPPORT_SENTENCES,
   composeCheckInMessage,
 } from "../checkin";
+import { HOME_FEELING_COPY } from "../feelings";
 
 const BANNED =
   /proven|scientific|nervous system|anxiety|insomnia|immune|cortisol|vagus|stress relief|sleep quality|energy boost|parasympathetic|biometric/i;
@@ -79,6 +82,15 @@ describe("check-in copy", () => {
       }
     }
     strings.push(composeCheckInMessage(null, null));
+    strings.push(...Object.values(ROOM_LABELS), "Change room", "Still room", "Auto");
+    strings.push(...Object.values(HOME_FEELING_COPY));
+    strings.push(
+      ...AFTER_PRACTICE_CHOICES.map((c) => c.label),
+      "How is it now?",
+      "You can leave it here.",
+      "Practice details",
+      "practice time",
+    );
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);
     }

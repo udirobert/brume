@@ -1,18 +1,19 @@
-import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useId, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
-import { viewTransitionTo, vtClick } from "@/lib/viewTransition";
 import { Magnetic } from "@/lib/Magnetic";
-import { useAuth } from "@/hooks/useAuth";
-import { TodayCard } from "@/components/home/TodayCard";
-import { BrumeMascot, type MascotReaction } from "@/components/BrumeMascot";
-import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
+import { PairedFeelings } from "@/components/checkin/PairedFeelings";
+import { type MascotReaction } from "@/components/BrumeMascot";
+import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
-import { useDayPart } from "@/hooks/useDayPart";
-import { roomWhisper } from "@/lib/atmosphere/dayPart";
-import { applyFeel, feelAt } from "@/lib/feelTheme";
+import { applyFeel } from "@/lib/feelTheme";
+import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
+import { useRoomExperience } from "@/lib/roomExperience";
+import { RoomSettings } from "@/components/atmosphere/RoomControls";
+import { useSessionStore } from "@/stores/sessionStore";
+import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 
 /**
  * Home — reset-first.
@@ -22,6 +23,8 @@ import { applyFeel, feelAt } from "@/lib/feelTheme";
  * as the secondary path for anyone who wants a matched pattern.
  */
 const RHYTHMS = [
+  { id: "reset", label: "Reset" },
+  { id: "mindfulness", label: "Mindfulness" },
   { id: "box", label: "Box" },
   { id: "relaxation", label: "4-7-8" },
   { id: "wim_hof", label: "Wim Hof" },
@@ -29,52 +32,34 @@ const RHYTHMS = [
 ] as const;
 
 /** "More rhythms" — a quiet popover of direct rhythm picks. */
-function RhythmPeek() {
-  const navigate = useNavigate();
+function RhythmPicker({ value, onChange }: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+}) {
+  const id = useId();
   return (
-    <details className="relative">
-      <summary className="cursor-pointer list-none hover:text-foreground transition-colors [&::-webkit-details-marker]:hidden">
-        More rhythms
-      </summary>
-      <div className="absolute left-1/2 top-full z-20 mt-2 flex -translate-x-1/2 gap-2">
+    <div className="brume-home-options__row">
+      <label htmlFor={id}>Rhythm</label>
+      <select id={id} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
+        <option value="">Auto · from my feeling</option>
         {RHYTHMS.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            className="brume-pill px-3 py-1.5 text-xs whitespace-nowrap"
-            onClick={(event) =>
-              viewTransitionTo(
-                () =>
-                  navigate(`/session?pattern=${r.id}`, {
-                    state: {
-                      reason: r.label,
-                      reasonDetail: "You picked this rhythm.",
-                      source: "Your choice",
-                    },
-                  }),
-                { origin: event.currentTarget },
-              )
-            }
-          >
-            {r.label}
-          </button>
+          <option key={r.id} value={r.id}>{r.label}</option>
         ))}
-      </div>
-    </details>
+      </select>
+    </div>
   );
 }
 
 export default function Index() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const isGuest = !user;
   const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
-  const dayPart = useDayPart();
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
-  const [feelTap, setFeelTap] = useState<number | null>(null);
+  const feelTap = useRoomExperience((s) => s.feelIndex);
+  const [patternOverride, setPatternOverride] = useState<string | null>(null);
+  const reactionSerial = useRef(0);
   const [mascotReaction, setMascotReaction] = useState<
-    { name: MascotReaction; key: number } | undefined
+    { name: MascotReaction; key: string } | undefined
   >();
   const [droplet, setDroplet] = useState<{
     key: number;
@@ -83,187 +68,146 @@ export default function Index() {
     color: string;
   } | null>(null);
   const mascotCardRef = useRef<HTMLDivElement>(null);
-  const feel = feelAt(feelTap);
+  const feel = feelingAt(feelTap);
+  const audioEnabled = useSessionStore((s) => s.audioEnabled);
+  const toggleAudio = useSessionStore((s) => s.toggleAudio);
+
+  const selectedPattern =
+    getPattern(patternOverride ?? feel?.patternId ?? "reset");
 
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
   // A null index means the word was put back down — the room lets go.
   const handleFeel = (index: number | null, chip?: HTMLElement) => {
-    setFeelTap(index);
     const a = chip?.getBoundingClientRect();
     applyFeel(
       index,
       a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
     );
-    const next = feelAt(index);
+    const next = feelingAt(index);
     if (next?.reaction) {
-      setMascotReaction({ name: next.reaction, key: Date.now() });
+      setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
     }
     const card = mascotCardRef.current;
     if (reduceMotion || !next || !card || !a) return;
     const b = card.getBoundingClientRect();
     setDroplet({
-      key: Date.now(),
+      key: reactionSerial.current,
       from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
       to: { x: b.left + b.width / 2, y: b.top + b.height / 2 },
       color: next.orbMist,
     });
   };
 
-  const headline = useMemo((): WordPart[] => {
-    if (isGuest) {
-      return [
-        "A little room to ",
-        { text: "breathe.", className: "brume-hl" },
-      ];
-    }
-    return ["Welcome back."];
-  }, [isGuest]);
+  const begin = () => {
+    if (!selectedPattern) return;
+    navigate(`/session?pattern=${selectedPattern.id}`, {
+      state: {
+        reason: selectedPattern.name,
+        reasonDetail: selectedPattern.description,
+        source: patternOverride ? "Your choice" : feelTap === null ? "Your reset" : "From how you feel",
+        checkInIndex: feelTap,
+        startImmediately: true,
+      },
+    });
+  };
 
   return (
-    <div className="w-full flex flex-col items-center px-2">
-      <div className="relative text-center space-y-2 max-w-2xl">
-        <motion.div
-          className="flex justify-center mb-4"
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: DURATION.standard, delay: 0.04, ease: EASE }}
-        >
-          <div className="brume-mascot-card w-56" data-presence={presence} ref={mascotCardRef}>
-            <BrumeMascot
-              state={feel?.state ?? "idle"}
-              size={104}
-              presence={presence}
-              breathing={companion}
-              trackPointer={companion}
-              layoutId="brume-companion"
-              reaction={mascotReaction}
-              tapReaction="ready"
-            />
-            <p>Brume can keep you company.</p>
-            <div className="flex gap-2" role="group" aria-label="Brume presence">
-              <Magnetic pull={0.15} radius={110}>
-              <button
-                type="button"
-                className={`brume-pill ${!companion ? "is-selected" : ""}`}
-                aria-pressed={!companion}
-                onClick={() => {
-                  if (!companion) return;
-                  setPresence("quiet");
-                  setMascotReaction({ name: "settle", key: Date.now() });
-                }}
-              >
-                Quiet
-              </button>
-              </Magnetic>
-              <Magnetic pull={0.15} radius={110}>
-              <button
-                type="button"
-                className={`brume-pill ${companion ? "is-selected" : ""}`}
-                aria-pressed={companion}
-                onClick={() => {
-                  if (companion) return;
-                  setPresence("companion");
-                  setMascotReaction({ name: "hop", key: Date.now() });
-                }}
-              >
-                Company
-              </button>
-              </Magnetic>
-            </div>
-          </div>
-        </motion.div>
-        <WordReveal
-          parts={headline}
-          className="text-3xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1]"
-        />
-        <motion.p
-          className="text-muted-foreground max-w-md mx-auto"
-          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: DURATION.standard, delay: 0.08, ease: EASE }}
-        >
-          {roomWhisper(dayPart)}
-        </motion.p>
-      </div>
+    <div className="brume-home brume-home--compact">
+      <h1>{HOME_FEELING_COPY.prompt}</h1>
 
-      {/* Primary: a guided Reset. No check-in required. */}
       <motion.div
-        className="mt-10 flex flex-col items-center w-full max-w-xs"
-        initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: DURATION.standard, delay: 0.12, ease: EASE }}
-      >
-        <Magnetic className="w-full">
-        <Link
-          to="/session?pattern=reset"
-          className="brume-btn brume-btn--push w-full py-4 text-base"
-          state={{
-            reason: "Reset · 4 in, 6 out",
-            reasonDetail: "In for 4, out for 6. A moment between tasks.",
-            source: "Your reset",
-          }}
-          onClick={(e) =>
-            vtClick(e, () =>
-              navigate("/session?pattern=reset", {
-                state: {
-                  reason: "Reset · 4 in, 6 out",
-                  reasonDetail: "In for 4, out for 6. A moment between tasks.",
-                  source: "Your reset",
-                },
-              }),
-            )
-          }
-        >
-          Start a breathing reset
-        </Link>
-        </Magnetic>
-        <p className="mt-3 text-sm text-muted-foreground">
-          In for 4, out for 6 · nothing to get right
-        </p>
-      </motion.div>
-
-      {/* Secondary: the check-in path — still here, just not the lead. */}
-      <motion.div
-        className="mt-12 flex flex-col items-center w-full"
+        className="brume-home__companion"
+        ref={mascotCardRef}
+        data-presence={presence}
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: DURATION.standard, delay: 0.18, ease: EASE }}
+        transition={{ duration: DURATION.standard, delay: 0.04, ease: EASE }}
       >
-        <div className="w-full max-w-2xl brume-card px-4 py-5 md:px-7">
-          <TodayCard onFeel={handleFeel} />
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <RhythmPeek />
-          <span aria-hidden="true">·</span>
-          <Link
-            to="/decompress"
-            className="hover:text-foreground transition-colors"
-            onClick={(e) => vtClick(e, () => navigate("/decompress"))}
-          >
-            Take two minutes
-          </Link>
-        </div>
+        <CompanionAnchor
+          state={feel?.state ?? "idle"}
+          size={156}
+          presence={presence}
+          breathing={companion}
+          trackPointer={companion}
+          reaction={mascotReaction}
+          tapReaction={feel?.reaction ?? "ready"}
+          demeanor={feel?.demeanor ?? "open"}
+          allowTapEscalation={!feel || isPositiveFeel(feelTap)}
+        />
       </motion.div>
 
-      {isGuest && (
-        <motion.div
-          className="mt-10 text-center space-y-2"
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: DURATION.standard, delay: 0.22, ease: EASE }}
-        >
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              to="/auth?redirect=/"
-              className="font-semibold text-primary hover:underline underline-offset-2"
+      <PairedFeelings selectedIndex={feelTap} onChoose={handleFeel} />
+
+      <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
+        <button type="button" className="brume-btn brume-btn--push" onClick={begin}>
+          Begin
+        </button>
+      </Magnetic>
+
+      <details className="brume-home-options" onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.currentTarget.open = false;
+        e.currentTarget.querySelector("summary")?.focus();
+      }}>
+        <summary>{HOME_FEELING_COPY.options}</summary>
+        <div className="brume-home-options__content">
+          <div className="brume-home-options__row">
+            <span>Sound</span>
+            <button
+              type="button"
+              aria-pressed={audioEnabled}
+              aria-label="Spoken breath cues"
+              onClick={toggleAudio}
+              className="brume-toggle"
             >
-              Sign in
-            </Link>
+              <span className="brume-toggle__dot" aria-hidden="true" />
+              Spoken cues {audioEnabled ? "on" : "off"}
+            </button>
+          </div>
+          <div className="brume-home-options__row">
+            <span>Brume</span>
+            <div className="flex gap-2" role="group" aria-label="Brume presence">
+          <Magnetic pull={0.15} radius={110}>
+            <button
+              type="button"
+              className={`brume-pill ${!companion ? "is-selected" : ""}`}
+              aria-pressed={!companion}
+              onClick={() => {
+                if (!companion) return;
+                setPresence("quiet");
+                setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` });
+              }}
+            >
+              Quiet
+            </button>
+          </Magnetic>
+          <Magnetic pull={0.15} radius={110}>
+            <button
+              type="button"
+              className={`brume-pill ${companion ? "is-selected" : ""}`}
+              aria-pressed={companion}
+              onClick={() => {
+                if (companion) return;
+                setPresence("companion");
+                setMascotReaction({
+                  name: feel?.reaction ?? "ready",
+                  key: `home-${++reactionSerial.current}`,
+                });
+              }}
+            >
+              Company
+            </button>
+          </Magnetic>
+            </div>
+          </div>
+          <RoomSettings />
+          <RhythmPicker value={patternOverride} onChange={setPatternOverride} />
+          <p className="brume-home-options__rhythm">
+            {selectedPattern && `${selectedPattern.name} · ${formatPhases(selectedPattern)}`}
           </p>
-        </motion.div>
-      )}
+        </div>
+      </details>
 
       {droplet && (
         <AbsorbDroplet

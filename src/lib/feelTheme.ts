@@ -11,6 +11,8 @@
  * Empathy, never diagnosis.
  */
 import type { BrumeMascotState, MascotReaction } from "@/components/BrumeMascot";
+import { useRoomExperience, type RoomDemeanor } from "./roomExperience";
+import { FEELINGS, feelingAt } from "./feelings";
 
 export interface CheckInFeel {
   state: BrumeMascotState;
@@ -21,19 +23,14 @@ export interface CheckInFeel {
   roomMist: readonly [r: number, g: number, b: number];
   /** 0..1 — heavier words still the drift and thicken the folds. */
   weight: number;
+  demeanor: RoomDemeanor;
+  valence?: "positive" | "heavy";
 }
 
-export const CHECK_IN_FEELS: readonly CheckInFeel[] = [
-  { state: "bright", reaction: "hop", orbMist: "rgb(146 158 214)", roomMist: [212, 218, 164], weight: 0.1 },
-  { state: "stretch", orbMist: "rgb(150 132 198)", roomMist: [188, 176, 224], weight: 0.3 },
-  { state: "hum", orbMist: "rgb(124 145 210)", roomMist: [150, 166, 216], weight: 0.55 },
-  { state: "tender", orbMist: "rgb(112 122 192)", roomMist: [120, 126, 188], weight: 0.8 },
-  { state: "tender", reaction: "settle", orbMist: "rgb(98 108 182)", roomMist: [100, 104, 170], weight: 1 },
-];
+export const CHECK_IN_FEELS: readonly CheckInFeel[] = FEELINGS;
 
 export function feelAt(index: number | null | undefined): CheckInFeel | null {
-  if (index == null || index < 0 || index >= CHECK_IN_FEELS.length) return null;
-  return CHECK_IN_FEELS[index];
+  return feelingAt(index);
 }
 
 /**
@@ -47,8 +44,9 @@ export interface FeelOrigin {
 }
 
 export function applyFeel(index: number | null | undefined, origin?: FeelOrigin) {
-  if (typeof document === "undefined") return;
   const feel = feelAt(index);
+  useRoomExperience.getState().setFeel(feel ? index : null);
+  if (typeof document === "undefined") return;
   const el = document.documentElement;
   if (!feel) {
     clearFeel();
@@ -67,7 +65,12 @@ export function applyFeel(index: number | null | undefined, origin?: FeelOrigin)
   );
 }
 
+export function demeanorAt(index: number | null | undefined): RoomDemeanor {
+  return feelAt(index)?.demeanor ?? "open";
+}
+
 export function clearFeel() {
+  useRoomExperience.getState().setFeel(null);
   if (typeof document === "undefined") return;
   const el = document.documentElement;
   delete el.dataset.feel;

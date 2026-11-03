@@ -59,7 +59,7 @@ export default function PostSession() {
   }
 
   return (
-    <div className="min-h-screen bg-calm-gradient flex flex-col items-center justify-center px-6 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <PostSessionCelebration
           metrics={{

@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { BrumeMascot, type BrumeMascotState } from "@/components/BrumeMascot";
+import { BrumeMascot, type BrumeMascotState, type MascotReaction } from "@/components/BrumeMascot";
 import { startDecompressTrack } from "@/lib/decompressAudio";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { DECOMPRESS_SECONDS, getDecompressStep } from "@/lib/decompress";
 import { CheckInWords } from "@/components/checkin/CheckInWords";
 import { WordsCard } from "@/components/checkin/WordsCard";
-import { applyFeel, clearFeel, feelAt } from "@/lib/feelTheme";
+import { applyFeel, feelAt } from "@/lib/feelTheme";
+import { isPositiveFeel } from "@/lib/feelings";
+import { demeanorForFeel, practiceProgress, useRoomExperience } from "@/lib/roomExperience";
 import "./Decompress.css";
 
 type DecompressStage = "arrive" | "pause" | "checkin" | "done";
@@ -30,7 +32,8 @@ export default function Decompress() {
   const [sparkKey, setSparkKey] = useState(0);
   const { presence, setPresence } = useMascotPresence();
   const [nudgeState, setNudgeState] = useState<BrumeMascotState | null>(null);
-  const [nudgeReaction, setNudgeReaction] = useState<{ name: "hop"; key: number } | undefined>();
+  const [nudgeReaction, setNudgeReaction] = useState<{ name: MascotReaction; key: number } | undefined>();
+  const nudgeTimerRef = useRef(0);
 
   const elapsedOffsetRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -95,9 +98,37 @@ export default function Decompress() {
 
   // A chosen word tints the room while this page holds it; leaving
   // releases the room back to the daypart.
-  useEffect(() => () => clearFeel(), []);
 
   useEffect(() => stopMusic, []);
+
+  useEffect(() => {
+    const room = useRoomExperience.getState();
+    if (stage !== "pause") {
+      if (room.practicing || room.paused) {
+        room.setPractice({ practicing: false, paused: false });
+      }
+      return;
+    }
+    room.setPractice({
+      progress: practiceProgress(elapsed),
+      breath: 0,
+      practicing: !isPaused,
+      paused: isPaused,
+    });
+  }, [stage, elapsed, isPaused]);
+
+  useEffect(
+    () => () =>
+      useRoomExperience.getState().setPractice({ practicing: false, paused: false }),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (nudgeTimerRef.current) window.clearTimeout(nudgeTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (stage !== "pause" || isPaused) return undefined;
@@ -170,6 +201,13 @@ export default function Decompress() {
     setCheckInIndex(index);
     setCheckInTouched(true);
     applyFeel(index);
+    if (nudgeTimerRef.current) {
+      window.clearTimeout(nudgeTimerRef.current);
+      nudgeTimerRef.current = 0;
+    }
+    setNudgeState(null);
+    const reaction = feelAt(index)?.reaction;
+    if (reaction) setNudgeReaction({ name: reaction, key: Date.now() });
   };
 
   const openShare = () => {
@@ -177,9 +215,14 @@ export default function Decompress() {
   };
 
   const nudgeBrume = () => {
-    setNudgeState("topup");
-    setNudgeReaction({ name: "hop", key: Date.now() });
-    window.setTimeout(() => setNudgeState(null), 950);
+    if (nudgeTimerRef.current) window.clearTimeout(nudgeTimerRef.current);
+    const light = checkInTouched && isPositiveFeel(checkInIndex);
+    setNudgeState(light ? "topup" : "tender");
+    setNudgeReaction({ name: light ? "hop" : "ready", key: Date.now() });
+    nudgeTimerRef.current = window.setTimeout(() => {
+      nudgeTimerRef.current = 0;
+      setNudgeState(null);
+    }, 950);
   };
 
   const handleRoomPointer = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -193,12 +236,15 @@ export default function Decompress() {
   const finish = () => {
     setShareOpen(false);
     setStage("done");
-    setSparkKey((key) => key + 1);
+    if (checkInTouched && isPositiveFeel(checkInIndex)) {
+      setSparkKey((key) => key + 1);
+    }
   };
 
+  const celebrated = checkInTouched && isPositiveFeel(checkInIndex);
   const mascotState: BrumeMascotState =
     stage === "done"
-      ? "proud"
+      ? (celebrated ? "proud" : "tender")
       : stage === "checkin"
         ? (checkInTouched ? (feelAt(checkInIndex)?.state ?? "watching") : "watching")
         : stage === "pause"
@@ -206,6 +252,7 @@ export default function Decompress() {
           : "idle";
   const companion = presence === "companion";
   const displayMascot = nudgeState ?? mascotState;
+  const demeanor = checkInTouched ? demeanorForFeel(checkInIndex) : "open";
   const roomMode = stage === "pause" || stage === "checkin";
 
   const activeRail = stage === "checkin" ? 1 : stage === "done" ? 2 : 0;
@@ -245,7 +292,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} layoutId="brume-companion" />
+              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
               <span>with you · tap me</span>
             </button>
 
@@ -294,7 +341,7 @@ export default function Decompress() {
             </div>
 
             <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} layoutId="brume-companion" />
+              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
             </button>
 
             <div
@@ -400,7 +447,7 @@ export default function Decompress() {
               </div>
 
               <div className="brume-mascot-card" data-presence={presence}>
-                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} />
+                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} demeanor={demeanor} />
                 <p>Brume can keep you company.</p>
                 <button
                   type="button"
@@ -439,7 +486,7 @@ export default function Decompress() {
           {stage === "done" && (
             <div className="dc-stage dc-stage--done">
               <div className="dc-done-card">
-                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} />
+                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} demeanor={demeanor} />
                 <p className="dc-eyebrow">Choose</p>
                 <h1>You can go now.</h1>
                 <p className="dc-lede">That can be enough.</p>

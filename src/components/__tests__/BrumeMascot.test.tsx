@@ -412,3 +412,113 @@ describe("BrumeMascot React wrapper", () => {
     expect(reactCalls).toEqual(["hop", "settle"]);
   });
 });
+
+describe("BrumeMascot tap button", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    reactCalls.length = 0;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+  });
+
+  const clickHost = () => {
+    const tap = container.querySelector(".brume-mascot-frame__tap")!;
+    act(() => {
+      tap.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+  };
+
+  it("renders a native button with an accessible name when tappable", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="ready" />);
+    });
+    const host = container.querySelector(".brume-mascot")!;
+    expect(host.tagName).toBe("SPAN");
+    const tap = container.querySelector(".brume-mascot-frame__tap")!;
+    expect(tap.tagName).toBe("BUTTON");
+    expect(tap.getAttribute("aria-label")).toBe("Give Brume a gentle nudge");
+    expect(tap.getAttribute("role")).toBeNull();
+    expect(tap.getAttribute("tabindex")).toBeNull();
+    expect(container.querySelector(".brume-mascot-frame")!.getAttribute("data-tap")).toBe("");
+  });
+
+  it("non-interactive mascot stays a plain span", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot />);
+    });
+    const host = container.querySelector(".brume-mascot")!;
+    expect(host.tagName).toBe("SPAN");
+    expect(host.getAttribute("role")).toBeNull();
+    expect(host.getAttribute("tabindex")).toBeNull();
+    expect(container.querySelector(".brume-mascot-frame__tap")).toBeNull();
+    expect(container.querySelector(".brume-mascot-frame")!.getAttribute("data-tap")).toBeNull();
+  });
+
+  it("native click fires the supplied tap reaction", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="ready" />);
+    });
+    clickHost();
+    expect(reactCalls).toEqual(["ready"]);
+  });
+
+  it("repeated taps keep escalating only while open and allowed", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="ready" />);
+    });
+    clickHost();
+    clickHost();
+    clickHost();
+    expect(reactCalls).toEqual(["ready", "ready", "hop"]);
+    clickHost();
+    clickHost();
+    expect(reactCalls[4]).toBe("celebrate");
+  });
+
+  it("repeated heavy taps never hop or celebrate", async () => {
+    await act(async () => {
+      root.render(
+        <BrumeMascot tapReaction="settle" demeanor="sheltering" allowTapEscalation={false} />,
+      );
+    });
+    for (let i = 0; i < 7; i++) clickHost();
+    expect(reactCalls).toEqual(["settle", "settle", "settle", "settle", "settle", "settle", "settle"]);
+    expect(reactCalls).not.toContain("hop");
+    expect(reactCalls).not.toContain("celebrate");
+  });
+
+  it("a sheltering demeanor blocks escalation even when allowed", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="ready" demeanor="attentive" />);
+    });
+    clickHost();
+    clickHost();
+    clickHost();
+    expect(reactCalls).toEqual(["ready", "ready", "ready"]);
+  });
+
+  it("toggling tapReaction off and on keeps the same engine SVG", async () => {
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="ready" />);
+    });
+    const host = container.querySelector(".brume-mascot")!;
+    const svg = host.querySelector("svg")!;
+    await act(async () => {
+      root.render(<BrumeMascot />);
+    });
+    expect(container.querySelector(".brume-mascot-frame__tap")).toBeNull();
+    expect(host.querySelector("svg")).toBe(svg);
+    await act(async () => {
+      root.render(<BrumeMascot tapReaction="settle" />);
+    });
+    expect(host.querySelector("svg")).toBe(svg);
+    clickHost();
+    expect(reactCalls).toEqual(["settle"]);
+  });
+});

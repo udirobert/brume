@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BottomTabBar } from "./BottomTabBar";
 import Header from "@/components/Header";
-import { MistField } from "@/components/atmosphere/MistField";
 import { ProgressiveBlur } from "@/components/atmosphere/ProgressiveBlur";
 
 interface ResponsiveNavigationProps {
@@ -18,22 +17,26 @@ function isImmersivePath(pathname: string) {
   return pathname.startsWith("/session") || pathname.startsWith("/post-session");
 }
 
+function isCoreRoomPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/session") ||
+    pathname.startsWith("/post-session")
+  );
+}
+
 export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   children,
 }) => {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
   const immersive = isImmersivePath(pathname);
+  const core = isCoreRoomPath(pathname);
 
   return (
-    <div className="relative min-h-screen w-full bg-calm-gradient flex flex-col">
+    <div className={`relative min-h-screen w-full ${core ? "" : "bg-calm-gradient "}flex flex-col`}>
       {/* Where the mist field sleeps the room answers as a still
           wash; where it lives, a softer soak beneath the folds. */}
-      <div
-        className={`brume-feel-wash${immersive ? "" : " brume-feel-wash--ambient"}`}
-        aria-hidden="true"
-      />
-      {!immersive && <MistField />}
       {!immersive && <ProgressiveBlur />}
       {!immersive && <Header />}
 

@@ -25,20 +25,50 @@ export function Magnetic({
   const sy = useSpring(y, { stiffness: 150, damping: 11, mass: 0.5 });
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (typeof window.matchMedia !== "function") return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarse = window.matchMedia("(pointer: coarse)");
+
+    let enabled = !reduced.matches && !coarse.matches;
+    const reset = () => {
+      x.set(0);
+      y.set(0);
+    };
+    const hardReset = () => {
+      x.jump(0);
+      y.jump(0);
+      sx.jump(0);
+      sy.jump(0);
+    };
     const onMove = (e: PointerEvent) => {
+      if (!enabled) return;
       const el = ref.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2);
-      const dy = e.clientY - (r.top + r.height / 2);
+      const dx = e.clientX - (r.left + r.width / 2 - sx.get());
+      const dy = e.clientY - (r.top + r.height / 2 - sy.get());
       const inside = Math.hypot(dx, dy) < radius;
       x.set(inside ? dx * pull : 0);
       y.set(inside ? dy * pull : 0);
     };
+    const onPrefChange = () => {
+      enabled = !reduced.matches && !coarse.matches;
+      if (!enabled) hardReset();
+    };
+    const onLeave = () => reset();
+    reduced.addEventListener("change", onPrefChange);
+    coarse.addEventListener("change", onPrefChange);
     window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, [pull, radius, x, y]);
+    window.addEventListener("pointerleave", onLeave);
+    document.documentElement.addEventListener("pointerleave", onLeave);
+    return () => {
+      reduced.removeEventListener("change", onPrefChange);
+      coarse.removeEventListener("change", onPrefChange);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
+      document.documentElement.removeEventListener("pointerleave", onLeave);
+    };
+  }, [pull, radius, x, y, sx, sy]);
 
   return (
     <motion.span

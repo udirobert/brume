@@ -6,6 +6,7 @@ import {
   CHECK_IN_LABELS,
   CHECK_IN_SHORT_LABELS,
 } from "@/lib/checkin";
+import { LEGACY_FEEL_INDICES } from "@/lib/feelings";
 
 interface CheckInWordsProps {
   index: number;
@@ -17,7 +18,7 @@ export function CheckInWords({ index, touched, onChoose }: CheckInWordsProps) {
   return (
     <>
       <div className="dc-words" role="radiogroup" aria-label="How is it for you right now?">
-        {CHECK_IN_SHORT_LABELS.map((label, i) => (
+        {LEGACY_FEEL_INDICES.map((i) => ({ label: CHECK_IN_SHORT_LABELS[i], i })).map(({ label, i }) => (
           <label
             key={label}
             className={`dc-word ${touched && index === i ? "is-chosen" : ""}`}

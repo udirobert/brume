@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { EASE } from '../../lib/motion';
 import { useIsMobile } from '../../hooks/use-mobile';
@@ -15,13 +15,15 @@ import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
 import { useMascotPresence } from '../../hooks/useMascotPresence';
 
 import BreathingAnimation from '../BreathingAnimation';
-import { BrumeMascot, type BrumeMascotState, type MascotReaction } from '../BrumeMascot';
+import { type BrumeMascotState, type MascotReaction } from '../BrumeMascot';
+import { CompanionAnchor } from '../companion/JourneyCompanion';
 import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
 import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
 import { preloadCues, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
-import { applyFeel, clearFeel, feelAt } from '../../lib/feelTheme';
+import { applyFeel, feelAt } from '../../lib/feelTheme';
+import { demeanorForFeel } from '../../lib/roomExperience';
 
 interface ResponsiveEnhancedSessionProps {
   config: {
@@ -52,6 +54,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   const reduceMotion = useReducedMotion();
   const { presence: mascotPresence } = useMascotPresence();
   const location = useLocation();
+  const navigate = useNavigate();
   const checkInIndex = typeof (location.state as { checkInIndex?: number } | null)
     ?.checkInIndex === "number"
     ? (location.state as { checkInIndex: number }).checkInIndex
@@ -61,7 +64,6 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   // leaving the flow releases it back to the daypart default.
   React.useEffect(() => {
     applyFeel(checkInIndex);
-    return () => clearFeel();
   }, [checkInIndex]);
   const skipEntranceMotion =
     reduceMotion || (typeof document !== "undefined" && document.hidden);
@@ -109,6 +111,20 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     return undefined;
   }, [session]);
 
+  const startConsumedRef = React.useRef(false);
+  React.useEffect(() => {
+    const flagged = (location.state as { startImmediately?: boolean } | null)
+      ?.startImmediately === true;
+    if (!flagged || startConsumedRef.current) return;
+    if (!useSessionStore.getState().config) return;
+    startConsumedRef.current = true;
+    session.start();
+    navigate(location.pathname + location.search, {
+      replace: true,
+      state: { ...(location.state as object), startImmediately: false },
+    });
+  }, [location.state, location.pathname, location.search, session, navigate]);
+
   const breathPhase: BreathPhase =
     (session.metrics?.currentPhase === "pause"
       ? "hold_after_exhale"
@@ -140,8 +156,14 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   }, [breathPhase, sessionActive, session.phase, audioEnabled]);
 
   // Brume IS the breath: centred in the orb, same eased curve.
+  const heavy = feelAt(checkInIndex)?.valence === 'heavy';
+  const feelDemeanor = demeanorForFeel(checkInIndex);
+  const sessionDemeanor =
+    feelDemeanor === 'sheltering' && (session.metrics?.duration ?? 0) >= 30
+      ? 'attentive'
+      : feelDemeanor;
   const mascotState: BrumeMascotState =
-    session.phase === 'complete' ? 'proud'
+    session.phase === 'complete' ? (heavy ? 'tender' : 'proud')
     : session.phase === 'paused' ? 'sleepy'
     : !sessionActive ? 'watching'
     : breathPhase === 'inhale' ? 'inhale'
@@ -152,19 +174,25 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     : undefined;
 
   const prevPhaseRef = React.useRef(session.phase);
+  const reactionSerial = React.useRef(0);
+  const reactionScope = React.useId();
   const [mascotReaction, setMascotReaction] = React.useState<
-    { name: MascotReaction; key: number } | undefined
+    { name: MascotReaction; key: string } | undefined
   >();
+  React.useEffect(() => {
+    const name = feelAt(checkInIndex)?.reaction ?? 'ready';
+    setMascotReaction({ name, key: `${reactionScope}-${++reactionSerial.current}` });
+  }, [checkInIndex, reactionScope]);
   React.useEffect(() => {
     if (session.phase === prevPhaseRef.current) return;
     prevPhaseRef.current = session.phase;
     const name: MascotReaction | null =
-      session.phase === 'active' ? 'hop'
+      session.phase === 'active' ? (heavy ? 'ready' : 'hop')
       : session.phase === 'paused' ? 'settle'
-      : session.phase === 'complete' ? 'celebrate'
+      : session.phase === 'complete' ? 'settle'
       : null;
-    if (name) setMascotReaction({ name, key: Date.now() });
-  }, [session.phase]);
+    if (name) setMascotReaction({ name, key: `${reactionScope}-${++reactionSerial.current}` });
+  }, [session.phase, heavy, reactionScope]);
 
   const animationWithMascot = (
     <BreathingAnimation
@@ -174,13 +202,13 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       isPaused={session.phase === 'paused'}
       phaseProgress={session.metrics?.phaseProgress || 0}
     >
-      <BrumeMascot
+      <CompanionAnchor
         state={mascotState}
         breath={mascotBreath}
         reaction={mascotReaction}
         presence={mascotPresence}
+        demeanor={sessionDemeanor}
         size={isMobile ? 140 : 176}
-        layoutId="brume-companion"
         className="absolute z-10"
       />
     </BreathingAnimation>
@@ -218,7 +246,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   // outgoing screen lifts away briefly (AnimatePresence) before the
   // incoming one settles in. Reduced motion keeps only the opacity.
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="popLayout" initial={false}>
       {showPreview ? (
         <motion.div
           key="preview"
@@ -233,13 +261,16 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         >
           <SessionPreview
             mascot={
-              <BrumeMascot
+              <CompanionAnchor
                 state={feelAt(checkInIndex)?.state ?? "watching"}
+                reaction={mascotReaction}
+                demeanor={feelDemeanor}
                 presence={mascotPresence}
                 trackPointer={mascotPresence === "companion"}
                 breathing
                 size={112}
-                layoutId="brume-companion"
+                tapReaction={feelAt(checkInIndex)?.reaction ?? "ready"}
+                allowTapEscalation={!heavy}
                 className="block mx-auto mb-2"
               />
             }

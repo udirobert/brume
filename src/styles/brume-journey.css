@@ -1,0 +1,187 @@
+.brume-home {
+  max-width: 42rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.brume-home__companion {
+  margin-inline: auto;
+  display: grid;
+  justify-items: center;
+}
+
+.brume-home__primary {
+  width: min(100%, 20rem);
+}
+.brume-home--compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 34rem;
+  width: 100%;
+  margin: 0 auto;
+  gap: 0;
+  padding: 1rem 0.25rem;
+}
+.brume-home--compact h1 {
+  font-size: clamp(1.65rem, 4vw, 2.2rem);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  text-align: center;
+  margin: 0;
+}
+.brume-home--compact .brume-home__companion {
+  margin: 12px auto 16px;
+}
+.brume-pairs {
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  perspective: 600px;
+}
+.brume-choice--flip {
+  min-height: 44px;
+  flex: none;
+  padding: 0.5rem 1.2rem 0.5rem 0.65rem;
+  position: relative;
+  white-space: nowrap;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+}
+.brume-choice--flip::before {
+  display: none;
+}
+.brume-choice--flip .brume-choice__face {
+  white-space: nowrap;
+}
+.brume-choice--flip .brume-choice__turn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.brume-choice--flip.is-selected.is-positive {
+  background: var(--brume-pear-soft);
+  border-color: var(--brume-rule);
+}
+.brume-choice--flip.is-selected:not(.is-positive) {
+  background: color-mix(in srgb, var(--brume-orb-mist, #b9c6ee) 15%, var(--brume-card, #fff));
+  border-color: var(--brume-rule);
+}
+.brume-home--compact .brume-home__primary {
+  width: min(100%, 18rem);
+  margin-top: 20px;
+}
+.brume-home--compact .brume-home__primary .brume-btn {
+  width: 100%;
+}
+.brume-home-options {
+  margin: 12px auto 0;
+  width: min(100%, 24rem);
+}
+.brume-home-options > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--brume-ink-muted);
+  cursor: pointer;
+}
+.brume-home-options > div {
+  background: var(--brume-card);
+  border: 1px solid var(--brume-rule);
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+.brume-home-options .brume-home-options__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.brume-home-options select {
+  max-width: min(100%, 15rem);
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  font-size: 13px;
+}
+.brume-home-options:not([open]) > .brume-home-options__content {
+  display: none;
+}
+.brume-home-options .brume-home-options__rhythm {
+  font-size: 12px;
+  color: var(--brume-ink-muted);
+}
+.brume-room-settings {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.brume-room-settings > legend {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.brume-room-settings__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brume-home-options .brume-room-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.brume-home-options .brume-room-settings__grid .brume-room-controls__still {
+  grid-column: 1 / -1;
+}
+.brume-home-options .brume-room-settings .brume-room-controls__item {
+  min-height: 44px;
+  font-size: 13px;
+}
+.brume-flip-hint {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--brume-ink-muted);
+  background: var(--brume-card);
+  border: 1px solid var(--brume-rule);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.brume-flip-hint__dismiss {
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: var(--brume-ink-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.brume-flip-hint__dismiss:focus-visible,
+.brume-choice--flip:focus-visible {
+  outline: 2px solid var(--brume-focus, var(--brume-ink));
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-choice--flip:hover,
+  .brume-choice--flip:active {
+    transform: none;
+  }
+}

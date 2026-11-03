@@ -20,6 +20,8 @@ import TermsOfService from "@/pages/TermsOfService";
 import { initNotifications } from "@/lib/notifications/oneSignal";
 import { useDayPart } from "@/hooks/useDayPart";
 import RouteErrorBoundary from "@/components/auth/RouteErrorBoundary";
+import { RoomEnvironment } from "@/components/atmosphere/RoomEnvironment";
+import { JourneyCompanionProvider } from "@/components/companion/JourneyCompanion";
 
 // Large pages - lazy load these to reduce initial bundle size
 const Auth = React.lazy(() => import("@/pages/Auth"));
@@ -48,15 +50,13 @@ const MotionLab = import.meta.env.DEV
   : null;
 
 // Loading component for lazy routes
-import { BrumeMascot } from "@/components/BrumeMascot";
-
 const PageLoader = () => (
   <div
     className="flex items-center justify-center min-h-screen"
     role="status"
     aria-label="Loading"
   >
-    <BrumeMascot state="thinking" size={88} breathing layoutId="brume-companion" />
+    <span aria-hidden="true" style={{ width: 88, height: 88 }} />
     <span className="sr-only">Loading</span>
   </div>
 );
@@ -83,6 +83,8 @@ function App() {
   return (
     <BrowserRouter>
       <MotionConfig reducedMotion="user">
+        <RoomEnvironment />
+        <JourneyCompanionProvider>
         <LayoutGroup>
           <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -154,6 +156,7 @@ function App() {
         <Toaster />
           </Suspense>
         </LayoutGroup>
+        </JourneyCompanionProvider>
       </MotionConfig>
     </BrowserRouter>
   );

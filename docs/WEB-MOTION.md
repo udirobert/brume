@@ -15,8 +15,10 @@ deform-along-velocity principle, MotionSites' spec-and-freeze-frame loop.
 | Settle ease (the *only* sanctioned overshoot — releases) | `cubic-bezier(0.34, 1.56, 0.64, 1)` | `EASE_SETTLE` + CSS `--press-return` |
 | Press squash (press) | `translateY 3px · scaleX 1.02 · scaleY 0.96`, 70ms fast-in | CSS `:active` rules + `PRESS` |
 | Press release | 260ms settle ease, passes rest once | CSS `--press-return` |
-| Page change (core loop) | root out 180ms · in 320ms rise 0.6% · entry morph 340ms | `src/styles/brume-transitions.css` + `src/lib/viewTransition.ts` |
-| Session handover (preview ↔ breath) | exit 160ms lift · enter 210–280ms | `ResponsiveEnhancedSession` `AnimatePresence` |
+| Page change (core loop) | root out 180ms · in 320ms rise 0.6% · entry morph 340ms — **non-core routes only now** | `src/styles/brume-transitions.css` + `src/lib/viewTransition.ts` |
+| Companion glide (core journey) | 0.5s signature ease between anchors · immediate on scroll/resize · opacity-only under reduced motion | `src/components/companion/JourneyCompanion.tsx` |
+| Feeling flip (paired chips) | inner face rotateX −72° → 0 in 0.32s, button stays put · opacity-only under reduced motion | `src/components/checkin/PairedFeelings.tsx` |
+| Session handover (preview ↔ breath) | opacity-only, outgoing pops out of layout so the anchor rect is real | `ResponsiveEnhancedSession` `AnimatePresence mode="popLayout"` |
 
 ## Rules that don't move
 
@@ -27,23 +29,39 @@ deform-along-velocity principle, MotionSites' spec-and-freeze-frame loop.
 - No health/medical/hormone claims in any copy introduced by these UIs
   (`copy-claims.test.ts` guards the vocabularies it knows about).
 
-## How a page change works
+## How the core journey moves
 
-1. A core-loop control calls `viewTransitionTo(() => navigate(...))`
-   (`src/lib/viewTransition.ts`), optionally with the pressed element
-   as `origin`.
-2. The helper starts a same-document View Transition; React renders
-   the next page synchronously inside it (`flushSync`).
-3. A control on the destination marked `data-vt-entry` gets the same
-   `view-transition-name: brume-entry`, so the pressed control morphs
-   into it (e.g. home CTA pill → session's Begin button).
-4. Everything else crossfades on the shared root with the exit/enter
-   halves above.
+The core loop (Home → session → post-session → Home) no longer
+snapshots pages with `viewTransitionTo`. Continuity comes from two
+persistent actors instead:
 
-Not every navigation view-transitions — only the core loop (home CTA,
-TodayCard continue, rhythm pills, session exit/complete). Forced
-clicks (⌘/ctrl/shift) keep native behaviour. Browsers without the
-API navigate instantly, as before.
+1. `JourneyCompanionProvider` mounts ONE `BrumeMascot` outside the
+   routes. `CompanionAnchor` marks where it belongs on each screen;
+   registration hands it a real rect and the mascot glides 0.5s to
+   the new anchor — the same SVG across the whole journey. On scroll
+   or resize it tracks its anchor immediately; under reduced motion
+   geometry jumps and only opacity animates.
+2. `RoomEnvironment` mounts ONE WebGL1 canvas behind the core routes.
+   The chosen feeling selects a material (waves, sand, cells, snow,
+   ink — `src/lib/feelings.ts`), breath and practice duration feed it
+   slowly, and a `Still room` toggle or reduced motion draws it
+   statically. RAF is capped at 30 fps and 900k pixels; a CSS
+   fallback covers no-WebGL.
+
+`viewTransitionTo` remains for non-core navigation (forced clicks keep
+native behaviour; no-API browsers navigate instantly). The
+`data-vt-entry` morph convention stays available for routes that still
+use it.
+
+## The feeling chips
+
+Each of the five `PairedFeelings` chips holds a word and its
+counterpart. First activation selects the visible face; activating
+the same chip again turns the inner label `rotateX −72° → 0` (0.32s)
+to the counterpart; switching chips never flips. The selection drives
+the feel catalog — mascot state, one-shot reaction, demeanor, orb
+tint, room material — in one place (`src/lib/feelings.ts`), so
+positive faces can celebrate and heavy faces never do.
 
 ## The mascot's own grammar
 
@@ -64,13 +82,16 @@ MCP widget — one engine, one painter in `mascot.js`).
 | State blending | every change lerps from the frozen displayed pose over 0.5s `easeOutQuint` — silhouette keys included |
 
 Motion as interaction protocol (`react`/`smearFrom`/`hush` wired to
-real moments): check-in word → feel-mapped reaction (`feelTheme.ts`),
-session phase → hop/settle/celebrate (`ResponsiveEnhancedSession`),
-presence toggle → hop on Company, settle on Quiet (`Index.tsx`),
+real moments): feeling pick → catalog-mapped reaction (`feelings.ts`
+— positive faces hop/celebrate, heavy faces ready/settle only),
+session phase → ready/settle (`ResponsiveEnhancedSession`),
+presence toggle → the current feeling's own reaction (`Index.tsx`),
 flight → smear (mount-time, `BrumeMascot.tsx`), pointer agitation →
 hush, pointer arrival → settle (`mascot.js` attention layer),
 tap the mascot → `ready` arc — taps within 1.6s escalate
-ready → hop → celebrate (`tapReaction`, `Index.tsx`).
+ready → hop → celebrate only while the demeanor is open
+(`tapReaction` + `allowTapEscalation`); heavy feelings get a subdued
+avatar (`mascotDemeanor.ts`) and never escalate.
 
 Pinned by `anna/test/mascot.mjs` (31 tests): purity, no option/avatar
 mutation, reactions equal base at expiry, silhouette is state-driven

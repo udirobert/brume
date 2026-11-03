@@ -97,6 +97,17 @@ Core-loop navigation is direct — no `viewTransitionTo` snapshots.
 Focused tests:
 `pnpm vitest run src/lib/__tests__/feelings.test.ts src/lib/__tests__/roomExperience.test.ts src/lib/__tests__/mascotDemeanor.test.ts src/components/atmosphere/__tests__/RoomEnvironment.test.tsx src/components/checkin/__tests__/PairedFeelings.test.tsx src/components/home/__tests__/Home.test.tsx`.
 
+Session lifecycle: the session offers its own ending — past
+`LANDING_SECONDS` (90 s, matching `practiceProgress` fullness) in
+`ResponsiveEnhancedSession`, the next inhale boundary self-pauses into
+the landing ("the breath can rest here"); a tap resumes (offered once),
+~10 s idle completes through the same path as End. On post-session,
+answering "How is it now?" calls `clearFeel()` — the room releases the
+word's tint — and the heading takes focus on mount so the route change
+announces. `sessionStore` holds only the API callers use;
+`sessionSelectors.isActive` means `phase === 'active'` literally (not
+"session exists").
+
 ## Secrets
 
 Never commit keys. Local secrets live in gitignored env files

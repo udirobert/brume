@@ -56,6 +56,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
     { name: MascotReaction; key: number } | undefined
   >();
   const regionRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
 
   const feel = feelAt(checkInIndex);
@@ -87,6 +88,13 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
     // tint and eases back to the daypart mist.
     clearFeel();
   };
+
+  // Route-change announcement: whether the user pressed End or the
+  // session let itself down, landing here moves focus to the heading so
+  // a screen reader hears where they arrived.
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // After each morph, move focus to the new panel's heading (or the panel
   // itself when it has none) so the swap is announced, not lost.
@@ -152,7 +160,11 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         className="mb-4"
       />
       <motion.div className="space-y-3 px-4" {...fade(0)}>
-        <h2 className="text-3xl font-bold tracking-tight">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-3xl font-bold tracking-tight outline-none"
+        >
           {metrics.isFirstSession ? "Your first breath." : "A moment, taken."}
         </h2>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">

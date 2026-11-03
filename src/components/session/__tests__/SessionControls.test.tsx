@@ -1,6 +1,6 @@
 /**
  * SessionControls — regression test for the pause/resume bug:
- * isActive is lifecycle (includes paused), so a paused session must resume.
+ * a paused session must resume, never pause again.
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";

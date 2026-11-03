@@ -241,7 +241,7 @@ export const useSessionStore = create<SessionState & SessionActions>()(
 // ============================================================================
 
 export const sessionSelectors = {
-  isActive: () => useSessionStore.getState().phase !== 'setup',
+  isActive: () => useSessionStore.getState().phase === 'active',
   isPaused: () => useSessionStore.getState().phase === 'paused',
   isComplete: () => useSessionStore.getState().phase === 'complete',
 };

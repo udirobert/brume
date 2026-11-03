@@ -738,3 +738,35 @@ transitions and grokbot-desktop's event reactions); still source-only.
   Cloud Agent test; the boot-hang fix is what it proves or disproves).
   Note: any cut after submission needs a re-run of `submit-review` to
   re-pin the review to it.
+
+### 12.11 Motion tiers B/C + attention layer (2026-11-03, unpublished)
+
+Web motion upgrade continued (Tier A transitions shipped earlier same
+day; all source-side, nothing published).
+
+- **Tier B — bloub-grade mascot engine.** Deterministic 6.4s glance
+  (lookBias), idle bob cut to −0.45/−0.35 + rotate 0.35, per-state
+  silhouette deltas (BODY_POSES → `frame.body.prims`, painted
+  per-primitive in mascot.js), three-act reaction curves
+  (`reactionCurve` — crouch/apex/touchdown-squash; last 3% parks on
+  REACTION_REST so reactions land exactly).
+- **Tier C — flight smear + protocol wiring.** `smearFrom({x,y,
+  strength})` one-shot: sprite deforms along flight velocity
+  (stretch 0.18 / squash 0.11, quadratic decay over 0.55s). Fixed two
+  real flight-detection bugs: position is a mount-id-tagged trail
+  (`src/lib/mascotFlight.ts`, 13 unit tests) — StrictMode replays and
+  sibling mounts can't overwrite the previous spot; staleness =
+  departure time. Presence toggle answers: Company→hop, Quiet→settle.
+- **Attention layer (two-way, no camera).** New `hush` engine input:
+  pointer-speed EMA + nearness in the shared adapter — agitated near
+  it → hush eases to 1 (bob, gaze wander, glance all quiet — it models
+  stillness); slow dwell 0.6s near it → it settles with you, once per
+  approach. Companion presence only; reduced motion untouched.
+- **Positioning noted for the record:** embodied companion is the
+  wedge — "company, not content" / not content, not a metric, not a
+  chatbot. Mist metaphor is the doctrine (gathers, releases, returns,
+  never keeps). Camera attention (Winq-style gaze) evaluated and held
+  out — no-camera promise stands; behaviour-attention carries the loop.
+- **Verified:** anna 116 tests, mcp 15, web 186 vitest + 13
+  mascotFlight tests, tsc/lint clean, live browser QA of smear frames
+  and lab strips. Docs: `docs/WEB-MOTION.md` carries the full grammar.

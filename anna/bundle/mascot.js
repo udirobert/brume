@@ -231,6 +231,7 @@ export function createMascot(host, options = {}) {
         : undefined,
       presence: opts.presence,
       gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
+      hush: attentionTick(t),
       lean: opts.lean,
       reducedMotion: isReduced(),
       idleSeconds: opts.idleSeconds !== undefined
@@ -291,6 +292,27 @@ export function createMascot(host, options = {}) {
 
   const markActivity = () => { lastActivity = nowSec(); };
 
+  // Attention: the companion reads HOW you come to it. Speed is an EMA
+  // of pointer velocity (px/s); nearness is a 0..1 falloff around the
+  // sprite. Fast and near reads as agitation → the sprite hushes and
+  // holds still. Slow and near for a breath reads as arrival → it
+  // settles with you, once per approach.
+  const ATTENTION = {
+    AGITATED: 1200,
+    CALM: 120,
+    NEAR_R: 2.5,
+    DWELL: 0.6,
+    EASE: 0.12,
+  };
+  let pointerSpeed = 0;
+  let pointerNear = 0;
+  let lastMoveT = -1;
+  let lastPx = 0;
+  let lastPy = 0;
+  let hushLevel = 0;
+  let dwellSince = 0;
+  let settleArmed = true;
+
   function gazeFromPointer(event) {
     const rect = host.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -301,6 +323,32 @@ export function createMascot(host, options = {}) {
     const r = Math.hypot(nx, ny) || 1;
     const k = Math.tanh(r) / r;
     pointerGaze = { x: nx * k * 2.4, y: ny * k * 1.8 };
+
+    const t = nowSec();
+    if (lastMoveT >= 0) {
+      const dt = Math.max(0.001, t - lastMoveT);
+      const inst = Math.hypot(event.clientX - lastPx, event.clientY - lastPy) / dt;
+      pointerSpeed = pointerSpeed + (inst - pointerSpeed) * 0.35;
+    }
+    lastMoveT = t;
+    lastPx = event.clientX;
+    lastPy = event.clientY;
+    pointerNear = Math.max(0, 1 - r / ATTENTION.NEAR_R);
+  }
+
+  function attentionTick(t) {
+    if (t - lastMoveT > 0.3) pointerSpeed = 0;
+    const agitated = pointerNear > 0 && pointerSpeed > ATTENTION.AGITATED;
+    hushLevel += ((agitated ? 1 : 0) - hushLevel) * ATTENTION.EASE;
+    const arrived = pointerNear > 0 && pointerSpeed < ATTENTION.CALM;
+    if (arrived && !dwellSince) dwellSince = t;
+    if (!arrived) dwellSince = 0;
+    if (pointerNear <= 0) { settleArmed = true; dwellSince = 0; }
+    if (dwellSince && t - dwellSince > ATTENTION.DWELL && settleArmed) {
+      settleArmed = false;
+      react("settle");
+    }
+    return opts.trackPointer ? hushLevel : 0;
   }
 
   function onPointerMove(event) {
@@ -309,6 +357,9 @@ export function createMascot(host, options = {}) {
   }
   function onPointerLeave() {
     pointerGaze = null;
+    pointerNear = 0;
+    pointerSpeed = 0;
+    dwellSince = 0;
   }
 
   function companionActive() {
@@ -445,6 +496,7 @@ export function createMascot(host, options = {}) {
       breath: merged.breath,
       presence: merged.presence,
       gaze: merged.gaze,
+      hush: merged.hush,
       lean: merged.lean,
       reducedMotion: merged.reducedMotion === true,
       idleSeconds: merged.idleSeconds !== undefined ? merged.idleSeconds : 0,

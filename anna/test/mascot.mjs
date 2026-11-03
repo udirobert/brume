@@ -436,6 +436,17 @@ test("flight smears along the travel direction and relaxes to rest", () => {
   assert.deepEqual(still.root.smear, { angle: 0, sx: 1, sy: 1 }, "reduced motion is never smeared");
 });
 
+test("hush stills the body — bob, wander and glance all quiet", () => {
+  const quiet = sampleMascot(3, { state: "idle", presence: "companion", hush: 1 });
+  assert.ok(quiet.root.y === 0, "bob is fully stilled");
+  const gazeBase = sampleMascot(3, { state: "idle", reducedMotion: true }).gaze;
+  assert.deepEqual(quiet.gaze, gazeBase, "hushed gaze matches the static frame");
+  const half = sampleMascot(3, { state: "idle", presence: "companion", hush: 0.5 });
+  const live = sampleMascot(3, { state: "idle", presence: "companion" });
+  assert.ok(Math.abs(half.root.y) < Math.abs(live.root.y) || half.root.y === live.root.y,
+    "partial hush never adds motion");
+});
+
 test("silhouette deltas blend with the frozen pose", () => {
   const idlePose = sampleMascot(3, { state: "idle" }).pose;
   const mid = sampleMascot(3, { state: "topup", from: idlePose, stateAge: 0.25 });

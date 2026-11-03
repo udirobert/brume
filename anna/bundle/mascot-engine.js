@@ -500,6 +500,10 @@ export function sampleMascot(timeSeconds, options = {}) {
   const expr = EXPRESSIONS[state];
   const idle = state === "idle";
   const companion = presence === "companion";
+  // hush (0..1): how still the sprite holds itself. The companion reads
+  // agitation in the pointer and answers with stillness — hush suppresses
+  // the bob, gaze wander and glance so the body models settling.
+  const hush = clamp(fin(opts.hush, 0), 0, 1);
 
   let breath = null;
   if (!reduced) {
@@ -605,15 +609,16 @@ export function sampleMascot(timeSeconds, options = {}) {
   let gazeX = pose.lookX;
   let gazeY = pose.lookY;
   if (!reduced) {
-    const ampX = companion ? (idle ? 1.1 : 0.6) : 0.5;
-    const ampY = companion ? (idle ? 0.6 : 0.35) : 0.3;
+    const still = 1 - hush;
+    const ampX = (companion ? (idle ? 1.1 : 0.6) : 0.5) * still;
+    const ampY = (companion ? (idle ? 0.6 : 0.35) : 0.3) * still;
     gazeX = clamp(gazeX + ampX * Math.sin((2 * Math.PI * t) / 9), -GAZE_MAX_X, GAZE_MAX_X);
     gazeY = clamp(gazeY + ampY * Math.sin((2 * Math.PI * t) / 13 + 1), -GAZE_MAX_Y, GAZE_MAX_Y);
     if (idle) {
       // The glance: a fresh direction every window, easing in and
       // back out — the life at rest, sized smaller when unattended.
       const b = lookBias(t);
-      const kBias = companion ? 1 : 0.55;
+      const kBias = (companion ? 1 : 0.55) * still;
       gazeX = clamp(gazeX + b.x * kBias, -GAZE_MAX_X, GAZE_MAX_X);
       gazeY = clamp(gazeY + b.y * kBias, -GAZE_MAX_Y, GAZE_MAX_Y);
     }
@@ -643,14 +648,14 @@ export function sampleMascot(timeSeconds, options = {}) {
   if (!reduced) {
     // Idle stillness: the body holds nearly still at rest; the life
     // comes from gaze and blinks. A hair of breathing rhythm remains.
-    const bobHalf = isFiniteNum(opts.breath) ? 0.5 : 1;
+    const bobAmp = (isFiniteNum(opts.breath) ? 0.5 : 1) * (1 - hush);
     if (companion) {
       const cyc = (((t % 7) + 7) % 7) / 7;
-      root.y = -0.45 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
-      root.rotate = 0.35 * bobHalf * Math.sin(cyc * Math.PI * 2);
+      root.y = -0.45 * bobAmp * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+      root.rotate = 0.35 * bobAmp * Math.sin(cyc * Math.PI * 2);
     } else {
       const cyc = (((t % 6) + 6) % 6) / 6;
-      root.y = -0.35 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+      root.y = -0.35 * bobAmp * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
     }
     const puff = state === "topup"
       ? 1 + 0.04 * Math.sin(Math.PI * clamp(stateAge / 0.5, 0, 1))

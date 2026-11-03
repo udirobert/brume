@@ -60,15 +60,17 @@ MCP widget — one engine, one painter in `mascot.js`).
 | Reactions | three-act curves in `reactionCurve` — **hop** 0.5s (crouch 0–0.14 → apex stretch 0.14–0.55 → fall → touchdown squash 0.86–0.97), **settle** 0.9s (gather 0–0.15 → sink 0.15–0.7 → `outBack` overshoot 0.7–0.97), **celebrate** 0.9s (three shrinking bounces + touchdown squashes, face envelope in/out). Last 3% parks on `REACTION_REST` so every reaction lands exactly — never a snap, never a creep |
 | Silhouette | `BODY_POSES` per-state deltas on the three body primitives (`sx`/`sy`/`dy`), emitted as `frame.body.prims`, painted per-primitive in `mascot.js`; part of `pose`, so states morph through the frozen-pose blend |
 | Flight smear | the sprite deforms along its velocity between screens: stretch 1+0.18·a along, squash 1−0.11·a across, a = strength·(1−age/0.55s)²; `smearFrom({x,y,strength})` is a one-shot like `react`, wired from `flightVector` (strength = 0.35 floor + scaled to 1 by 400px, so even a hop reads as a dart) |
+| Attention | the companion reads HOW you come (no camera): pointer-speed EMA + nearness — fast & near = agitation → `hush` eases toward 1 (bob, wander, glance all quiet); slow & near for 0.6s = arrival → it settles with you, once per approach |
 | State blending | every change lerps from the frozen displayed pose over 0.5s `easeOutQuint` — silhouette keys included |
 
-Motion as interaction protocol (`react`/`smearFrom` wired to real
-moments): check-in word → feel-mapped reaction (`feelTheme.ts`),
+Motion as interaction protocol (`react`/`smearFrom`/`hush` wired to
+real moments): check-in word → feel-mapped reaction (`feelTheme.ts`),
 session phase → hop/settle/celebrate (`ResponsiveEnhancedSession`),
 presence toggle → hop on Company, settle on Quiet (`Index.tsx`),
-flight → smear (mount-time, `BrumeMascot.tsx`).
+flight → smear (mount-time, `BrumeMascot.tsx`), pointer agitation →
+hush, pointer arrival → settle (`mascot.js` attention layer).
 
-Pinned by `anna/test/mascot.mjs` (30 tests): purity, no option/avatar
+Pinned by `anna/test/mascot.mjs` (31 tests): purity, no option/avatar
 mutation, reactions equal base at expiry, silhouette is state-driven
 (survives reduced motion), glance continuity across the 6.4s wrap,
 smear aligned/decaying/identity at end.

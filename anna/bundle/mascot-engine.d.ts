@@ -54,6 +54,8 @@ export interface SampleMascotOptions {
   reaction?: { name: MascotReaction | string; age: number };
   /** Flight smear: unit-ish direction + strength 0..1 + age seconds. */
   smear?: { x?: number; y?: number; strength?: number; age: number };
+  /** 0..1 — how still the sprite holds itself (attention response). */
+  hush?: number;
 }
 
 export interface MascotFrame {

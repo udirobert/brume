@@ -731,7 +731,10 @@ transitions and grokbot-desktop's event reactions); still source-only.
   match. 20/20 `npm run test:browser` cases passed on the new sprite;
   `listing/candidate/*.png` regenerated with it.
 - **`apps release 0.3.7` is refused while status is Rejected** — the
-  console path is `submit-review` → pending → approval → release. So
-  0.3.7 is an immutable, installable cut but NOT live and NOT
-  submitted. That stays the plan until the tier-3 Cloud Agent run can
-  go (account quota still the gate — §12.8).
+  console path is `submit-review` → pending → approval → release.
+- **Submitted for review** (`anna-app apps submit-review`) — app is
+  **pending_review** on v0.3.7, ahead of the tier-3 run: owner decided
+  not to wait on quota (the reviewer pass doubles as the fresh-install
+  Cloud Agent test; the boot-hang fix is what it proves or disproves).
+  Note: any cut after submission needs a re-run of `submit-review` to
+  re-pin the review to it.

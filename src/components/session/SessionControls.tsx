@@ -7,6 +7,7 @@
 import React from "react";
 import { Pause, Play, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
+import { useSessionPhase } from "@/stores/sessionStore";
 
 type SessionControlsProps = {
   onEndSession?: () => void;
@@ -35,6 +36,12 @@ export const SessionControls = ({
     complete: stop,
     toggleAudio,
   } = useSession();
+  // The play/pause icon only exists once the breath is running: active
+  // pauses it, paused resumes it. Any pre-start phase (setup/ready) or
+  // the completion beat renders nothing to press here — a play button
+  // beside "Begin" reads as "the first tap didn't register".
+  const phase = useSessionPhase();
+  const breathRunning = phase === 'active' || phase === 'paused';
 
   const handlePlayPause = () => {
     if (disabled || isLoading) return;
@@ -68,29 +75,29 @@ export const SessionControls = ({
         </button>
       )}
 
-      <button
-        type="button"
-        onClick={handlePlayPause}
-        className={ICON_BTN}
-        disabled={disabled || isLoading || (!isActive && !isPaused)}
-        aria-label={
-          isLoading
-            ? "Loading session"
-            : isPaused
-              ? "Resume session"
-              : isActive
-                ? "Pause session"
-                : "Play session"
-        }
-      >
-        {isLoading ? (
-          <Loader2 size={22} className="animate-spin" />
-        ) : isActive && !isPaused ? (
-          <Pause size={22} />
-        ) : (
-          <Play size={22} />
-        )}
-      </button>
+      {breathRunning && (
+        <button
+          type="button"
+          onClick={handlePlayPause}
+          className={ICON_BTN}
+          disabled={disabled || isLoading}
+          aria-label={
+            isLoading
+              ? "Loading session"
+              : isPaused
+                ? "Resume session"
+                : "Pause session"
+          }
+        >
+          {isLoading ? (
+            <Loader2 size={22} className="animate-spin" />
+          ) : isPaused ? (
+            <Play size={22} />
+          ) : (
+            <Pause size={22} />
+          )}
+        </button>
+      )}
 
       <button
         type="button"

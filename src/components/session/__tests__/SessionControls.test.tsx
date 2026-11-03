@@ -18,8 +18,15 @@ const sessionMock = {
   toggleAudio: vi.fn(),
 };
 
+// Real store phase, controllable per test.
+let mockPhase = 'active';
+
 vi.mock("@/hooks/useSession", () => ({
   useSession: () => sessionMock,
+}));
+
+vi.mock("@/stores/sessionStore", () => ({
+  useSessionPhase: () => mockPhase,
 }));
 
 import { SessionControls } from "../SessionControls";
@@ -56,6 +63,7 @@ describe("SessionControls", () => {
     sessionMock.isActive = true;
     sessionMock.isPaused = false;
     sessionMock.audioEnabled = true;
+    mockPhase = 'active';
   });
 
   afterEach(() => {
@@ -63,9 +71,35 @@ describe("SessionControls", () => {
     container.remove();
   });
 
+  it("hides the play/pause icon before the session has started", () => {
+    mockPhase = 'setup';
+    render();
+
+    // End still shows; only the play/pause toggle is withheld — there is
+    // nothing to pause yet and a play icon would compete with Begin.
+    expect(buttonByLabel("End session")).toBeTruthy();
+    const toggles = [...container.querySelectorAll("button")].filter(
+      (b) => b.getAttribute("aria-label") === "Pause session"
+        || b.getAttribute("aria-label") === "Resume session",
+    );
+    expect(toggles).toHaveLength(0);
+  });
+
+  it("hides the dead play/pause icon in the completion beat", () => {
+    mockPhase = 'complete';
+    render();
+
+    const toggles = [...container.querySelectorAll("button")].filter(
+      (b) => b.getAttribute("aria-label") === "Pause session"
+        || b.getAttribute("aria-label") === "Resume session",
+    );
+    expect(toggles).toHaveLength(0);
+  });
+
   it("paused session (isActive=true, isPaused=true) resumes, never pauses", () => {
     sessionMock.isActive = true;
     sessionMock.isPaused = true;
+    mockPhase = 'paused';
     render();
 
     const btn = buttonByLabel("Resume session");

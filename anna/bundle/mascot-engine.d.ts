@@ -19,6 +19,10 @@ export interface MascotPose {
   waves: number;
   swirl: number;
   bodyScale: number;
+  /** Per-primitive silhouette deltas (BODY_POSES), blended in pose space. */
+  b0x: number; b0y: number; b0d: number;
+  b1x: number; b1y: number; b1d: number;
+  b2x: number; b2y: number; b2d: number;
 }
 
 export type AvatarPrimitive =
@@ -48,6 +52,8 @@ export interface SampleMascotOptions {
   stateAge?: number;
   from?: MascotPose;
   reaction?: { name: MascotReaction | string; age: number };
+  /** Flight smear: unit-ish direction + strength 0..1 + age seconds. */
+  smear?: { x?: number; y?: number; strength?: number; age: number };
 }
 
 export interface MascotFrame {
@@ -56,9 +62,17 @@ export interface MascotFrame {
   reduced: boolean;
   breath: number | null;
   avatar: BrumeAvatar;
-  root: { y: number; rotate: number; sx: number; sy: number; originX: number; originY: number };
+  root: {
+    y: number; rotate: number; sx: number; sy: number; originX: number; originY: number;
+    /** Directional deform along the flight vector; identity at rest. */
+    smear: { angle: number; sx: number; sy: number };
+  };
   pose: MascotPose;
-  body: { scale: number; originX: number; originY: number };
+  body: {
+    scale: number; originX: number; originY: number;
+    /** Per-primitive silhouette deltas for the painter. */
+    prims: { sx: number; sy: number; dy: number }[];
+  };
   eyes: {
     left: { cx: number; cy: number; rx: number; ry: number };
     right: { cx: number; cy: number; rx: number; ry: number };
@@ -86,6 +100,7 @@ export interface MascotFrame {
 export const MASCOT_STATES: readonly BrumeMascotState[];
 export const MASCOT_REACTIONS: readonly MascotReaction[];
 export const MASCOT_REACTION_DURATIONS: Readonly<Record<MascotReaction, number>>;
+export const MASCOT_SMEAR_DURATION: number;
 export const BRUME_AVATAR: BrumeAvatar;
 
 export function blendPath(a: string, b: string, k: number): string;

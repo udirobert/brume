@@ -5,7 +5,7 @@ import { DURATION, EASE } from "@/lib/motion";
 import { viewTransitionTo, vtClick } from "@/lib/viewTransition";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
-import { BrumeMascot } from "@/components/BrumeMascot";
+import { BrumeMascot, type MascotReaction } from "@/components/BrumeMascot";
 import { WordReveal, type WordPart } from "@/components/atmosphere/WordReveal";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
@@ -72,6 +72,9 @@ export default function Index() {
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
   const [feelTap, setFeelTap] = useState<number | null>(null);
+  const [mascotReaction, setMascotReaction] = useState<
+    { name: MascotReaction; key: number } | undefined
+  >();
   const [droplet, setDroplet] = useState<{
     key: number;
     from: { x: number; y: number };
@@ -92,6 +95,9 @@ export default function Index() {
       a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
     );
     const next = feelAt(index);
+    if (next?.reaction) {
+      setMascotReaction({ name: next.reaction, key: Date.now() });
+    }
     const card = mascotCardRef.current;
     if (reduceMotion || !next || !card || !a) return;
     const b = card.getBoundingClientRect();
@@ -130,7 +136,7 @@ export default function Index() {
               breathing={companion}
               trackPointer={companion}
               layoutId="brume-companion"
-              reaction={feel?.reaction ? { name: feel.reaction, key: feelTap ?? -1 } : undefined}
+              reaction={mascotReaction}
             />
             <p>Brume can keep you company.</p>
             <div className="flex gap-2" role="group" aria-label="Brume presence">
@@ -138,7 +144,11 @@ export default function Index() {
                 type="button"
                 className={`brume-pill ${!companion ? "is-selected" : ""}`}
                 aria-pressed={!companion}
-                onClick={() => setPresence("quiet")}
+                onClick={() => {
+                  if (!companion) return;
+                  setPresence("quiet");
+                  setMascotReaction({ name: "settle", key: Date.now() });
+                }}
               >
                 Quiet
               </button>
@@ -146,7 +156,11 @@ export default function Index() {
                 type="button"
                 className={`brume-pill ${companion ? "is-selected" : ""}`}
                 aria-pressed={companion}
-                onClick={() => setPresence("companion")}
+                onClick={() => {
+                  if (companion) return;
+                  setPresence("companion");
+                  setMascotReaction({ name: "hop", key: Date.now() });
+                }}
               >
                 Company
               </button>

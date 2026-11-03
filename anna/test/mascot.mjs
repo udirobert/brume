@@ -323,17 +323,20 @@ test("reactions are three-act: crouch, apex, touchdown squash", () => {
   const apex = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.2 } });
   assert.ok(apex.root.y < base.root.y, "hop is airborne");
   assert.ok(apex.root.sy > base.root.sy, "apex stretches");
-  // act three — the fall lands at rest exactly at rp 0.86, and the
-  // touchdown squash peaks just after it, compressing down.
-  const landed = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.43 } });
+  // act three — the fall ends exactly on rest at renormalised p 0.86
+  // (raw age 0.97 · 0.86 · 0.5), then the touchdown squash peaks.
+  const landedAt = 0.97 * 0.86 * 0.5;
+  const landed = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: landedAt } });
   assert.ok(Math.abs(landed.root.y - base.root.y) < 1e-9, "the fall lands exactly on rest");
+  const pre = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: landedAt - 0.01 } });
+  assert.ok(pre.root.y < base.root.y, "still airborne just before touchdown");
   const td = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.46 } });
   assert.ok(td.root.sy < base.root.sy, "touchdown squashes");
   assert.ok(td.root.y > base.root.y, "touchdown compresses down");
-  // Soft landing: the squash bell returns to ~rest before the
-  // reaction expires, so expiry never reads as a snap.
+  // Soft landing: the last 3% of the curve parks on rest, so expiry
+  // is never a snap and the tail never creeps.
   const done = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.499 } });
-  assert.ok(Math.abs(done.root.y - base.root.y) < 0.1, "squash is essentially back at rest before the reaction ends");
+  assert.ok(done.root.y === base.root.y, "last 3% parks exactly on rest");
   const atEnd = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.5 } });
   assert.equal(atEnd.root.y, base.root.y);
   assert.equal(atEnd.root.sy, base.root.sy);
@@ -396,6 +399,41 @@ test("states shape the silhouette, not just the face", () => {
   // Silhouette is state-driven, not motion: reduced motion keeps the shape.
   const still = sampleMascot(0, { state: "topup", reducedMotion: true }).body.prims.map((p) => [p.sx, p.sy, p.dy]);
   assert.deepEqual(still, top, "reduced motion still wears the state's silhouette");
+});
+
+test("flight smears along the travel direction and relaxes to rest", () => {
+  const t = 3.0;
+  // Launch: stretched along the direction, squashed across it.
+  const launch = sampleMascot(t, {
+    state: "idle",
+    smear: { x: 1, y: 0, strength: 1, age: 0 },
+  });
+  assert.ok(launch.root.smear.sx > 1 && launch.root.smear.sy < 1, "stretches along the flight direction");
+  assert.ok(Math.abs(launch.root.smear.angle) < 1e-9, "aligned with +x");
+  // A diagonal flight tilts the deform to match.
+  const diag = sampleMascot(t, {
+    state: "idle",
+    smear: { x: 0.7, y: 0.7, strength: 1, age: 0 },
+  });
+  assert.ok(Math.abs(diag.root.smear.angle - 45) < 0.01, "deform follows the vector");
+  // It decays: weaker mid-flight, identity once the window ends.
+  const mid = sampleMascot(t, {
+    state: "idle",
+    smear: { x: 1, y: 0, strength: 1, age: 0.27 },
+  });
+  assert.ok(mid.root.smear.sx > 1 && mid.root.smear.sx < launch.root.smear.sx, "decays with age");
+  const late = sampleMascot(t, {
+    state: "idle",
+    smear: { x: 1, y: 0, strength: 1, age: 0.55 },
+  });
+  assert.deepEqual(late.root.smear, { angle: 0, sx: 1, sy: 1 }, "identity at the end of the window");
+  // Reduced motion never deforms.
+  const still = sampleMascot(t, {
+    state: "idle",
+    reducedMotion: true,
+    smear: { x: 1, y: 0, strength: 1, age: 0 },
+  });
+  assert.deepEqual(still.root.smear, { angle: 0, sx: 1, sy: 1 }, "reduced motion is never smeared");
 });
 
 test("silhouette deltas blend with the frozen pose", () => {

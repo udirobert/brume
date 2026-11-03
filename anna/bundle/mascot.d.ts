@@ -11,6 +11,8 @@ export interface MascotHandle {
   setOptions: (partial: Partial<CreateMascotOptions>) => void;
   renderAt: (timeSeconds: number, overrides?: SampleMascotOptions) => void;
   react: (name: MascotReaction) => void;
+  /** One-shot flight smear: direction vector + strength 0..1 (default 1). */
+  smearFrom: (v: { x: number; y: number; strength?: number }) => void;
   destroy: () => void;
 }
 

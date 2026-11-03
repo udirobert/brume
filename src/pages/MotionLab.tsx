@@ -203,11 +203,13 @@ function MascotFrame({
   state = "idle",
   reactionName,
   reactionAge,
+  smear,
   label,
 }: {
   state?: BrumeMascotState;
   reactionName?: MascotReaction;
   reactionAge?: number;
+  smear?: { x: number; y: number; strength: number; age: number };
   label: string;
 }) {
   const hostRef = useRef<HTMLSpanElement>(null);
@@ -221,9 +223,10 @@ function MascotFrame({
         reactionName !== undefined && reactionAge !== undefined
           ? { name: reactionName, age: reactionAge }
           : undefined,
+      smear,
     });
     return () => m.destroy();
-  }, [state, reactionName, reactionAge]);
+  }, [state, reactionName, reactionAge, smear]);
   return (
     <figure className="flex flex-col items-center gap-2">
       <div className="relative flex h-40 w-72 items-center justify-center rounded-2xl border border-[var(--brume-rule)] bg-[var(--brume-card)]">
@@ -278,6 +281,31 @@ function MascotSilhouetteStrip() {
       <div className="grid w-max grid-cols-[repeat(4,18rem)] gap-3">
         {states.map((s) => (
           <MascotFrame key={s.state} label={s.label} state={s.state} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Strip 7 — flight smear: the sprite deforms along its velocity. */
+function MascotSmearStrip() {
+  const dir = { x: 1, y: 0.25 };
+  const frames = [
+    { age: 0, label: "launch · peak stretch" },
+    { age: 0.15, label: "in flight" },
+    { age: 0.3, label: "relaxing" },
+    { age: 0.45, label: "nearly rest" },
+    { age: 0.55, label: "rest" },
+  ] as const;
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="grid w-max grid-cols-[repeat(5,18rem)] gap-3">
+        {frames.map((f) => (
+          <MascotFrame
+            key={f.age}
+            label={f.label}
+            smear={{ ...dir, strength: 1, age: f.age }}
+          />
         ))}
       </div>
     </div>
@@ -384,6 +412,13 @@ export default function MotionLab() {
           Mascot silhouette — states reshape the body
         </h2>
         <MascotSilhouetteStrip />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+          Mascot flight — deform along velocity
+        </h2>
+        <MascotSmearStrip />
       </section>
     </div>
   );

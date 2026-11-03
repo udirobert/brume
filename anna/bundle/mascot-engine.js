@@ -290,16 +290,22 @@ const REACTION_REST = Object.freeze({
  * Three-act reaction curves. All of them end exactly on REACTION_REST,
  * so the reaction ends without a snap the moment p >= 1.
  *
+ * The last REACTIONS_LAND_PCT of every curve is the landing park: the
+ * pose sits exactly at rest there and the curve is computed on p
+ * renormalised into the window before it, so expiry never snaps and
+ * the tail never creeps.
+ *
  * hop (0.5s):    crouch 0–0.14 → apex stretch 0.14–0.55 → fall, with a
  *                touchdown squash bounce 0.86–0.97.
  * settle (0.9s): gather up 0–0.15 → sink with weight 0.15–0.7 →
  *                spring back with one overshoot 0.7–0.97.
- * The last 3% of every curve parks on REACTION_REST so the reaction
- * lands exactly instead of creeping toward zero.
  * celebrate (0.9s): three shrinking hops with touchdown squashes
  *                between, face envelope roaring in and easing out.
  */
-function reactionCurve(name, p) {
+const REACTIONS_LAND_PCT = 0.97;
+
+function reactionCurve(name, rawP) {
+  const p = rawP >= REACTIONS_LAND_PCT ? 1 : rawP / REACTIONS_LAND_PCT;
   const segP = (a, b) => seg(p, a, b);
 
   if (name === "hop") {
@@ -404,6 +410,37 @@ export const MASCOT_REACTION_DURATIONS = Object.freeze({
   settle: 0.9,
   celebrate: 0.9,
 });
+
+/**
+ * Flight smear — while the sprite travels between screens it deforms
+ * along its velocity (smear-blur's core idea): stretched along the
+ * direction of travel, squashed across it. Strongest at launch —
+ * velocity peaks at the start of the spring flight — and decays
+ * quadratically to rest inside MASCOT_SMEAR_DURATION. `age` is
+ * supplied by the adapter, like reaction ages, so the engine stays
+ * pure.
+ */
+export const MASCOT_SMEAR_DURATION = 0.55;
+const SMEAR_STRETCH = 0.18;
+const SMEAR_SQUASH = 0.11;
+
+function smearFrame(sm) {
+  const rest = { angle: 0, sx: 1, sy: 1 };
+  if (!sm || typeof sm !== "object") return rest;
+  const age = fin(sm.age, -1);
+  const strength = clamp(fin(sm.strength, 0), 0, 1);
+  if (age < 0 || age >= MASCOT_SMEAR_DURATION || strength <= 0) return rest;
+  const dx = fin(sm.x, 0);
+  const dy = fin(sm.y, 0);
+  const len = Math.hypot(dx, dy);
+  if (len <= 0.01) return rest;
+  const a = strength * (1 - age / MASCOT_SMEAR_DURATION) ** 2;
+  return {
+    angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    sx: 1 + SMEAR_STRETCH * a,
+    sy: 1 - SMEAR_SQUASH * a,
+  };
+}
 
 const LOOK_OFFSETS = Object.freeze({
   inhale: Object.freeze({ x: 0, y: -0.6 }),
@@ -625,6 +662,9 @@ export function sampleMascot(timeSeconds, options = {}) {
       root.sx *= rc.sx;
       root.sy *= rc.sy;
     }
+    root.smear = smearFrame(opts.smear);
+  } else {
+    root.smear = { angle: 0, sx: 1, sy: 1 };
   }
   root.rotate += fin(opts.lean, 0);
 

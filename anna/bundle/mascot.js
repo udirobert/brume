@@ -6,7 +6,7 @@
 // sleepy | bright | stretch | hum | watching. prefers-reduced-motion
 // renders static expressions (no scaling, bob, blinks or particles).
 
-import { BRUME_AVATAR, MASCOT_STATES, MASCOT_REACTIONS, MASCOT_REACTION_DURATIONS, validateAvatar, sampleMascot } from "./mascot-engine.js";
+import { BRUME_AVATAR, MASCOT_STATES, MASCOT_REACTIONS, MASCOT_REACTION_DURATIONS, MASCOT_SMEAR_DURATION, validateAvatar, sampleMascot } from "./mascot-engine.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -122,6 +122,7 @@ export function createMascot(host, options = {}) {
   let poseFrom = null;
   let reactionName = null;
   let reactionStart = 0;
+  let smearVec = null;
 
   const media = win && win.matchMedia ? win.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
@@ -145,9 +146,17 @@ export function createMascot(host, options = {}) {
 
   function applyFrame(frame) {
     const r = frame.root;
+    // Flight smear: directional deform around the body centre, applied
+    // outermost so it distorts the whole already-posed sprite.
+    const sm = r.smear;
+    const smearT = sm && (sm.sx !== 1 || sm.sy !== 1)
+      ? `translate(50 58) rotate(${sm.angle}) scale(${sm.sx} ${sm.sy}) `
+        + `rotate(${-sm.angle}) translate(-50 -58) `
+      : "";
     rootG.setAttribute(
       "transform",
-      `translate(0 ${r.y}) rotate(${r.rotate} 50 58) `
+      smearT
+        + `translate(0 ${r.y}) rotate(${r.rotate} 50 58) `
         + `translate(${r.originX} ${r.originY}) scale(${r.sx} ${r.sy}) `
         + `translate(${-r.originX} ${-r.originY})`,
     );
@@ -217,6 +226,9 @@ export function createMascot(host, options = {}) {
       reaction: reactionName
         ? { name: reactionName, age: t - reactionStart }
         : undefined,
+      smear: smearVec
+        ? { x: smearVec.x, y: smearVec.y, strength: smearVec.strength, age: t - smearVec.start }
+        : undefined,
       presence: opts.presence,
       gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
       lean: opts.lean,
@@ -233,6 +245,9 @@ export function createMascot(host, options = {}) {
   function render(t) {
     if (reactionName && t - reactionStart >= MASCOT_REACTION_DURATIONS[reactionName]) {
       reactionName = null;
+    }
+    if (smearVec && t - smearVec.start >= MASCOT_SMEAR_DURATION) {
+      smearVec = null;
     }
     applyFrame(liveFrame(t));
   }
@@ -438,6 +453,7 @@ export function createMascot(host, options = {}) {
       stateAge: merged.stateAge !== undefined ? merged.stateAge : timeSeconds,
       from: merged.from,
       reaction: merged.reaction,
+      smear: merged.smear,
     }));
   }
 
@@ -445,6 +461,20 @@ export function createMascot(host, options = {}) {
     if (!MASCOT_REACTIONS.includes(name)) return;
     reactionName = name;
     reactionStart = nowSec();
+    refresh();
+  }
+
+  function smearFrom(v) {
+    if (!v || typeof v !== "object") return;
+    const x = Number(v.x);
+    const y = Number(v.y);
+    const strength = Number(v.strength);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || Math.hypot(x, y) <= 0.01) return;
+    smearVec = {
+      x, y,
+      strength: Number.isFinite(strength) ? Math.min(1, Math.max(0, strength)) : 1,
+      start: nowSec(),
+    };
     refresh();
   }
 
@@ -469,5 +499,5 @@ export function createMascot(host, options = {}) {
   }
   rebuildGeometry();
   setState(opts.state && MASCOT_STATES.includes(opts.state) ? opts.state : "idle");
-  return { setState, setBreath, setOptions, renderAt, react, destroy };
+  return { setState, setBreath, setOptions, renderAt, react, smearFrom, destroy };
 }

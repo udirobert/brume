@@ -15,6 +15,7 @@ import Onboarding from "@/pages/Onboarding";
 import NotFound from "@/pages/NotFound";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import About from "@/pages/About";
 
 // Notifications (OneSignal) — guarded no-op until VITE_ONESIGNAL_APP_ID is set
 import { initNotifications } from "@/lib/notifications/oneSignal";
@@ -114,6 +115,7 @@ function App() {
                 </ProtectedRoute>
               </Web3Route>
             } />
+            <Route path="/about" element={<RouteErrorBoundary><About /></RouteErrorBoundary>} />
             {/* Consolidation redirects */}
             <Route path="/patterns" element={<PatternsRedirect />} />
             <Route path="/results" element={<ResultsRedirect />} />

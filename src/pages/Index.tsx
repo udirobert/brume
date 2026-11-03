@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { Magnetic } from "@/lib/Magnetic";
@@ -206,6 +206,12 @@ export default function Index() {
           <p className="brume-home-options__rhythm">
             {selectedPattern && `${selectedPattern.name} · ${formatPhases(selectedPattern)}`}
           </p>
+          <Link
+            to="/about"
+            className="brume-home-options__row text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            About Brume
+          </Link>
         </div>
       </details>
 

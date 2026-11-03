@@ -94,6 +94,13 @@ describe("check-in copy", () => {
       "About a minute and a half — then the breath offers to rest.",
       "Practice details",
       "practice time",
+      "About Brume.",
+      "One check-in, one rhythm, one moment. That is the whole practice.",
+      "Every word carries a rhythm",
+      "The mascot",
+      "The room",
+      "What it never does",
+      "No camera. No scores. No streaks. Sounds play from files on this device — nothing is sent anywhere.",
     );
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);

@@ -71,10 +71,16 @@ the journey: `feelTheme.ts` maps it to a mascot expression + reaction +
 retints the MistField live and `--brume-feel-weight` tells it how
 still and dense to go (heavier words: drift slows, folds thicken,
 parallax recedes, the room breath deepens — absorbed, never alarmed).
-On tap the chip also sheds a goo droplet (`AbsorbDroplet`, SVG
+Tapping a word also fires `brume:feel` with the tap point: the mist
+sighs — folds gather toward it, swell and release over ~1.5 s (the
+inward version of a ripple; nothing radiates out). On tap the chip
+also sheds a goo droplet (`AbsorbDroplet`, SVG
 `feGaussianBlur`+`feColorMatrix`, WAAPI) that melts toward the mascot
-as the retint settles; reduced motion skips the droplet and snaps the
-tint. Immersive routes have no MistField, so the shell answers there
+as the retint settles; reduced motion skips both and snaps the tint.
+The check-in is two taps on purpose — the word is let go first and
+the room holds it (chip stays selected, suggestion shows as
+`Pattern · rhythm`), then "Take it into a breath" carries it to the
+preview; re-picking swaps the feeling in place without navigating. Immersive routes have no MistField, so the shell answers there
 as a still wash (`.brume-feel-wash` — masked `--brume-orb-mist`
 drench at a `--brume-feel-weight` opacity, colour cross-fades). The
 preview repeats the word with re-pick chips that swap the pattern in

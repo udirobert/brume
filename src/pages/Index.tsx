@@ -40,11 +40,11 @@ export default function Index() {
   // mascot while the mist takes the feeling's colour and weight.
   const handleFeel = (index: number, chip: HTMLElement) => {
     setFeelTap(index);
-    applyFeel(index);
+    const a = chip.getBoundingClientRect();
+    applyFeel(index, { x: a.left + a.width / 2, y: a.top + a.height / 2 });
     const next = feelAt(index);
     const card = mascotCardRef.current;
     if (reduceMotion || !next || !card) return;
-    const a = chip.getBoundingClientRect();
     const b = card.getBoundingClientRect();
     setDroplet({
       key: Date.now(),

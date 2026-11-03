@@ -91,7 +91,8 @@
 }
 
 .brume-pill.is-selected,
-.brume-pill[aria-pressed="true"] {
+.brume-pill[aria-pressed="true"],
+.brume-btn--soft[aria-pressed="true"] {
   background: var(--brume-mint-soft);
   color: var(--brume-ink);
 }

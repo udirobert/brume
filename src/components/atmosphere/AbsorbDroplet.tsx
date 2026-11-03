@@ -41,9 +41,9 @@ export function AbsorbDroplet({ from, to, color, onDone }: AbsorbDropletProps) {
         opacity: 0,
       },
       {
-        transform: `translate(${from.x - r}px, ${from.y - r}px) scale(1)`,
+        transform: `translate(${from.x - r}px, ${from.y - r}px) scale(1.12)`,
         opacity: 1,
-        offset: 0.14,
+        offset: 0.16,
       },
       {
         transform: `translate(${midX - r}px, ${midY - r}px) scale(0.8)`,
@@ -58,7 +58,7 @@ export function AbsorbDroplet({ from, to, color, onDone }: AbsorbDropletProps) {
 
     if (mainRef.current) {
       anims.push(
-        mainRef.current.animate(path(11), {
+        mainRef.current.animate(path(17), {
           duration: 480,
           easing: ease,
           fill: "forwards",
@@ -68,7 +68,7 @@ export function AbsorbDroplet({ from, to, color, onDone }: AbsorbDropletProps) {
     // A trailing droplet keeps the goo stretched, then merges at arrival.
     if (trailRef.current) {
       anims.push(
-        trailRef.current.animate(path(7), {
+        trailRef.current.animate(path(10), {
           duration: 480,
           delay: 85,
           easing: ease,
@@ -82,11 +82,11 @@ export function AbsorbDroplet({ from, to, color, onDone }: AbsorbDropletProps) {
         budRef.current.animate(
           [
             {
-              transform: `translate(${from.x - 6}px, ${from.y - 6}px) scale(1)`,
+              transform: `translate(${from.x - 8}px, ${from.y - 8}px) scale(1)`,
               opacity: 0.9,
             },
             {
-              transform: `translate(${from.x - 6}px, ${from.y - 6}px) scale(0)`,
+              transform: `translate(${from.x - 8}px, ${from.y - 8}px) scale(0)`,
               opacity: 0,
             },
           ],
@@ -130,9 +130,9 @@ export function AbsorbDroplet({ from, to, color, onDone }: AbsorbDropletProps) {
         aria-hidden="true"
         style={{ filter: "url(#brume-absorb-goo)" }}
       >
-        <div ref={budRef} style={{ ...blob, width: 12, height: 12 }} />
-        <div ref={trailRef} style={{ ...blob, width: 14, height: 14 }} />
-        <div ref={mainRef} style={{ ...blob, width: 22, height: 22 }} />
+        <div ref={budRef} style={{ ...blob, width: 16, height: 16 }} />
+        <div ref={trailRef} style={{ ...blob, width: 20, height: 20 }} />
+        <div ref={mainRef} style={{ ...blob, width: 34, height: 34 }} />
       </div>
     </>
   );

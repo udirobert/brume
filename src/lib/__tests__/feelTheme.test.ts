@@ -35,6 +35,7 @@ describe("applyFeel / clearFeel", () => {
       removeProperty: (k: string) => void el.props.delete(k),
       getPropertyValue: (k: string) => el.props.get(k) ?? "",
     },
+    dispatchEvent: () => true,
   };
   const saved = Object.getOwnPropertyDescriptor(globalThis, "document");
 

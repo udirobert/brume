@@ -36,7 +36,17 @@ export function feelAt(index: number | null | undefined): CheckInFeel | null {
   return CHECK_IN_FEELS[index];
 }
 
-export function applyFeel(index: number | null | undefined) {
+/**
+ * Where the word was let go (viewport coords). MistField gathers
+ * toward this point — the room sighs the word in. When omitted
+ * (re-pick on preview, programmatic) it gathers toward the pointer.
+ */
+export interface FeelOrigin {
+  x: number;
+  y: number;
+}
+
+export function applyFeel(index: number | null | undefined, origin?: FeelOrigin) {
   if (typeof document === "undefined") return;
   const feel = feelAt(index);
   const el = document.documentElement;
@@ -50,6 +60,11 @@ export function applyFeel(index: number | null | undefined) {
   el.style.setProperty("--brume-mist-g", String(feel.roomMist[1]));
   el.style.setProperty("--brume-mist-b", String(feel.roomMist[2]));
   el.style.setProperty("--brume-feel-weight", String(feel.weight));
+  el.dispatchEvent(
+    new CustomEvent("brume:feel", {
+      detail: { index, x: origin?.x, y: origin?.y },
+    }),
+  );
 }
 
 export function clearFeel() {

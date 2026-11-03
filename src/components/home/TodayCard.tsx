@@ -1,16 +1,18 @@
 /**
  * TodayCard — "What do you need today?" on the Home surface.
  *
- * One-tap entry: tap a state → session starts immediately. The reason
- * (the pattern name and a line about its rhythm) is passed
- * as location state to the session preview, where it shows as a brief
- * caption before the session begins. No intermediate card, no second
- * button — the state check-in IS the first step of the session.
+ * Two taps, on purpose: tap a word → the room absorbs it (mascot,
+ * mist, a droplet letting go) and Brume's suggestion appears; tap
+ * "Take it into a breath" → the session preview. The feeling is
+ * something you can sit in and change, not a button that whisks
+ * you away. The reason (pattern + rhythm) travels to the preview
+ * as location state.
  */
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { useNavigate } from "react-router-dom";
-import { getPattern } from "@/lib/breathingPatterns";
+import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +43,21 @@ export function TodayCard({
 }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
+  const [picked, setPicked] = useState<number | null>(null);
+  const pattern = picked === null ? null : getPattern(CHECK_IN_PATTERN_IDS[picked]);
 
+  // First tap: the word is let go — the room absorbs it and the
+  // suggestion appears. Nothing navigates; re-tap another word to
+  // change the answer while it holds.
   const handleStateSelect = (index: number, chip: HTMLElement) => {
-    const pattern = getPattern(CHECK_IN_PATTERN_IDS[index]);
+    setPicked(index);
     onFeel?.(index, chip);
+  };
+
+  // Second tap: the opt-in — carry the feeling into the preview.
+  const handleContinue = () => {
+    if (picked === null) return;
+    const index = picked;
     const go = () => {
       if (!pattern) {
         navigate("/session?pattern=box");
@@ -59,8 +72,7 @@ export function TodayCard({
         },
       });
     };
-    // A beat for the room to absorb the word before it flies on.
-    if (onFeel && !reduceMotion) window.setTimeout(go, 600);
+    if (!reduceMotion) window.setTimeout(go, 280);
     else go();
   };
 
@@ -79,14 +91,19 @@ export function TodayCard({
       <p className="text-sm font-medium text-foreground text-center">
         How is it for you right now?
       </p>
-      <p className="text-sm text-muted-foreground mt-1 mb-3 text-center">
-        Pick one and Brume suggests a rhythm.
+      <p className="text-sm text-muted-foreground mt-1 mb-3 text-center" aria-live="polite">
+        {picked === null
+          ? "Pick one and Brume suggests a rhythm."
+          : pattern
+            ? `${pattern.name} · ${formatPhases(pattern)}`
+            : "Pick one and Brume suggests a rhythm."}
       </p>
       <div className="flex flex-wrap justify-center gap-2">
         {CHECK_IN_SHORT_LABELS.map((label, index) => (
           <motion.button
             key={label}
             type="button"
+            aria-pressed={picked === index}
             onClick={(event) => handleStateSelect(index, event.currentTarget)}
             whileHover={reduceMotion ? undefined : { scale: 1.02 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
@@ -97,6 +114,23 @@ export function TodayCard({
           </motion.button>
         ))}
       </div>
+
+      {picked !== null && (
+        <motion.div
+          className="mt-4 flex flex-col items-center"
+          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: DURATION.standard, ease: EASE }}
+        >
+          <button
+            type="button"
+            className="brume-btn brume-btn--push px-6 py-3 text-sm"
+            onClick={handleContinue}
+          >
+            Take it into a breath
+          </button>
+        </motion.div>
+      )}
       <details className="mt-6">
         <summary className="brume-pill mx-auto w-fit cursor-pointer list-none text-center">More rhythms</summary>
         <div className="flex flex-wrap justify-center gap-2 mt-3">

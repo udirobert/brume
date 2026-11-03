@@ -75,6 +75,11 @@ export function MistField() {
     let elapsed = 0;
     let width = 0;
     let height = 0;
+    // The sigh — when a check-in word is let go, the mist gathers
+    // toward that point, swells, then releases (~1.5s, half-sine).
+    let sighX = 0;
+    let sighY = 0;
+    let sighT = Number.NEGATIVE_INFINITY;
 
     const spawn = (x: number, y: number, staticAge = false) => {
       const i = head;
@@ -186,13 +191,18 @@ export function MistField() {
         rgb.b += (rgbTarget.b - rgb.b) * 0.05;
         weight += (weightTarget - weight) * 0.045;
       }
-      const still = 1 - weight * 0.55;
+      const still = 1 - weight * 0.6;
       const lift = Math.max(0, 0.35 - weight) * 0.5;
       const amp = still + lift;
-      const dense = 1 + (weight - 0.35) * 0.4;
+      const dense = 1 + (weight - 0.35) * 0.5;
       const reach = 1 - weight * 0.5;
-      const depth = 0.03 + weight * 0.02;
+      const depth = 0.03 + weight * 0.025;
       const breathe = reduceMotion.matches ? 1 : 1 - depth + Math.sin(t * 0.00022) * depth;
+      const sighAge = elapsed - sighT;
+      const sigh =
+        !reduceMotion.matches && sighAge >= 0 && sighAge < 1500
+          ? Math.sin((sighAge / 1500) * Math.PI)
+          : 0;
       ctx.clearRect(0, 0, width, height);
       ctx.globalCompositeOperation = "screen";
 
@@ -204,11 +214,22 @@ export function MistField() {
           ? 0
           : Math.cos(t * fold.speed * 0.85 + fold.phase) * fold.amp * 0.55 * amp;
         const parallax = (10 + fold.depth * 14) * reach;
-        const x = fold.x * width + driftX + pointer.x * parallax;
-        const y = fold.y * height + driftY + pointer.y * parallax * 0.7;
-        const rx = fold.rx * width * breathe;
-        const ry = fold.ry * height * breathe;
-        drawFold(x, y, rx, ry, (0.32 + fold.depth * 0.14) * dense);
+        let x = fold.x * width + driftX + pointer.x * parallax;
+        let y = fold.y * height + driftY + pointer.y * parallax * 0.7;
+        if (sigh > 0) {
+          // Nearby folds lean in toward where the word was let go —
+          // the room gathers it in rather than rippling out.
+          const dx = sighX - x;
+          const dy = sighY - y;
+          const d = Math.hypot(dx, dy) || 1;
+          const gather = sigh * 30 * Math.exp(-d / (Math.max(width, height) * 0.55)) * fold.depth;
+          x += (dx / d) * gather;
+          y += (dy / d) * gather;
+        }
+        const swell = 1 + sigh * 0.14 * fold.depth;
+        const rx = fold.rx * width * breathe * swell;
+        const ry = fold.ry * height * breathe * swell;
+        drawFold(x, y, rx, ry, (0.32 + fold.depth * 0.14) * dense * (1 + sigh * 0.5));
       }
 
       drawMotes();
@@ -267,6 +288,13 @@ export function MistField() {
       if (!document.hidden) last = performance.now();
     };
 
+    const onFeel = (event: Event) => {
+      const detail = (event as CustomEvent).detail ?? {};
+      sighX = typeof detail.x === "number" ? detail.x : curr.x;
+      sighY = typeof detail.y === "number" ? detail.y : curr.y;
+      sighT = elapsed;
+    };
+
     curr.x = window.innerWidth / 2;
     curr.y = window.innerHeight / 2;
     resize();
@@ -287,6 +315,7 @@ export function MistField() {
     window.addEventListener("pointermove", onPointer, { passive: true });
     document.addEventListener("pointerleave", onLeave);
     document.addEventListener("visibilitychange", onVisibility);
+    document.documentElement.addEventListener("brume:feel", onFeel);
     raf = requestAnimationFrame(frame);
 
     return () => {
@@ -297,6 +326,7 @@ export function MistField() {
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
+      document.documentElement.removeEventListener("brume:feel", onFeel);
     };
   }, []);
 

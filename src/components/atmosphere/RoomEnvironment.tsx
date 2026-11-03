@@ -8,6 +8,7 @@ import {
   type RoomMaterial,
 } from "@/lib/roomExperience";
 import { clearFeel } from "@/lib/feelTheme";
+import { syncAmbience } from "@/lib/ambience";
 import { createRoomRenderer } from "@/lib/atmosphere/roomRenderer";
 import { useSessionStore } from "@/stores/sessionStore";
 import { breathAmount } from "@/lib/breathCurve";
@@ -166,6 +167,16 @@ function RoomCanvas({ pathname }: { pathname: string }) {
       routeRef.current.startsWith("/session") &&
       !routeRef.current.startsWith("/post-session");
 
+    // The audible room follows the same material — it only sounds while
+    // the breath is actually running, so pause and the landing go quiet.
+    const updateAmbience = () => {
+      const s = useSessionStore.getState();
+      syncAmbience(
+        resolvedMaterial(store.getState()),
+        onSessionRoute() && s.phase === "active",
+      );
+    };
+
     const syncPractice = () => {
       if (!onSessionRoute()) return;
       const s = useSessionStore.getState();
@@ -270,10 +281,12 @@ function RoomCanvas({ pathname }: { pathname: string }) {
         if (stillActive() || !webgl || state.paused) drawOnce();
       }
       if (state.still !== prev.still || state.paused !== prev.paused) syncMotion();
+      updateAmbience();
     });
 
     const unsubSession = useSessionStore.subscribe(() => {
       syncPractice();
+      updateAmbience();
     });
 
     apiRef.current = {
@@ -305,6 +318,7 @@ function RoomCanvas({ pathname }: { pathname: string }) {
 
     resize();
     apiRef.current?.routeChanged();
+    updateAmbience();
 
     win.addEventListener("pointermove", onPointerMove, { passive: true });
     win.addEventListener("resize", resize);
@@ -317,6 +331,7 @@ function RoomCanvas({ pathname }: { pathname: string }) {
       stop();
       unsubRoom();
       unsubSession();
+      syncAmbience(null, false);
       win.removeEventListener("pointermove", onPointerMove);
       win.removeEventListener("resize", resize);
       doc.removeEventListener("visibilitychange", onVisibility);

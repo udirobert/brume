@@ -5,6 +5,11 @@ import {
   useRoomExperience,
   type RoomMaterial,
 } from "@/lib/roomExperience";
+import {
+  isAmbienceEnabled,
+  refreshAmbience,
+  setAmbienceEnabled,
+} from "@/lib/ambience";
 
 const OVERRIDE_OPTIONS: readonly RoomMaterial[] = [
   "waves",
@@ -23,6 +28,7 @@ export function RoomSettings({
   const still = useRoomExperience((s) => s.still);
   const setMaterial = useRoomExperience((s) => s.setMaterial);
   const setStill = useRoomExperience((s) => s.setStill);
+  const [ambienceOn, setAmbienceOn] = useState(isAmbienceEnabled);
 
   const pick = (m: RoomMaterial | null) => {
     setMaterial(m);
@@ -58,6 +64,20 @@ export function RoomSettings({
           onClick={() => setStill(!still)}
         >
           Still room
+        </button>
+        <button
+          type="button"
+          className="brume-room-controls__item"
+          aria-pressed={ambienceOn}
+          title="Waves and snow carry a quiet sound bed"
+          onClick={() => {
+            const next = !ambienceOn;
+            setAmbienceEnabled(next);
+            setAmbienceOn(next);
+            refreshAmbience();
+          }}
+        >
+          Ambience {ambienceOn ? "on" : "off"}
         </button>
       </div>
     </fieldset>

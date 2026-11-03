@@ -383,6 +383,7 @@ describe("RoomControls", () => {
       "Snow",
       "Ink",
       "Still room",
+      "Ambience on",
     ]);
     const sand = buttons.find((b) => b.textContent === "Sand")!;
     act(() => {

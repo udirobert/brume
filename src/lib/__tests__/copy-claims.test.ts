@@ -82,7 +82,7 @@ describe("check-in copy", () => {
       }
     }
     strings.push(composeCheckInMessage(null, null));
-    strings.push(...Object.values(ROOM_LABELS), "Change room", "Still room", "Auto");
+    strings.push(...Object.values(ROOM_LABELS), "Change room", "Still room", "Auto", "Ambience");
     strings.push(...Object.values(HOME_FEELING_COPY));
     strings.push(
       ...AFTER_PRACTICE_CHOICES.map((c) => c.label),

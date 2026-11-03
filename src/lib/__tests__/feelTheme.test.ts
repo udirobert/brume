@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { JSDOM } from "jsdom";
 import { CHECK_IN_SHORT_LABELS } from "../checkin";
 import { applyFeel, CHECK_IN_FEELS, clearFeel, feelAt } from "../feelTheme";
 
@@ -27,19 +26,31 @@ describe("feelTheme", () => {
 });
 
 describe("applyFeel / clearFeel", () => {
-  const dom = new JSDOM("<!doctype html><html></html>");
-  const document = dom.window.document;
-  const el = document.documentElement;
+  // Minimal stub of the documentElement surface applyFeel touches.
+  const el = {
+    dataset: {} as Record<string, string>,
+    props: new Map<string, string>(),
+    style: {
+      setProperty: (k: string, v: string) => void el.props.set(k, v),
+      removeProperty: (k: string) => void el.props.delete(k),
+      getPropertyValue: (k: string) => el.props.get(k) ?? "",
+    },
+  };
   const saved = Object.getOwnPropertyDescriptor(globalThis, "document");
+
+  const mount = () => {
+    (globalThis as { document?: unknown }).document = { documentElement: el };
+  };
 
   afterEach(() => {
     if (saved) Object.defineProperty(globalThis, "document", saved);
     else delete (globalThis as { document?: unknown }).document;
+    delete el.dataset.feel;
+    el.props.clear();
   });
 
   it("tints the room and the orb, then releases both", () => {
-    (globalThis as { document?: unknown }).document = document;
-
+    mount();
     applyFeel(4);
     expect(el.dataset.feel).toBe("4");
     expect(el.style.getPropertyValue("--brume-orb-mist")).toBe(
@@ -60,7 +71,7 @@ describe("applyFeel / clearFeel", () => {
   });
 
   it("applyFeel(null) releases the room", () => {
-    (globalThis as { document?: unknown }).document = document;
+    mount();
     applyFeel(2);
     applyFeel(null);
     expect(el.dataset.feel).toBeUndefined();

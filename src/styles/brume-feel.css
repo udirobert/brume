@@ -1,0 +1,27 @@
+/**
+ * The immersive shell holds the check-in feeling.
+ *
+ * Wherever MistField isn't mounted (session preview, the breath,
+ * post-session) the room answers the word as a still wash instead —
+ * the same --brume-orb-mist colour drenched over the backdrop,
+ * deepened by --brume-feel-weight. Still, not lively: on immersive
+ * routes the room is absorbed, not performing. The retint cross-fades
+ * (colour + opacity only — allowed under reduced motion).
+ */
+.brume-feel-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--brume-orb-mist, transparent);
+  -webkit-mask-image: radial-gradient(130% 110% at 50% 42%, black 0%, transparent 78%);
+  mask-image: radial-gradient(130% 110% at 50% 42%, black 0%, transparent 78%);
+  opacity: 0;
+  transition:
+    opacity 0.9s ease,
+    background-color 0.9s ease;
+}
+
+html[data-feel] .brume-feel-wash {
+  opacity: calc(0.14 + var(--brume-feel-weight, 0) * 0.18);
+}

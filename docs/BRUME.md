@@ -74,8 +74,11 @@ parallax recedes, the room breath deepens — absorbed, never alarmed).
 On tap the chip also sheds a goo droplet (`AbsorbDroplet`, SVG
 `feGaussianBlur`+`feColorMatrix`, WAAPI) that melts toward the mascot
 as the retint settles; reduced motion skips the droplet and snaps the
-tint. The preview repeats the word with re-pick chips that swap the
-pattern in place; the orb holds the tint until the flow ends, and
+tint. Immersive routes have no MistField, so the shell answers there
+as a still wash (`.brume-feel-wash` — masked `--brume-orb-mist`
+drench at a `--brume-feel-weight` opacity, colour cross-fades). The
+preview repeats the word with re-pick chips that swap the pattern in
+place; the orb holds the tint until the flow ends, and
 `--brume-mascot-wisp` picks the colour up too (it reads the same
 mist tokens). Decompress tints the room on check-in as well and
 releases it on unmount. Still ahead: contextual suggestions. The same three files drive the Anna bundle, the

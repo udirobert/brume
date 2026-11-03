@@ -30,11 +30,14 @@ export const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
       {!immersive && <MistField />}
       {!immersive && <ProgressiveBlur />}
       {!immersive && <Header />}
+      {/* Where the mist field sleeps, the room still answers the
+          check-in word — a still wash in the feeling's colour. */}
+      {immersive && <div className="brume-feel-wash" aria-hidden="true" />}
 
       <main
         className={
           immersive
-            ? "flex-grow flex flex-col"
+            ? "relative z-10 flex-grow flex flex-col"
             : `relative z-10 flex-grow flex flex-col items-center justify-center p-4 ${isMobile ? "pb-24" : ""}`
         }
       >

@@ -5,6 +5,7 @@
 @import "./styles/brume-controls.css";
 @import "./styles/brume-checkin.css";
 @import "./styles/brume-a11y.css";
+@import "./styles/brume-feel.css";
 
 /* v4 removed the container theme options — keep the v3 behavior explicitly */
 @utility container {

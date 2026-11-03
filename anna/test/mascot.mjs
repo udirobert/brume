@@ -311,3 +311,98 @@ test("breathAmount maps phase progress to the eased 0..1 curve", () => {
   assert.equal(breathAmount("inhale", NaN), 0);
   assert.equal(breathAmount("inhale", 7), 1);
 });
+
+test("reactions are three-act: crouch, apex, touchdown squash", () => {
+  const t = 3.0;
+  const base = sampleMascot(t, { state: "idle" });
+  // act one — anticipation: weight gathers, body compresses downward
+  const crouch = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.05 } });
+  assert.ok(crouch.root.y > base.root.y, "hop crouches (dips) before launch");
+  assert.ok(crouch.root.sy < base.root.sy, "crouch compresses");
+  // act two — apex stretch
+  const apex = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.2 } });
+  assert.ok(apex.root.y < base.root.y, "hop is airborne");
+  assert.ok(apex.root.sy > base.root.sy, "apex stretches");
+  // act three — the fall lands at rest exactly at rp 0.86, and the
+  // touchdown squash peaks just after it, compressing down.
+  const landed = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.43 } });
+  assert.ok(Math.abs(landed.root.y - base.root.y) < 1e-9, "the fall lands exactly on rest");
+  const td = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.46 } });
+  assert.ok(td.root.sy < base.root.sy, "touchdown squashes");
+  assert.ok(td.root.y > base.root.y, "touchdown compresses down");
+  // Soft landing: the squash bell returns to ~rest before the
+  // reaction expires, so expiry never reads as a snap.
+  const done = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.499 } });
+  assert.ok(Math.abs(done.root.y - base.root.y) < 0.1, "squash is essentially back at rest before the reaction ends");
+  const atEnd = sampleMascot(t, { state: "idle", reaction: { name: "hop", age: 0.5 } });
+  assert.equal(atEnd.root.y, base.root.y);
+  assert.equal(atEnd.root.sy, base.root.sy);
+});
+
+test("settle sinks with weight then springs back with one overshoot", () => {
+  const t = 3.0;
+  const base = sampleMascot(t, { state: "idle" });
+  // act one — a brief gather before the sink (a lift, like a breath held)
+  const gathered = sampleMascot(t, { state: "idle", reaction: { name: "settle", age: 0.1 } });
+  assert.ok(gathered.root.y < base.root.y, "settle gathers up first");
+  // act two — sink into the weight
+  const sunk = sampleMascot(t, { state: "idle", reaction: { name: "settle", age: 0.4 } });
+  assert.ok(sunk.root.y > base.root.y, "settle sinks (sits into the weight)");
+  assert.ok(sunk.root.sy < base.root.sy, "settle squashes while sunk");
+  // act three — spring back with one overshoot above rest
+  const spring = sampleMascot(t, { state: "idle", reaction: { name: "settle", age: 0.75 } });
+  assert.ok(spring.root.y < base.root.y, "spring overshoots above rest");
+  // No snap at expiry: essentially at rest just before, exact at end.
+  const done = sampleMascot(t, { state: "idle", reaction: { name: "settle", age: 0.89 } });
+  assert.ok(Math.abs(done.root.y - base.root.y) < 0.05, "settle is essentially back at rest before the reaction ends");
+  const atEnd = sampleMascot(t, { state: "idle", reaction: { name: "settle", age: 0.9 } });
+  assert.equal(atEnd.root.y, base.root.y);
+});
+
+test("celebrate bounces shrink and the face envelope ends closed", () => {
+  const t = 3.0;
+  const base = sampleMascot(t, { state: "idle" });
+  const peaks = [0.1, 0.47, 0.75].map((age) =>
+    sampleMascot(t, { state: "idle", reaction: { name: "celebrate", age } }).root.y,
+  );
+  const [p1, p2, p3] = peaks;
+  assert.ok(p1 < base.root.y && p2 < base.root.y && p3 < base.root.y, "all bounces airborne");
+  assert.ok(p1 < p2 && p2 < p3, "bounces shrink");
+  const ended = sampleMascot(t, { state: "idle", reaction: { name: "celebrate", age: 0.899 } });
+  assert.ok(Math.abs(ended.root.y - base.root.y) < 0.01, "celebrate ends near rest");
+});
+
+test("glances are deterministic and continuous across windows", () => {
+  const near = sampleMascot(6.39, { state: "idle" }).gaze.x;
+  const after = sampleMascot(6.41, { state: "idle" }).gaze.x;
+  assert.ok(Math.abs(near - after) < 0.3, "look-away eases out before the window wraps");
+  assert.equal(
+    sampleMascot(0.1, { state: "idle" }).gaze.x,
+    sampleMascot(0.1, { state: "idle" }).gaze.x,
+  );
+});
+
+test("states shape the silhouette, not just the face", () => {
+  const neutral = [1, 1, 0];
+  const prims = (state) =>
+    sampleMascot(0, { state }).body.prims.map((p) => [p.sx, p.sy, p.dy]);
+  assert.deepEqual(prims("idle"), [neutral, neutral, neutral], "idle is the drawn shape");
+  const top = prims("topup");
+  assert.ok(top[2][1] > 1 && top[2][2] < 0, "upper lobe puffs up in topup");
+  const stretch = prims("stretch");
+  assert.ok(stretch[0][1] > 1 && stretch[2][2] > 0, "stretch elongates the trunk, lobes tuck down");
+  const sleepy = prims("sleepy");
+  assert.ok(sleepy.every((p) => p[2] > 0), "sleepy droops everything down");
+  // Silhouette is state-driven, not motion: reduced motion keeps the shape.
+  const still = sampleMascot(0, { state: "topup", reducedMotion: true }).body.prims.map((p) => [p.sx, p.sy, p.dy]);
+  assert.deepEqual(still, top, "reduced motion still wears the state's silhouette");
+});
+
+test("silhouette deltas blend with the frozen pose", () => {
+  const idlePose = sampleMascot(3, { state: "idle" }).pose;
+  const mid = sampleMascot(3, { state: "topup", from: idlePose, stateAge: 0.25 });
+  const target = sampleMascot(3, { state: "topup" });
+  assert.ok(mid.pose.b2y > 1 && mid.pose.b2y < target.pose.b2y, "silhouette keys lerp through");
+  const started = sampleMascot(3, { state: "topup", from: idlePose, stateAge: 0 });
+  assert.deepEqual(started.pose, idlePose, "blend still starts at the frozen pose");
+});

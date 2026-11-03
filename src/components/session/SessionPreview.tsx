@@ -139,9 +139,12 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
       )}
 
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+        {/* data-vt-entry: named `brume-entry` during a view transition,
+            so the control that navigated here morphs into this button. */}
         <Button
           onClick={() => onStart()}
           size="lg"
+          data-vt-entry
           className="w-full rounded-full btn-premium py-6"
         >
           Begin

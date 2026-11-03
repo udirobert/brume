@@ -95,13 +95,16 @@ export function createMascot(host, options = {}) {
   host.appendChild(svg);
 
   let avatar = BRUME_AVATAR;
+  let primNodes = [];
   function rebuildGeometry() {
     primG.textContent = "";
+    primNodes = [];
     for (const prim of avatar.body) {
       const { type, opacity, ...attrs } = prim;
       const node = el(doc, type, { ...attrs, class: "mascot-fill" });
       if (opacity !== undefined) node.setAttribute("opacity", opacity);
       primG.appendChild(node);
+      primNodes.push(node);
     }
     const { type, opacity, ...attrs } = avatar.highlight;
     const node = el(doc, type, { ...attrs, class: "mascot-hl" });
@@ -157,6 +160,24 @@ export function createMascot(host, options = {}) {
       "transform",
       scaleAround(frame.body.originX, frame.body.originY, frame.body.scale),
     );
+
+    // Per-primitive silhouette deltas — scale each primitive about its
+    // own centre and shift it. Absent deltas (or a frame from an older
+    // engine) leave every primitive as drawn.
+    const primDeltas = frame.body.prims || [];
+    primNodes.forEach((node, i) => {
+      const d = primDeltas[Math.min(i, primDeltas.length - 1)];
+      if (!d || (d.sx === 1 && d.sy === 1 && !d.dy)) {
+        node.removeAttribute("transform");
+        return;
+      }
+      const p = avatar.body[i];
+      node.setAttribute(
+        "transform",
+        `translate(0 ${d.dy}) `
+          + `translate(${p.cx} ${p.cy}) scale(${d.sx} ${d.sy}) translate(${-p.cx} ${-p.cy})`,
+      );
+    });
 
     const e = frame.eyes;
     eyeL.setAttribute("cx", e.left.cx); eyeL.setAttribute("cy", e.left.cy);

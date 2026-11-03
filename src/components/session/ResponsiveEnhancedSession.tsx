@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { EASE } from '../../lib/motion';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { useSession } from '../../hooks/useSession';
 import { useSessionPhase, useSessionStore } from '../../stores/sessionStore';
@@ -213,61 +214,74 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
 
   const showPreview = ['setup', 'preparation', 'camera_setup'].includes(sessionPhase);
 
+  // The preview and the session hand over with both halves now: the
+  // outgoing screen lifts away briefly (AnimatePresence) before the
+  // incoming one settles in. Reduced motion keeps only the opacity.
   return (
-    showPreview ? (
-      <motion.div
-        key="preview"
-        initial={skipEntranceMotion ? false : { opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="min-h-screen flex flex-col"
-      >
-        <SessionPreview
-          mascot={
-            <BrumeMascot
-              state={feelAt(checkInIndex)?.state ?? "watching"}
-              presence={mascotPresence}
-              trackPointer={mascotPresence === "companion"}
-              breathing
-              size={112}
-              layoutId="brume-companion"
-              className="block mx-auto mb-2"
-            />
+    <AnimatePresence mode="wait" initial={false}>
+      {showPreview ? (
+        <motion.div
+          key="preview"
+          initial={skipEntranceMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion
+            ? { opacity: 0, transition: { duration: 0.16, ease: [0.3, 0, 0.8, 0.15] } }
+            : { opacity: 0, y: 4, transition: { duration: 0.16, ease: [0.3, 0, 0.8, 0.15] } }
           }
-          patternName={config.pattern.name}
-          pattern={{
-            name: config.pattern.name,
-            phases: {
-              inhale: config.pattern.phases.inhale,
-              hold: config.pattern.phases.hold,
-              exhale: config.pattern.phases.exhale,
-              pause: config.pattern.phases.pause,
-            },
-            benefits: config.pattern.benefits,
-            description: config.pattern.description,
-          }}
-          sessionError={sessionError}
-          audioEnabled={audioEnabled}
-          onToggleAudio={toggleAudio}
-          onStart={handleSessionStart}
-          onCancel={onSessionExit}
-        />
-      </motion.div>
-    ) : (
-      <motion.div
-        key="session"
-        initial={skipEntranceMotion ? false : { opacity: 0, scale: 0.99 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-        className="min-h-screen"
-      >
-        <EnhancedSessionLayout
-          breathingAnimation={animationWithMascot}
-          controls={controls}
-          onExit={onSessionExit}
-        />
-      </motion.div>
-    )
+          transition={{ duration: 0.22, ease: EASE }}
+          className="min-h-screen flex flex-col"
+        >
+          <SessionPreview
+            mascot={
+              <BrumeMascot
+                state={feelAt(checkInIndex)?.state ?? "watching"}
+                presence={mascotPresence}
+                trackPointer={mascotPresence === "companion"}
+                breathing
+                size={112}
+                layoutId="brume-companion"
+                className="block mx-auto mb-2"
+              />
+            }
+            patternName={config.pattern.name}
+            pattern={{
+              name: config.pattern.name,
+              phases: {
+                inhale: config.pattern.phases.inhale,
+                hold: config.pattern.phases.hold,
+                exhale: config.pattern.phases.exhale,
+                pause: config.pattern.phases.pause,
+              },
+              benefits: config.pattern.benefits,
+              description: config.pattern.description,
+            }}
+            sessionError={sessionError}
+            audioEnabled={audioEnabled}
+            onToggleAudio={toggleAudio}
+            onStart={handleSessionStart}
+            onCancel={onSessionExit}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="session"
+          initial={skipEntranceMotion ? false : { opacity: 0, scale: 0.99 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={reduceMotion
+            ? { opacity: 0, transition: { duration: 0.16, ease: [0.3, 0, 0.8, 0.15] } }
+            : { opacity: 0, scale: 0.995, transition: { duration: 0.16, ease: [0.3, 0, 0.8, 0.15] } }
+          }
+          transition={{ duration: 0.28, ease: EASE }}
+          className="min-h-screen"
+        >
+          <EnhancedSessionLayout
+            breathingAnimation={animationWithMascot}
+            controls={controls}
+            onExit={onSessionExit}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

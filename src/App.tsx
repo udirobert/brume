@@ -42,6 +42,11 @@ const CommunityRedirect = () => <Navigate to="/" replace />;
 const LeaderboardRedirect = () => <Navigate to="/" replace />;
 const SettingsRedirect = () => <Navigate to="/profile" replace />;
 
+// Frozen-frame motion storyboard — dev only, never in the release build.
+const MotionLab = import.meta.env.DEV
+  ? React.lazy(() => import("@/pages/MotionLab"))
+  : null;
+
 // Loading component for lazy routes
 import { BrumeMascot } from "@/components/BrumeMascot";
 
@@ -129,6 +134,18 @@ function App() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+
+          {/* Frozen-frame motion storyboard (dev only) */}
+          {MotionLab && (
+            <Route
+              path="/motion-lab"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <MotionLab />
+                </Suspense>
+              }
+            />
+          )}
 
           {/* Catch all route */}
           <Route path="*" element={<NotFound />} />

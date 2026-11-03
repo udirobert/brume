@@ -10,8 +10,9 @@
  */
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { DURATION, EASE } from "@/lib/motion";
+import { DURATION, EASE, EASE_SETTLE, PRESS } from "@/lib/motion";
 import { useNavigate } from "react-router-dom";
+import { viewTransitionTo } from "@/lib/viewTransition";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_SHORT_LABELS } from "@/lib/checkin";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,9 @@ export function TodayCard({
   };
 
   // "Take it into a breath" — the opt-in that carries it forward.
-  const handleContinue = () => {
+  // After the droplet settles, this control view-transitions into the
+  // session preview's Begin button (its [data-vt-entry] mark).
+  const handleContinue = (btn: HTMLButtonElement) => {
     if (picked === null) return;
     const index = picked;
     const go = () => {
@@ -71,8 +74,9 @@ export function TodayCard({
         },
       });
     };
-    if (!reduceMotion) window.setTimeout(go, 280);
-    else go();
+    if (!reduceMotion) {
+      window.setTimeout(() => viewTransitionTo(go, { origin: btn }), 280);
+    } else go();
   };
 
   return (
@@ -93,7 +97,11 @@ export function TodayCard({
             aria-pressed={picked === index}
             onClick={(event) => handleStateSelect(index, event.currentTarget)}
             whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+            whileTap={reduceMotion
+              ? undefined
+              // Asymmetric squash: the chip widens as it shortens, and
+              // releases on the settle ease (one small overshoot pass).
+              : { ...PRESS.chipSquash, transition: { duration: 0.3, ease: EASE_SETTLE } }}
             transition={{ duration: DURATION.quick, ease: EASE }}
             className={cn("brume-btn brume-btn--soft px-3 py-2 min-h-0 text-xs whitespace-nowrap")}
           >
@@ -119,7 +127,7 @@ export function TodayCard({
           <button
             type="button"
             className="brume-btn brume-btn--push px-5 py-2.5 min-h-0 text-sm"
-            onClick={handleContinue}
+            onClick={(event) => handleContinue(event.currentTarget)}
           >
             Take it into a breath
           </button>

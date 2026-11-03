@@ -1,3 +1,20 @@
+/**
+ * Brume mascot engine — pure, clock-free: sampleMascot(t) is fully
+ * deterministic, so pausing, resuming and tests produce the same image.
+ *
+ * Behaviour notes, the bloub way (constants are choices with reasons):
+ * - At rest the body almost never bobs. The life at idle is gaze
+ *   drift, deterministic micro look-aways, and blinking — not a whole
+ *   root on a metronome (the old -1.5/-1.0 bob exaggerated passivity).
+ * - Reactions are three-act: anticipation (weight gathering) →
+ *   strike (apex) → settle (touchdown squash), never naked sin().
+ * - States now differ in silhouette, not just open/dy/lid/mouth: each
+ *   default body primitive takes a per-state {sx, sy, dy} delta
+ *   (BODY_POSES) — the shape puffs on topup, elongates on stretch,
+ *   droops on sleepy.
+ * - Transitions blend the whole pose (including silhouette keys)
+ *   from a frozen displayed pose over 0.5s, easeOutQuint.
+ */
 export const MASCOT_STATES = Object.freeze([
   "idle",
   "thinking",
@@ -203,10 +220,183 @@ const GAZE_MAX_Y = 1.8;
 const IDLE_SLEEP_AFTER = 120;
 const IDLE_SLEEP_FADE = 60;
 
+// Deterministic micro look-aways: every LOOK_PERIOD seconds the gaze
+// glances at a fresh direction for the window, easing in and out —
+// the "alive glance". Seeded per window so pause/resume and tests
+// repeat exactly.
+const LOOK_PERIOD = 6.4;
+const LOOK_FADE_IN = 0.25;
+const LOOK_FADE_OUT = 0.35;
+
+// Per-state silhouette deltas for the default body primitives
+// (main cloud + two upper lobes): scale about each primitive's own
+// centre plus a vertical shift. Keys b<i>x / b<i>y / b<i>d apply to
+// primitive i; a 4th+ primitive takes the neutral identity.
+const NEUTRAL_BODY = Object.freeze({
+  b0x: 1, b0y: 1, b0d: 0,
+  b1x: 1, b1y: 1, b1d: 0,
+  b2x: 1, b2y: 1, b2d: 0,
+});
+const BODY_POSES = Object.freeze({
+  inhale:   { b0x: 1,    b0y: 1.02, b0d: -0.3, b1x: 1,    b1y: 1.03, b1d: -0.6, b2x: 1,    b2y: 1.04, b2d: -0.7 },
+  topup:    { b0x: 1.03, b0y: 0.97, b0d: 0,    b1x: 1,    b1y: 1.1,  b1d: -1.2, b2x: 1,    b2y: 1.16, b2d: -1.6 },
+  // hold: weight settles down through the face of the cloud.
+  hold:     { b0x: 1,    b0y: 0.99, b0d: 0.3,  b1x: 0.99, b1y: 0.98, b1d: 0.6,  b2x: 0.99, b2y: 0.98, b2d: 0.7 },
+  exhale:   { b0x: 1,    b0y: 0.98, b0d: 0.4,  b1x: 1,    b1y: 0.97, b1d: 0.7,  b2x: 1,    b2y: 0.97, b2d: 0.8 },
+  proud:    { b0x: 1.01, b0y: 1,    b0d: -0.5, b1x: 1,    b1y: 1,    b1d: -0.5, b2x: 1.04, b2y: 1.04, b2d: -0.6 },
+  bright:   { b0x: 1.01, b0y: 1.01, b0d: -0.4, b1x: 1,    b1y: 1.02, b1d: -0.6, b2x: 1.03, b2y: 1.05, b2d: -0.7 },
+  // stretch: the body elongates upward while the lobes tuck down.
+  stretch:  { b0x: 0.97, b0y: 1.05, b0d: -0.2, b1x: 1,    b1y: 0.94, b1d: 1.2,  b2x: 0.96, b2y: 0.92, b2d: 1.6 },
+  sleepy:   { b0x: 1,    b0y: 0.97, b0d: 0.8,  b1x: 1,    b1y: 0.9,  b1d: 1.8,  b2x: 0.97, b2y: 0.88, b2d: 2.0 },
+});
+
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const fin = (v, fallback = 0) => (isFiniteNum(v) ? v : fallback);
 const lerp = (a, b, k) => a + (b - a) * k;
 const easeOutQuint = (x) => 1 - Math.pow(1 - x, 5);
+const outQuad = (x) => 1 - (1 - x) * (1 - x);
+const inQuad = (x) => x * x;
+const inOutQuad = (x) => (x < 0.5 ? 2 * x * x : 1 - 2 * (1 - x) * (1 - x));
+// back-out: approaches 1 with one overshoot and lands exactly on 1 —
+// the settle shape for releases.
+const outBack = (x) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);
+
+/** Normalised 0..1 progress of p within the [a, b] window. */
+const seg = (p, a, b) => clamp((p - a) / (b - a), 0, 1);
+
+function lookBias(t) {
+  if (!isFiniteNum(t) || t < 0) return { x: 0, y: 0 };
+  const idx = Math.floor(t / LOOK_PERIOD);
+  const m = t - idx * LOOK_PERIOD;
+  const seed1 = Math.sin(idx * 12.9898 + 4) * 43758.5453;
+  const r1 = seed1 - Math.floor(seed1);
+  const seed2 = Math.sin(idx * 78.233 + 9) * 12345.6789;
+  const r2 = seed2 - Math.floor(seed2);
+  const env = Math.min(
+    m < LOOK_FADE_IN ? outQuad(m / LOOK_FADE_IN) : 1,
+    m > LOOK_PERIOD - LOOK_FADE_OUT
+      ? clamp(1 - (m - (LOOK_PERIOD - LOOK_FADE_OUT)) / LOOK_FADE_OUT, 0, 1)
+      : 1,
+  );
+  return { x: (r1 - 0.5) * 4.4 * env, y: (r2 - 0.5) * 3.2 * env };
+}
+
+/** Identity reaction frame — everything at rest. */
+const REACTION_REST = Object.freeze({
+  dy: 0, sx: 1, sy: 1, open: 1, cheek: 0, wisps: 0, mouth: null,
+});
+
+/**
+ * Three-act reaction curves. All of them end exactly on REACTION_REST,
+ * so the reaction ends without a snap the moment p >= 1.
+ *
+ * hop (0.5s):    crouch 0–0.14 → apex stretch 0.14–0.55 → fall, with a
+ *                touchdown squash bounce 0.86–0.97.
+ * settle (0.9s): gather up 0–0.15 → sink with weight 0.15–0.7 →
+ *                spring back with one overshoot 0.7–0.97.
+ * The last 3% of every curve parks on REACTION_REST so the reaction
+ * lands exactly instead of creeping toward zero.
+ * celebrate (0.9s): three shrinking hops with touchdown squashes
+ *                between, face envelope roaring in and easing out.
+ */
+function reactionCurve(name, p) {
+  const segP = (a, b) => seg(p, a, b);
+
+  if (name === "hop") {
+    const crouch = { dy: 2.2, sx: 1.02, sy: 0.95, open: 0.85 };
+    const apex = { dy: -6.5, sx: 0.96, sy: 1.06, open: 1.18 };
+    if (p < 0.14) {
+      const k = outQuad(segP(0, 0.14));
+      return {
+        dy: lerp(0, crouch.dy, k), sx: lerp(1, crouch.sx, k),
+        sy: lerp(1, crouch.sy, k), open: lerp(1, crouch.open, k),
+        cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    if (p < 0.55) {
+      const k = easeOutQuint(segP(0.14, 0.55));
+      return {
+        dy: lerp(crouch.dy, apex.dy, k), sx: lerp(crouch.sx, apex.sx, k),
+        sy: lerp(crouch.sy, apex.sy, k), open: lerp(crouch.open, apex.open, k),
+        cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    if (p < 0.86) {
+      const f = inQuad(segP(0.55, 0.86));
+      return {
+        dy: lerp(apex.dy, 0, f), sx: lerp(apex.sx, 1, f),
+        sy: lerp(apex.sy, 1, f), open: lerp(apex.open, 1, f),
+        cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    // Touchdown: compression rises to its peak and returns to 0 —
+    // continuous with the fall above and with rest below.
+    if (p < 0.97) {
+      const squash = Math.sin(Math.PI * segP(0.86, 0.97));
+      return { dy: 1.4 * squash, sx: 1 + 0.05 * squash, sy: 1 - 0.07 * squash, open: 1, cheek: 0, wisps: 0, mouth: null };
+    }
+    return REACTION_REST;
+  }
+
+  if (name === "settle") {
+    const gather = -0.6;
+    if (p < 0.15) {
+      const k = outQuad(segP(0, 0.15));
+      return { dy: gather * k, sx: 1, sy: 1 + 0.02 * k, open: 1, cheek: 0, wisps: 0, mouth: null };
+    }
+    if (p < 0.7) {
+      const k = inOutQuad(segP(0.15, 0.7));
+      return {
+        dy: lerp(gather, 2.8, k), sx: lerp(1, 1.03, k),
+        sy: lerp(1.02, 0.955, k), open: lerp(1, 0.9, k),
+        cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    if (p < 0.97) {
+      const back = outBack(segP(0.7, 0.97));
+      return {
+        dy: 2.8 * (1 - back), sx: 1 + 0.03 * (1 - back),
+        sy: lerp(0.955, 1, back), open: 1, cheek: 0, wisps: 0, mouth: null,
+      };
+    }
+    return REACTION_REST;
+  }
+
+  if (name === "celebrate") {
+    const bounces = [
+      { a: 0.0, b: 0.32, h: -5.2 },
+      { a: 0.36, b: 0.62, h: -3.2 },
+      { a: 0.66, b: 0.88, h: -2.0 },
+    ];
+    let dy = 0;
+    for (const bo of bounces) {
+      if (p >= bo.a && p < bo.b) {
+        const k = (p - bo.a) / (bo.b - bo.a);
+        dy = k < 0.45
+          ? lerp(0, bo.h, easeOutQuint(k / 0.45))
+          : lerp(bo.h, 0, inQuad((k - 0.45) / 0.55));
+        break;
+      }
+    }
+    let sx = 1;
+    let sy = 1;
+    for (const [qa, qb] of [[0.3, 0.38], [0.6, 0.68], [0.86, 0.96]]) {
+      if (p >= qa && p <= qb) {
+        const s = Math.sin(Math.PI * segP(qa, qb));
+        sx *= 1 + 0.04 * s;
+        sy *= 1 - 0.05 * s;
+        dy += 1.2 * s;
+        break;
+      }
+    }
+    const env = outQuad(segP(0, 0.15)) * (1 - segP(0.75, 1));
+    return {
+      dy, sx, sy, open: 1 + 0.2 * env, cheek: 0.55 * env, wisps: 0.65 * env, mouth: "smile",
+    };
+  }
+
+  return REACTION_REST;
+}
 
 export const MASCOT_REACTIONS = Object.freeze(["hop", "settle", "celebrate"]);
 export const MASCOT_REACTION_DURATIONS = Object.freeze({
@@ -330,6 +520,8 @@ export function sampleMascot(timeSeconds, options = {}) {
     waves: state === "hum" ? 0.8 : 0,
     swirl: state === "thinking" ? 0.8 : 0,
     bodyScale: bodyScaleTarget,
+    // Silhouette deltas — the state's actual shape in pose space.
+    ...(BODY_POSES[state] || NEUTRAL_BODY),
   };
 
   const stateAge = Math.max(0, fin(opts.stateAge, Infinity));
@@ -351,6 +543,9 @@ export function sampleMascot(timeSeconds, options = {}) {
     waves: num("waves"),
     swirl: num("swirl"),
     bodyScale: num("bodyScale"),
+    b0x: num("b0x"), b0y: num("b0y"), b0d: num("b0d"),
+    b1x: num("b1x"), b1y: num("b1y"), b1d: num("b1d"),
+    b2x: num("b2x"), b2y: num("b2y"), b2d: num("b2d"),
   };
 
   const rName = opts.reaction && typeof opts.reaction === "object"
@@ -361,16 +556,13 @@ export function sampleMascot(timeSeconds, options = {}) {
     ? fin(opts.reaction.age, -1) / MASCOT_REACTION_DURATIONS[rName]
     : -1;
   const rActive = rp >= 0 && rp < 1;
-  const rs = rActive ? Math.sin(Math.PI * rp) : 0;
+  const rc = rActive ? reactionCurve(rName, rp) : REACTION_REST;
 
   if (rActive) {
-    if (rName === "hop") pose.open *= 1 + 0.15 * rs;
-    else if (rName === "settle") pose.open *= 1 - 0.5 * rs;
-    else if (rName === "celebrate") {
-      pose.mouth = avatar.mouths.smile;
-      pose.cheek = Math.max(pose.cheek, 0.5 * rs);
-      pose.wisps = Math.max(pose.wisps, 0.6 * rs);
-    }
+    pose.open *= rc.open;
+    pose.cheek = Math.max(pose.cheek, rc.cheek);
+    pose.wisps = Math.max(pose.wisps, rc.wisps);
+    if (rc.mouth) pose.mouth = avatar.mouths[rc.mouth];
   }
 
   let gazeX = pose.lookX;
@@ -380,6 +572,14 @@ export function sampleMascot(timeSeconds, options = {}) {
     const ampY = companion ? (idle ? 0.6 : 0.35) : 0.3;
     gazeX = clamp(gazeX + ampX * Math.sin((2 * Math.PI * t) / 9), -GAZE_MAX_X, GAZE_MAX_X);
     gazeY = clamp(gazeY + ampY * Math.sin((2 * Math.PI * t) / 13 + 1), -GAZE_MAX_Y, GAZE_MAX_Y);
+    if (idle) {
+      // The glance: a fresh direction every window, easing in and
+      // back out — the life at rest, sized smaller when unattended.
+      const b = lookBias(t);
+      const kBias = companion ? 1 : 0.55;
+      gazeX = clamp(gazeX + b.x * kBias, -GAZE_MAX_X, GAZE_MAX_X);
+      gazeY = clamp(gazeY + b.y * kBias, -GAZE_MAX_Y, GAZE_MAX_Y);
+    }
   }
 
   const eyeBase = avatar.eyes;
@@ -404,14 +604,16 @@ export function sampleMascot(timeSeconds, options = {}) {
 
   const root = { y: 0, rotate: 0, sx: 1, sy: 1, originX: 50, originY: 84 };
   if (!reduced) {
+    // Idle stillness: the body holds nearly still at rest; the life
+    // comes from gaze and blinks. A hair of breathing rhythm remains.
     const bobHalf = isFiniteNum(opts.breath) ? 0.5 : 1;
     if (companion) {
       const cyc = (((t % 7) + 7) % 7) / 7;
-      root.y = -1.5 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
-      root.rotate = 1 * bobHalf * Math.sin(cyc * Math.PI * 2);
+      root.y = -0.45 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+      root.rotate = 0.35 * bobHalf * Math.sin(cyc * Math.PI * 2);
     } else {
       const cyc = (((t % 6) + 6) % 6) / 6;
-      root.y = -1.0 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
+      root.y = -0.35 * bobHalf * (1 - Math.cos(cyc * Math.PI * 2)) / 2;
     }
     const puff = state === "topup"
       ? 1 + 0.04 * Math.sin(Math.PI * clamp(stateAge / 0.5, 0, 1))
@@ -419,15 +621,9 @@ export function sampleMascot(timeSeconds, options = {}) {
     root.sx = puff;
     root.sy = puff;
     if (rActive) {
-      if (rName === "hop") {
-        root.y += -5 * rs;
-        root.sy *= 1 + 0.04 * rs;
-        root.sx *= 1 - 0.02 * rs;
-      } else if (rName === "settle") {
-        root.y += 2 * rs;
-      } else if (rName === "celebrate") {
-        root.y += -4 * Math.abs(Math.sin(2 * Math.PI * rp));
-      }
+      root.y += rc.dy;
+      root.sx *= rc.sx;
+      root.sy *= rc.sy;
     }
   }
   root.rotate += fin(opts.lean, 0);
@@ -467,6 +663,15 @@ export function sampleMascot(timeSeconds, options = {}) {
     swirl.rotate = 6 * Math.sin(cyc * Math.PI * 2);
   }
 
+  const bodyPrims = [];
+  for (let i = 0; i < avatar.body.length; i += 1) {
+    bodyPrims.push(Object.freeze({
+      sx: i < 3 ? pose[`b${i}x`] : 1,
+      sy: i < 3 ? pose[`b${i}y`] : 1,
+      dy: i < 3 ? pose[`b${i}d`] : 0,
+    }));
+  }
+
   return Object.freeze({
     state,
     presence,
@@ -475,7 +680,10 @@ export function sampleMascot(timeSeconds, options = {}) {
     avatar,
     root,
     pose: Object.freeze(pose),
-    body: { scale: pose.bodyScale, originX: 50, originY: 55 },
+    body: Object.freeze({
+      scale: pose.bodyScale, originX: 50, originY: 55,
+      prims: Object.freeze(bodyPrims),
+    }),
     eyes,
     mouth: { d: pose.mouth, dx: gazeX * 0.35, dy: gazeY * 0.35 },
     gaze: { x: gazeX, y: gazeY },

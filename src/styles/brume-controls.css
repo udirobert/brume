@@ -2,11 +2,18 @@
    and mascot card used by Home and Decompress. Token values live in
    anna/bundle/brand.css (--brume-*). */
 
+/* Press grammar — shared by every pressable control. Press = fast
+   asymmetric squash (wider, shorter, pressed down into the keycap
+   shadow). Release = slower return on the settle ease, which passes
+   the resting pose once (small overshoot) before settling. The origin
+   sits near the base so squash presses *down*, like a soft pill. */
 .brume-btn {
   --btn-face: var(--brume-pear);
   --btn-ink: var(--brume-ink);
   --btn-edge: var(--brume-pear-deep);
   --btn-cast: color-mix(in oklch, var(--brume-pear-deep) 34%, transparent);
+  --press-return: 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --press-down: 70ms cubic-bezier(0.3, 0, 0.6, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -26,7 +33,8 @@
   text-decoration: none;
   white-space: nowrap;
   transform: translateY(0);
-  transition: transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 140ms cubic-bezier(0.2, 0.7, 0.3, 1), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  transform-origin: 50% 78%;
+  transition: transform var(--press-return), box-shadow var(--press-return), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .brume-btn:hover {
@@ -35,9 +43,9 @@
 }
 
 .brume-btn:active {
-  transform: translateY(0.1875rem);
+  transform: translateY(0.1875rem) scaleX(1.02) scaleY(0.96);
   box-shadow: 0 0.0625rem 0 0 var(--btn-edge), 0 0.125rem 0.375rem -0.125rem var(--btn-cast);
-  transition-duration: 70ms;
+  transition: transform var(--press-down), box-shadow var(--press-down), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .brume-btn:focus-visible {
@@ -71,6 +79,8 @@
 
 /* Pill — the small selected/unselected option (presence, mood chips). */
 .brume-pill {
+  --press-return: 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --press-down: 60ms cubic-bezier(0.3, 0, 0.6, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -87,7 +97,8 @@
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  transform-origin: 50% 72%;
+  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform var(--press-return), box-shadow var(--press-return);
 }
 
 .brume-pill.is-selected,
@@ -102,7 +113,8 @@
 }
 
 .brume-pill:active {
-  transform: translateY(0.0625rem);
+  transform: translateY(0.0625rem) scaleX(1.015) scaleY(0.97);
+  transition: transform var(--press-down), box-shadow var(--press-down), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .brume-pill:focus-visible {
@@ -118,6 +130,8 @@
 
 /* Toggle — pill with a status dot (e.g. "Rhythm on"). */
 .brume-toggle {
+  --press-return: 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --press-down: 60ms cubic-bezier(0.3, 0, 0.6, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -134,7 +148,8 @@
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  transform-origin: 50% 72%;
+  transition: background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), transform var(--press-return);
 }
 
 .brume-toggle__dot {
@@ -158,7 +173,8 @@
 }
 
 .brume-toggle:active {
-  transform: translateY(0.0625rem);
+  transform: translateY(0.0625rem) scaleX(1.015) scaleY(0.97);
+  transition: transform var(--press-down), background-color 160ms cubic-bezier(0.2, 0.7, 0.3, 1), color 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .brume-toggle:focus-visible {
@@ -266,6 +282,7 @@
   .brume-pill,
   .brume-toggle {
     transition: none;
+    transform-origin: 50% 50%;
   }
 }
 

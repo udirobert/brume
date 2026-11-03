@@ -16,6 +16,7 @@ import {
 import { BREATHING_PATTERNS } from "../../lib/breathingPatterns";
 import { useOfflineManager } from "../../lib/offline/OfflineManager";
 import { useSessionStore } from "@/stores/sessionStore";
+import { viewTransitionTo } from "@/lib/viewTransition";
 import { ResponsiveEnhancedSession } from "./ResponsiveEnhancedSession";
 import { SessionErrorBoundary } from "../../lib/errors/error-boundary";
 
@@ -81,27 +82,31 @@ const useSessionCompletion = () => {
         completed: true,
       });
 
-      navigate("/post-session", {
-        state: {
-          breathHoldTime,
-          patternId: pattern.id || "custom",
-          patternName: patternName || pattern.name,
-          sessionDuration: durationSeconds,
-          sessionId,
-          isOffline: !syncStatus.isOnline,
-          cycleCount,
-          phaseAccuracy,
-          rhythmConsistency,
-          targetCycles: 10,
-          sessionType: sessionData.sessionType,
-          aiUsed: sessionData.aiUsed,
-          checkInIndex:
-            typeof (location.state as { checkInIndex?: number } | null)
-              ?.checkInIndex === "number"
-              ? (location.state as { checkInIndex: number }).checkInIndex
-              : null,
-        },
-      });
+      // The completion handover is a page change with both halves:
+      // the session surface eases out while /post-session settles in.
+      viewTransitionTo(() =>
+        navigate("/post-session", {
+          state: {
+            breathHoldTime,
+            patternId: pattern.id || "custom",
+            patternName: patternName || pattern.name,
+            sessionDuration: durationSeconds,
+            sessionId,
+            isOffline: !syncStatus.isOnline,
+            cycleCount,
+            phaseAccuracy,
+            rhythmConsistency,
+            targetCycles: 10,
+            sessionType: sessionData.sessionType,
+            aiUsed: sessionData.aiUsed,
+            checkInIndex:
+              typeof (location.state as { checkInIndex?: number } | null)
+                ?.checkInIndex === "number"
+                ? (location.state as { checkInIndex: number }).checkInIndex
+                : null,
+          },
+        }),
+      );
     },
     [navigate, saveSession, syncStatus.isOnline, location.state]
   );
@@ -194,7 +199,7 @@ export const SessionModeWrapper: React.FC = () => {
       <ResponsiveEnhancedSession
         config={responsiveConfig}
         onSessionComplete={onSessionComplete}
-        onSessionExit={() => navigate("/")}
+        onSessionExit={() => viewTransitionTo(() => navigate("/"))}
       />
     </SessionErrorBoundary>
   );

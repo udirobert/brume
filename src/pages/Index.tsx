@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
+import { viewTransitionTo, vtClick } from "@/lib/viewTransition";
 import { useAuth } from "@/hooks/useAuth";
 import { TodayCard } from "@/components/home/TodayCard";
 import { BrumeMascot } from "@/components/BrumeMascot";
@@ -40,14 +41,18 @@ function RhythmPeek() {
             key={r.id}
             type="button"
             className="brume-pill px-3 py-1.5 text-xs whitespace-nowrap"
-            onClick={() =>
-              navigate(`/session?pattern=${r.id}`, {
-                state: {
-                  reason: r.label,
-                  reasonDetail: "You picked this rhythm.",
-                  source: "Your choice",
-                },
-              })
+            onClick={(event) =>
+              viewTransitionTo(
+                () =>
+                  navigate(`/session?pattern=${r.id}`, {
+                    state: {
+                      reason: r.label,
+                      reasonDetail: "You picked this rhythm.",
+                      source: "Your choice",
+                    },
+                  }),
+                { origin: event.currentTarget },
+              )
             }
           >
             {r.label}
@@ -60,6 +65,7 @@ function RhythmPeek() {
 
 export default function Index() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isGuest = !user;
   const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
   const dayPart = useDayPart();
@@ -176,6 +182,17 @@ export default function Index() {
             reasonDetail: "In for 4, out for 6. A moment between tasks.",
             source: "Your reset",
           }}
+          onClick={(e) =>
+            vtClick(e, () =>
+              navigate("/session?pattern=reset", {
+                state: {
+                  reason: "Reset · 4 in, 6 out",
+                  reasonDetail: "In for 4, out for 6. A moment between tasks.",
+                  source: "Your reset",
+                },
+              }),
+            )
+          }
         >
           Start a breathing reset
         </Link>
@@ -200,6 +217,7 @@ export default function Index() {
           <Link
             to="/decompress"
             className="hover:text-foreground transition-colors"
+            onClick={(e) => vtClick(e, () => navigate("/decompress"))}
           >
             Take two minutes
           </Link>

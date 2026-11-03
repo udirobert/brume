@@ -11,6 +11,7 @@ export const MASCOT_STATES = Object.freeze([
   "stretch",
   "hum",
   "watching",
+  "tender",
 ]);
 
 const VIEWBOX = 100;
@@ -190,6 +191,7 @@ const EXPRESSIONS = Object.freeze({
   stretch:   { open: 1.1,  dy: 0,   lid: 0,   mouth: "smile" },
   hum:       { open: 0.4,  dy: 0,   lid: 0,   mouth: "flat" },
   watching:  { open: 1.2,  dy: 0,   lid: 0,   mouth: "flat" },
+  tender:    { open: 0.85, dy: 0.9, lid: 0.3, mouth: "smile" },
 });
 
 const BLINK_PERIOD = 20;
@@ -217,6 +219,7 @@ const LOOK_OFFSETS = Object.freeze({
   inhale: Object.freeze({ x: 0, y: -0.6 }),
   exhale: Object.freeze({ x: 0, y: 0.8 }),
   thinking: Object.freeze({ x: 1, y: -1.2 }),
+  tender: Object.freeze({ x: 0.4, y: 0.7 }),
 });
 
 function pathTokens(d) {
@@ -311,7 +314,7 @@ export function sampleMascot(timeSeconds, options = {}) {
   const bodyScaleTarget = breath === null ? 1 : 0.86 + breath * 0.18;
   const cheekTarget = state === "hold"
     ? 0.6
-    : companion && (state === "proud" || state === "watching") ? 0.42 : 0;
+    : companion && (state === "proud" || state === "watching" || state === "tender") ? 0.42 : 0;
   const wisped = state === "exhale" || state === "proud";
 
   const target = {

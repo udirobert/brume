@@ -25,3 +25,20 @@
 html[data-feel] .brume-feel-wash {
   opacity: calc(0.14 + var(--brume-feel-weight, 0) * 0.18);
 }
+
+/* On ambient routes the MistField already carries the colour —
+   the wash just soaks the page beneath it, half strength. */
+html[data-feel] .brume-feel-wash--ambient {
+  opacity: calc((0.14 + var(--brume-feel-weight, 0) * 0.18) * 0.55);
+}
+
+/* The surfaces hear it too — cards take a breath of the colour.
+   (The mascot card keeps its pear field; its wisp already tints.) */
+html[data-feel] .brume-card {
+  background-color: color-mix(
+    in oklch,
+    var(--brume-card) 90%,
+    var(--brume-orb-mist) 10%
+  );
+  transition: background-color 0.9s ease;
+}

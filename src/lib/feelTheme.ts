@@ -27,8 +27,8 @@ export const CHECK_IN_FEELS: readonly CheckInFeel[] = [
   { state: "bright", reaction: "hop", orbMist: "rgb(146 158 214)", roomMist: [212, 218, 164], weight: 0.1 },
   { state: "stretch", orbMist: "rgb(150 132 198)", roomMist: [188, 176, 224], weight: 0.3 },
   { state: "hum", orbMist: "rgb(124 145 210)", roomMist: [150, 166, 216], weight: 0.55 },
-  { state: "sleepy", orbMist: "rgb(112 122 192)", roomMist: [120, 126, 188], weight: 0.8 },
-  { state: "sleepy", reaction: "settle", orbMist: "rgb(98 108 182)", roomMist: [100, 104, 170], weight: 1 },
+  { state: "tender", orbMist: "rgb(112 122 192)", roomMist: [120, 126, 188], weight: 0.8 },
+  { state: "tender", reaction: "settle", orbMist: "rgb(98 108 182)", roomMist: [100, 104, 170], weight: 1 },
 ];
 
 export function feelAt(index: number | null | undefined): CheckInFeel | null {

@@ -72,15 +72,19 @@ retints the MistField live and `--brume-feel-weight` tells it how
 still and dense to go (heavier words: drift slows, folds thicken,
 parallax recedes, the room breath deepens — absorbed, never alarmed).
 Tapping a word also fires `brume:feel` with the tap point: the mist
-sighs — folds gather toward it, swell and release over ~1.5 s (the
-inward version of a ripple; nothing radiates out). On tap the chip
-also sheds a goo droplet (`AbsorbDroplet`, SVG
+sighs — folds gather toward it, swell and release over ~1.5 s — and
+condenses the word into a wisp, a bright fold born at the tap point
+that lifts and dissolves back into the field (~2.4 s). On tap the
+chip also sheds a goo droplet (`AbsorbDroplet`, SVG
 `feGaussianBlur`+`feColorMatrix`, WAAPI) that melts toward the mascot
-as the retint settles; reduced motion skips both and snaps the tint.
-The check-in is two taps on purpose — the word is let go first and
-the room holds it (chip stays selected, suggestion shows as
-`Pattern · rhythm`), then "Take it into a breath" carries it to the
-preview; re-picking swaps the feeling in place without navigating. Immersive routes have no MistField, so the shell answers there
+as the retint settles; reduced motion skips all of it and snaps the
+tint. The check-in is two rows on purpose — one row of five words
+(selected chip stays lit), one slide-in row: ‹ choose again puts
+the word down (releases the room), "Take it into a breath" carries
+it to the preview; "More rhythms" and "Take two minutes" merged into
+one quiet footer line. Heavy words (At limit, Overwhelmed) answer
+with `tender`, a soft down-gazing smile — empathy, not sleepiness —
+added as the 13th mascot state in the shared engine. Immersive routes have no MistField, so the shell answers there
 as a still wash (`.brume-feel-wash` — masked `--brume-orb-mist`
 drench at a `--brume-feel-weight` opacity, colour cross-fades). The
 preview repeats the word with re-pick chips that swap the pattern in

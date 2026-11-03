@@ -1,12 +1,12 @@
 /**
- * TodayCard — "What do you need today?" on the Home surface.
+ * TodayCard — "How is it for you right now?" on the Home surface.
  *
- * Two taps, on purpose: tap a word → the room absorbs it (mascot,
- * mist, a droplet letting go) and Brume's suggestion appears; tap
- * "Take it into a breath" → the session preview. The feeling is
- * something you can sit in and change, not a button that whisks
- * you away. The reason (pattern + rhythm) travels to the preview
- * as location state.
+ * Two rows, two taps. Row one is the five words; tap one and the room
+ * absorbs it (mascot, mist, a droplet letting go) while the second
+ * row slides in: ‹ choose again puts the word down and releases the
+ * room, "Take it into a breath" carries it to the session preview.
+ * The feeling is something you sit in and can change — never a
+ * button that whisks you away.
  */
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -26,20 +26,13 @@ export const CHECK_IN_PATTERN_IDS = [
   "reset",
 ] as const;
 
-const RHYTHMS = [
-  { id: "box", label: "Box" },
-  { id: "relaxation", label: "4-7-8" },
-  { id: "wim_hof", label: "Wim Hof" },
-  { id: "sleep", label: "Sleep" },
-] as const;
-
 export function TodayCard({
   className,
   onFeel,
 }: {
   className?: string;
-  /** Fired when a check-in word is tapped, before navigation. */
-  onFeel?: (index: number, chip: HTMLElement) => void;
+  /** A word is let go (index) or put back down (null). */
+  onFeel?: (index: number | null, chip?: HTMLElement) => void;
 }) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
@@ -47,14 +40,20 @@ export function TodayCard({
   const pattern = picked === null ? null : getPattern(CHECK_IN_PATTERN_IDS[picked]);
 
   // First tap: the word is let go — the room absorbs it and the
-  // suggestion appears. Nothing navigates; re-tap another word to
+  // second row slides in. Nothing navigates; tap another word to
   // change the answer while it holds.
   const handleStateSelect = (index: number, chip: HTMLElement) => {
     setPicked(index);
     onFeel?.(index, chip);
   };
 
-  // Second tap: the opt-in — carry the feeling into the preview.
+  // "Choose again" — the word is put back down; room and card release.
+  const handleUnpick = () => {
+    setPicked(null);
+    onFeel?.(null);
+  };
+
+  // "Take it into a breath" — the opt-in that carries it forward.
   const handleContinue = () => {
     if (picked === null) return;
     const index = picked;
@@ -76,39 +75,27 @@ export function TodayCard({
     else go();
   };
 
-  const handleRhythmSelect = (patternId: string, name: string) => {
-    navigate(`/session?pattern=${patternId}`, {
-      state: {
-        reason: name,
-        reasonDetail: "You picked this rhythm.",
-        source: "Your choice",
-      },
-    });
-  };
-
   return (
     <div className={cn("w-full max-w-2xl", className)}>
       <p className="text-sm font-medium text-foreground text-center">
         How is it for you right now?
       </p>
-      <p className="text-sm text-muted-foreground mt-1 mb-3 text-center" aria-live="polite">
-        {picked === null
+      <p className="text-sm text-muted-foreground mt-1 mb-2.5 text-center" aria-live="polite">
+        {picked === null || !pattern
           ? "Pick one and Brume suggests a rhythm."
-          : pattern
-            ? `${pattern.name} · ${formatPhases(pattern)}`
-            : "Pick one and Brume suggests a rhythm."}
+          : `${pattern.name} · ${formatPhases(pattern)}`}
       </p>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex justify-center gap-1.5">
         {CHECK_IN_SHORT_LABELS.map((label, index) => (
           <motion.button
             key={label}
             type="button"
             aria-pressed={picked === index}
             onClick={(event) => handleStateSelect(index, event.currentTarget)}
-            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             transition={{ duration: DURATION.quick, ease: EASE }}
-            className={cn("brume-btn brume-btn--soft px-5 py-2.5 min-h-0 text-sm")}
+            className={cn("brume-btn brume-btn--soft px-3 py-2 min-h-0 text-xs whitespace-nowrap")}
           >
             {label}
           </motion.button>
@@ -117,38 +104,27 @@ export function TodayCard({
 
       {picked !== null && (
         <motion.div
-          className="mt-4 flex flex-col items-center"
+          className="mt-3 flex items-center justify-center gap-4"
           initial={reduceMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: DURATION.standard, ease: EASE }}
         >
           <button
             type="button"
-            className="brume-btn brume-btn--push px-6 py-3 text-sm"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={handleUnpick}
+          >
+            ‹ choose again
+          </button>
+          <button
+            type="button"
+            className="brume-btn brume-btn--push px-5 py-2.5 min-h-0 text-sm"
             onClick={handleContinue}
           >
             Take it into a breath
           </button>
         </motion.div>
       )}
-      <details className="mt-6">
-        <summary className="brume-pill mx-auto w-fit cursor-pointer list-none text-center">More rhythms</summary>
-        <div className="flex flex-wrap justify-center gap-2 mt-3">
-        {RHYTHMS.map((r) => (
-          <motion.button
-            key={r.id}
-            type="button"
-            onClick={() => handleRhythmSelect(r.id, r.label)}
-            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            transition={{ duration: DURATION.quick, ease: EASE }}
-            className={cn("brume-pill px-3 py-1.5 min-h-0 text-xs")}
-          >
-            {r.label}
-          </motion.button>
-        ))}
-        </div>
-      </details>
     </div>
   );
 }

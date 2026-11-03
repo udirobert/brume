@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +19,45 @@ import { applyFeel, feelAt } from "@/lib/feelTheme";
  * required, no camera. The mood check-in stays available below
  * as the secondary path for anyone who wants a matched pattern.
  */
+const RHYTHMS = [
+  { id: "box", label: "Box" },
+  { id: "relaxation", label: "4-7-8" },
+  { id: "wim_hof", label: "Wim Hof" },
+  { id: "sleep", label: "Sleep" },
+] as const;
+
+/** "More rhythms" — a quiet popover of direct rhythm picks. */
+function RhythmPeek() {
+  const navigate = useNavigate();
+  return (
+    <details className="relative">
+      <summary className="cursor-pointer list-none hover:text-foreground transition-colors [&::-webkit-details-marker]:hidden">
+        More rhythms
+      </summary>
+      <div className="absolute left-1/2 top-full z-20 mt-2 flex -translate-x-1/2 gap-2">
+        {RHYTHMS.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            className="brume-pill px-3 py-1.5 text-xs whitespace-nowrap"
+            onClick={() =>
+              navigate(`/session?pattern=${r.id}`, {
+                state: {
+                  reason: r.label,
+                  reasonDetail: "You picked this rhythm.",
+                  source: "Your choice",
+                },
+              })
+            }
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default function Index() {
   const { user } = useAuth();
   const isGuest = !user;
@@ -38,13 +77,17 @@ export default function Index() {
 
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
-  const handleFeel = (index: number, chip: HTMLElement) => {
+  // A null index means the word was put back down — the room lets go.
+  const handleFeel = (index: number | null, chip?: HTMLElement) => {
     setFeelTap(index);
-    const a = chip.getBoundingClientRect();
-    applyFeel(index, { x: a.left + a.width / 2, y: a.top + a.height / 2 });
+    const a = chip?.getBoundingClientRect();
+    applyFeel(
+      index,
+      a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
+    );
     const next = feelAt(index);
     const card = mascotCardRef.current;
-    if (reduceMotion || !next || !card) return;
+    if (reduceMotion || !next || !card || !a) return;
     const b = card.getBoundingClientRect();
     setDroplet({
       key: Date.now(),
@@ -148,15 +191,19 @@ export default function Index() {
         animate={{ opacity: 1 }}
         transition={{ duration: DURATION.standard, delay: 0.18, ease: EASE }}
       >
-        <div className="w-full max-w-2xl brume-card px-4 py-6 md:px-7">
+        <div className="w-full max-w-2xl brume-card px-4 py-5 md:px-7">
           <TodayCard onFeel={handleFeel} />
         </div>
-        <Link
-          to="/decompress"
-          className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Want a longer pause? Take two minutes
-        </Link>
+        <div className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <RhythmPeek />
+          <span aria-hidden="true">·</span>
+          <Link
+            to="/decompress"
+            className="hover:text-foreground transition-colors"
+          >
+            Take two minutes
+          </Link>
+        </div>
       </motion.div>
 
       {isGuest && (

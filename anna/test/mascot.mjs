@@ -17,7 +17,7 @@ test("BRUME_AVATAR validates and is deeply frozen", () => {
   assert.equal(res.ok, true);
   assert.throws(() => { BRUME_AVATAR.body[0].cx = 1; }, TypeError);
   assert.throws(() => { BRUME_AVATAR.mouths.closed = "x"; }, TypeError);
-  assert.equal(MASCOT_STATES.length, 12);
+  assert.equal(MASCOT_STATES.length, 13);
 });
 
 test("frames are pure and identical for identical inputs", () => {
@@ -28,7 +28,7 @@ test("frames are pure and identical for identical inputs", () => {
   assert.notEqual(a, b);
 });
 
-test("all 12 states produce valid, distinct expressions", () => {
+test("all 13 states produce valid, distinct expressions", () => {
   const seen = new Set();
   for (const state of MASCOT_STATES) {
     const f = sampleMascot(3.21, { state });

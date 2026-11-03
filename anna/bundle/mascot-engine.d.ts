@@ -1,6 +1,6 @@
 export type BrumeMascotState =
   | "idle" | "thinking" | "inhale" | "topup" | "hold" | "exhale"
-  | "proud" | "sleepy" | "bright" | "stretch" | "hum" | "watching";
+  | "proud" | "sleepy" | "bright" | "stretch" | "hum" | "watching" | "tender";
 
 export type MascotPresence = "quiet" | "companion";
 

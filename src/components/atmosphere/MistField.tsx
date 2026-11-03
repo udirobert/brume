@@ -80,6 +80,10 @@ export function MistField() {
     let sighX = 0;
     let sighY = 0;
     let sighT = Number.NEGATIVE_INFINITY;
+    // The wisp — the word itself condensed out of the mist: a bright
+    // fold born at the tap point that swells, drifts up a touch, then
+    // dissolves back into the field (~2.4s life).
+    let wispT = Number.NEGATIVE_INFINITY;
 
     const spawn = (x: number, y: number, staticAge = false) => {
       const i = head;
@@ -232,6 +236,23 @@ export function MistField() {
         drawFold(x, y, rx, ry, (0.32 + fold.depth * 0.14) * dense * (1 + sigh * 0.5));
       }
 
+      const wispAge = elapsed - wispT;
+      if (!reduceMotion.matches && wispAge >= 0 && wispAge < 2400) {
+        const born = Math.min(1, wispAge / 450);
+        const gone = wispAge > 1400 ? 1 - (wispAge - 1400) / 1000 : 1;
+        const k = born * gone;
+        const wr = 26 + wispAge * 0.014;
+        const wy = sighY - wispAge * 0.018;
+        const g = ctx.createRadialGradient(sighX, wy, 0, sighX, wy, wr);
+        g.addColorStop(0, rgba(0.75 * k));
+        g.addColorStop(0.35, rgba(0.4 * k));
+        g.addColorStop(1, rgba(0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(sighX, wy, wr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       drawMotes();
       ctx.globalCompositeOperation = "source-over";
     };
@@ -293,6 +314,7 @@ export function MistField() {
       sighX = typeof detail.x === "number" ? detail.x : curr.x;
       sighY = typeof detail.y === "number" ? detail.y : curr.y;
       sighT = elapsed;
+      wispT = elapsed;
     };
 
     curr.x = window.innerWidth / 2;

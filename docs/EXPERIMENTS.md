@@ -173,10 +173,10 @@ Design guidance we take from the research without quoting it:
 | The ledger (`checkinLedger.ts`) | **built**, device-local, tested; nothing reads it yet |
 | Cue texture mid-session (the glyph) | **built 2026-11-04** — spoken → breath → quiet on one button, browser-verified; preview row and glyph share `CUE_STATES` |
 | Brume's own spoken line (`spokenGreeting.ts`) | **rewritten 2026-11-04** — closed table keyed valence × daypart; never echoes the catalog, never generated |
-| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo) |
+| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo) + an analytics provider (nothing is sent today) |
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
-| Privacy copy for anonymous counts | **todo** (`PrivacyPolicy.tsx` wording is generic) |
+| Privacy copy for anonymous counts | **corrected 2026-11-04** — counts are local until a provider exists, the check-in is counted as a position and never as a word, the mic is transient; wiring a provider updates this page in the same commit |
 | Sensing rule ("we do not sense you") | **rewritten 2026-11-04** — the mic is transient, opt-in, records nothing; `PrivacyPolicy.tsx` + `About.tsx` no longer claim it is never used |
 | OneSignal dashboard | **check**: no streak-framed journey may exist (see `docs/BRUME.md` tag table) |
 | Bar for going live (X%, N) | **set** — 25% / 50 / +8pt gap / 5 voices |
@@ -263,6 +263,11 @@ remembered, and on its own it only proves we can interrupt someone.
   ignored, dismissed or opened; check-ins per week after first exposure;
   ledger growth. Reason codes supply the trigger axis the free-text note
   never could, and joining sessions by day supplies the minutes.
+- **Blocked on:** an analytics provider. D7 is an event-side number and
+  nothing leaves the device today, so this experiment cannot read until
+  one is wired — which per the taxonomy note above is a privacy-page
+  change, not a dependency install. The ledger half (≥7 entries → one
+  line on Home) is buildable now and reads nothing off-device.
 - **Healthy if:** the treated arm returns more *and* the returns are
   voluntary (no reminder needed) — E5 stays off in the treated arm so the
   two effects don't blur.
@@ -280,6 +285,15 @@ remembered, and on its own it only proves we can interrupt someone.
 Never a user's words, never the drawing, never message text. Uses
 `trackEvent` in `src/lib/analytics.ts` (PostHog/Mixpanel if present,
 console in dev).
+
+**No provider is wired in today** — no script loads, so every event is a
+local no-op outside dev and nothing has ever left a device. That makes
+the table below a promise rather than a log, and it is the honest state
+of every retention claim in this document: E6 cannot read D7 until a
+provider exists. Wiring one is not a config change — it is the moment
+`PrivacyPolicy.tsx` starts describing transmission that actually happens,
+so the page is updated in the same commit and the page's test is the
+check that it was.
 
 All events go through `track()` in `src/lib/events.ts`. Its type map is
 the privacy contract: every property is a number, a boolean or a member

@@ -119,7 +119,7 @@ const PrivacyPolicy = () => {
             </h2>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Brume collects a small number of <strong>anonymous counts</strong> so we can learn what people do and keep improving it. No account is needed and no personal data leaves the device except what you choose to send.
+                Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed. Nothing is sent today: Brume has no analytics provider wired in, so the counts below stay on your device. If that changes, the list below is exactly what may leave — numbers, booleans and members of a closed list, never words — and this page is updated before it happens.
               </p>
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">What we count</h3>
               <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
@@ -128,10 +128,12 @@ const PrivacyPolicy = () => {
                 <li>Which room material you pick, and whether you resume from the landing</li>
                 <li>That you drew in the room (strokes and seconds, never the drawing itself)</li>
                 <li>That you copied or shared a Words Card, and whether the optional quiet-room link was on</li>
+                <li>Which check-in word you confirmed and which reason you picked — positions in a closed list of fourteen and six, never the words themselves</li>
               </ul>
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">What we never count</h3>
               <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
-                <li>Your words, message text, or check-in feelings</li>
+                <li>Anything you typed — message text, the Words Card, a reason you chose to keep private</li>
+                <li>Anything you said — the microphone returns a match, then drops the sentence; only the word you confirm is recorded, and as a number</li>
                 <li>Your breath timing beyond duration and cycle count</li>
                 <li>Anything from the mist drawing</li>
                 <li>Audio recordings — nothing you say is stored</li>

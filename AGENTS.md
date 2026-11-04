@@ -129,7 +129,12 @@ Experiments + measurement: `docs/EXPERIMENTS.md` (hypotheses, kill
 criteria, "bar for going live"). Every event goes through `track()` in
 `src/lib/events.ts` — its type map is the privacy contract (numbers,
 booleans, closed sets; never words, messages or drawings), so add events
-there and in the doc first. The room answers touch on Home only
+there and in the doc first. **No analytics provider is wired in** —
+`trackEvent` is a no-op unless PostHog or Mixpanel is loaded — so no
+count has ever left a device, and every retention claim in the doc is a
+promise, not a log. Turning one on is a `src/pages/PrivacyPolicy.tsx`
+change in the same commit (that page states the counts are local), not
+just a dependency install. The room answers touch on Home only
 (`RoomTouch.tsx` + `src/lib/mistBrush.ts`: breath = the mascot's own
 7 s cosine, hush mirrors `ATTENTION.AGITATED`; tests pin both to the
 frozen mascot files). Focused tests:

@@ -58,3 +58,24 @@ describe("PrivacyPolicy microphone copy", () => {
     expect(html).toContain("works by tapping instead");
   });
 });
+
+describe("PrivacyPolicy counting copy", () => {
+  it("says the counts stay local while no provider exists", () => {
+    expect(html).toContain("Nothing is sent today");
+    expect(html).toContain("no analytics provider wired in");
+    expect(html).toContain("this page is updated before it happens");
+  });
+
+  it("counts the check-in as a position, never as a word", () => {
+    expect(html).toContain("positions in a closed list of fourteen and six");
+    // The claim that feelings are never counted was false: the ledger
+    // stores the index and track() carries it. Words are what is never kept.
+    expect(html).not.toContain("or check-in feelings");
+  });
+
+  it("never counts what you typed or what you said", () => {
+    expect(html).toContain("Anything you typed");
+    expect(html).toContain("Anything you said");
+    expect(html).toContain("drops the sentence");
+  });
+});

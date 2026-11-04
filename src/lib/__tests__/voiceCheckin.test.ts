@@ -49,3 +49,10 @@ describe("suggestFeeling — never a dead end", () => {
     expect(suggestFeeling("quantum banana")).toBeNull();
   });
 });
+
+describe("real-speech regression", () => {
+  it("i am feeling great → light, never heavy", () => {
+    expect(matchFeeling("i am feeling great")).toBe(5);
+    expect(matchFeeling("i am feeling good")).toBe(5);
+  });
+});

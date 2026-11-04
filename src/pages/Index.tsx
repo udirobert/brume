@@ -60,6 +60,7 @@ export default function Index() {
   const companion = presence === "companion";
   const feelTap = useRoomExperience((s) => s.feelIndex);
   const [patternOverride, setPatternOverride] = useState<string | null>(null);
+  const [beginNudge, setBeginNudge] = useState(false);
   const reactionSerial = useRef(0);
   const [mascotReaction, setMascotReaction] = useState<
     { name: MascotReaction; key: string } | undefined
@@ -87,13 +88,17 @@ export default function Index() {
   // (mascot ticks) never swap the question under your eyes.
   const [todayPrompt] = useState(() => checkInPrompt());
 
-  const handleFeel = (index: number | null, chip?: HTMLElement) => {
-    // On "avoid" days the word you name is the one you want gone —
-    // the room answers with its pair partner instead.
+  const handleFeel = (index: number | null, chip?: HTMLElement, viaVoice = false) => {
+    // On "avoid" days the word you TAP answers the prompt — but a
+    // spoken feeling is literal self-expression, never flipped.
     const effective =
-      index !== null && todayPrompt.mode === "avoid"
+      index !== null && todayPrompt.mode === "avoid" && !viaVoice
         ? (oppositeFeel(index) ?? index)
         : index;
+    if (viaVoice) {
+      setBeginNudge(true);
+      window.setTimeout(() => setBeginNudge(false), 5000);
+    }
     setCheckInMode(index !== null ? todayPrompt.mode : null);
     const a = chip?.getBoundingClientRect();
     applyFeel(
@@ -175,7 +180,7 @@ export default function Index() {
       <CheckInMargin feeling={feelTap} />
 
       <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
-        <button type="button" className="brume-btn brume-btn--push" onClick={begin}>
+        <button type="button" className={`brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
           Begin
         </button>
       </Magnetic>

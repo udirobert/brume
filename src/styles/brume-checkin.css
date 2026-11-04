@@ -353,3 +353,14 @@
   font-size: 0.62rem;
   opacity: 0.4;
 }
+
+/* Voice-matched check-in nudges the next step — Begin glows briefly. */
+.brume-btn--push.is-suggested {
+  animation: brumeSuggestGlow 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-btn--push.is-suggested {
+    animation: none;
+    box-shadow: 0 0 10px 1px rgba(140, 120, 200, 0.45);
+  }
+}

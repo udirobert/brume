@@ -36,7 +36,7 @@ export function PairedFeelings({
   showHint = true,
 }: {
   selectedIndex: number | null;
-  onChoose: (index: number, button: HTMLButtonElement) => void;
+  onChoose: (index: number, button: HTMLButtonElement, viaVoice?: boolean) => void;
   onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
   showHint?: boolean;
 }) {
@@ -84,7 +84,7 @@ export function PairedFeelings({
   }, [hintOpen]);
 
   const handlePick = useCallback(
-    (pairIndex: number, button: HTMLButtonElement) => {
+    (pairIndex: number, button: HTMLButtonElement, viaVoice = false) => {
       setSuggested(null);
     const next = selectPairedFeel(
         { faces, selected: selectedIndex },
@@ -101,7 +101,7 @@ export function PairedFeelings({
         setHintOpen(true);
       }
       setAnnounce(`${FEELINGS[next.selected!].label} selected.`);
-      onChoose(next.selected!, button);
+      onChoose(next.selected!, button, viaVoice);
     },
     [faces, selectedIndex, onChoose, showHint],
   );
@@ -151,7 +151,7 @@ export function PairedFeelings({
     if (!pair) return;
     const pi = FEELING_PAIRS.indexOf(pair);
     const btn = chipRefs.current[pi];
-    if (btn) handlePick(pi, btn);
+    if (btn) handlePick(pi, btn, true); // spoken feelings are literal
   }, [micOn, handlePick]);
 
   return (

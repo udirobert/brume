@@ -1,3 +1,4 @@
+import { track } from "@/lib/events";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { BrumeMascot, type BrumeMascotState, type MascotReaction } from "@/components/BrumeMascot";
@@ -201,6 +202,7 @@ export default function Decompress() {
     setCheckInIndex(index);
     setCheckInTouched(true);
     applyFeel(index);
+    track("checkin_word", { feeling: index, surface: "decompress" });
     if (nudgeTimerRef.current) {
       window.clearTimeout(nudgeTimerRef.current);
       nudgeTimerRef.current = 0;

@@ -15,6 +15,91 @@
 export const INVITATION_ORIGIN = "https://brumeapp.netlify.app";
 
 /**
+ * Append a gentle, zero-tracking break link to a check-in sentence when
+ * the sender opts in. Never includes the sender's feeling or personal data
+ * in the URL — only the bare origin or `/session?pattern=<id>&via=invite`.
+ */
+export function appendRoomLink(message: string, patternId?: string): string {
+  const trimmed = message.trim();
+  const url = patternId ? buildInvitationUrl(patternId) : INVITATION_ORIGIN;
+  return `${trimmed}\n\nTwo quiet minutes if you want them: ${url}`;
+}
+
+/**
+ * Build a local `.ics` calendar file for a recurring 2-minute quiet pause.
+ * Everything happens on-device (`data:text/calendar`); no server, no account,
+ * no push-notification permission required.
+ */
+export function buildQuietPauseIcs(options?: {
+  patternId?: string;
+  hourLocal?: number;
+  minuteLocal?: number;
+  now?: Date;
+}): string {
+  const now = options?.now ?? new Date();
+  const hour = options?.hourLocal ?? 15;
+  const minute = options?.minuteLocal ?? 0;
+
+  const start = new Date(now);
+  start.setHours(hour, minute, 0, 0);
+  if (start.getTime() <= now.getTime()) {
+    start.setDate(start.getDate() + 1);
+  }
+  const end = new Date(start.getTime() + 2 * 60 * 1000);
+
+  const fmtUtc = (d: Date) =>
+    d
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}Z$/, "Z");
+
+  const url = options?.patternId
+    ? buildInvitationUrl(options.patternId)
+    : INVITATION_ORIGIN;
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Brume//Quiet Pause//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:brume-pause-${ fmtUtc(now) }@brumeapp.netlify.app`,
+    `DTSTAMP:${fmtUtc(now)}`,
+    `DTSTART:${fmtUtc(start)}`,
+    `DTEND:${fmtUtc(end)}`,
+    "RRULE:FREQ=DAILY",
+    "SUMMARY:Brume — two quiet minutes",
+    `DESCRIPTION:A two-minute breathing pause between things. ${url}`,
+    `URL:${url}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+/**
+ * Trigger a browser download of the `.ics` file so the user's calendar app
+ * can add the recurring 2-minute pause.
+ */
+export function downloadQuietPauseIcs(options?: { patternId?: string }): boolean {
+  if (typeof document === "undefined" || typeof Blob === "undefined") return false;
+  try {
+    const ics = buildQuietPauseIcs(options);
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "brume-two-minutes.ics";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Build the invitation URL for a pattern. Only two params are ever
  * emitted: `pattern` (the routine id) and `via=invite` (cosmetic).
  */

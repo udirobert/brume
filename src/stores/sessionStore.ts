@@ -7,6 +7,7 @@
  * Built with Zustand for clean, predictable state management.
  */
 
+import { track } from '@/lib/events';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { BreathingPattern } from '../lib/breathingPatterns';
@@ -162,6 +163,10 @@ export const useSessionStore = create<SessionState & SessionActions>()(
       const clock = resumeSessionClock(createSessionClock(), now);
       try {
         const timing = sampleSessionTiming(clock, state.config.pattern, now);
+        track('session_start', {
+          pattern: state.config.pattern.id,
+          mode: String(state.config.mode),
+        });
         set({
           phase: 'active',
           clock,
@@ -217,6 +222,11 @@ export const useSessionStore = create<SessionState & SessionActions>()(
         metrics: { ...state.metrics, ...timing },
       });
       trackSessionCompleted({ verified: false });
+      track('session_complete', {
+        pattern: state.config.pattern.id,
+        seconds: Math.round(timing.duration || 0),
+        cycles: timing.cycleCount || 0,
+      });
     },
 
     tickSession: () => {
@@ -233,6 +243,15 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     },
 
     resetSession: () => {
+      const { phase, config, metrics } = get();
+      // Left while breathing (never completed) — count it, nothing more.
+      if (config && (phase === 'active' || phase === 'paused')) {
+        track('session_abandon', {
+          pattern: config.pattern.id,
+          seconds: Math.round(metrics.duration || 0),
+          phase,
+        });
+      }
       set({ ...initialState });
     },
 

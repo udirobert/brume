@@ -6,13 +6,15 @@
  * unexplained support grid is gone. "Just for me" keeps the check-in
  * contract: the message is only ever shown, never offered for share.
  */
-import { useState } from "react";
+import { track } from "@/lib/events";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   composeCheckInMessage,
   FOR_OPTIONS,
   type ForChoice,
 } from "@/lib/checkin";
+import { appendRoomLink } from "@/lib/invitation";
 import { copyText, shareMessageCard } from "@/lib/shareMessageCard";
 
 interface PostSessionWordsProps {
@@ -22,6 +24,8 @@ interface PostSessionWordsProps {
   orbMist?: string;
   /** Pattern just practised — names the downloaded card file. */
   patternName?: string;
+  /** Registry id of the pattern — used when opting in to include a room link. */
+  patternId?: string;
   onBack: () => void;
 }
 
@@ -29,6 +33,7 @@ export function PostSessionWords({
   checkInIndex,
   orbMist,
   patternName,
+  patternId,
   onBack,
 }: PostSessionWordsProps) {
   const [forChoice, setForChoice] = useState<ForChoice | null>(null);
@@ -36,9 +41,23 @@ export function PostSessionWords({
     composeCheckInMessage(checkInIndex, null, null),
   );
   const [edited, setEdited] = useState(false);
+  const [includeRoomLink, setIncludeRoomLink] = useState(false);
   const [sharing, setSharing] = useState(false);
 
   const forMe = forChoice === "just_for_me";
+  useEffect(() => {
+    track("words_card_shown", { surface: "post_session", arm: "sentence" });
+  }, []);
+  const outcome = () => ({
+    surface: "post_session" as const,
+    arm: "sentence" as const,
+    room_link: includeRoomLink,
+    for_me: forMe,
+    edited,
+  });
+  const outgoingText = includeRoomLink
+    ? appendRoomLink(message, patternId)
+    : message;
 
   const chooseFor = (choice: ForChoice) => {
     const next = forChoice === choice ? null : choice;
@@ -47,7 +66,8 @@ export function PostSessionWords({
   };
 
   const copyMessage = async () => {
-    if (await copyText(message)) {
+    if (await copyText(outgoingText)) {
+      track("words_card_copied", outcome());
       toast.success("Copied to clipboard");
     } else {
       toast.error("Copy is unavailable here — you can still select the words");
@@ -59,13 +79,17 @@ export function PostSessionWords({
     setSharing(true);
     try {
       const result = await shareMessageCard({ message, orbMistCss: orbMist, patternName });
+      if (result === "shared" || result === "downloaded" || result === "copied") {
+        track("words_card_shared", outcome());
+      }
       if (result === "shared") {
         toast.success("Card sent");
       } else if (result === "downloaded") {
         toast.success("Image saved");
       } else if (result === "copied") {
         toast.success("Copied to clipboard");
-      } else if (await copyText(message)) {
+      } else if (await copyText(outgoingText)) {
+        track("words_card_copied", outcome());
         toast.success("Copied to clipboard");
       } else {
         toast.error("Sharing is unavailable here — you can still select the words");
@@ -120,23 +144,36 @@ export function PostSessionWords({
             Kept here. Nothing to send.
           </p>
         ) : (
-          <div className="flex flex-wrap gap-3">
+          <>
             <button
               type="button"
-              className="brume-btn"
-              onClick={() => void copyMessage()}
+              className={`brume-pill ${includeRoomLink ? "is-selected" : ""}`}
+              aria-pressed={includeRoomLink}
+              onClick={() => {
+                track("room_link_toggled", { surface: "post_session", on: !includeRoomLink });
+                setIncludeRoomLink((prev) => !prev);
+              }}
             >
-              Copy message
+              Include a quiet room link
             </button>
-            <button
-              type="button"
-              className="brume-btn brume-btn--soft"
-              disabled={sharing}
-              onClick={() => void shareCard()}
-            >
-              Share
-            </button>
-          </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="brume-btn"
+                onClick={() => void copyMessage()}
+              >
+                Copy message
+              </button>
+              <button
+                type="button"
+                className="brume-btn brume-btn--soft"
+                disabled={sharing}
+                onClick={() => void shareCard()}
+              >
+                Share
+              </button>
+            </div>
+          </>
         )}
 
         <p className="dc-field-note">

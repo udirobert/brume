@@ -255,6 +255,23 @@ describe("PostSessionCelebration morph region", () => {
       expect.stringContaining("I'm okay as I am today."),
     );
   });
+
+  it("includes the quiet room link when 'Include a quiet room link' is toggled on", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    await mount({ checkInIndex: 0, patternId: "reset" });
+    click("Put it into words");
+    click("Include a quiet room link");
+    await act(async () => {
+      button("Copy message")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("https://brumeapp.netlify.app/session?pattern=reset&via=invite"),
+    );
+  });
 });
 
 describe("PostSessionCelebration after choices", () => {

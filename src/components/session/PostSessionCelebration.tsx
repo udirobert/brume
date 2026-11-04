@@ -1,10 +1,11 @@
+import { track } from "@/lib/events";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { toast } from "sonner";
 import { PostSessionWords } from "./PostSessionWords";
-import { shareInvitation } from "@/lib/invitation";
+import { downloadQuietPauseIcs, shareInvitation } from "@/lib/invitation";
 import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
 import { AFTER_PRACTICE_CHOICES, type AfterPracticeChoiceId } from "@/lib/checkin";
@@ -78,8 +79,15 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
     }
   };
 
+  const handleCalendar = () => {
+    if (downloadQuietPauseIcs({ patternId })) {
+      toast.success("Calendar file saved — open it to hold two quiet minutes");
+    }
+  };
+
   const chooseAfter = (id: AfterPracticeChoiceId) => {
     setAfter(id);
+    track("after_answer", { choice: id, material_changes: 0 });
     setAfterReaction({
       name: id === "lighter" ? "celebrate" : "settle",
       key: Date.now(),
@@ -252,7 +260,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
                 {meta.length > 0 && (
                   <p className="text-sm text-muted-foreground">{meta.join(" · ")}</p>
                 )}
-                <div className="flex items-center gap-3 text-sm pt-1">
+                <div className="flex flex-wrap justify-center items-center gap-3 text-sm pt-1">
                   {patternId && (
                     <>
                       <button
@@ -265,6 +273,14 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
                       <span className="text-muted-foreground/30">·</span>
                     </>
                   )}
+                  <button
+                    type="button"
+                    onClick={handleCalendar}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Hold 2 min on calendar
+                  </button>
+                  <span className="text-muted-foreground/30">·</span>
                   <button
                     type="button"
                     onClick={onSeeProgress}
@@ -306,6 +322,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
                   checkInIndex={checkInIndex ?? null}
                   orbMist={feel?.orbMist}
                   patternName={metrics.patternName}
+                  patternId={patternId}
                   onBack={() => setView("main")}
                 />
               </motion.div>

@@ -13,6 +13,7 @@ import { createRoomRenderer } from "@/lib/atmosphere/roomRenderer";
 import { useSessionStore } from "@/stores/sessionStore";
 import { breathAmount } from "@/lib/breathCurve";
 import { RoomControls } from "./RoomControls";
+import { RoomTouch } from "./RoomTouch";
 import "@/styles/brume-room.css";
 
 const MATERIAL_COUNT = 6;
@@ -47,6 +48,7 @@ export function RoomEnvironment() {
   return (
     <>
       <RoomCanvas pathname={pathname} />
+      {pathname === "/" && <RoomTouch />}
       {pathname !== "/" && (
         <RoomControls
           routeKey={pathname}

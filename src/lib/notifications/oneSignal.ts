@@ -11,8 +11,8 @@
  *
  * Tag contract v1:
  *   first_breath_done  "true"            → Journey 1: First Breath (24h no session)
- *   last_session_at    ISO date string   → Journey 2: Streak Rescue (20h gap w/ streak)
- *   streak             number as string  → Journey 2 segmentation
+ *   last_session_at    ISO date string   → Journey 2: "Come back when you're ready" (gentle, no streak framing)
+ *   streak             number as string  → segmentation only; never shown, never used for nudges
  *   verified_total     number as string  → Journey 4: Weekly Proof digest
  *   sessions_total     number as string  → analytics segmentation
  */

@@ -17,6 +17,7 @@ import {
   composeCheckInMessage,
 } from "../checkin";
 import { HOME_FEELING_COPY } from "../feelings";
+import { appendRoomLink, buildQuietPauseIcs, invitationShareText } from "../invitation";
 
 const BANNED =
   /proven|scientific|nervous system|anxiety|insomnia|immune|cortisol|vagus|stress relief|sleep quality|energy boost|parasympathetic|biometric/i;
@@ -101,6 +102,11 @@ describe("check-in copy", () => {
       "The room",
       "What it never does",
       "No camera. No scores. No streaks. Sounds play from files on this device — nothing is sent anywhere.",
+      "Include a quiet room link",
+      "Hold 2 min on calendar",
+      appendRoomLink(composeCheckInMessage(0, "listening"), "reset"),
+      invitationShareText(BREATHING_PATTERNS.reset),
+      buildQuietPauseIcs({ patternId: "reset" }),
     );
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);

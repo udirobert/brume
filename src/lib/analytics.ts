@@ -15,11 +15,11 @@ export function trackEvent(eventName: string, properties: Record<string, any> = 
       return;
     }
 
-    // Fallback to console for local dev visibility
-    // eslint-disable-next-line no-console
-    console.log(`[analytics] ${eventName}`, properties);
+    // Fallback to console for local dev visibility only.
+    if (import.meta.env?.DEV) {
+      console.log(`[analytics] ${eventName}`, properties);
+    }
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.debug("analytics error", err);
   }
 }

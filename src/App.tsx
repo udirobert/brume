@@ -20,6 +20,7 @@ import About from "@/pages/About";
 // Notifications (OneSignal) — guarded no-op until VITE_ONESIGNAL_APP_ID is set
 import { initNotifications } from "@/lib/notifications/oneSignal";
 import { useDayPart } from "@/hooks/useDayPart";
+import { recordVisit } from "@/lib/events";
 import RouteErrorBoundary from "@/components/auth/RouteErrorBoundary";
 import { RoomEnvironment } from "@/components/atmosphere/RoomEnvironment";
 import { JourneyCompanionProvider } from "@/components/companion/JourneyCompanion";
@@ -79,6 +80,7 @@ function App() {
   useDayPart();
   React.useEffect(() => {
     void initNotifications();
+    recordVisit();
   }, []);
 
   return (

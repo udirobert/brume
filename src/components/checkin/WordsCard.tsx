@@ -3,7 +3,8 @@
  * from the check-in point + who it's for + what would help. Nothing
  * leaves the page unless the person copies or shares it.
  */
-import { useState } from "react";
+import { track } from "@/lib/events";
+import { useEffect, useState } from "react";
 import {
   composeCheckInMessage,
   FOR_OPTIONS,
@@ -11,6 +12,7 @@ import {
   type ForChoice,
   type SupportChoice,
 } from "@/lib/checkin";
+import { appendRoomLink } from "@/lib/invitation";
 
 const SUPPORT_OPTIONS: Array<{ id: SupportChoice; label: string }> = [
   { id: "company", label: "Company" },
@@ -32,11 +34,23 @@ export function WordsCard({ checkInIndex, onCopied, onShared }: WordsCardProps) 
     composeCheckInMessage(checkInIndex, null, null),
   );
   const [edited, setEdited] = useState(false);
+  const [includeRoomLink, setIncludeRoomLink] = useState(false);
   const [feedback, setFeedback] = useState("");
 
   const canNativeShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
   const forMe = forChoice === "just_for_me";
+  const outgoingText = includeRoomLink ? appendRoomLink(message) : message;
+  useEffect(() => {
+    track("words_card_shown", { surface: "decompress", arm: "sentence" });
+  }, []);
+  const outcome = () => ({
+    surface: "decompress" as const,
+    arm: "sentence" as const,
+    room_link: includeRoomLink,
+    for_me: forMe,
+    edited,
+  });
 
   const recompose = (forC: ForChoice | null, support: SupportChoice | null) => {
     if (!edited) setMessage(composeCheckInMessage(checkInIndex, support, forC));
@@ -56,8 +70,9 @@ export function WordsCard({ checkInIndex, onCopied, onShared }: WordsCardProps) 
 
   const copyMessage = async () => {
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(outgoingText);
       setFeedback("Copied. Nothing was sent.");
+      track("words_card_copied", outcome());
       onCopied?.();
     } catch {
       setFeedback("Copy is unavailable here. You can still select the message.");
@@ -66,8 +81,9 @@ export function WordsCard({ checkInIndex, onCopied, onShared }: WordsCardProps) 
 
   const shareMessage = async () => {
     try {
-      await navigator.share({ text: message });
+      await navigator.share({ text: outgoingText });
       setFeedback("Shared only because you chose to.");
+      track("words_card_shared", outcome());
       onShared?.();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -133,6 +149,17 @@ export function WordsCard({ checkInIndex, onCopied, onShared }: WordsCardProps) 
         </p>
       ) : (
         <>
+          <button
+            type="button"
+            className={`brume-pill ${includeRoomLink ? "is-selected" : ""}`}
+            aria-pressed={includeRoomLink}
+            onClick={() => {
+              track("room_link_toggled", { surface: "decompress", on: !includeRoomLink });
+              setIncludeRoomLink((prev) => !prev);
+            }}
+          >
+            Include a quiet room link
+          </button>
           <p className="dc-field-note dc-field-note--reserved" aria-live="polite">
             {feedback || "You can edit this before copying or sharing."}
           </p>

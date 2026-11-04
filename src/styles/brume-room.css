@@ -205,3 +205,17 @@ html:has(.brume-room) .dc-room__wisp {
   left: 50%;
   transform: translateX(-50%);
 }
+
+/* The room answers touch — mist under the content, above the room. */
+.brume-room-touch {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+}
+html[data-drawing] {
+  user-select: none;
+  -webkit-user-select: none;
+}

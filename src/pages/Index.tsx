@@ -9,6 +9,7 @@ import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
+import { track } from "@/lib/events";
 import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
 import { useRoomExperience } from "@/lib/roomExperience";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
@@ -87,6 +88,7 @@ export default function Index() {
       a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
     );
     const next = feelingAt(index);
+    if (next && index !== null) track("checkin_word", { feeling: index, surface: "home" });
     if (next?.reaction) {
       setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
     }

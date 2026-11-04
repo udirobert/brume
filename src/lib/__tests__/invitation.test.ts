@@ -5,7 +5,9 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  appendRoomLink,
   buildInvitationUrl,
+  buildQuietPauseIcs,
   invitationShareText,
   estimateRoutineSeconds,
   INVITATION_ORIGIN,
@@ -70,5 +72,35 @@ describe("invitationShareText", () => {
 
   it("falls back gracefully without a pattern", () => {
     expect(invitationShareText()).toBe("Take a breathing break");
+  });
+});
+
+describe("appendRoomLink", () => {
+  it("appends a clean room link without leaking personal state", () => {
+    const out = appendRoomLink("I'm a little stretched today.", "reset");
+    expect(out).toContain("I'm a little stretched today.");
+    expect(out).toContain("Two quiet minutes if you want them:");
+    expect(out).toContain("https://brumeapp.netlify.app/session?pattern=reset&via=invite");
+  });
+
+  it("falls back to the bare origin when no patternId is given", () => {
+    const out = appendRoomLink("I'm okay as I am today.");
+    expect(out).toContain(`Two quiet minutes if you want them: ${INVITATION_ORIGIN}`);
+  });
+});
+
+describe("buildQuietPauseIcs", () => {
+  it("generates a valid 2-minute daily VCALENDAR with no health or streak claims", () => {
+    const ics = buildQuietPauseIcs({
+      patternId: "reset",
+      now: new Date("2026-11-04T10:00:00Z"),
+    });
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("BEGIN:VEVENT");
+    expect(ics).toContain("RRULE:FREQ=DAILY");
+    expect(ics).toContain("SUMMARY:Brume — two quiet minutes");
+    expect(ics).toContain("https://brumeapp.netlify.app/session?pattern=reset&via=invite");
+    expect(ics).toContain("END:VCALENDAR");
+    expect(ics).not.toMatch(/streak|score|cortisol|anxiety|medical/i);
   });
 });

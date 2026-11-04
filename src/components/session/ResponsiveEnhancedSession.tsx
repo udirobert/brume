@@ -5,6 +5,7 @@
  * SessionControls end it and report honest timing metrics.
  */
 
+import { track } from "@/lib/events";
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -253,6 +254,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     if (landing || landingOffered.current || !atRestingPoint) return;
     if ((session.metrics?.duration ?? 0) < LANDING_SECONDS) return;
     landingOffered.current = true;
+    track("landing_reached", { seconds: Math.round(session.metrics?.duration ?? 0) });
     session.pause();
     setLanding(true);
   }, [atRestingPoint, landing, session]);
@@ -269,13 +271,14 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   React.useEffect(() => {
     if (!landing) return;
     if (session.phase !== "paused") {
+      if (session.phase === "active") track("landing_resumed", {});
       setLanding(false);
       return;
     }
-    const hold = window.setTimeout(
-      () => endSessionRef.current(),
-      LANDING_HOLD_MS,
-    );
+    const hold = window.setTimeout(() => {
+      track("landing_settled", {});
+      endSessionRef.current();
+    }, LANDING_HOLD_MS);
     return () => window.clearTimeout(hold);
   }, [landing, session.phase]);
 

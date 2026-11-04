@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { track } from "@/lib/events";
 import {
   ROOM_LABELS,
   materialForFeel,
@@ -32,6 +33,7 @@ export function RoomSettings({
 
   const pick = (m: RoomMaterial | null) => {
     setMaterial(m);
+    track("material_changed", { to: m ?? "auto" });
     onMaterialPicked?.(m);
   };
   return (

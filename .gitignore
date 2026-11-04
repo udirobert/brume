@@ -131,3 +131,7 @@ anna/.anna/
 
 # Local Netlify folder
 .netlify
+
+# Generated MCP worker widget bundle (built via `npm run build:worker` in mcp/)
+mcp/widget-bundle.js
+mcp/.wrangler/

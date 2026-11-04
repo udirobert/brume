@@ -1,0 +1,6 @@
+name = "brume-mcp"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[build]
+command = "node scripts/build-worker.mjs"

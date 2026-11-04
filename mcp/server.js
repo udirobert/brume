@@ -8,158 +8,98 @@ import http from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import {
-  PATTERNS,
-  ALLOWED_LENGTHS,
-  validateAgentPlan,
-  fallbackPlan,
-  effectiveLengthSeconds,
-  phaseWord,
-  cleanReflection,
-} from "../anna/bundle/plan.js";
+import { ALLOWED_LENGTHS } from "../anna/bundle/plan.js";
+import { WIDGET_URI, runBrumeReset, runBrumeComplete } from "./mcp-core.js";
 import { WIDGET_HTML } from "./widget.js";
 
-const WIDGET_URI = "ui://widget/brume-session.html";
-
 function createServer() {
-const server = new McpServer({ name: "brume", version: "0.0.1" });
+  const server = new McpServer({ name: "brume", version: "0.0.1" });
 
-server.registerResource(
-  "brume-session-widget",
-  WIDGET_URI,
-  { title: "Brume session", description: "The live breathing view for a planned break." },
-  async () => ({
-    contents: [
-      {
-        uri: WIDGET_URI,
-        mimeType: "text/html+skybridge",
-        text: WIDGET_HTML,
+  server.registerResource(
+    "brume-session-widget",
+    WIDGET_URI,
+    { title: "Brume session", description: "The live breathing view for a planned break." },
+    async () => ({
+      contents: [
+        {
+          uri: WIDGET_URI,
+          mimeType: "text/html+skybridge",
+          text: WIDGET_HTML,
+        },
+      ],
+    }),
+  );
+
+  const patternEnum = z.enum(["cyclic-sigh", "long-exhale", "box", "steady"]);
+  const secondsEnum = z.union([
+    z.literal(60), z.literal(90), z.literal(120), z.literal(180),
+  ]);
+
+  server.registerTool(
+    "brume_reset",
+    {
+      title: "Brume — a breathing break",
+      description:
+        "Start (or continue) a short guided breathing break for the user. " +
+        "Before calling, plan it yourself from what the user said: choose pattern " +
+        "(cyclic-sigh: 2s in, 1s top-up, 6s out — right before something tense or when " +
+        "keyed up; long-exhale: 4s in, 6s out — a gentle reset between tasks; " +
+        "box: 4s in, 4s hold, 4s out, 4s hold — getting ready for focused work; " +
+        "steady: 5.5s in, 5.5s out — winding down) and seconds " +
+        `(${ALLOWED_LENGTHS.join(", ")}; 60 if they have little time), and write ` +
+        "title, opening, cues and why. Describe only the rhythm and how it fits " +
+        "their moment — never effects on the body, brain, stress, sleep or health. " +
+        "When the user says they are done, call brume_complete.",
+      inputSchema: {
+        context: z.string().optional().describe(
+          "What the user said they are doing or about to do, as a short phrase. Never invent one.",
+        ),
+        pattern: patternEnum.optional().describe("Breathing pattern you chose."),
+        seconds: secondsEnum.optional().describe("Length you chose."),
+        title: z.string().optional().describe("Up to 6 words naming this break."),
+        opening: z.string().optional().describe(
+          "One or two calm sentences (max 30 words) responding to what they said.",
+        ),
+        cues: z.array(z.string()).optional().describe(
+          "2 or 3 short phrases (max 8 words each) about posture or attention — never counts, timings, or the words in, out, hold, inhale or exhale.",
+        ),
+        why: z.string().optional().describe(
+          "One sentence (max 20 words): which part of their note this rhythm fits, describing the rhythm only.",
+        ),
+        pace: z.string().optional(),
+        remaining_seconds: z.number().optional(),
+        cycles: z.number().optional(),
       },
-    ],
-  }),
-);
-
-const patternEnum = z.enum(["cyclic-sigh", "long-exhale", "box", "steady"]);
-const secondsEnum = z.union([
-  z.literal(60), z.literal(90), z.literal(120), z.literal(180),
-]);
-
-server.registerTool(
-  "brume_reset",
-  {
-    title: "Brume — a breathing break",
-    description:
-      "Start (or continue) a short guided breathing break for the user. " +
-      "Before calling, plan it yourself from what the user said: choose pattern " +
-      "(cyclic-sigh: 2s in, 1s top-up, 6s out — right before something tense or when " +
-      "keyed up; long-exhale: 4s in, 6s out — a gentle reset between tasks; " +
-      "box: 4s in, 4s hold, 4s out, 4s hold — getting ready for focused work; " +
-      "steady: 5.5s in, 5.5s out — winding down) and seconds " +
-      `(${ALLOWED_LENGTHS.join(", ")}; 60 if they have little time), and write ` +
-      "title, opening, cues and why. Describe only the rhythm and how it fits " +
-      "their moment — never effects on the body, brain, stress, sleep or health. " +
-      "When the user says they are done, call brume_complete.",
-    inputSchema: {
-      context: z.string().optional().describe(
-        "What the user said they are doing or about to do, as a short phrase. Never invent one.",
-      ),
-      pattern: patternEnum.optional().describe("Breathing pattern you chose."),
-      seconds: secondsEnum.optional().describe("Length you chose."),
-      title: z.string().optional().describe("Up to 6 words naming this break."),
-      opening: z.string().optional().describe(
-        "One or two calm sentences (max 30 words) responding to what they said.",
-      ),
-      cues: z.array(z.string()).optional().describe(
-        "2 or 3 short phrases (max 8 words each) about posture or attention — never counts, timings, or the words in, out, hold, inhale or exhale.",
-      ),
-      why: z.string().optional().describe(
-        "One sentence (max 20 words): which part of their note this rhythm fits, describing the rhythm only.",
-      ),
-      pace: z.string().optional(),
-      remaining_seconds: z.number().optional(),
-      cycles: z.number().optional(),
+      _meta: { "openai/outputTemplate": WIDGET_URI },
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
     },
-    _meta: { "openai/outputTemplate": WIDGET_URI },
-    annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
-  },
-  async (args) => {
-    const plan = validateAgentPlan(args) ?? fallbackPlan(args?.context, "fallback");
-    const { cycles, effectiveSeconds } = effectiveLengthSeconds(
-      plan.pattern,
-      plan.seconds,
-    );
-    const p = PATTERNS[plan.pattern];
-    const phases = [
-      ["inhale", p.inhale],
-      ["topup", p.topup],
-      ["hold", p.hold],
-      ["exhale", p.exhale],
-      ["pause", p.holdAfterExhale],
-    ]
-      .filter(([, s]) => s > 0)
-      .map(([phase, s]) => ({ word: phaseWord(plan.pattern, phase), seconds: s }));
+    async (args) => runBrumeReset(args),
+  );
 
-    const script = [
-      plan.title,
-      "",
-      plan.opening,
-      "",
-      `${p.name} — ${p.rhythm} · ${cycles} cycles, about ${effectiveSeconds}s`,
-      ...plan.cues.map((c) => `· ${c}`),
-      "",
-      plan.why,
-      "",
-      "(When you're done, say so — we'll close it out together.)",
-    ].join("\n");
-
-    return {
-      content: [{ type: "text", text: script }],
-      structuredContent: {
-        pattern: plan.pattern,
-        seconds: plan.seconds,
-        effectiveSeconds,
-        cycles,
-        phases,
-        title: plan.title,
-        opening: plan.opening,
-        cues: plan.cues,
-        why: plan.why,
-        planSource: plan.planSource,
+  server.registerTool(
+    "brume_complete",
+    {
+      title: "Brume — close out a break",
+      description:
+        "Record that the breathing break finished and write the short closing " +
+        "note shown after it. At most 2 sentences, 35 words: acknowledge how it " +
+        "went in plain words (if still wired or ended early, be matter-of-fact, " +
+        "never guilt), then one concrete next step tied to what they said they " +
+        "are doing next. No emoji, no medical or health claims, no breathing science.",
+      inputSchema: {
+        felt: z.enum(["calmer", "same", "wired"]).optional().describe(
+          "How the user says they feel now, if they said.",
+        ),
+        reflection: z.string().optional().describe(
+          "The short closing note you wrote for them.",
+        ),
       },
-    };
-  },
-);
-
-server.registerTool(
-  "brume_complete",
-  {
-    title: "Brume — close out a break",
-    description:
-      "Record that the breathing break finished and write the short closing " +
-      "note shown after it. At most 2 sentences, 35 words: acknowledge how it " +
-      "went in plain words (if still wired or ended early, be matter-of-fact, " +
-      "never guilt), then one concrete next step tied to what they said they " +
-      "are doing next. No emoji, no medical or health claims, no breathing science.",
-    inputSchema: {
-      felt: z.enum(["calmer", "same", "wired"]).optional().describe(
-        "How the user says they feel now, if they said.",
-      ),
-      reflection: z.string().optional().describe(
-        "The short closing note you wrote for them.",
-      ),
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
     },
-    annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
-  },
-  async (args) => {
-    const note = cleanReflection(args?.reflection);
-    return {
-      content: [{ type: "text", text: note }],
-      structuredContent: { felt: args?.felt ?? null, reflection: note },
-    };
-  },
-);
+    async (args) => runBrumeComplete(args),
+  );
 
-return server;
+  return server;
 }
 
 // Stateless Streamable HTTP: a fresh server+transport per request, per the

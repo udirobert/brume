@@ -225,9 +225,11 @@ narration**: the minimum speech needed so you can close your eyes.
    ("A gentle rhythm between standup and the hard email"). **Shipped
    2026-11-04** as the Begin greeting, composed from closed vocabulary
    (daypart + the feeling's own phrase — no model call, no user text).
-   Live TTS runs through `/api/tts` (`netlify/functions/tts.mjs` prod /
-   vite middleware dev); key stays server-side, browser voice is the
-   fallback, cues hold while a line speaks.
+   Live TTS runs through `/api/tts` (primary: the Hetzner FastAPI
+   service via `VITE_HETZNER_SERVICE_URL`; `netlify/functions/tts.mjs`
+   is the relative-path fallback, vite middleware in dev); key stays
+   server-side, browser voice is the fallback, cues hold while a line
+   speaks.
 5. *"Stay with me"* — sparse optional murmurs in Decompress ("stay as
    long as you like"). Companion made audible — must stay rare and
    off-able; talking during a pause is a fine line.

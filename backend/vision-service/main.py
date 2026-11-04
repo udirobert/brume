@@ -5,7 +5,7 @@ Handles vision processing, face detection, landmark analysis, breathing pattern 
 and AI-powered session analysis.
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, StreamingResponse
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -1292,6 +1292,50 @@ async def get_session_verify_status(session_id: str):
         breath_rate=breath_rate,
     )
 
+
+# TTS — "Brume speaks": one short line through AssemblyAI, key server-side.
+# Mirrors netlify/functions/tts.mjs — same contract either side of the proxy.
+ASSEMBLYAI_TTS_URL = "https://tts.us.assemblyai.com/v1/speech"
+TTS_MAX_CHARS = 280
+
+class TTSRequest(BaseModel):
+    text: str
+
+@app.post("/api/tts")
+async def text_to_speech(request: TTSRequest):
+    """Speak one short line via AssemblyAI TTS. Text is never logged."""
+    api_key = os.getenv("ASSEMBLYAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="voice_unavailable")
+    text = (request.text or "").strip()
+    if not text or len(text) > TTS_MAX_CHARS:
+        raise HTTPException(status_code=400, detail="bad_text")
+
+    body = {"text": text, "container": "wav", "stream": False}
+    voice_id = os.getenv("ASSEMBLYAI_VOICE_ID")
+    if voice_id:
+        body["voice_id"] = voice_id
+
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            upstream = await client.post(
+                ASSEMBLYAI_TTS_URL,
+                headers={"Authorization": api_key, "Content-Type": "application/json"},
+                json=body,
+            )
+    except Exception:
+        logger.warning("tts upstream unreachable (chars=%d)", len(text))
+        raise HTTPException(status_code=502, detail="upstream_unreachable")
+
+    if upstream.status_code != 200:
+        logger.warning("tts upstream %s (chars=%d)", upstream.status_code, len(text))
+        raise HTTPException(status_code=502, detail="upstream_error")
+
+    return Response(
+        content=upstream.content,
+        media_type="audio/wav",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
 
 # AGGRESSIVE CONSOLIDATION: Single health check endpoint
 @app.get("/health")

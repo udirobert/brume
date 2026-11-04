@@ -103,7 +103,13 @@ function playFile(id: string, file: string, fallback?: () => void): void {
 // to /api/tts (our AssemblyAI-backed function); the browser voice is the
 // fallback. While a line is speaking, phase cues hold — one voice at a time.
 
-const TTS_ENDPOINT = "/api/tts";
+// Dev speaks to the vite middleware (/api/tts); production speaks to the
+// FastAPI service on Hetzner via VITE_HETZNER_SERVICE_URL — and if that
+// var is missing from a build, the same relative path lands on the
+// Netlify function. Same request/response contract on all three.
+const TTS_ENDPOINT = import.meta.env.DEV
+  ? "/api/tts"
+  : `${import.meta.env.VITE_HETZNER_SERVICE_URL ?? ""}/api/tts`;
 const LINE_CACHE_LIMIT = 8;
 const lineCache = new Map<string, string>(); // text -> object URL
 let lineAbort: AbortController | null = null;

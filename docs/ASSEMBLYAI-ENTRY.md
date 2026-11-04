@@ -31,9 +31,10 @@ so you can close your eyes.
 >   to yourself or to someone else — and *hear* it spoken back. Hearing
 >   your own words said warmly lands differently than reading them.
 >
-> Live synthesis runs through a tiny server-side proxy (the API key
-> never ships in the bundle, input is capped at one sentence, text is
-> never logged). The browser's built-in voice is the graceful fallback,
+> Live synthesis runs through our backend (`POST /api/tts` on the
+> FastAPI service — the API key never ships in the bundle, input is
+> capped at one sentence, text is never logged, nginx rate-limits the
+> route). The browser's built-in voice is the graceful fallback,
 > and spoken lines take priority over breath cues — one voice at a
 > time.
 >
@@ -62,8 +63,12 @@ agents: the product that needs the least of you.
 
 ## Pre-submit checklist
 
-- [ ] `ASSEMBLYAI_API_KEY` (+ optional `ASSEMBLYAI_VOICE_ID`) set in
-      Netlify env; deploy so `/api/tts` is live
+- [ ] `ASSEMBLYAI_API_KEY` (+ optional `ASSEMBLYAI_VOICE_ID`) in
+      `/opt/vision-service/.env` on the Hetzner box, then
+      `pnpm deploy:vision` — the compose file passes both through;
+      `curl -X POST $VITE_HETZNER_SERVICE_URL/api/tts` to confirm
+- [ ] Set `ASSEMBLYAI_API_KEY` in Netlify env too — the function is the
+      fallback path if `VITE_HETZNER_SERVICE_URL` is ever unset
 - [ ] Real-device pass: greeting on Begin, cues, hear-it, fallback with
       network off
 - [ ] Record the video above on the deployed URL (mic on, real audio)

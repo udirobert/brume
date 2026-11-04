@@ -11,6 +11,9 @@ services:
       - MAX_CONCURRENT_SESSIONS=10
       - MODEL_DOWNLOAD_ON_START=true
       - LOG_LEVEL=info
+      # "Brume speaks" TTS — set in /opt/vision-service/.env on the server
+      - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY:-}
+      - ASSEMBLYAI_VOICE_ID=${ASSEMBLYAI_VOICE_ID:-}
     volumes:
       # Persist models across container restarts
       - ./models:/app/models

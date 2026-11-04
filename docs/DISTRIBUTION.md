@@ -59,8 +59,10 @@ For competitive research on companion apps (Shmoody, Finch, Voidpet), see
      (`scripts/generate-voice.mjs` → `public/voice/`), spoken or
      breath-shaped, `speechSynthesis` fallback.
   2. **Spoken lines** — live TTS through `/api/tts`
-     (`netlify/functions/tts.mjs` in prod, vite middleware in dev, key
-     stays server-side, 280-char cap, text never logged): the session
+     (primary: `POST /api/tts` on the Hetzner FastAPI service via
+     `VITE_HETZNER_SERVICE_URL`; fallbacks: `netlify/functions/tts.mjs`
+     on the relative path, vite middleware in dev; key stays
+     server-side, 280-char cap, text never logged): the session
      greeting that names your moment on Begin, and "Hear it" on the
      Words Card reading your sentence back. Browser voice is the
      fallback; phase cues hold while a line speaks.

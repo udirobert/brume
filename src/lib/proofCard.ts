@@ -16,7 +16,6 @@ export interface ProofCardData {
   patternName: string;
   duration: number;       // seconds
   cycles?: number;
-  streak?: number;
   date?: Date;
 }
 
@@ -102,9 +101,6 @@ export async function renderProofCard(data: ProofCardData): Promise<Blob | null>
   const stats = [{ label: "PATTERN", value: data.patternName }];
   if (data.cycles != null) {
     stats.push({ label: "CYCLES", value: String(data.cycles) });
-  }
-  if (data.streak && data.streak > 0) {
-    stats.push({ label: "STREAK", value: `${data.streak}d` });
   }
 
   const statY = 1000;
@@ -212,7 +208,6 @@ function shareText(data: ProofCardData): string {
   const parts = [
     `A session on Brume`,
     `${data.patternName} · ${formatPracticeDuration(data.duration)}`,
-    data.streak ? `${data.streak}-day streak` : "",
   ].filter(Boolean);
   return parts.join(" · ") + " 🌫️";
 }

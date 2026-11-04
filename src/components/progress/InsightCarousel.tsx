@@ -61,7 +61,6 @@ export function InsightCarousel({
   history,
 }: {
   history: SessionLike[];
-  streak: number;
   preferredPattern: string;
 }) {
   const insights = useMemo(() => buildInsights(history), [history]);

@@ -15,7 +15,7 @@ function when(iso: string): string {
 }
 
 export default function Progress() {
-  const { history, streak, totalMinutes, preferredPattern, isGuestMode } =
+  const { history, totalMinutes, preferredPattern, isGuestMode } =
     useSessionHistory();
 
   const recent = useMemo(() => history.slice(0, 8), [history]);
@@ -73,7 +73,6 @@ export default function Progress() {
       <div className="mt-10 w-full">
         <InsightCarousel
           history={history}
-          streak={streak}
           preferredPattern={preferredPattern}
         />
       </div>

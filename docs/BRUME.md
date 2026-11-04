@@ -125,7 +125,6 @@ completed session, never on first open. SDK: `onesignal-cordova-plugin` (Capacit
 |---|---|---|
 | `first_breath_done` | `"true"` | **1. First Breath** — trigger: user 24h old AND tag absent → "Your first breath is waiting" |
 | `last_session_at` | ISO date | **2. Come back when you're ready** — trigger: `last_session_at` ≥ 1 day stale → "Your mist is waiting" |
-| `streak` | number | tag still sent for segmentation; streaks are not shown in the UI |
 | `sessions_total` | number | **4. Weekly digest** — Sunday summary: sessions and minutes |
 
 **3. Buddy Accountability** needs a server leg (client can't securely notify another

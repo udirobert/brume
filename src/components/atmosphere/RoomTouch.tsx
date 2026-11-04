@@ -196,6 +196,21 @@ export function RoomTouch() {
       schedule();
     };
 
+    // On touch screens the browser claims a drag for scrolling and
+    // cancels the stroke. Claim touch only while Home fits the screen
+    // (nothing to scroll); if the page grows taller (options open, small
+    // phone), scrolling wins and the room goes back to mouse/pen only.
+    const root = document.documentElement;
+    const syncTouch = () => {
+      const fits = root.scrollHeight <= window.innerHeight + 1;
+      if (fits) root.dataset.roomTouch = "1";
+      else delete root.dataset.roomTouch;
+    };
+    syncTouch();
+    const fit = new ResizeObserver(syncTouch);
+    fit.observe(root);
+    fit.observe(document.body);
+
     resize();
     window.addEventListener("resize", resize);
     window.addEventListener("pointerdown", onDown, { passive: true });
@@ -206,6 +221,8 @@ export function RoomTouch() {
 
     return () => {
       end();
+      fit.disconnect();
+      delete root.dataset.roomTouch;
       if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointerdown", onDown);

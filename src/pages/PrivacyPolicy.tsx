@@ -105,10 +105,40 @@ const PrivacyPolicy = () => {
                 <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
                   <li>Device type, browser, and operating system</li>
                   <li>IP address and general location (city/country level)</li>
-                  <li>App usage analytics and performance data</li>
+                  <li>App usage analytics and performance data (counted only — see below for what we measure and what we don't)
+</li>
                   <li>Error logs and crash reports (anonymized)</li>
                 </ul>
               </div>
+            </div>
+          </section>
+
+          <section id="experiment-events" className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              How we measure
+            </h2>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Brume collects a small number of <strong>anonymous counts</strong> so we can learn what people do and keep improving it. No account is needed and no personal data leaves the device except what you choose to send.
+              </p>
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">What we count</h3>
+              <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
+                <li>Visits to the app (day numbers, no user id)</li>
+                <li>Sessions started, completed, or abandoned — pattern name and length only</li>
+                <li>Which room material you pick, and whether you resume from the landing</li>
+                <li>That you drew in the room (strokes and seconds, never the drawing itself)</li>
+                <li>That you copied or shared a Words Card, and whether the optional quiet-room link was on</li>
+              </ul>
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">What we never count</h3>
+              <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
+                <li>Your words, message text, or check-in feelings</li>
+                <li>Your breath timing beyond duration and cycle count</li>
+                <li>Anything from the mist drawing</li>
+                <li>Camera or microphone input</li>
+              </ul>
+              <p className="text-gray-700 dark:text-gray-300 mt-4 text-sm">
+                If you ever want us to stop counting, just leave the app. All data stays local unless you explicitly share a Words Card or proof image.
+              </p>
             </div>
           </section>
 

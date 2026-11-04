@@ -11,8 +11,7 @@
  *
  * Tag contract v1:
  *   first_breath_done  "true"            → Journey 1: First Breath (24h no session)
- *   last_session_at    ISO date string   → Journey 2: "Come back when you're ready" (gentle, no streak framing)
- *   streak             number as string  → segmentation only; never shown, never used for nudges
+ *   last_session_at    ISO date string   → Journey 2: "Come back when you're ready" (gentle, no gap-shaming)
  *   verified_total     number as string  → Journey 4: Weekly Proof digest
  *   sessions_total     number as string  → analytics segmentation
  */
@@ -71,9 +70,8 @@ export async function initNotifications(): Promise<void> {
  * Called from sessionStore.completeSession — must never throw.
  *
  * @param verified  session had camera verification active (proof of practice)
- * @param streak    current streak if known by caller (optional)
  */
-export function trackSessionCompleted(opts: { verified: boolean; streak?: number }): void {
+export function trackSessionCompleted(opts: { verified: boolean }): void {
   try {
     const stats = readStats();
     stats.sessions_total += 1;
@@ -89,7 +87,6 @@ export function trackSessionCompleted(opts: { verified: boolean; streak?: number
       sessions_total: String(stats.sessions_total),
       verified_total: String(stats.verified_total),
     };
-    if (typeof opts.streak === "number") tags.streak = String(opts.streak);
     sdk.User.addTags(tags);
 
     // Contextual permission ask: right after first session completion,

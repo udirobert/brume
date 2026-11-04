@@ -21,7 +21,6 @@ interface PostSessionCelebrationProps {
     cycles?: number;
     sessionType?: string;
     isFirstSession?: boolean;
-    streak?: number;
   };
   /** Registry id of the pattern just practised — enables the invite link. */
   patternId?: string;

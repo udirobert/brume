@@ -84,7 +84,11 @@ describe("PostSessionCelebration", () => {
   it("never renders a streak, even when one is supplied", () => {
     const streaked = renderToString(
       <PostSessionCelebration
-        metrics={{ patternName: "Box Breathing", duration: 60, streak: 3 }}
+        metrics={
+          { patternName: "Box Breathing", duration: 60, streak: 3 } as unknown as React.ComponentProps<
+            typeof PostSessionCelebration
+          >["metrics"]
+        }
       />,
     );
     expect(streaked).not.toContain("Day 3");

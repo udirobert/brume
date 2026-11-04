@@ -215,6 +215,11 @@ html:has(.brume-room) .dc-room__wisp {
   z-index: 5;
   pointer-events: none;
 }
+/* Touch: only while the page has nothing to scroll (see RoomTouch). */
+html[data-room-touch] {
+  touch-action: none;
+  overscroll-behavior: none;
+}
 html[data-drawing] {
   user-select: none;
   -webkit-user-select: none;

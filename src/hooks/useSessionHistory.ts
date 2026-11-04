@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { differenceInCalendarDays, parseISO, isToday } from 'date-fns';
 import { BREATHING_PATTERNS } from '../lib/breathingPatterns';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -24,36 +23,6 @@ export type SessionInput = {
   restlessnessScore: number;
   sessionDuration: number;
   patternName: string;
-};
-
-const calculateStreak = (history: SessionRecordFromDb[]): number => {
-  if (history.length === 0) return 0;
-
-  const uniqueDays = history
-    .map(session => parseISO(session.created_at))
-    .sort((a, b) => b.getTime() - a.getTime())
-    .filter((date, index, self) => 
-      index === self.findIndex(d => differenceInCalendarDays(date, d) === 0)
-    );
-
-  if (uniqueDays.length === 0) return 0;
-
-  let streak = 0;
-  if (isToday(uniqueDays[0]) || differenceInCalendarDays(new Date(), uniqueDays[0]) === 1) {
-      streak = 1;
-      for (let i = 0; i < uniqueDays.length - 1; i++) {
-          if (differenceInCalendarDays(uniqueDays[i], uniqueDays[i+1]) === 1) {
-              streak++;
-          } else {
-              break;
-          }
-      }
-      if (!isToday(uniqueDays[0]) && differenceInCalendarDays(new Date(), uniqueDays[0]) > 1) {
-        return 0;
-      }
-  }
-  
-  return streak;
 };
 
 const calculateTotalMinutes = (history: SessionRecordFromDb[]): number => {
@@ -213,7 +182,6 @@ export const useSessionHistory = () => {
     history: combinedHistory,
     isGuestMode,
     isLoading,
-    streak: calculateStreak(combinedHistory as SessionRecordFromDb[]), 
     totalMinutes: calculateTotalMinutes(combinedHistory as SessionRecordFromDb[]), 
     saveSession, 
     longestBreathHold: calculateLongestBreathHold(combinedHistory as SessionRecordFromDb[]), 

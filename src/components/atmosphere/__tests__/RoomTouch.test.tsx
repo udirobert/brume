@@ -29,6 +29,7 @@ beforeEach(() => {
     return window.setTimeout(() => cb(performance.now()), 0);
   });
   vi.stubGlobal("cancelAnimationFrame", (id: number) => window.clearTimeout(id));
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);

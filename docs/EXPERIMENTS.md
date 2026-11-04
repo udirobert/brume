@@ -383,6 +383,14 @@ people come back a week later, and cannot say whether *the same* people do.
 Any arm comparison therefore needs the arm flag wired before the read, not
 after.
 
+**Checked live on 2026-11-04, and it was not working.** The deployed function
+answered both verbs with a 502: it returned a v1 `{statusCode, body}` object
+from a v2 function, and the read asked Blobs for `list().keys` where the
+installed version answers `list().blobs`. Nothing had ever been recorded. Both
+shapes are now pinned by a test that calls the handler, because a build passes
+and a deploy still fails. The consequence for the bar: the cohort window opens
+the day this deploys, and a D7 read is a week later at the earliest.
+
 Both halves are load-bearing: a bare percentage at n=50 is noise with a
 decimal point attached, and "they said they'd miss it" on its own is a
 favour we ask friends. Wellness base rates are brutal — roughly 95% of

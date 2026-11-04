@@ -28,11 +28,16 @@ export const ALLOWED = {
 
 const ID_SHAPE = /^[a-z][a-z0-9_-]{0,23}$/;
 
-const json = (status, body) => ({
-  status,
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify(body),
-});
+/**
+ * A v2 function: the return has to be a Response. `tts.mjs` next door is a v1
+ * handler and may return {statusCode, body}; mixing the two fails at runtime,
+ * not at build, so the shape is pinned by a test.
+ */
+const json = (status, body) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 
 /** Keeps the histograms small and stops a day document growing forever. */
 const bucket = (n) => (n <= 7 ? String(n) : n <= 30 ? "8-30" : "31+");
@@ -131,7 +136,7 @@ export default async (request) => {
     if (since !== null && !DAY.test(since)) {
       return json(400, { error: "bad_days" });
     }
-    const keys = (await store.list()).keys
+    const keys = (await store.list()).blobs
       .map((entry) => entry.key)
       .filter((key) => DAY.test(key))
       .filter((key) => (since ? key >= since : true))

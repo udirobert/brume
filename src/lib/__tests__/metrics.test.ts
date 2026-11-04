@@ -10,12 +10,44 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WIRE, isWired, sendMetrics, wireFields } from "../metrics";
 import { track } from "../events";
 // The counter's own map, so the two sides are checked against each other.
-import {
+import handler, {
   ALLOWED,
   add,
   clean,
   empty,
 } from "../../../netlify/functions/metrics.mjs";
+
+const store = vi.hoisted(() => {
+  const docs = new Map<string, unknown>();
+  return {
+    docs,
+    getStore: () => ({
+      get: async (key: string, options?: { type?: string }) =>
+        options?.type === "json" ? (docs.get(key) ?? null) : null,
+      setJSON: async (key: string, value: unknown) => {
+        docs.set(key, value);
+      },
+      // Blobs v11 answers { blobs: [{ key, etag }] }, not { keys }.
+      list: async () => ({
+        blobs: [...docs.keys()].map((key) => ({ key, etag: "test" })),
+        directories: [],
+      }),
+    }),
+  };
+});
+vi.mock("@netlify/blobs", () => ({ getStore: store.getStore }));
+
+/** A stand-in for the platform's Request: the handler reads four things. */
+const request = (
+  method: string,
+  { url, body, headers }: { url?: string; body?: unknown; headers?: Record<string, string> } = {},
+) =>
+  ({
+    method,
+    url: url ?? "https://brume.test/api/metrics",
+    headers: { get: (key: string) => headers?.[key.toLowerCase()] ?? null },
+    json: async () => body,
+  }) as unknown as Request;
 
 type Sent = { name: string; props: Record<string, unknown> };
 let posted: Sent[];
@@ -192,5 +224,77 @@ describe("the counter's arithmetic", () => {
     add(day, "words_written", props!);
     expect(JSON.stringify(day)).not.toMatch("slept");
     expect(day.words.own).toBe(1);
+  });
+});
+
+describe("the counter answering a request", () => {
+  // Neither of these was ever exercised before deploy, and both were broken:
+  // a v2 function must hand back a Response, and Blobs changed the shape of
+  // `list` under the read path. A deployed counter that only 502s is worse
+  // than none, because the doc would then be reading numbers that never came.
+  beforeEach(() => store.docs.clear());
+
+  it("accepts a wired event and stores the day", async () => {
+    const res = await handler(
+      request("POST", { body: { name: "visit", props: { days_since_first: 9, days_since_last: 3 } } }),
+    );
+    expect(res, "a v2 function must return a Response").toBeInstanceOf(Response);
+    expect(res.status).toBe(202);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(store.docs.get(today)).toMatchObject({
+      since_first: { "8-30": 1 },
+      gaps: { "3": 1 },
+    });
+  });
+
+  it("adds to the day rather than replacing it", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    store.docs.set(
+      today,
+      Object.assign(empty(), { since_first: { "8-30": 2 }, words: { shown: 3, own: 1, kept: 0 } }),
+    );
+    await handler(request("POST", { body: { name: "words_card_shown", props: { surface: "post_session", arm: "sentence" } } }));
+    expect(store.docs.get(today)).toMatchObject({
+      since_first: { "8-30": 2 },
+      words: { shown: 4, own: 1, kept: 0 },
+    });
+  });
+
+  it("refuses an event that is not wired, and writes nothing", async () => {
+    const res = await handler(
+      request("POST", { body: { name: "checkin_word", props: { feeling: 3 } } }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "not_wired" });
+    expect(store.docs.size).toBe(0);
+  });
+
+  it("reads the days back", async () => {
+    store.docs.set("2026-11-03", Object.assign(empty(), { session_starts: 4 }));
+    store.docs.set("2026-11-04", Object.assign(empty(), { session_starts: 6 }));
+    store.docs.set("not-a-day", Object.assign(empty()));
+    const res = await handler(request("GET", { url: "https://brume.test/api/metrics?days=2026-11-03" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Object.keys(body.days)).toEqual(["2026-11-03", "2026-11-04"]);
+  });
+
+  it("keeps the read closed when a token is set", async () => {
+    process.env.METRICS_READ_TOKEN = "sesame";
+    try {
+      const open = await handler(request("GET"));
+      expect(open.status).toBe(403);
+      const bearer = await handler(
+        request("GET", { headers: { authorization: "Bearer sesame" } }),
+      );
+      expect(bearer.status).toBe(200);
+    } finally {
+      delete process.env.METRICS_READ_TOKEN;
+    }
+  });
+
+  it("will not be made to write by a query", async () => {
+    const res = await handler(request("DELETE"));
+    expect(res.status).toBe(405);
   });
 });

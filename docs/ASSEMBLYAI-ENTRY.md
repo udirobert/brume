@@ -71,9 +71,11 @@ agents: the product that needs the least of you.
       api.brume.trustfall.xyz (mirrors api.famile.xyz); TLS via certbot;
       compose nginx service now profile-gated (`standalone`) since the
       host owns 80/443
-- [ ] `VITE_HETZNER_SERVICE_URL` confirmed in Netlify env (prod builds
-      must resolve `api.brume.trustfall.xyz/api/tts`; else they fall
-      back to the Netlify function — set `ASSEMBLYAI_API_KEY` there too)
+- [x] `VITE_HETZNER_SERVICE_URL` confirmed in Netlify env (all scopes,
+      all contexts) — prod resolves `api.brume.trustfall.xyz/api/tts`
+- [ ] Optional: `ASSEMBLYAI_API_KEY` in Netlify env — keeps the Netlify
+      function live as a fallback; without it that path 503s gracefully
+      to the browser voice
 - [ ] Real-device pass: greeting on Begin, cues, hear-it, fallback with
       network off
 - [ ] Record the video above on the deployed URL (mic on, real audio)

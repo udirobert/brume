@@ -92,7 +92,7 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
   proc.connect(ctx.destination);
   const heard = new Promise<string>((resolve, reject) => {
     const stop = (v: string) => {
-      try { ws.close(); } catch {}
+      try { ws.close(); } catch { void 0; }
       resolve(v);
     };
     ws.onerror = () => reject(new Error("ws_error"));
@@ -207,7 +207,7 @@ export async function listenOnce(
   onInterim?: (s: string) => void,
   signal?: AbortSignal,
 ): Promise<HeardResult> {
-  let transcript = "";
+  let transcript: string;
   try {
     transcript = await viaStreaming(onInterim, signal);
   } catch {

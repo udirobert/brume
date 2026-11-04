@@ -1,12 +1,9 @@
 import { useAuth } from "../hooks/useAuth";
-import { useLens } from "../hooks/useLens";
-import { useFlow } from "../hooks/useFlow";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
   BarChart3,
-  CreditCard,
   Palette,
   Shield,
   LogOut,
@@ -23,9 +20,8 @@ import { cn } from "@/lib/utils";
  * Profile — Brume's own space, not an account dashboard.
  *
  * The mascot is the portrait: Brume keeps your place, so Brume is who you
- * see. Everything else is quiet — two ways in (practice, premium) and a
- * short list of settings. No wallet section: a wallet is something you
- * attach on purpose, and touching it here woke the wallet up unasked.
+ * see. Everything else is quiet — one way in (practice) and a short list of
+ * settings. Nothing here is for sale: the room is finished, not tiered.
  */
 
 const THEME_LABEL: Record<string, string> = {
@@ -36,9 +32,6 @@ const THEME_LABEL: Record<string, string> = {
 
 const UserProfilePage = () => {
   const { user, profile, loading: authLoading, signOut } = useAuth();
-  // Lens stays quiet infrastructure: disconnected on sign-out, never displayed.
-  const { isAuthenticating, logout: lensLogout } = useLens();
-  const { disconnect: flowDisconnect } = useFlow();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -50,7 +43,7 @@ const UserProfilePage = () => {
 
   const handleSignOut = async () => {
     try {
-      await Promise.all([signOut(), lensLogout(), flowDisconnect()]);
+      await signOut();
       toast.success("Signed out successfully");
       navigate("/");
     } catch (error) {
@@ -59,7 +52,7 @@ const UserProfilePage = () => {
     }
   };
 
-  const isLoading = authLoading || isAuthenticating;
+  const isLoading = authLoading;
 
   if (isLoading) {
     return (
@@ -91,8 +84,6 @@ const UserProfilePage = () => {
   }
 
   const displayName = user.profile.name || user.profile.username || "Your practice";
-  const tierLabel =
-    user.tier === "premium" || user.tier === "pro" ? "Premium" : "Free";
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center px-2 py-6">
@@ -119,21 +110,14 @@ const UserProfilePage = () => {
       <p className="mt-1 text-sm text-muted-foreground text-center break-all">
         {user.email}
       </p>
-      <span className="mt-3 badge-premium">{tierLabel}</span>
 
-      {/* Two ways in. Nothing else competes with them. */}
-      <div className="mt-9 grid w-full grid-cols-2 gap-3">
+      {/* One way in. Nothing else competes with it. */}
+      <div className="mt-9 w-full">
         <ProfileAction
           to="/progress"
           icon={BarChart3}
           title="Progress"
           copy="Your sessions"
-        />
-        <ProfileAction
-          to="/subscription"
-          icon={CreditCard}
-          title="Premium"
-          copy={tierLabel === "Premium" ? "Manage" : "Unlock more"}
         />
       </div>
 

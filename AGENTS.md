@@ -87,6 +87,19 @@ transient, per-tap option that records nothing (see the sensing rule
 above); core loop is a breathing reset or `/decompress` → check-in word →
 optional one-sentence message.
 
+Sign-in is an email and nothing else, and the web app sells nothing. Cut on
+4 November 2026: wallet and SIWE sign-in, Flow attestations, Lens posting and
+profile, the `/subscription` route, and every tier label in the UI.
+`src/lib/__tests__/no-wallet.test.ts` walks `src` and fails on an import of a
+chain library, so that surface cannot come back quietly; the account shape
+that survived is `src/types/user.ts`. `src/lib/monetization/` stays only for
+the Capacitor build — on the web `revenueCatService.initialize()` returns
+before touching the SDK, so no sign-in reaches RevenueCat. The npm
+dependencies (`@onflow/fcl`, `wagmi`, `viem`, `@revenue-cat/*`) are still
+installed and now unreferenced; dropping them is its own decision.
+`docs/ARCHITECTURE.md` and `docs/API.md` still describe the chain design —
+read them as history, not as the app.
+
 Doctrine for the check-in (2026-11-04, after two real-world misreads —
 read before adding anything to it):
 - **Never interpret a feeling.** `src/lib/voiceCheckin.ts` matches a

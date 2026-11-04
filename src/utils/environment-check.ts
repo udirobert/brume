@@ -30,48 +30,11 @@ export function checkReactEnvironment() {
     console.warn('ReactDOM is not defined globally - this could cause issues');
   }
 
-  // Check for window.ethereum
-  if (import.meta.env.DEV) {
-    checkWalletEnvironment();
-  }
-
   return {
     isProduction,
     hasReact,
     hasReactDOM,
   };
-}
-
-// Check wallet environment
-export function checkWalletEnvironment() {
-  if (typeof window === 'undefined') return;
-
-  // Log wallet provider state
-  if (window.ethereum) {
-    const ethereum = window.ethereum as typeof window.ethereum & {
-      isMetaMask?: boolean;
-      chainId?: string;
-      selectedAddress?: string;
-    };
-    console.log('Wallet provider detected:', {
-      isMetaMask: ethereum.isMetaMask,
-      chainId: ethereum.chainId,
-      selectedAddress: ethereum.selectedAddress,
-      // Log any other properties that might be useful for debugging
-    });
-  } else {
-    console.log('No wallet provider detected on window.ethereum');
-  }
-
-  // Check for multiple providers
-  const providers = [];
-  if (window.ethereum) providers.push('window.ethereum');
-  if (((window as unknown as Record<string, unknown>).web3 as Record<string, unknown>)?.currentProvider) providers.push('window.web3.currentProvider');
-  if ((window as unknown as Record<string, unknown>).__originalEthereum) providers.push('__originalEthereum (backup)');
-  
-  if (providers.length > 1) {
-    console.log(`Multiple wallet providers detected: ${providers.join(', ')}`);
-  }
 }
 
 // Export a function that can be called at app initialization

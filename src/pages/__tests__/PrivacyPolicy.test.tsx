@@ -95,3 +95,60 @@ describe("PrivacyPolicy counting copy", () => {
     expect(html).toContain("drops the sentence");
   });
 });
+
+describe("PrivacyPolicy account copy", () => {
+  it("describes an account as an email and nothing else", () => {
+    expect(html).toContain("4. Your account, if you make one");
+    expect(html).toContain("Your email address and a password");
+  });
+
+  it("says out loud what Brume does not do", () => {
+    expect(html).toContain("No wallets, no blockchain.");
+    expect(html).toContain("No social graph.");
+    expect(html).toContain("No paywall.");
+  });
+
+  it("drops every claim the app never shipped", () => {
+    // Headings and bullets as this page worded them while the features were
+    // only promised. A stale claim is worse than a missing one.
+    for (const stale of [
+      "Blockchain and Web3 Data",
+      "Credentials and Blockchain Data",
+      "Flow Blockchain",
+      "Wallet Integration",
+      "Lens Protocol V3",
+      "Verified practice credential",
+      "Public attestation records",
+      "Wallet addresses",
+      "consistency scores",
+      "optional newsletters",
+      "Decentralized storage",
+      "IPFS",
+      "lens.xyz",
+    ]) {
+      expect(html, stale).not.toContain(stale);
+    }
+  });
+
+  it("keeps the one sentence that names the change", () => {
+    // The date line is the only place a removed feature may be named, so the
+    // rest of the page cannot quietly re-describe it.
+    expect(html.match(/Until 4 November 2026/g)).toHaveLength(1);
+    expect(html).toContain("removed from the app rather than shipped");
+  });
+
+  it("sells nothing anywhere on the page", () => {
+    for (const commercial of ["upgrade", "premium", "checkout", "pro plan"]) {
+      expect(html.toLowerCase(), commercial).not.toContain(commercial);
+    }
+  });
+
+  it("mentions a newsletter only to deny one", () => {
+    expect(html).toContain("Brume sends no newsletters");
+  });
+
+  it("has no anchor left named after a chain", () => {
+    expect(html).not.toMatch(/#blockchain-data/);
+    expect(html).toContain('id="account"');
+  });
+});

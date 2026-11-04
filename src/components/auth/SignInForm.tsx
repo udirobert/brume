@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Loader2, Sparkles, Wallet } from "lucide-react";
+import { AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PixelLoader } from "@/components/primitives/PixelLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-
-const Web3AuthIsland = React.lazy(() => import("./Web3AuthIsland"));
 
 export type SignInIntent = "signin" | "save-session" | "progress" | "onboarding";
 
@@ -41,8 +38,7 @@ interface SignInFormProps {
   defaultSignUp?: boolean;
   /** Hide the Brume wordmark — use inside a sheet. */
   compact?: boolean;
-  showWallet?: boolean;
-  onComplete?: (authType?: string) => void;
+  onComplete?: () => void;
   className?: string;
 }
 
@@ -50,7 +46,6 @@ export function SignInForm({
   intent = "signin",
   defaultSignUp = false,
   compact = false,
-  showWallet = true,
   onComplete,
   className,
 }: SignInFormProps) {
@@ -62,7 +57,6 @@ export function SignInForm({
   const [isSignUp, setIsSignUp] = useState(defaultSignUp);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [walletOpen, setWalletOpen] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -84,7 +78,7 @@ export function SignInForm({
         : await auth.login(email, password);
 
       if (result.success) {
-        onComplete?.("email");
+        onComplete?.();
       } else {
         setError(result.error || "That didn't work. Try again.");
       }
@@ -94,27 +88,6 @@ export function SignInForm({
       setIsLoading(false);
     }
   };
-
-  if (walletOpen) {
-    return (
-      <div className={cn("w-full max-w-md mx-auto", className)}>
-        <React.Suspense
-          fallback={
-            <div className="flex items-center justify-center min-h-[40vh]">
-              <PixelLoader variant="drive" label="Brume" />
-            </div>
-          }
-        >
-          <Web3AuthIsland
-            method="wallet"
-            quiet
-            onBack={() => setWalletOpen(false)}
-            onWalletContinue={() => onComplete?.("wallet")}
-          />
-        </React.Suspense>
-      </div>
-    );
-  }
 
   return (
     <div className={cn("w-full max-w-sm mx-auto", className)}>
@@ -200,19 +173,6 @@ export function SignInForm({
           {isSignUp ? "Sign in" : "Create an account"}
         </button>
       </p>
-
-      {showWallet && (
-        <div className="mt-8 pt-6 border-t border-border/60 text-center">
-          <button
-            type="button"
-            onClick={() => setWalletOpen(true)}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Wallet className="h-3.5 w-3.5" />
-            or connect a wallet
-          </button>
-        </div>
-      )}
 
       {!compact && (
         <p className="text-xs text-muted-foreground/70 text-center mt-8">

@@ -40,7 +40,7 @@ const PrivacyPolicy = () => {
                 <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                   <li>• Store breathing session metrics</li>
                   <li>• Sync preferences across devices</li>
-                  <li>• Enable social features (with consent)</li>
+                  <li>• Keep the check-in ledger on your device unless you sign in</li>
                 </ul>
               </div>
               <div>
@@ -62,7 +62,7 @@ const PrivacyPolicy = () => {
               <a href="#information-we-collect" className="block hover:underline">1. Information We Collect</a>
               <a href="#how-we-use-information" className="block hover:underline">2. How We Use Your Information</a>
               <a href="#video-camera-data" className="block hover:underline">3. Camera and microphone</a>
-              <a href="#blockchain-data" className="block hover:underline">4. Blockchain and Web3 Data</a>
+              <a href="#account" className="block hover:underline">4. Your account, if you make one</a>
               <a href="#data-storage" className="block hover:underline">5. Data Storage and Security</a>
               <a href="#sharing" className="block hover:underline">6. Information Sharing</a>
               <a href="#your-rights" className="block hover:underline">7. Your Rights and Choices</a>
@@ -86,7 +86,6 @@ const PrivacyPolicy = () => {
                   <li>Email address (for account creation and communication)</li>
                   <li>Username and display name</li>
                   <li>Profile preferences and settings</li>
-                  <li>Wallet addresses (when you connect a Web3 wallet)</li>
                 </ul>
               </div>
 
@@ -95,19 +94,15 @@ const PrivacyPolicy = () => {
                 <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
                   <li>Breathing session duration and timestamps</li>
                   <li>Breathing patterns used and completion rates</li>
-                  <li>Performance metrics (breathing rate, consistency scores)</li>
-                  <li>Progress achievements and milestones</li>
+                  <li>The check-in word you confirmed, stored as a word from our own list — never a note you typed</li>
                 </ul>
               </div>
 
               <div>
                 <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Technical Information</h3>
                 <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
-                  <li>Device type, browser, and operating system</li>
-                  <li>IP address and general location (city/country level)</li>
-                  <li>App usage analytics and performance data (counted only — see below for what we measure and what we don't)
-</li>
-                  <li>Error logs and crash reports (anonymized)</li>
+                  <li>App usage counts (see "How we measure" below — numbers and closed lists, never words)</li>
+                  <li>Standard web-hosting request data, kept by the host, not gathered by Brume</li>
                 </ul>
               </div>
             </div>
@@ -166,10 +161,10 @@ const PrivacyPolicy = () => {
               2. How We Use Your Information
             </h2>
             <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-2">
-              <li><strong>Provide Services:</strong> Enable breathing sessions, AI coaching, and progress tracking</li>
+              <li><strong>Provide Services:</strong> Run breathing sessions, the check-in, and the progress you can look back on</li>
               <li><strong>Personalization:</strong> Customize your experience and provide relevant breathing patterns</li>
               <li><strong>Analytics:</strong> Understand app usage to improve features and performance</li>
-              <li><strong>Communication:</strong> Send important updates, tips, and optional newsletters</li>
+              <li><strong>Account notices:</strong> Only the emails a login system has to send — verifying an address and resetting a password. Brume sends no newsletters and no tips</li>
               <li><strong>Security:</strong> Detect and prevent fraud, abuse, and security incidents</li>
               <li><strong>Legal Compliance:</strong> Meet our legal obligations and protect user rights</li>
             </ul>
@@ -216,40 +211,37 @@ const PrivacyPolicy = () => {
           </section>
 
           {/* Section 4 */}
-          <section id="blockchain-data" className="mb-8">
+          <section id="account" className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              4. Credentials and Blockchain Data
+              4. Your account, if you make one
             </h2>
             <div className="space-y-4 text-gray-600 dark:text-gray-300">
-              <p>When you use credential features, we integrate with decentralized networks:</p>
+              <p>
+                An account is optional. Without one, everything stays on your device and Brume never asks who you are.
+              </p>
 
               <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Flow Blockchain</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">What signing in stores</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Verified practice credential attestations (opt-in)</li>
-                  <li>Public attestation records (session proof and scores)</li>
-                  <li>Public blockchain data (transactions, smart contracts)</li>
+                  <li>Your email address and a password, handled by Supabase — Brume never sees the password itself, only the login session Supabase issues</li>
+                  <li>A profile row with the name, username and avatar you choose to fill in, so the same account looks the same on another device</li>
+                  <li>Your session history and check-in words, so the room can remember your practice — these are rows only your account can read</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Lens Protocol V3</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">What Brume does not do</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Decentralized social features and community interactions</li>
-                  <li>Profile information you choose to make public</li>
-                  <li>Content sharing and social graph data</li>
+                  <li><strong>No wallets, no blockchain.</strong> Brume has no wallet sign-in, keeps no record on any chain, and issues no credential or attestation about your practice</li>
+                  <li><strong>No social graph.</strong> There is no profile other people can read, nothing to follow, and no way to publish a session</li>
+                  <li><strong>Nothing public.</strong> No part of your practice is written out to any public store</li>
+                  <li><strong>No paywall.</strong> The room, the patterns and the check-in are the whole product; there is no tier to buy</li>
                 </ul>
               </div>
 
-              <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Wallet Integration</h3>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>We never store or access your private keys</li>
-                  <li>Wallet connections are managed by secure third-party providers</li>
-                  <li>We only see public wallet addresses you choose to connect</li>
-                  <li>All blockchain transactions are user-initiated and cryptographically signed</li>
-                </ul>
-              </div>
+              <p className="text-sm">
+                Until 4 November 2026 this section described wallet sign-in, on-chain credential attestations and a Lens Protocol social profile. Those features were removed from the app rather than shipped, and this page was rewritten to match.
+              </p>
             </div>
           </section>
 
@@ -263,10 +255,10 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Data Storage</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li><strong>Local Storage:</strong> Session data cached on your device for offline access</li>
-                  <li><strong>Supabase (Cloud):</strong> Encrypted user data and preferences for cross-device sync</li>
-                  <li><strong>IPFS:</strong> Decentralized storage for public content and credential metadata</li>
-                  <li><strong>Hetzner Servers:</strong> EU-based servers for AI processing</li>
+                  <li><strong>Your device:</strong> session history, the check-in ledger and your preferences, in local storage — this is where everything lives if you never sign in</li>
+                  <li><strong>Supabase (Cloud):</strong> account rows and, for signed-in people, synced history. Access is restricted per row to the account that owns it; the data is not additionally encrypted by Brume itself</li>
+                  <li><strong>Netlify (Cloud):</strong> the site itself, the voice proxy, and the anonymous daily counters described above</li>
+                  <li><strong>Hetzner Servers:</strong> EU-based servers for the voice service</li>
                 </ul>
               </div>
 
@@ -284,10 +276,10 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Data Retention</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Account data: Retained while your account is active</li>
-                  <li>Session data: Retained for up to 2 years for progress tracking</li>
-                  <li>Analytics data: Aggregated and anonymized after 90 days</li>
-                  <li>Deleted account data: Permanently removed within 30 days</li>
+                  <li>Account and session data: kept while the account exists, and removed when you ask us to delete it</li>
+                  <li>Everything on your device: kept until you clear it yourself, in your browser's site data — Brume has no copy to withhold</li>
+                  <li>The voice service: audio and transcript are dropped as the match is made; nothing is retained</li>
+                  <li>The anonymous counters: one aggregate document per day, with no date and no person inside it to delete</li>
                 </ul>
               </div>
             </div>
@@ -303,11 +295,11 @@ const PrivacyPolicy = () => {
               <p>We share your information only in these specific circumstances:</p>
 
               <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">With Your Consent</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Only where you hand something over yourself</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Social features: Profile information you choose to make public</li>
-                  <li>Community sharing: Breathing patterns and achievements you publish</li>
-                  <li>Third-party integrations: Services you explicitly authorize</li>
+                  <li>Copying or sharing a Words Card leaves your device through your own browser or app — Brume keeps no copy of it and publishes nothing on your behalf</li>
+                  <li>The voice service runs only on the three taps described in section 3, and returns words rather than keeping them</li>
+                  <li>There are no social features to consent to: no profile anyone else can read, nothing to publish</li>
                 </ul>
               </div>
 
@@ -342,21 +334,20 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Data Control</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li><strong>Access:</strong> View all data we have about you</li>
-                  <li><strong>Update:</strong> Modify your account information and preferences</li>
-                  <li><strong>Export:</strong> Download your data in a portable format</li>
-                  <li><strong>Delete:</strong> Permanently remove your account and associated data</li>
-                  <li><strong>Restrict:</strong> Limit how we process your information</li>
+                  <li><strong>Access:</strong> Your own history is always on screen — Progress shows it, and it lives on your device unless you sign in</li>
+                  <li><strong>Update:</strong> Name, username and avatar, on Profile</li>
+                  <li><strong>Delete:</strong> Ask by email and the rows tied to your account are removed; clearing your browser's site data removes everything the device kept, immediately and without asking anyone</li>
+                  <li><strong>Leave:</strong> Sign out. Nothing continues to be associated with you</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Privacy Settings</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Settings you actually have</h3>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>AI features: Opt out of advanced AI analysis</li>
-                  <li>Social features: Control profile visibility and sharing</li>
-                  <li>Communications: Unsubscribe from optional emails</li>
-                  <li>Analytics: Opt out of usage tracking</li>
+                  <li>The room: material and cue overrides, and a still room if you want one</li>
+                  <li>The voice: one glyph cycles spoken cues, breath-only cues, and quiet</li>
+                  <li>The microphone: used only when you tap "say it", and your browser asks first</li>
+                  <li>There is no analytics switch, no AI switch and no sharing switch, because there is nothing behind them to turn off</li>
                 </ul>
               </div>
 
@@ -425,8 +416,7 @@ const PrivacyPolicy = () => {
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <div className="space-y-2">
                   <p><strong>Contact:</strong> <a href="https://github.com/udirobert/brume/issues" className="text-blue-600 dark:text-blue-400 hover:underline">github.com/udirobert/brume/issues</a></p>
-                  <p><strong>Website:</strong> <a href="https://brumeapp.netlify.app" className="text-blue-600 dark:text-blue-400 hover:underline">brumeapp.netlify.app</a></p>
-                  <p><strong>Community:</strong> <a href="https://lens.xyz/u/imperfectbreath" className="text-blue-600 dark:text-blue-400 hover:underline">Lens Protocol Community</a></p>
+                  <p><strong>Website:</strong> <a href="https://brume.trustfall.xyz" className="text-blue-600 dark:text-blue-400 hover:underline">brume.trustfall.xyz</a></p>
                   <p><strong>Response Time:</strong> We typically respond within 72 hours</p>
                 </div>
               </div>

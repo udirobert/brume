@@ -1,5 +1,5 @@
 /**
- * Dedicated sign-in. Email first. Wallet is a quiet extra, not a peer door.
+ * Dedicated sign-in. An email is the only door.
  */
 
 import { useEffect } from "react";
@@ -41,13 +41,8 @@ const Auth = () => {
     }
   }, [loading, isAuthenticated, navigate, redirectTo]);
 
-  const handleAuthComplete = (authType?: string) => {
-    if (authType === "email") {
-      toast.success("Signed in. Your practice is saved.");
-    } else if (authType === "wallet") {
-      toast.success("Wallet connected.");
-    }
-
+  const handleAuthComplete = () => {
+    toast.success("Signed in. Your practice is saved.");
     navigate(redirectTo);
   };
 

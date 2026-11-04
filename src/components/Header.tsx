@@ -5,7 +5,7 @@
  * Desktop: logo + Progress + Profile/sign in.
  *
  * Session is not a nav destination — it starts from the check-in on Home.
- * No community link (dead). Wallet lives on /profile.
+ * No community link (dead). Sign-in is an email; it opens /profile.
  */
 import React from "react";
 import { Link, useLocation } from "react-router-dom";

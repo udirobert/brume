@@ -30,14 +30,7 @@ const Auth = React.lazy(() => import("@/pages/Auth"));
 const Progress = React.lazy(() => import("@/pages/Progress"));
 const PostSession = React.lazy(() => import("@/pages/PostSession"));
 const UserProfile = React.lazy(() => import("@/pages/UserProfile"));
-const Subscription = React.lazy(() => import("@/pages/Subscription"));
 const Decompress = React.lazy(() => import("@/pages/Decompress"));
-
-// Web3 Provider — lazy-loaded, only wraps /profile and /subscription.
-// /auth is email-first: wagmi mounts only if the user picks wallet login.
-const EagerWeb3Provider = React.lazy(() =>
-  import("@/providers/EagerWeb3Provider").then((m) => ({ default: m.EagerWeb3Provider }))
-);
 
 // Consolidation redirects — old URLs redirect so nothing breaks
 const PatternsRedirect = () => <Navigate to="/" replace />;
@@ -63,19 +56,6 @@ const PageLoader = () => (
   </div>
 );
 
-/**
- * Web3Route — wraps children with the lazy-loaded Web3 provider.
- * Used for /profile and /subscription. Session, home, auth (email),
- * onboarding, and post-session load with zero Wagmi.
- */
-const Web3Route: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Suspense fallback={<PageLoader />}>
-    <EagerWeb3Provider>
-      {children}
-    </EagerWeb3Provider>
-  </Suspense>
-);
-
 function App() {
   useDayPart();
   React.useEffect(() => {
@@ -98,24 +78,12 @@ function App() {
             <Route path="/session/:mode" element={<SessionModeWrapper />} />
             <Route path="/post-session" element={<RouteErrorBoundary><PostSession /></RouteErrorBoundary>} />
             <Route path="/progress" element={<RouteErrorBoundary><Progress /></RouteErrorBoundary>} />
-            {/* Web3 routes — wrapped with lazy-loaded provider */}
             <Route path="/profile" element={
-              <Web3Route>
-                <ProtectedRoute>
-                  <RouteErrorBoundary>
-                    <UserProfile />
-                  </RouteErrorBoundary>
-                </ProtectedRoute>
-              </Web3Route>
-            } />
-            <Route path="/subscription" element={
-              <Web3Route>
-                <ProtectedRoute>
-                  <RouteErrorBoundary>
-                    <Subscription />
-                  </RouteErrorBoundary>
-                </ProtectedRoute>
-              </Web3Route>
+              <ProtectedRoute>
+                <RouteErrorBoundary>
+                  <UserProfile />
+                </RouteErrorBoundary>
+              </ProtectedRoute>
             } />
             <Route path="/about" element={<RouteErrorBoundary><About /></RouteErrorBoundary>} />
             {/* Consolidation redirects */}
@@ -126,7 +94,6 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardRedirect />} />
           </Route>
 
-          {/* Email sign-in must not mount Wagmi. Wallet login lazy-loads it. */}
           <Route path="/decompress" element={
             <RouteErrorBoundary>
               <Decompress />

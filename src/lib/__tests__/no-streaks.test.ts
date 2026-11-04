@@ -25,8 +25,7 @@ describe("no streaks", () => {
   it("no source file computes, passes or sends a streak", () => {
     const hits = files
       .filter((f) => !allowed.has(f))
-      .filter((f) => /streak/i.test(readFileSync(f, "utf8")))
-      .filter((f) => !f.endsWith(join("lens", "types.ts")));
+      .filter((f) => /streak/i.test(readFileSync(f, "utf8")));
     expect(hits).toEqual([]);
   });
 

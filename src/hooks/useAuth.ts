@@ -3,14 +3,15 @@ import { supabase } from "../integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { User, UserRole } from "../types/user";
 import { revenueCatAuthIntegration } from "../lib/monetization/revenueCatAuthIntegration";
-import { revenueCatService, UserSubscription } from "../lib/monetization/revenueCat";
 import { useAuthStore } from '../stores/authStore';
 
 /**
  * useAuth is used on every screen (Header, Home, session history).
- * It is email-only: Supabase sessions, the profile row, and the mobile
- * RevenueCat sync. There is no wallet sign-in and no blockchain session —
- * the app never asks for one.
+ * It is email-only: Supabase sessions and the profile row. There is no wallet
+ * sign-in and no blockchain session — the app never asks for one — and no tier
+ * on the user, because nothing in the product reads one. The RevenueCat calls
+ * below are the Capacitor build's sign-in sync; on the web they return before
+ * touching the SDK.
  */
 
 // Auth action result interface (consistent with SocialActionResult)
@@ -26,7 +27,6 @@ export interface UseAuthReturn {
   user: (Omit<User, 'profile'> & { 
     id: string; 
     email: string; 
-    tier: 'free' | 'pro' | 'premium';
     profile: { username?: string; name?: string; avatar?: string };
   }) | null;
   profile: User | null;
@@ -45,7 +45,6 @@ export interface UseAuthReturn {
 export const useAuth = (): UseAuthReturn => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Transform DB user to the User interface
@@ -149,10 +148,6 @@ export const useAuth = (): UseAuthReturn => {
         data: { session },
       } = await supabase.auth.getSession();
       setSession(session);
-      
-      // Load subscription status
-      const subStatus = await revenueCatService.getSubscriptionStatus();
-      setSubscription(subStatus);
 
       if (session?.user) {
         if (session.user?.id) {
@@ -258,7 +253,6 @@ export const useAuth = (): UseAuthReturn => {
         ...profile, // This provides role, creator_verified, etc.
         id: session.user.id,
         email: session.user.email || '',
-        tier: (subscription?.tier?.id || 'free') as 'free' | 'pro' | 'premium',
         profile: {
           username: session.user?.user_metadata?.username,
           name: session.user?.user_metadata?.display_name,
@@ -270,7 +264,6 @@ export const useAuth = (): UseAuthReturn => {
   const hasUser = !!session?.user?.id;
 
   return {
-    // On the web `tier` is always free: RevenueCat only runs inside Capacitor.
     session,
     user,
     profile,

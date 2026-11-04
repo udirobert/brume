@@ -64,9 +64,13 @@ const GONE = [
   "src/types/fcl.d.ts",
   "src/types/blockchain.ts",
   "src/types/auth.ts",
+  "src/types/patterns.ts",
   "src/config/messaging.ts",
   "src/hooks/useAuthPreferences.ts",
   "src/hooks/useAuthPerformance.ts",
+  "src/components/ui/premium-badge.tsx",
+  "src/components/ui/premium-tooltip.tsx",
+  "src/components/ui/CelebrationSparkles.tsx",
 ];
 
 describe("no wallet, no chain, no paywall", () => {
@@ -110,9 +114,39 @@ describe("no wallet, no chain, no paywall", () => {
     }
   });
 
-  it("profile offers no tier and no premium", () => {
+  it("no screen sells anything or reads a tier", () => {
+    // `premium` survives in a handful of places, each one named rather than
+    // tolerated: the mobile billing lib the Capacitor build needs; the debug
+    // console that overrides a tier to test it; the Terms page, whose legal
+    // text is the owner's to revise; and `lib/ai`, dead code the next test
+    // keeps dead. Everything else is finished, not tiered.
+    const allowed =
+      /^(?:src\/lib\/monetization\/|src\/lib\/developer\/|src\/components\/developer\/|src\/lib\/ai\/|src\/pages\/TermsOfService\.tsx$)/;
+    const sells = files.filter(
+      (f) => !allowed.test(f) && /premium|badge-premium|tierLabel/i.test(readFileSync(f, "utf8")),
+    );
+    expect(sells).toEqual([]);
+    // The page may say it is not tiered in prose; it may not read a tier.
     const profile = readFileSync("src/pages/UserProfile.tsx", "utf8");
-    expect(profile).not.toMatch(/Premium|tierLabel|badge-premium/i);
+    expect(profile).not.toMatch(/user\.tier|tier ===|tierLabel/);
+  });
+
+  it("nothing outside the debug console reads a tier", () => {
+    const renderers = files.filter(
+      (f) => /^(?:src\/components|src\/pages)\//.test(f) && !/\/developer\//.test(f),
+    );
+    const readers = renderers.filter((f) => /\.tier\b/.test(readFileSync(f, "utf8")));
+    expect(readers).toEqual([]);
+  });
+
+  it("the dead analysis cluster stays dead", () => {
+    // src/lib/ai and src/lib/sharing describe a product Brume says it is not:
+    // an assistant that analyses what you told it and gates personas by tier.
+    // Nothing renders them. Wiring one up is a decision, so this fails first.
+    const external = files
+      .filter((f) => !/^src\/lib\/(?:ai|sharing)\//.test(f))
+      .filter((f) => /from ["'][^"']*(?:ai\/|\/sharing)["']|lib\/ai|lib\/sharing/.test(readFileSync(f, "utf8")));
+    expect(external).toEqual([]);
   });
 
   it("the auth hook has no wallet or chain surface left", () => {

@@ -152,7 +152,7 @@ export function SignInForm({
         <Button
           type="submit"
           disabled={isLoading || !email || !password}
-          className="w-full rounded-full h-12 btn-premium"
+          className="w-full rounded-full h-12 btn-pear"
         >
           {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {isSignUp ? "Create account" : "Sign in"}

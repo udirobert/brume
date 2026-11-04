@@ -135,7 +135,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
           onClick={() => onStart()}
           size="lg"
           data-vt-entry
-          className="w-full rounded-full btn-premium py-6"
+          className="w-full rounded-full btn-pear py-6"
         >
           Begin
         </Button>

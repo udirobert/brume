@@ -134,7 +134,7 @@ const devTts = (env: Record<string, string>): Plugin => ({
  * Key principles:
  * - Performance: Rolldown default code splitting and minification
  * - Security: Clean path aliases and disabled source maps in production
- * - Compatibility: Node.js polyfills for blockchain libraries
+ * - Compatibility: a few `process.env.NODE_ENV` reads need the Node globals
  */
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
@@ -172,14 +172,10 @@ export default defineConfig(({ mode }) => {
         types: resolve(import.meta.dirname, "./src/types"),
         pages: resolve(import.meta.dirname, "./src/pages"),
         utils: resolve(import.meta.dirname, "./src/utils"),
-        wagmi: resolve(import.meta.dirname, "./node_modules/wagmi"),
-        viem: resolve(import.meta.dirname, "./node_modules/viem"),
       },
       dedupe: [
         "react",
         "react-dom",
-        "wagmi",
-        "viem",
         "@tanstack/react-query",
       ],
     },

@@ -214,7 +214,7 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
               >
                 <Button
                   onClick={onContinue}
-                  className="w-full rounded-full btn-premium py-6 text-base"
+                  className="w-full rounded-full btn-pear py-6 text-base"
                 >
                   Done
                 </Button>

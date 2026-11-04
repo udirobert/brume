@@ -39,7 +39,7 @@ export default function Progress() {
             to keep this practice across devices.
           </p>
         )}
-        <Button asChild className="rounded-full btn-premium px-10 py-6">
+        <Button asChild className="rounded-full btn-pear px-10 py-6">
           <Link to="/">Breathe</Link>
         </Button>
       </div>
@@ -93,7 +93,7 @@ export default function Progress() {
         ))}
       </ol>
 
-      <Button asChild className="mt-12 rounded-full btn-premium w-full max-w-xs py-6">
+      <Button asChild className="mt-12 rounded-full btn-pear w-full max-w-xs py-6">
         <Link to="/">Breathe</Link>
       </Button>
     </div>

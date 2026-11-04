@@ -75,7 +75,7 @@ export default function Onboarding() {
         <div className="flex flex-col items-center gap-3 pt-2 w-full">
           <Button
             size="lg"
-            className="btn-premium rounded-full px-16 py-7 text-lg w-full max-w-xs"
+            className="btn-pear rounded-full px-16 py-7 text-lg w-full max-w-xs"
             onClick={() => navigate("/session?pattern=reset")}
           >
             <Sparkles className="w-4 h-4 mr-2" />

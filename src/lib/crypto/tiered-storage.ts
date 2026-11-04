@@ -15,7 +15,7 @@ interface StorageProvider {
 // Primary provider - Uses Web Crypto when available
 class SecureProvider implements StorageProvider {
   private prefix = 'secure_';
-  private static readonly KEY_DERIVATION_SALT = 'imperfect-breath-salt-2024';
+  private static readonly KEY_DERIVATION_SALT = 'brume-salt-2024';
   private static encryptionKey: CryptoKey | null = null;
 
   constructor() {

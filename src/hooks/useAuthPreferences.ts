@@ -44,7 +44,7 @@ const DEFAULT_PREFERENCES: AuthPreferences = {
   successfulMethods: [],
 };
 
-const STORAGE_KEY = 'imperfect-breath-auth-preferences';
+const STORAGE_KEY = 'brume-auth-preferences';
 const PRELOAD_DELAY = 2000; // 2 seconds before preloading wallet
 
 /**

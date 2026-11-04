@@ -184,7 +184,7 @@ async function attemptBackendConfiguration(): Promise<{
  */
 export function getDeveloperOverride(): DeveloperOverride {
   // Check for developer override in localStorage (for development)
-  const override = localStorage.getItem('imperfect-breath-dev-override');
+  const override = localStorage.getItem('brume-dev-override');
   if (override) {
     try {
       const parsed = JSON.parse(override);
@@ -223,7 +223,7 @@ export function setDeveloperOverride(tier: 'basic' | 'premium' | 'pro', features
     timestamp: Date.now()
   };
   
-  localStorage.setItem('imperfect-breath-dev-override', JSON.stringify(override));
+  localStorage.setItem('brume-dev-override', JSON.stringify(override));
   console.info(`🔧 Developer override set: ${tier} tier access`);
 }
 
@@ -231,7 +231,7 @@ export function setDeveloperOverride(tier: 'basic' | 'premium' | 'pro', features
  * ENHANCEMENT: Clear developer override
  */
 export function clearDeveloperOverride(): void {
-  localStorage.removeItem('imperfect-breath-dev-override');
+  localStorage.removeItem('brume-dev-override');
   console.info('🔧 Developer override cleared');
 }
 

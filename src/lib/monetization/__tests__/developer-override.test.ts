@@ -32,7 +32,7 @@ describe('Developer Override System', () => {
         timestamp: Date.now()
       };
       
-      localStorage.setItem('imperfect-breath-dev-override', JSON.stringify(testOverride));
+      localStorage.setItem('brume-dev-override', JSON.stringify(testOverride));
       
       const override = getDeveloperOverride();
       expect(override.enabled).toBe(true);
@@ -42,7 +42,7 @@ describe('Developer Override System', () => {
     });
 
     it('should handle invalid localStorage data gracefully', () => {
-      localStorage.setItem('imperfect-breath-dev-override', 'invalid-json');
+      localStorage.setItem('brume-dev-override', 'invalid-json');
       
       const override = getDeveloperOverride();
       expect(override.enabled).toBe(false);

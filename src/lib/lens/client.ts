@@ -77,7 +77,7 @@ function cryptoRandomId(): string {
 }
 
 // App identifier for content filtering (used by feedReason helpers)
-const IMPERFECT_BREATH_APP_ID = "imperfect-breath";
+const IMPERFECT_BREATH_APP_ID = "brume";
 
 /**
  * Simplified Lens v3 API Client

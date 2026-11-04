@@ -141,7 +141,14 @@ export default function Index() {
         />
       </motion.div>
 
-      <PairedFeelings selectedIndex={feelTap} onChoose={handleFeel} />
+      <PairedFeelings
+        selectedIndex={feelTap}
+        onChoose={handleFeel}
+        onVoiceState={(s) =>
+          s === "listening" &&
+          setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` })
+        }
+      />
 
       <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
         <button type="button" className="brume-btn brume-btn--push" onClick={begin}>

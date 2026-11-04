@@ -32,10 +32,12 @@ function writeHintSeen() {
 export function PairedFeelings({
   selectedIndex,
   onChoose,
+  onVoiceState,
   showHint = true,
 }: {
   selectedIndex: number | null;
   onChoose: (index: number, button: HTMLButtonElement) => void;
+  onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
   showHint?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -100,9 +102,11 @@ export function PairedFeelings({
     if (micOn) return;
     setMicOn(true);
     setHeard("listening…");
+    onVoiceState?.("listening");
     const { transcript, index } = await listenOnce(setHeard);
     track("checkin_voice_used", { matched: index != null });
     setMicOn(false);
+    onVoiceState?.(index != null ? "matched" : "missed", index ?? undefined);
     if (index == null) {
       setHeard(
         transcript

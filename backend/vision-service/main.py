@@ -850,6 +850,25 @@ STT_MAX_BYTES = 3 * 1024 * 1024
 STT_POLL_SECONDS = 0.4
 STT_POLL_TRIES = 30
 
+@app.post("/api/stt-token")
+async def stt_token():
+    """Short-lived token for browser→AssemblyAI streaming STT."""
+    api_key = os.getenv("ASSEMBLYAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="voice_unavailable")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(
+                "https://streaming.assemblyai.com/v3/token",
+                headers={"Authorization": api_key},
+                params={"expires_in_seconds": 300},
+            )
+    except Exception:
+        raise HTTPException(status_code=502, detail="upstream_unreachable")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="token_error")
+    return r.json()
+
 @app.post("/api/stt")
 async def speech_to_text(request: Request):
     """Transcribe a short voice clip. Returns {text}."""

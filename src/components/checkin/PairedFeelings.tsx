@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   FEELINGS,
@@ -9,6 +9,8 @@ import {
   pairForFeel,
   selectPairedFeel,
 } from "@/lib/feelings";
+import { listenOnce, voiceCheckinSupported } from "@/lib/voiceCheckin";
+import { track } from "@/lib/events";
 
 const HINT_KEY = "brume.feelingFlipHint.v1";
 
@@ -45,6 +47,10 @@ export function PairedFeelings({
   const [flips, setFlips] = useState<number[]>(() => FEELING_PAIRS.map(() => 0));
   const [announce, setAnnounce] = useState("");
   const hintSeenRef = useRef(readHintSeen());
+  const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [micOn, setMicOn] = useState(false);
+  const [heard, setHeard] = useState("");
+  const voiceOk = useMemo(() => voiceCheckinSupported(), []);
 
   useEffect(() => {
     const pair = pairForFeel(selectedIndex);
@@ -89,6 +95,30 @@ export function PairedFeelings({
     [faces, selectedIndex, onChoose, showHint],
   );
 
+  // "Just say it" — tap the mic, speak a feeling, the chip answers.
+  const onMicTap = useCallback(async () => {
+    if (micOn) return;
+    setMicOn(true);
+    setHeard("listening…");
+    const { transcript, index } = await listenOnce(setHeard);
+    track("checkin_voice_used", { matched: index != null });
+    setMicOn(false);
+    if (index == null) {
+      setHeard(
+        transcript
+          ? `heard “${transcript.trim().slice(0, 28)}” — tap a word`
+          : "didn't catch that — try again or tap",
+      );
+      return;
+    }
+    setHeard(`heard “${transcript.trim().slice(0, 28)}”`);
+    const pair = pairForFeel(index);
+    if (!pair) return;
+    const pi = FEELING_PAIRS.indexOf(pair);
+    const btn = chipRefs.current[pi];
+    if (btn) handlePick(pi, btn);
+  }, [micOn, handlePick]);
+
   return (
     <div className="brume-pairs" role="group" aria-label="Choose a feeling">
       {FEELING_PAIRS.map((pair, i) => {
@@ -104,6 +134,9 @@ export function PairedFeelings({
           <button
             key={pair.id}
             type="button"
+            ref={(el) => {
+              chipRefs.current[i] = el;
+            }}
             className={`brume-choice brume-choice--flip${selected ? " is-selected" : ""}${feel.valence === "positive" ? " is-positive" : ""}`}
             aria-pressed={selected}
             aria-label={feel.label}
@@ -153,6 +186,35 @@ export function PairedFeelings({
           </button>
         );
       })}
+      {voiceOk && (
+        <button
+          type="button"
+          className={`brume-mic${micOn ? " is-listening" : ""}`}
+          aria-label="Say how you feel"
+          aria-pressed={micOn}
+          onClick={onMicTap}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          >
+            <rect x="6" y="1.5" width="4" height="8" rx="2" />
+            <path d="M 3 7.5 a 5 5 0 0 0 10 0 M 8 12.5 L 8 14.5" />
+          </svg>
+          {micOn ? "" : "say it"}
+        </button>
+      )}
+      {heard && (
+        <span className="brume-voice-heard" aria-hidden="true">
+          {heard}
+        </span>
+      )}
       <span aria-live="polite" className="sr-only">
         {announce}
       </span>

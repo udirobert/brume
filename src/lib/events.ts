@@ -18,6 +18,7 @@ export interface BrumeEvents {
   session_complete: { pattern: string; seconds: number; cycles: number };
   session_abandon: { pattern: string; seconds: number; phase: "active" | "paused" };
   checkin_word: { feeling: number; surface: "home" | "decompress" };
+  checkin_voice_used: { matched: boolean };
   words_card_shown: { surface: Surface; arm: "sentence" };
   words_card_copied: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
   words_card_shared: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };

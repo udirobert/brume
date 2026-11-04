@@ -201,3 +201,42 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* "Just say it" — voice check-in mic affordance on the paired chips */
+.brume-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 0.72rem;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.brume-mic:hover,
+.brume-mic:focus-visible {
+  opacity: 0.9;
+}
+.brume-mic.is-listening {
+  opacity: 1;
+  animation: brumeMicPulse 1.1s ease-in-out infinite;
+}
+@keyframes brumeMicPulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.brume-voice-heard {
+  font-size: 0.72rem;
+  font-style: italic;
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-mic.is-listening {
+    animation: none;
+  }
+}

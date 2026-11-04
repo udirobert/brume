@@ -844,6 +844,59 @@ async def process_ai_analysis(request: AIAnalysisRequest) -> AIAnalysisResponse:
         )
 
 # API Endpoints
+# STT — voice check-in: a short clip becomes text via AssemblyAI. Same
+# rules as TTS: key server-side, capped size, audio never logged.
+STT_MAX_BYTES = 3 * 1024 * 1024
+STT_POLL_SECONDS = 0.4
+STT_POLL_TRIES = 30
+
+@app.post("/api/stt")
+async def speech_to_text(request: Request):
+    """Transcribe a short voice clip. Returns {text}."""
+    api_key = os.getenv("ASSEMBLYAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="voice_unavailable")
+    audio = await request.body()
+    if not audio or len(audio) > STT_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="bad_audio")
+
+    headers = {"Authorization": api_key}
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            up = await client.post(
+                "https://api.assemblyai.com/v2/upload",
+                headers=headers,
+                content=audio,
+            )
+            if up.status_code != 200:
+                raise HTTPException(status_code=502, detail="upload_failed")
+            sub = await client.post(
+                "https://api.assemblyai.com/v2/transcript",
+                headers={**headers, "Content-Type": "application/json"},
+                json={"audio_url": up.json()["upload_url"], "language_code": "en"},
+            )
+            if sub.status_code != 200:
+                raise HTTPException(status_code=502, detail="submit_failed")
+            tid = sub.json()["id"]
+            for _ in range(STT_POLL_TRIES):
+                await asyncio.sleep(STT_POLL_SECONDS)
+                poll = await client.get(
+                    f"https://api.assemblyai.com/v2/transcript/{tid}",
+                    headers=headers,
+                )
+                status = poll.json().get("status")
+                if status == "completed":
+                    logger.info("stt completed (bytes=%d)", len(audio))
+                    return {"text": poll.json().get("text") or ""}
+                if status == "error":
+                    raise HTTPException(status_code=502, detail="transcript_error")
+            raise HTTPException(status_code=504, detail="transcript_timeout")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.warning("stt upstream failure (bytes=%d)", len(audio))
+        raise HTTPException(status_code=502, detail="upstream_unreachable")
+
 # TTS — "Brume speaks": one short line through AssemblyAI, key server-side.
 # Mirrors netlify/functions/tts.mjs — same contract either side of the proxy.
 ASSEMBLYAI_TTS_URL = "https://tts.us.assemblyai.com/v1/speech"

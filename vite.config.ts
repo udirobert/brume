@@ -55,6 +55,54 @@ const devTts = (env: Record<string, string>): Plugin => ({
         res.end(JSON.stringify({ error: "upstream_unreachable" }));
       }
     });
+    // Dev twin of /api/stt — clip in, {text} out, same env vars.
+    server.middlewares.use("/api/stt", async (req, res) => {
+      if (req.method !== "POST") {
+        res.statusCode = 405;
+        return res.end(JSON.stringify({ error: "method_not_allowed" }));
+      }
+      const apiKey = env.ASSEMBLYAI_API_KEY;
+      if (!apiKey) {
+        res.statusCode = 503;
+        return res.end(JSON.stringify({ error: "voice_unavailable" }));
+      }
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const audio = Buffer.concat(chunks);
+      const headers = { Authorization: apiKey };
+      try {
+        const up = await fetch("https://api.assemblyai.com/v2/upload", {
+          method: "POST", headers, body: audio,
+        });
+        if (!up.ok) throw new Error("upload");
+        const { upload_url } = (await up.json()) as { upload_url: string };
+        const sub = await fetch("https://api.assemblyai.com/v2/transcript", {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ audio_url: upload_url, language_code: "en" }),
+        });
+        if (!sub.ok) throw new Error("submit");
+        const { id } = (await sub.json()) as { id: string };
+        for (let i = 0; i < 30; i++) {
+          await new Promise((r) => setTimeout(r, 400));
+          const poll = await fetch(
+            `https://api.assemblyai.com/v2/transcript/${id}`,
+            { headers },
+          );
+          const data = (await poll.json()) as { status: string; text?: string };
+          if (data.status === "completed") {
+            res.statusCode = 200;
+            return res.end(JSON.stringify({ text: data.text ?? "" }));
+          }
+          if (data.status === "error") throw new Error("transcript");
+        }
+        res.statusCode = 504;
+        res.end(JSON.stringify({ error: "transcript_timeout" }));
+      } catch {
+        res.statusCode = 502;
+        res.end(JSON.stringify({ error: "upstream_error" }));
+      }
+    });
   },
 });
 

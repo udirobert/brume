@@ -185,6 +185,9 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Unified Backend Service...")
 
 app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
     title="Unified Backend Service",
     description="Server-grade vision processing and AI analysis for breathing sessions",
     version="2.0.0",

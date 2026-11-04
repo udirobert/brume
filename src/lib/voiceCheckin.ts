@@ -55,9 +55,12 @@ export function matchFeeling(transcript: string): number | null {
 export function voiceCheckinSupported(): boolean {
   if (typeof window === "undefined") return false;
   const w = window as any;
+  // Streaming needs only getUserMedia + WebSocket (covers iOS Safari,
+  // which lacks MediaRecorder); file path adds MediaRecorder; Web
+  // Speech is the last resort.
   return !!(
     (typeof navigator.mediaDevices?.getUserMedia === "function" &&
-      w.MediaRecorder) ||
+      (w.MediaRecorder || w.WebSocket)) ||
     w.SpeechRecognition || w.webkitSpeechRecognition
   );
 }

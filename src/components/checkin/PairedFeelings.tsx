@@ -53,6 +53,12 @@ export function PairedFeelings({
   const [micOn, setMicOn] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const [heard, setHeard] = useState("");
+  const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const flashHeard = (s: string) => {
+    setHeard(s);
+    clearTimeout(heardTimer.current);
+    heardTimer.current = setTimeout(() => setHeard(""), 6000);
+  };
   const voiceOk = useMemo(() => voiceCheckinSupported(), []);
 
   useEffect(() => {
@@ -113,14 +119,14 @@ export function PairedFeelings({
     setMicOn(false);
     onVoiceState?.(index != null ? "matched" : "missed", index ?? undefined);
     if (index == null) {
-      setHeard(
+      flashHeard(
         transcript
           ? `heard “${transcript.trim().slice(0, 28)}” — tap a word`
           : "didn't catch that — try again or tap",
       );
       return;
     }
-    setHeard(`heard “${transcript.trim().slice(0, 28)}”`);
+    flashHeard(`heard “${transcript.trim().slice(0, 28)}”`);
     const pair = pairForFeel(index);
     if (!pair) return;
     const pi = FEELING_PAIRS.indexOf(pair);

@@ -50,6 +50,15 @@ function speakFallback(text: string, onend?: () => void) {
     return;
   }
   const utterance = new SpeechSynthesisUtterance(text);
+  // Prefer a decent system voice over the arbitrary default — the
+  // fallback shouldn't sound like a different product.
+  const PREFERRED = ["Samantha", "Google US English", "Daniel", "Karen", "Aria"];
+  const voices =
+    typeof synth.getVoices === "function" ? synth.getVoices() : [];
+  const pick = PREFERRED.map((n) =>
+    voices.find((v) => v.name.includes(n)),
+  ).find(Boolean);
+  if (pick) utterance.voice = pick;
   utterance.rate = SPEECH_RATE;
   utterance.pitch = SPEECH_PITCH;
   utterance.volume = SPEECH_VOLUME;

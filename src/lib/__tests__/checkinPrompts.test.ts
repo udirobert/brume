@@ -1,33 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { todayCheckInPrompt } from "../feelings";
+import { checkInPrompt } from "../feelings";
 import { sessionGreeting } from "../spokenGreeting";
 
-describe("todayCheckInPrompt", () => {
-  it("is deterministic within a day and rotates across days", () => {
-    const a = todayCheckInPrompt(new Date(2026, 10, 4, 8));
-    const b = todayCheckInPrompt(new Date(2026, 10, 4, 23, 59));
-    expect(a).toEqual(b);
+describe("checkInPrompt", () => {
+  it("returns a prompt from the daypart-filtered pool", () => {
+    const a = checkInPrompt(new Date(2026, 10, 4, 12), () => 0);
+    expect(a.text.length).toBeGreaterThan(3);
+    expect(["now", "aspire", "avoid"]).toContain(a.mode);
+  });
+  it("varies across rolls — every visit can ask differently", () => {
     const texts = new Set(
-      [...Array(20)].map(
-        (_, i) => todayCheckInPrompt(new Date(2026, 10, i + 1)).text,
+      [...Array(40)].map((_, i) =>
+        checkInPrompt(new Date(2026, 10, 4, 12), () => i / 40).text,
       ),
     );
     expect(texts.size).toBeGreaterThan(4);
   });
-  it("covers all three modes in a rotation window", () => {
-    const modes = new Set(
-      [...Array(9)].map(
-        (_, i) => todayCheckInPrompt(new Date(2026, 10, i + 1)).mode,
+  it("night-only questions appear at night", () => {
+    const texts = new Set(
+      [...Array(40)].map(
+        (_, i) => checkInPrompt(new Date(2026, 10, 4, 23), () => i / 40).text,
       ),
     );
-    expect(modes).toContain("now");
-    expect(modes).toContain("aspire");
-    expect(modes).toContain("avoid");
+    expect([...texts].some((t) => t.includes("awake"))).toBe(true);
   });
 });
 
 describe("sessionGreeting modes", () => {
-  it("says 'looking for' on aspire/avoid days, plain on now days", () => {
+  it("says 'looking for' on aspire/avoid, plain on now", () => {
     expect(sessionGreeting(8, 20, "aspire")).toContain("looking for");
     expect(sessionGreeting(8, 20, "now")).not.toContain("looking for");
   });

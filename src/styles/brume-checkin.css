@@ -309,3 +309,12 @@
     box-shadow: 0 0 10px 1px rgba(140, 120, 200, 0.45);
   }
 }
+
+/* Prompt sub-line — explains the day's question mode quietly. */
+.brume-home__prompt-sub {
+  font-size: 0.75rem;
+  font-style: italic;
+  opacity: 0.55;
+  margin: 0.15rem 0 0;
+  text-align: center;
+}

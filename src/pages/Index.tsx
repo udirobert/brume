@@ -10,7 +10,8 @@ import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
 import { track } from "@/lib/events";
-import { feelingAt, HOME_FEELING_COPY, isPositiveFeel, oppositeFeel, todayCheckInPrompt } from "@/lib/feelings";
+import { feelingAt, HOME_FEELING_COPY, isPositiveFeel, oppositeFeel, setCheckInMode, checkInPrompt } from "@/lib/feelings";
+import { speakLine } from "@/lib/voiceCues";
 import { useRoomExperience } from "@/lib/roomExperience";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -81,7 +82,9 @@ export default function Index() {
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
   // A null index means the word was put back down — the room lets go.
-  const todayPrompt = todayCheckInPrompt();
+  // One question per visit — picked once on mount so re-renders
+  // (mascot ticks) never swap the question under your eyes.
+  const [todayPrompt] = useState(() => checkInPrompt());
 
   const handleFeel = (index: number | null, chip?: HTMLElement) => {
     // On "avoid" days the word you name is the one you want gone —
@@ -90,6 +93,7 @@ export default function Index() {
       index !== null && todayPrompt.mode === "avoid"
         ? (oppositeFeel(index) ?? index)
         : index;
+    setCheckInMode(index !== null ? todayPrompt.mode : null);
     const a = chip?.getBoundingClientRect();
     applyFeel(
       effective,
@@ -100,6 +104,8 @@ export default function Index() {
     if (next?.reaction) {
       setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
     }
+    // The room says its answer aloud when it took the other side.
+    if (effective !== index && next) speakLine(`${next.label}, then.`);
     const card = mascotCardRef.current;
     if (reduceMotion || !next || !card || !a) return;
     const b = card.getBoundingClientRect();
@@ -127,6 +133,13 @@ export default function Index() {
   return (
     <div className="brume-home brume-home--compact">
       <h1>{todayPrompt.text}</h1>
+      {todayPrompt.mode !== "now" && (
+        <p className="brume-home__prompt-sub">
+          {todayPrompt.mode === "avoid"
+            ? "name it — the room takes the other side"
+            : "pick the one you're reaching for"}
+        </p>
+      )}
 
       <motion.div
         className="brume-home__companion"

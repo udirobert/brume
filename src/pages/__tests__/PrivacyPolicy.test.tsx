@@ -60,10 +60,20 @@ describe("PrivacyPolicy microphone copy", () => {
 });
 
 describe("PrivacyPolicy counting copy", () => {
-  it("says the counts stay local while no provider exists", () => {
-    expect(html).toContain("Nothing is sent today");
-    expect(html).toContain("no analytics provider wired in");
-    expect(html).toContain("this page is updated before it happens");
+  it("names the counter it actually sends to, and what the counter keeps", () => {
+    expect(html).toContain("Brume&#x27;s own counter");
+    expect(html).toContain("daily totals only");
+    expect(html).toContain("no device id");
+    expect(html).toContain("Nothing else is sent");
+  });
+
+  it("splits what leaves the device from what stays on it", () => {
+    expect(html).toContain("Sent to the counter");
+    expect(html).toContain("Counted on your device, never sent");
+    // The claim that nothing was ever sent is no longer true, so it must not
+    // survive anywhere on the page.
+    expect(html).not.toContain("Nothing is sent today");
+    expect(html).not.toContain("no analytics provider wired in");
   });
 
   it("counts the check-in as a position, never as a word", () => {
@@ -71,6 +81,12 @@ describe("PrivacyPolicy counting copy", () => {
     // The claim that feelings are never counted was false: the ledger
     // stores the index and track() carries it. Words are what is never kept.
     expect(html).not.toContain("or check-in feelings");
+  });
+
+  it("sends day numbers for visits, never a person", () => {
+    expect(html).toContain("how long since your first visit");
+    expect(html).toContain("how long since your last one");
+    expect(html).not.toContain("user id");
   });
 
   it("never counts what you typed or what you said", () => {

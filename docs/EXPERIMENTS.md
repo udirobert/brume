@@ -173,10 +173,10 @@ Design guidance we take from the research without quoting it:
 | The ledger (`checkinLedger.ts`) | **built**, device-local, tested; nothing reads it yet |
 | Cue texture mid-session (the glyph) | **built 2026-11-04** — spoken → breath → quiet on one button, browser-verified; preview row and glyph share `CUE_STATES` |
 | Brume's own spoken line (`spokenGreeting.ts`) | **rewritten 2026-11-04** — closed table keyed valence × daypart; never echoes the catalog, never generated |
-| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo) + an analytics provider (nothing is sent today) |
+| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo); the counter now exists, so D7 is readable from day one of traffic |
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
-| Privacy copy for anonymous counts | **corrected 2026-11-04** — counts are local until a provider exists, the check-in is counted as a position and never as a word, the mic is transient; wiring a provider updates this page in the same commit |
+| Privacy copy for anonymous counts | **corrected 2026-11-04** — the page now separates the five events the counter receives from the counts that stay on the device; the check-in is counted as a position and never as a word, the mic is transient; any widening of `WIRE` updates this page in the same commit |
 | Sensing rule ("we do not sense you") | **rewritten 2026-11-04** — the mic is transient, opt-in, records nothing; `PrivacyPolicy.tsx` + `About.tsx` no longer claim it is never used |
 | OneSignal dashboard | **check**: no streak-framed journey may exist (see `docs/BRUME.md` tag table) |
 | Bar for going live (X%, N) | **set** — 25% / 50 / +8pt gap / 5 voices |
@@ -263,11 +263,13 @@ remembered, and on its own it only proves we can interrupt someone.
   ignored, dismissed or opened; check-ins per week after first exposure;
   ledger growth. Reason codes supply the trigger axis the free-text note
   never could, and joining sessions by day supplies the minutes.
-- **Blocked on:** an analytics provider. D7 is an event-side number and
-  nothing leaves the device today, so this experiment cannot read until
-  one is wired — which per the taxonomy note above is a privacy-page
-  change, not a dependency install. The ledger half (≥7 entries → one
-  line on Home) is buildable now and reads nothing off-device.
+- **Blocked on:** nothing but traffic. D7 is a counter-side number now —
+  `visit` carries the day gap and the counter buckets it, so returns read
+  from `GET /api/metrics` as soon as there are enough new arrivals. The
+  ledger half (≥7 entries → one line on Home) is buildable now and reads
+  nothing off-device; the arm flag still needs deciding per the taxonomy
+  note above (an arm is a name for a thing users can't see, so it must not
+  leak into the UI).
 - **Healthy if:** the treated arm returns more *and* the returns are
   voluntary (no reminder needed) — E5 stays off in the treated arm so the
   two effects don't blur.
@@ -282,28 +284,45 @@ remembered, and on its own it only proves we can interrupt someone.
 
 ## Event taxonomy (anonymous, counts only)
 
-Never a user's words, never the drawing, never message text. Uses
-`trackEvent` in `src/lib/analytics.ts` (PostHog/Mixpanel if present,
-console in dev).
+Never a user's words, never the drawing, never message text. Every event goes
+through `track()` in `src/lib/events.ts`, whose type map is the contract: a
+number, a boolean or a member of a closed set, so there is no field a sentence
+could be put into.
 
-**No provider is wired in today** — no script loads, so every event is a
-local no-op outside dev and nothing has ever left a device. That makes
-the table below a promise rather than a log, and it is the honest state
-of every retention claim in this document: E6 cannot read D7 until a
-provider exists. Wiring one is not a config change — it is the moment
-`PrivacyPolicy.tsx` starts describing transmission that actually happens,
-so the page is updated in the same commit and the page's test is the
-check that it was.
+**The wire is `src/lib/metrics.ts` (added 2026-11-04)** — a same-origin POST to
+`/api/metrics`, served by `netlify/functions/metrics.mjs` and stored in Netlify
+Blobs as one aggregate document per day. Only the five events named in its
+`WIRE` leave the device: `visit` (two day numbers), `session_start`,
+`session_complete`, `session_abandon`, `after_answer`. A field the wire doesn't
+name is dropped before the request; a string that isn't shaped like a catalog
+id is dropped too; the counter re-checks both and buckets every number, so the
+most anyone can read out of it is how many. `src/lib/__tests__/metrics.test.ts`
+pins the client map and the server map to each other — widening one without the
+other fails the test.
 
-All events go through `track()` in `src/lib/events.ts`. Its type map is
-the privacy contract: every property is a number, a boolean or a member
-of a closed set, so there is no field where a user's words, a message or
-a drawing could be sent. Add the event there (and here) before wiring it.
-A test asserts every value sent is a number, a boolean or a short id.
+`trackEvent` in `src/lib/analytics.ts` still has **no provider**: no PostHog or
+Mixpanel script loads anywhere, so the console-in-dev path is the only other
+consumer. Everything else in the table below — check-ins, reasons, materials,
+cues, touches, Words Card copies — is counted locally and never sent. Wiring a
+provider is not a config change: it is the moment `PrivacyPolicy.tsx` starts
+describing transmission that actually happens, so that page and its test change
+in the same commit.
+
+Reading the counter: `GET /api/metrics` returns the daily documents; set
+`METRICS_READ_TOKEN` in the function env to require
+`Authorization: Bearer <token>`. Cohorts are read across days — `since_first`
+says how long a device has been around, `gaps` says how long it waited between
+visits, and `since_first["0"]` on a day is that day's new arrivals.
+
+All events go through `track()` in `src/lib/events.ts`. Its type map is the
+privacy contract: every property is a number, a boolean or a member of a
+closed set, so there is no field where a user's words, a message or a drawing
+could be sent. Add the event there (and here) before wiring it. A test asserts
+every value sent is a number, a boolean or a short id.
 
 | Event | Properties | Fires |
 | --- | --- | --- |
-| `visit` | `days_since_first` | once per calendar day (two local day numbers stored; no id, no cookie) |
+| `visit` | `days_since_first`, `days_since_last` | once per calendar day (two local day numbers; no id, no cookie) |
 | `session_start` | `pattern`, `mode` | store `startSession` |
 | `session_complete` | `pattern`, `seconds`, `cycles` | store `completeSession` |
 | `session_abandon` | `pattern`, `seconds`, `phase` | session reset while active/paused (never after complete) |
@@ -321,6 +340,11 @@ A test asserts every value sent is a number, a boolean or a short id.
 | `after_answer` | `choice`, `material_changes` | "How is it now?" answered; `material_changes` = overrides since the last answer (the E1 replenishment link) |
 | `room_touch` | `strokes`, `seconds`, `material` | once per Home visit with ≥1 stroke |
 
+**Wired to the counter:** `visit`, `session_start`, `session_complete`,
+`session_abandon`, `after_answer`. Everything else in the table is counted on
+the device and stays there — the table describes the contract, and `WIRE` in
+`src/lib/metrics.ts` is the subset that travels.
+
 **The ledger is not an event.** `checkinLedger.ts` holds the same three
 numbers plus a timestamp, on the device, and nothing from it is ever
 fetched, logged or spoken — which is what lets the recap exist at all
@@ -334,7 +358,9 @@ Not yet: `arm` is always `sentence` until E2 arms exist. Console output
 for events is dev-only now.
 
 Each experiment still needs a flag so cohorts see different arms (todo; E2 `arm` is the first place it plugs in).
-Privacy copy must say these are aggregate and anonymous.
+Privacy copy must say these are aggregate and anonymous. — **done for the
+wired five** (`PrivacyPolicy.tsx` splits what is sent from what stays on the
+device); re-read it whenever `WIRE` widens.
 
 ## Bar for going live (written before looking at data)
 
@@ -342,6 +368,15 @@ Privacy copy must say these are aggregate and anonymous.
 least 8 points above its own control, and at least 5 people saying out
 loud they would miss it.** Set 2026-11-04 — committed before any cohort
 data exists, and it stands.
+
+How the percentage is read, so nobody has to guess later: `GET
+/api/metrics` returns one aggregate document per day. New arrivals are
+`since_first["0"]` summed over the cohort window; a return on day 7 is a
+`gaps` entry in the 5–9 band arriving on a later day. The counter holds no
+person, so this is a *shape* read, not a true cohort — it can say whether
+people come back a week later, and cannot say whether *the same* people do.
+Any arm comparison therefore needs the arm flag wired before the read, not
+after.
 
 Both halves are load-bearing: a bare percentage at n=50 is noise with a
 decimal point attached, and "they said they'd miss it" on its own is a

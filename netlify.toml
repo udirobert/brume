@@ -15,6 +15,12 @@
   to = "/.netlify/functions/tts"
   status = 200
 
+# Anonymous counters — daily aggregates only, nothing per person
+[[redirects]]
+  from = "/api/metrics"
+  to = "/.netlify/functions/metrics"
+  status = 200
+
 # SPA fallback
 [[redirects]]
   from = "/*"

@@ -103,6 +103,28 @@ const devTts = (env: Record<string, string>): Plugin => ({
         res.end(JSON.stringify({ error: "upstream_error" }));
       }
     });
+    // Dev twin of /api/metrics — echoes what the wire would send. The real
+    // counter keeps daily aggregates in Netlify Blobs; this keeps nothing.
+    server.middlewares.use("/api/metrics", async (req, res) => {
+      if (req.method !== "POST") {
+        res.statusCode = 405;
+        return res.end(JSON.stringify({ error: "method_not_allowed" }));
+      }
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      let sent: unknown;
+      try {
+        sent = JSON.parse(body || "{}");
+      } catch {
+        sent = { name: "<unparseable>" };
+      }
+      const name = (sent as { name?: unknown })?.name;
+      if (typeof name === "string" && !name.startsWith("<")) {
+        console.log(`[metrics] ${name}`, (sent as { props?: unknown }).props);
+      }
+      res.statusCode = 202;
+      res.end(JSON.stringify({ ok: true, dev: true }));
+    });
   },
 });
 

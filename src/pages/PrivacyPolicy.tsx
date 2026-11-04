@@ -119,12 +119,16 @@ const PrivacyPolicy = () => {
             </h2>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed. Nothing is sent today: Brume has no analytics provider wired in, so the counts below stay on your device. If that changes, the list below is exactly what may leave — numbers, booleans and members of a closed list, never words — and this page is updated before it happens.
+                Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed and no analytics company is involved: five events are sent to Brume's own counter on this site, and that counter keeps <strong>daily totals only</strong> — no device id, no cookie, no profile, nothing that could single anyone out. What follows is exactly what may leave your device, and every field in it is a number, a boolean, or a member of a closed list. Nothing else is sent.
               </p>
-              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">What we count</h3>
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Sent to the counter</h3>
               <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
-                <li>Visits to the app (day numbers, no user id)</li>
-                <li>Sessions started, completed, or abandoned — pattern name and length only</li>
+                <li>Visits — two day numbers: how long since your first visit, and how long since your last one</li>
+                <li>Sessions — that one started, and that it finished or was left, with the pattern name, seconds and cycles</li>
+                <li>How the room felt afterwards — one of three choices on a closed list, and how many times you changed the room before answering</li>
+              </ul>
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">Counted on your device, never sent</h3>
+              <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
                 <li>Which room material you pick, and whether you resume from the landing</li>
                 <li>That you drew in the room (strokes and seconds, never the drawing itself)</li>
                 <li>That you copied or shared a Words Card, and whether the optional quiet-room link was on</li>

@@ -6,9 +6,10 @@
  * caller could put a user's words, a message, or a drawing into. Add an
  * event here (and to docs/EXPERIMENTS.md) before wiring it anywhere.
  *
- * Sink is `trackEvent` (PostHog/Mixpanel if present, console in dev).
+ * Sink is `record` (metrics.ts): a same-origin counter that only accepts the
+ * events named in `WIRE`, plus `trackEvent` for a provider, if one is loaded.
  */
-import { trackEvent } from "./analytics";
+import { record } from "./metrics";
 import type { CheckInReasonId } from "./checkinLedger";
 import type { CueState } from "./voiceCues";
 
@@ -34,7 +35,7 @@ export interface BrumeEvents {
   landing_settled: Record<string, never>;
   after_answer: { choice: "lighter" | "same" | "heavy"; material_changes: number };
   room_touch: { strokes: number; seconds: number; material: Material };
-  visit: { days_since_first: number };
+  visit: { days_since_first: number; days_since_last?: number };
 }
 
 let materialChanges = 0;
@@ -46,7 +47,7 @@ export function track<K extends keyof BrumeEvents>(name: K, props: BrumeEvents[K
       (props as BrumeEvents["after_answer"]).material_changes = materialChanges;
       materialChanges = 0;
     }
-    trackEvent(name, props as Record<string, unknown>);
+    record(name, props as Record<string, unknown>);
   } catch {
     // Measurement must never interrupt the product.
   }
@@ -60,9 +61,10 @@ const dayNumber = (d: Date) =>
   Math.floor((d.getTime() - d.getTimezoneOffset() * 60_000) / DAY_MS);
 
 /**
- * One `visit` per calendar day, carrying only how many days since the
- * first visit. Two local dates; no id, no cookie, nothing leaves with it
- * but the number.
+ * One `visit` per calendar day, carrying only two numbers: how many days
+ * since the first visit, and how many since the previous one. The gap is
+ * what answers "do people come back" without an id — no cookie, no device
+ * key, nothing sent but the pair, and the counter keeps daily aggregates.
  */
 export function recordVisit(now: Date = new Date()): void {
   if (typeof window === "undefined") return;
@@ -78,7 +80,11 @@ export function recordVisit(now: Date = new Date()): void {
     }
     if (last === today) return;
     window.localStorage.setItem(LAST_KEY, String(today));
-    track("visit", { days_since_first: Math.max(0, today - first) });
+    const previous = Number.isFinite(last) && last > 0 ? last : first;
+    track("visit", {
+      days_since_first: Math.max(0, today - first),
+      days_since_last: Math.max(1, today - previous),
+    });
   } catch {
     // Storage unavailable — skip silently.
   }

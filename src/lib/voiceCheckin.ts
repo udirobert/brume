@@ -52,6 +52,33 @@ export function matchFeeling(transcript: string): number | null {
   return best?.index ?? null;
 }
 
+const POS_WORDS = ["love", "amazing", "wonderful", "fantastic", "awesome", "yay", "brilliant", "lovely"];
+const NEG_WORDS = ["hate", "awful", "terrible", "horrible", "meh", "ugh", "rough", "sucks", "worst", "blah"];
+
+/** Softer second tier for near-misses: prefix overlap or valence. */
+export function suggestFeeling(transcript: string): number | null {
+  const t = norm(transcript);
+  if (!t) return null;
+  const words = t.split(" ").filter((w) => w.length >= 4);
+  let best: { index: number; hits: number } | null = null;
+  for (let i = 0; i < FEELINGS.length; i++) {
+    const cands = [
+      norm(FEELINGS[i].label),
+      norm(FEELINGS[i].longLabel),
+      ...(SYNONYMS[i] ?? []),
+    ];
+    let hits = 0;
+    for (const w of words)
+      for (const c of cands)
+        if (w.startsWith(c.slice(0, 4)) || c.startsWith(w.slice(0, 4))) hits++;
+    if (hits > 0 && (best === null || hits > best.hits)) best = { index: i, hits };
+  }
+  if (best) return best.index;
+  if (POS_WORDS.some((p) => t.includes(p))) return 5;
+  if (NEG_WORDS.some((p) => t.includes(p))) return 6;
+  return null;
+}
+
 export function voiceCheckinSupported(): boolean {
   if (typeof window === "undefined") return false;
   const w = window as any;
@@ -68,6 +95,8 @@ export function voiceCheckinSupported(): boolean {
 export interface HeardResult {
   transcript: string;
   index: number | null;
+  /** A near-match worth offering when index is null — never blocks. */
+  suggest: number | null;
 }
 
 const TOKEN_ENDPOINT = STT_ENDPOINT + "-token";
@@ -217,5 +246,10 @@ export async function listenOnce(
       transcript = await viaWebSpeech(onInterim).catch(() => "");
     }
   }
-  return { transcript, index: matchFeeling(transcript) };
+  const index = matchFeeling(transcript);
+  return {
+    transcript,
+    index,
+    suggest: index == null ? suggestFeeling(transcript) : null,
+  };
 }

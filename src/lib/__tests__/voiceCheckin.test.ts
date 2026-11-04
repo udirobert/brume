@@ -39,3 +39,13 @@ describe("matchFeeling — real speech", () => {
     expect(matchFeeling("sad")).toBe(6);
   });
 });
+
+describe("suggestFeeling — never a dead end", () => {
+  it("prefix-matches near misses", async () => {
+    const { suggestFeeling } = await import("../voiceCheckin");
+    expect(suggestFeeling("exhaust")).toBe(8);
+    expect(suggestFeeling("wonderful")).toBe(5);
+    expect(suggestFeeling("ugh the worst")).toBe(6);
+    expect(suggestFeeling("quantum banana")).toBeNull();
+  });
+});

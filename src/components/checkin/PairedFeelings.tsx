@@ -51,6 +51,7 @@ export function PairedFeelings({
   const hintSeenRef = useRef(readHintSeen());
   const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [micOn, setMicOn] = useState(false);
+  const [suggested, setSuggested] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [heard, setHeard] = useState("");
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -84,7 +85,8 @@ export function PairedFeelings({
 
   const handlePick = useCallback(
     (pairIndex: number, button: HTMLButtonElement) => {
-      const next = selectPairedFeel(
+      setSuggested(null);
+    const next = selectPairedFeel(
         { faces, selected: selectedIndex },
         pairIndex,
       );
@@ -114,11 +116,29 @@ export function PairedFeelings({
     setHeard("listening…");
     onVoiceState?.("listening");
     abortRef.current = new AbortController();
-    const { transcript, index } = await listenOnce(setHeard, abortRef.current.signal);
+    const { transcript, index, suggest } = await listenOnce(setHeard, abortRef.current.signal);
     track("checkin_voice_used", { matched: index != null });
     setMicOn(false);
     onVoiceState?.(index != null ? "matched" : "missed", index ?? undefined);
     if (index == null) {
+      // Never a dead end — offer the closest feeling, face-up and glowing.
+      if (suggest != null) {
+        const pair = pairForFeel(suggest);
+        if (pair) {
+          const pi = FEELING_PAIRS.indexOf(pair);
+          setFaces((prev) => {
+            if (prev[pi] === suggest) return prev;
+            const nextFaces = [...prev];
+            nextFaces[pi] = suggest;
+            return nextFaces;
+          });
+          setFlips((f) => f.map((v, i) => (i === pi ? v + 1 : v)));
+          setSuggested(suggest);
+          setAnnounce(`Heard ${transcript} — maybe ${FEELINGS[suggest].label}? Tap to choose.`);
+          flashHeard(`heard “${transcript.trim().slice(0, 28)}” — maybe ${FEELINGS[suggest].label}?`);
+          return;
+        }
+      }
       flashHeard(
         transcript
           ? `heard “${transcript.trim().slice(0, 28)}” — tap a word`
@@ -152,7 +172,7 @@ export function PairedFeelings({
             ref={(el) => {
               chipRefs.current[i] = el;
             }}
-            className={`brume-choice brume-choice--flip${selected ? " is-selected" : ""}${feel.valence === "positive" ? " is-positive" : ""}`}
+            className={`brume-choice brume-choice--flip${selected ? " is-selected" : ""}${feel.valence === "positive" ? " is-positive" : ""}${suggested === face ? " is-suggested" : ""}`}
             aria-pressed={selected}
             aria-label={feel.label}
             aria-describedby={

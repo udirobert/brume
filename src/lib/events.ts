@@ -17,7 +17,7 @@ export interface BrumeEvents {
   session_start: { pattern: string; mode: string };
   session_complete: { pattern: string; seconds: number; cycles: number };
   session_abandon: { pattern: string; seconds: number; phase: "active" | "paused" };
-  checkin_word: { feeling: number; surface: "home" | "decompress" };
+  checkin_word: { feeling: number; surface: "home" | "decompress"; mode?: "now" | "aspire" | "avoid" };
   checkin_voice_used: { matched: boolean };
   words_card_shown: { surface: Surface; arm: "sentence" };
   words_card_copied: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };

@@ -23,6 +23,31 @@ export const HOME_FEELING_COPY = {
   options: "Options",
 } as const;
 
+export type CheckInMode = "now" | "aspire" | "avoid";
+
+// One question per day — the room asks differently, like weather.
+// Modes: "now" = how you feel; "aspire" = what you want; "avoid" =
+// what you don't want (the chip answers with its pair partner).
+const CHECKIN_PROMPTS: { text: string; mode: CheckInMode }[] = [
+  { text: "How are you feeling?", mode: "now" },
+  { text: "What would you like to feel?", mode: "aspire" },
+  { text: "Sum up your feelings.", mode: "now" },
+  { text: "What do you not want to feel?", mode: "avoid" },
+  { text: "Name where you are.", mode: "now" },
+  { text: "What are you not feeling that you want to?", mode: "aspire" },
+  { text: "What's the weather in you?", mode: "now" },
+  { text: "Which feeling would you like to lose?", mode: "avoid" },
+  { text: "Which feeling do you want more of?", mode: "aspire" },
+];
+
+/** Today's check-in question — deterministic per calendar day. */
+export function todayCheckInPrompt(
+  date = new Date(),
+): { text: string; mode: CheckInMode } {
+  const day = Math.floor(date.getTime() / 86_400_000);
+  return CHECKIN_PROMPTS[day % CHECKIN_PROMPTS.length];
+}
+
 const PALETTES = [
   { orbMist: "rgb(146 158 214)", roomMist: [212, 218, 164] },
   { orbMist: "rgb(150 132 198)", roomMist: [188, 176, 224] },

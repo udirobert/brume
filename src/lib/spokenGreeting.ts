@@ -6,7 +6,7 @@
  */
 
 import { dayPartFromHour, type DayPart } from "./atmosphere/dayPart";
-import { feelingAt } from "./feelings";
+import { feelingAt, todayCheckInPrompt, type CheckInMode } from "./feelings";
 
 const DAYPART_SPOKEN: Record<DayPart, string> = {
   dawn: "Early morning.",
@@ -22,6 +22,7 @@ const DAYPART_SPOKEN: Record<DayPart, string> = {
 export function sessionGreeting(
   checkInIndex: number | null,
   hour: number = new Date().getHours(),
+  mode: CheckInMode = todayCheckInPrompt().mode,
 ): string {
   const daypart = DAYPART_SPOKEN[dayPartFromHour(hour)];
   const feeling = feelingAt(checkInIndex);
@@ -32,5 +33,9 @@ export function sessionGreeting(
     feeling.valence === "heavy"
       ? "we'll take it slow."
       : "the rhythm stays easy.";
-  return `${daypart} You came in ${feeling.phrase} — ${tail}`;
+  const body =
+    mode === "now"
+      ? `You came in ${feeling.phrase}`
+      : `You came in looking for ${feeling.phrase}`;
+  return `${daypart} ${body} — ${tail}`;
 }

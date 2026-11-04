@@ -18,7 +18,7 @@ describe("sessionGreeting", () => {
 
   it("names the feeling's phrase with a tail that matches its valence", () => {
     for (let i = 0; i < FEELINGS.length; i++) {
-      const line = sessionGreeting(i, 12);
+      const line = sessionGreeting(i, 12, "now");
       expect(line).toContain(`You came in ${FEELINGS[i].phrase}`);
       expect(
         line.endsWith(

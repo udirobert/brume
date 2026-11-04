@@ -10,7 +10,7 @@ import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
 import { track } from "@/lib/events";
-import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
+import { feelingAt, HOME_FEELING_COPY, isPositiveFeel, oppositeFeel, todayCheckInPrompt } from "@/lib/feelings";
 import { useRoomExperience } from "@/lib/roomExperience";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -81,14 +81,22 @@ export default function Index() {
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
   // A null index means the word was put back down — the room lets go.
+  const todayPrompt = todayCheckInPrompt();
+
   const handleFeel = (index: number | null, chip?: HTMLElement) => {
+    // On "avoid" days the word you name is the one you want gone —
+    // the room answers with its pair partner instead.
+    const effective =
+      index !== null && todayPrompt.mode === "avoid"
+        ? (oppositeFeel(index) ?? index)
+        : index;
     const a = chip?.getBoundingClientRect();
     applyFeel(
-      index,
+      effective,
       a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
     );
-    const next = feelingAt(index);
-    if (next && index !== null) track("checkin_word", { feeling: index, surface: "home" });
+    const next = feelingAt(effective);
+    if (next && effective !== null) track("checkin_word", { feeling: effective, surface: "home", mode: todayPrompt.mode });
     if (next?.reaction) {
       setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
     }
@@ -118,7 +126,7 @@ export default function Index() {
 
   return (
     <div className="brume-home brume-home--compact">
-      <h1>{HOME_FEELING_COPY.prompt}</h1>
+      <h1>{todayPrompt.text}</h1>
 
       <motion.div
         className="brume-home__companion"

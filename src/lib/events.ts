@@ -9,6 +9,7 @@
  * Sink is `trackEvent` (PostHog/Mixpanel if present, console in dev).
  */
 import { trackEvent } from "./analytics";
+import type { CheckInReasonId } from "./checkinLedger";
 
 type Surface = "post_session" | "decompress";
 type Material = "mist" | "waves" | "sand" | "cells" | "snow" | "ink";
@@ -17,8 +18,9 @@ export interface BrumeEvents {
   session_start: { pattern: string; mode: string };
   session_complete: { pattern: string; seconds: number; cycles: number };
   session_abandon: { pattern: string; seconds: number; phase: "active" | "paused" };
-  checkin_word: { feeling: number; surface: "home" | "decompress"; mode?: "now" | "aspire" | "avoid" };
-  checkin_voice_used: { matched: boolean };
+  checkin_word: { feeling: number; surface: "home" | "decompress" };
+  checkin_reason: { feeling: number; reason: CheckInReasonId };
+  checkin_voice_used: { matched: boolean; offered: number | null };
   words_card_shown: { surface: Surface; arm: "sentence" };
   words_card_copied: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
   words_card_shared: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };

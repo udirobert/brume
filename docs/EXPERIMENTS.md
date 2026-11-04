@@ -48,6 +48,71 @@ of one surface*, material variations (E1) are *skins*, never pages.
   `JourneyCompanion`, reactions and `hush` stay as they are.
 - **We lean into room and material.** Variations are coming; the open
   question is which ones invite play (below).
+- **Brume's claim is that the companion remembers.** No rhythm is magic
+  (our own note above), so patterns are a commodity — nobody picks Brume
+  because it has Wim Hof and 4-7-8. The one defensible claim is a small,
+  private, longitudinal model of the user's states plus the craft around
+  it. Anything that does not serve *being remembered* is decoration:
+  pleasant, sometimes lovely, but it does not decide the future.
+- **The ledger is the spine.** One append-only, device-local record —
+  `(timestamp, feeling, reason-code, daypart)` in
+  `src/lib/checkinLedger.ts`. The recap, the memory line, a future host
+  handoff and any paid sync all read that one schema. Session minutes
+  join by day rather than being stored twice. A feature that cannot say
+  what it writes to the ledger does not get built — for a solo product
+  whose UI only ever accretes, the schema is cheaper than a feature and
+  it is also the only real governance we have on the surface count.
+- **The companion lives where the user already is.** Our own research
+  (`docs/MASCOT-RESEARCH.md`, Finch) says the #1 retention engine is a
+  persistent home-screen surface showing the companion's state — not
+  push, and not persistence *inside our own routes*. `JourneyCompanion`
+  is craft; a widget (or an agent's conversation) is the mechanism. So
+  the web app is the **session** — two minutes, no retention burden —
+  and the presence is the thing that comes back. This also stops the
+  web-and-Anna split being two products: it is one product in a second
+  place.
+- **We never interpret feelings.** Voice proposes and never commits: a
+  spoken word turns the nearest chip face-up and waits for a tap.
+  Interpretation of emotional input is a pure trust liability — the one
+  error class that ends a wellness product is *"this app told me I was
+  fine when I said I wasn't"* — and it is a capability a **host** (Anna,
+  a ChatGPT app) already does better with a real model, owning the
+  privacy story along with it. Brume holds the ritual, the room, the
+  ledger and the mascot. The host holds the words.
+
+## Cut (2026-11-04)
+
+The check-in had quietly become a classifier: it asked a question,
+graded the answer to it, and each pass added a layer instead of removing
+one — ~50 more words, then a fuzzy matcher, then a 12-prompt deck, then
+a `viaVoice` exception. What left, and why:
+
+- **`aspire`/`avoid` modes and the rotating prompt deck.** Both
+  real-world misfires came from the modes ("I am feeling great" →
+  Heavy), and the second fix established a rule no user can hold: the
+  same sentence meaning different things depending on the channel used
+  *and* what the RNG rolled. Rule 3 says people learn one grammar once.
+  One question, always: *How are you feeling?* The variety now comes
+  from what the room remembers (E6) — variety about *this* user, not a
+  writerly pool that reads the same for everyone. Predictability is a
+  feature of calm; ritual is the actual mechanism by which a breathing
+  practice works.
+- **Auto-select on voice.** Propose-only, per above. A miss and a hit
+  become the same interaction, which retires three tiers and makes the
+  whole "Brume misread me" class unreachable.
+- **The free-text margin** (`checkinMargin.ts`, "add a word?"). The
+  memory idea arrived one step too early: it stored the one thing the
+  privacy contract forbids as data (their words), could not be
+  aggregated client-side without the LLM that `AGENTIC.md` keeps out of
+  this loop, and baked `mode` in as a permanent confound the moment the
+  prompt went random. It collected the sensitive thing and got none of
+  the value. Replaced by a closed-set reason — what the recap can
+  actually use, in less surface. A private line still belongs in the
+  product: as E2 arm B, never as analysis substrate.
+- **Standing: Home goes back to Begin and the chips.** Breath-cue pills,
+  presence pills, room settings and the rhythm picker all sit on the
+  literal first screen today — rule 5 inverted, ~20 decisions where the
+  doctrine promises one. Depth appears after the first session.
 
 ## Content rules for everything here
 
@@ -75,10 +140,16 @@ Design guidance we take from the research without quoting it:
 | E1 — material variations | variations pending from owner; skins-only, in room settings |
 | E2 — Words Card arms | **not started**: needs the flag mechanism (`arm` is always `sentence`) |
 | E3 — landing | instrumented (`landing_*`); no analysis yet |
-| E5 — opt-in reminder | not started |
+| E5 — opt-in reminder | not started (secondary to E6) |
+| Check-in classifier (modes, prompt deck) | **cut 2026-11-04** — one question; voice proposes only |
+| The margin (free-text note) | **cut** — replaced by closed-set reasons (`checkinLedger.ts`) |
+| The ledger (`checkinLedger.ts`) | **built**, device-local, tested; nothing reads it yet |
+| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo) |
+| Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
+| Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
 | Privacy copy for anonymous counts | **todo** (`PrivacyPolicy.tsx` wording is generic) |
 | OneSignal dashboard | **check**: no streak-framed journey may exist (see `docs/BRUME.md` tag table) |
-| Bar for going live (X%, N) | **unset** |
+| Bar for going live (X%, N) | **set** — 25% / 50 / +8pt gap / 5 voices |
 
 ## The experiments
 
@@ -141,6 +212,35 @@ A ladder; stop climbing when demand stops showing up.
 ### E5 — Return without nagging
 One opt-in daypart reminder (OneSignal is wired) vs none. Tests the
 anti-Tamagotchi bet: does a quiet product retain without guilt mechanics?
+Secondary to E6 — a reminder is a delivery mechanism for being
+remembered, and on its own it only proves we can interrupt someone.
+
+### E6 — The room remembers (the retention test)
+- **Question:** does being *noticed* cause a return visit? This is the
+  product's actual thesis, and it is the one experiment worth clearing
+  everything else for.
+- **Treatment:** once the ledger holds ≥7 entries, Home puts one line
+  under the question, composed from closed vocabulary and counts —
+  "restless three mornings this week." No chart, no score, no streak, no
+  insight-voice ("work is stressing you"): the companion names what it
+  saw and the user draws the conclusion. Control: the same Home, no
+  line. The rotating deck's whole job was to make the room feel alive
+  each visit; this does it with the user's own weather instead.
+- **Signals:** D7 return, memory-line on/off; whether the line is
+  ignored, dismissed or opened; check-ins per week after first exposure;
+  ledger growth. Reason codes supply the trigger axis the free-text note
+  never could, and joining sessions by day supplies the minutes.
+- **Healthy if:** the treated arm returns more *and* the returns are
+  voluntary (no reminder needed) — E5 stays off in the treated arm so the
+  two effects don't blur.
+- **Kill / rethink if:** returns don't move. Then Brume is a *session*,
+  not a *companion*, and the honest move is selling the ritual into hosts
+  where we get invoked rather than remembered. Either answer is worth
+  more than building both futures out of the same calendar.
+- **Honest limit:** at n=50, a 25% arm reads anywhere from 12% to 38%.
+  We are looking for a large gap plus a qualitative signal from at least
+  five people, not statistical significance. Do not schedule the recap,
+  the widget or sync until this reads.
 
 ## Event taxonomy (anonymous, counts only)
 
@@ -164,6 +264,7 @@ A test asserts every value sent is a number, a boolean or a short id.
 | `landing_resumed` | — | tap resumes from the landing |
 | `landing_settled` | — | ~10 s idle completes it |
 | `checkin_word` | `feeling` (index), `surface` | home chip or decompress |
+| `checkin_reason` | `feeling` (index), `reason` (closed set) | a "because" tap |
 | `words_card_shown` | `surface`, `arm` | card mounts |
 | `words_card_copied` / `_shared` | `surface`, `arm`, `room_link`, `for_me`, `edited` | user copies / shares |
 | `words_card_heard` | `surface`, `edited` | "Hear it" speaks the card aloud |
@@ -172,18 +273,38 @@ A test asserts every value sent is a number, a boolean or a short id.
 | `after_answer` | `choice`, `material_changes` | "How is it now?" answered; `material_changes` = overrides since the last answer (the E1 replenishment link) |
 | `room_touch` | `strokes`, `seconds`, `material` | once per Home visit with ≥1 stroke |
 
+**The ledger is not an event.** `checkinLedger.ts` holds the same three
+numbers plus a timestamp, on the device, and nothing from it is ever
+fetched, logged or spoken — which is what lets the recap exist at all
+while the contract stays "numbers, booleans, closed sets." The event is
+the shadow cast by one tap; the ledger is the thing the companion reads.
+`checkin_word`'s `mode` property is retired with the modes (2026-11-04):
+randomised per visit it was a confound, not a signal, and no analysis
+should be built on entries that carry it.
+
 Not yet: `arm` is always `sentence` until E2 arms exist. Console output
 for events is dev-only now.
 
 Each experiment still needs a flag so cohorts see different arms (todo; E2 `arm` is the first place it plugs in).
 Privacy copy must say these are aggregate and anonymous.
 
-## Bar for going live (write it down before looking at data)
+## Bar for going live (written before looking at data)
 
-Set before the cohort starts, e.g. D7 return above **X%** across at
-least **N** people, plus some of them saying they would miss it. Fill in
-X and N, then commit this file. Only then do Cloudflare and ChatGPT come
-back on the table.
+**D7 return ≥ 25% across ≥ 50 new users, with the E6 memory-line arm at
+least 8 points above its own control, and at least 5 people saying out
+loud they would miss it.** Set 2026-11-04 — committed before any cohort
+data exists, and it stands.
+
+Both halves are load-bearing: a bare percentage at n=50 is noise with a
+decimal point attached, and "they said they'd miss it" on its own is a
+favour we ask friends. Wellness base rates are brutal — roughly 95% of
+people who start a breathing or meditation practice abandon it — so 25%
+is deliberately not ambitious on its own; the *gap* between the arms is
+the claim.
+
+Only then do Cloudflare, ChatGPT and an Anna-wide push come back on the
+table — and what follows from a pass is paid sync plus the recap, not
+pattern unlocks. A solo dev does not out-content Calm.
 
 ## Qualitative
 
@@ -193,4 +314,19 @@ Ten users beats a dashboard now. One optional question after a session
 ## Open decisions
 
 - Is "no camera / no microphone" up for review, or does E4 stay at step 1?
-- Values for X and N above.
+  This is now live tension, not a future one: the voice check-in records
+  from the microphone on the web app, so the rule as written and the
+  shipped product disagree. Pick one — either the rule means *no
+  continuous or sensory analysis* (and opt-in, transient, on-device-
+  discarded capture is allowed and gets documented), or it means *no mic
+  at all* and the voice path comes out. Leaving it ambiguous is how an
+  audit finding gets written for us.
+- Which persistent presence comes first — an Android widget in the empty
+  Capacitor shell, or presence inside a host agent (Anna first, since it
+  already ships)? They are the same bet about the companion's continuity
+  and a different bet about distribution.
+- Does the monthly recap get built before or after E6 reads? (Proposed:
+  after. The recap is the reward for a mechanism we have not yet proven
+  causes a return visit.)
+- If E6 fails: is the product a session sold into hosts, and does the
+  consumer web app become a demo of it?

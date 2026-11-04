@@ -24,10 +24,24 @@ share it. No camera, no scores, no streaks, no account required.
 
 ## Core loop (retention engine)
 
-1. Open → optional check-in word (Okay / Stretched / A lot / At limit / Overwhelmed) → **"here's a rhythm"**
+1. Open → one question, always the same one — *How are you feeling?* → tap
+   a word, or say it and the nearest word offers itself for a tap →
+   **"here's a rhythm"**. Naming one thing behind it ("because · work") is
+   optional, one tap, and stays on the device.
 2. Guided breathing session — breathing animation and clock only, nothing to get right
 3. Post-session: practice-time summary → "put it into words" — one honest sentence you can copy or share
 4. /decompress: two unhurried minutes, then the same check-in → words loop
+
+**What turns a loop into a companion** is that step 1 accumulates: one
+device-local ledger of `(when, feeling, reason, daypart)` that the room
+reads back. Once there is enough of it, Home says the weather it has
+seen — "restless three mornings this week" — instead of asking the same
+question into silence. Nothing about the user is interpreted (voice
+proposes, never decides — see `docs/EXPERIMENTS.md`, "We never interpret
+feelings") and nothing leaves the device to do it. The 2026-11-04
+revision of the check-in exists because the previous one graded the
+answer to its own question; the doctrine "nothing to get right, nothing
+to prove" rules out a classifier by definition.
 
 ## Screens (v1 scope — 6, nothing more)
 

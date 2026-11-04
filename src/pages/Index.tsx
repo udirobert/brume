@@ -4,15 +4,15 @@ import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { Magnetic } from "@/lib/Magnetic";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
-import { CheckInMargin } from "@/components/checkin/CheckInMargin";
+import { CheckInReasons } from "@/components/checkin/CheckInReasons";
 import { type MascotReaction } from "@/components/BrumeMascot";
 import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
 import { track } from "@/lib/events";
-import { feelingAt, HOME_FEELING_COPY, isPositiveFeel, oppositeFeel, setCheckInMode, checkInPrompt } from "@/lib/feelings";
-import { speakLine } from "@/lib/voiceCues";
+import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
+import { recordCheckIn } from "@/lib/checkinLedger";
 import { useRoomExperience } from "@/lib/roomExperience";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -84,34 +84,26 @@ export default function Index() {
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
   // A null index means the word was put back down — the room lets go.
-  // One question per visit — picked once on mount so re-renders
-  // (mascot ticks) never swap the question under your eyes.
-  const [todayPrompt] = useState(() => checkInPrompt());
-
-  const handleFeel = (index: number | null, chip?: HTMLElement, viaVoice = false) => {
-    // On "avoid" days the word you TAP answers the prompt — but a
-    // spoken feeling is literal self-expression, never flipped.
-    const effective =
-      index !== null && todayPrompt.mode === "avoid" && !viaVoice
-        ? (oppositeFeel(index) ?? index)
-        : index;
-    if (viaVoice) {
+  const handleFeel = (index: number | null, chip?: HTMLElement, fromOffer = false) => {
+    const a = chip?.getBoundingClientRect();
+    applyFeel(
+      index,
+      a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
+    );
+    const next = feelingAt(index);
+    if (next && index !== null) {
+      track("checkin_word", { feeling: index, surface: "home" });
+      recordCheckIn(index);
+    }
+    // A word the room offered and you confirmed — the next step announces
+    // itself, briefly.
+    if (fromOffer) {
       setBeginNudge(true);
       window.setTimeout(() => setBeginNudge(false), 5000);
     }
-    setCheckInMode(index !== null ? todayPrompt.mode : null);
-    const a = chip?.getBoundingClientRect();
-    applyFeel(
-      effective,
-      a ? { x: a.left + a.width / 2, y: a.top + a.height / 2 } : undefined,
-    );
-    const next = feelingAt(effective);
-    if (next && effective !== null) track("checkin_word", { feeling: effective, surface: "home", mode: todayPrompt.mode });
     if (next?.reaction) {
       setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
     }
-    // The room says its answer aloud when it took the other side.
-    if (effective !== index && next) speakLine(`${next.label}, then.`);
     const card = mascotCardRef.current;
     if (reduceMotion || !next || !card || !a) return;
     const b = card.getBoundingClientRect();
@@ -138,14 +130,7 @@ export default function Index() {
 
   return (
     <div className="brume-home brume-home--compact">
-      <h1>{todayPrompt.text}</h1>
-      {todayPrompt.mode !== "now" && (
-        <p className="brume-home__prompt-sub">
-          {todayPrompt.mode === "avoid"
-            ? "name it — the room takes the other side"
-            : "pick the one you're reaching for"}
-        </p>
-      )}
+      <h1>{HOME_FEELING_COPY.prompt}</h1>
 
       <motion.div
         className="brume-home__companion"
@@ -177,7 +162,7 @@ export default function Index() {
         }
       />
 
-      <CheckInMargin feeling={feelTap} />
+      {feelTap !== null && <CheckInReasons feeling={feelTap} />}
 
       <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
         <button type="button" className={`brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>

@@ -70,6 +70,25 @@ check-in vocabulary/message builder is `src/lib/checkin.ts`. The web app
 has no camera, no streaks UI and no scores; core loop is a breathing reset
 or `/decompress` → check-in word → optional one-sentence message.
 
+Doctrine for the check-in (2026-11-04, after two real-world misreads —
+read before adding anything to it):
+- **Never interpret a feeling.** `src/lib/voiceCheckin.ts` matches a
+  transcript to the 14-word catalog and that is all it may do. Voice
+  *proposes*: it turns the nearest chip face-up and waits for a tap. It
+  must never select, never flip, never infer valence from a sentence —
+  and any transcript containing a negation returns no match at all, so
+  the UI asks instead of declaring ("not good" is not Light). When Brume
+  runs inside a host that already has a language model, the host reads
+  the words; Brume keeps the ritual, the room, the ledger, the mascot.
+- **One question.** *How are you feeling?* always. No modes, no rotating
+  prompt deck — a rule that depends on the input channel or an RNG is a
+  rule no user can hold.
+- **`src/lib/checkinLedger.ts` is the spine**: append-only, device-local
+  `(t, feeling, reason, daypart)`. The recap, the memory line and any
+  future host handoff read it. Closed sets only — free text is never
+  analysis substrate. A new feature must say what it writes to the
+  ledger, or it doesn't get built.
+
 Verification: `pnpm vitest run`, `npx tsc --noEmit`, `pnpm lint`.
 
 Experiments + measurement: `docs/EXPERIMENTS.md` (hypotheses, kill

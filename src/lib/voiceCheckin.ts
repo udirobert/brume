@@ -34,8 +34,21 @@ const SYNONYMS: Record<number, string[]> = {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
 
+// "not good" is not Light. `norm` destroys the evidence — it turns
+// "don't" into "do t" and the word-length gates below drop "not" — so
+// negation is checked on the raw transcript first. Any negation returns
+// no reading at all and the UI asks instead of declaring: guessing at a
+// feeling is the one error this product cannot afford.
+const NEGATION =
+  /\b(not|no|none|nothing|never|nobody|hardly|barely|without|nor|don'?t|didn'?t|doesn'?t|wasn'?t|isn'?t|aren'?t|weren'?t|can'?t|couldn'?t|shouldn'?t|wouldn'?t|hasn'?t|haven'?t|won'?t|ain'?t)\b/;
+
+export function hasNegation(transcript: string): boolean {
+  return NEGATION.test(transcript.toLowerCase());
+}
+
 /** transcript → feeling index, or null when nothing matches. */
 export function matchFeeling(transcript: string): number | null {
+  if (hasNegation(transcript)) return null;
   const t = norm(transcript);
   if (!t) return null;
   const words = new Set(t.split(" "));
@@ -57,6 +70,7 @@ const NEG_WORDS = ["hate", "awful", "terrible", "horrible", "meh", "ugh", "rough
 
 /** Softer second tier for near-misses: prefix overlap or valence. */
 export function suggestFeeling(transcript: string): number | null {
+  if (hasNegation(transcript)) return null;
   const t = norm(transcript);
   if (!t) return null;
   const words = t.split(" ").filter((w) => w.length >= 4);

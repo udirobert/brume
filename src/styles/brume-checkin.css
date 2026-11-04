@@ -310,48 +310,55 @@
   }
 }
 
-/* Prompt sub-line — explains the day's question mode quietly. */
-.brume-home__prompt-sub {
-  font-size: 0.75rem;
-  font-style: italic;
-  opacity: 0.55;
-  margin: 0.15rem 0 0;
-  text-align: center;
-}
-
-/* The margin — a private line beside the check-in, device-local. */
-.brume-margin {
+/* The reason row — one closed-set tap beside a check-in, device-local.
+   The words are ours, so the memory can be counted without storing one
+   of theirs. Opacity only: motion is never the point of this row. */
+.brume-reasons {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  margin-top: 0.35rem;
+  margin-top: 0.5rem;
 }
-.brume-margin__input {
-  border: none;
-  border-bottom: 1px solid rgba(140, 120, 200, 0.35);
+.brume-reasons__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+}
+.brume-reasons__lead {
+  font-size: 0.7rem;
+  font-style: italic;
+  opacity: 0.5;
+}
+.brume-reasons__chip {
+  border: 1px solid rgba(140, 120, 200, 0.25);
+  border-radius: 999px;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 0.78rem;
-  font-style: italic;
-  text-align: center;
-  padding: 0.15rem 0.5rem;
-  width: min(14rem, 70vw);
-  opacity: 0.75;
-  outline: none;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.55rem;
+  opacity: 0.7;
+  cursor: pointer;
   transition: opacity 0.2s ease, border-color 0.2s ease;
 }
-.brume-margin__input:focus {
+.brume-reasons__chip:hover,
+.brume-reasons__chip:focus-visible {
   opacity: 1;
-  border-color: rgba(140, 120, 200, 0.7);
+  border-color: rgba(140, 120, 200, 0.6);
 }
-.brume-margin__input::placeholder {
-  opacity: 0.5;
-}
-.brume-margin__hint {
+.brume-reasons__hint {
   font-size: 0.62rem;
   opacity: 0.4;
+}
+.brume-reasons__kept {
+  font-size: 0.7rem;
+  font-style: italic;
+  opacity: 0.5;
+  text-align: center;
+  margin: 0.4rem 0 0;
 }
 
 /* Voice-matched check-in nudges the next step — Begin glows briefly. */

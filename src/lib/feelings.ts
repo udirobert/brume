@@ -23,56 +23,6 @@ export const HOME_FEELING_COPY = {
   options: "Options",
 } as const;
 
-export type CheckInMode = "now" | "aspire" | "avoid";
-type DayPartName = "dawn" | "day" | "dusk" | "night";
-
-// One question per day AND daypart — the room asks differently, like
-// weather. Modes: "now" = how you feel; "aspire" = what you want;
-// "avoid" = what you don't want (the chip answers with its partner).
-const CHECKIN_PROMPTS: { text: string; mode: CheckInMode; dayparts?: DayPartName[] }[] = [
-  { text: "How are you feeling?", mode: "now" },
-  { text: "What would you like to feel?", mode: "aspire" },
-  { text: "Sum up your feelings.", mode: "now" },
-  { text: "What do you not want to feel?", mode: "avoid" },
-  { text: "Name where you are.", mode: "now" },
-  { text: "What are you not feeling that you want to?", mode: "aspire" },
-  { text: "What's the weather in you?", mode: "now" },
-  { text: "Which feeling would you like to lose?", mode: "avoid" },
-  { text: "Which feeling do you want more of?", mode: "aspire" },
-  { text: "What is the day leaving behind?", mode: "now", dayparts: ["dusk", "night"] },
-  { text: "What's still awake in you?", mode: "now", dayparts: ["night"] },
-  { text: "What do you want from today?", mode: "aspire", dayparts: ["dawn", "day"] },
-];
-
-function promptDayPart(hour: number): DayPartName {
-  if (hour < 7) return "dawn";
-  if (hour < 17) return "day";
-  if (hour < 21) return "dusk";
-  return "night";
-}
-
-/** A check-in question — random per visit, filtered by daypart. */
-export function checkInPrompt(
-  date = new Date(),
-  rng: () => number = Math.random,
-): { text: string; mode: CheckInMode } {
-  const part = promptDayPart(date.getHours());
-  const candidates = CHECKIN_PROMPTS.filter(
-    (p) => !p.dayparts || p.dayparts.includes(part),
-  );
-  return candidates[Math.floor(rng() * candidates.length)];
-}
-
-// The mode captured at check-in — survives a day boundary between
-// picking a word and starting the session.
-let lastCheckInMode: CheckInMode | null = null;
-export function setCheckInMode(mode: CheckInMode | null): void {
-  lastCheckInMode = mode;
-}
-export function getCheckInMode(): CheckInMode | null {
-  return lastCheckInMode;
-}
-
 const PALETTES = [
   { orbMist: "rgb(146 158 214)", roomMist: [212, 218, 164] },
   { orbMist: "rgb(150 132 198)", roomMist: [188, 176, 224] },

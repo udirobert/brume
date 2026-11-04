@@ -17,6 +17,7 @@ import {
   composeCheckInMessage,
 } from "../checkin";
 import { HOME_FEELING_COPY, FEELINGS } from "../feelings";
+import { CHECKIN_REASONS } from "../checkinLedger";
 import { sessionGreeting } from "../spokenGreeting";
 import { appendRoomLink, buildQuietPauseIcs, invitationShareText } from "../invitation";
 
@@ -110,6 +111,11 @@ describe("check-in copy", () => {
       buildQuietPauseIcs({ patternId: "reset" }),
       "Hear it",
       "Read aloud by our voice service",
+      ...CHECKIN_REASONS.map((r) => r.label),
+      "because",
+      "What is it about?",
+      "private · stays on this device",
+      "kept — just for you · stays on this device",
       sessionGreeting(null),
     );
     for (let i = 0; i < FEELINGS.length; i++) {

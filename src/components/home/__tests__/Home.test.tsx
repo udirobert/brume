@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { checkInPrompt } from "@/lib/feelings";
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -76,7 +75,7 @@ const mount = async () => {
 describe("Home", () => {
   it("shows only the new compact copy with Options closed", async () => {
     await mount();
-    expect(container.querySelector("h1")!.textContent!.length).toBeGreaterThan(3);
+    expect(container.querySelector("h1")!.textContent).toBe("How are you feeling?");
     const details = container.querySelector<HTMLDetailsElement>(".brume-home-options")!;
     expect(details.open).toBe(false);
     expect(container.textContent).not.toContain("Good morning");
@@ -143,6 +142,30 @@ describe("Home", () => {
     clickEl(byText("Begin")!);
     expect(locationSeen.search).toContain("pattern=box");
     expect(locationSeen.state).toMatchObject({ checkInIndex: 13 });
+  });
+
+  it("names a reason in one tap and keeps it on the device", async () => {
+    await mount();
+    expect(container.querySelector(".brume-reasons")).toBeNull();
+    clickEl(container.querySelectorAll(".brume-choice--flip")[1]);
+    const chips = [
+      ...container.querySelectorAll<HTMLButtonElement>(".brume-reasons__chip"),
+    ];
+    expect(chips.map((c) => c.textContent)).toEqual([
+      "work",
+      "people",
+      "sleep",
+      "money",
+      "the day",
+      "something good",
+    ]);
+    clickEl(chips.find((c) => c.textContent === "work")!);
+    expect(container.querySelector(".brume-reasons__kept")).not.toBeNull();
+    const stored = JSON.parse(
+      window.localStorage.getItem("brume.checkin.ledger.v1") || "[]",
+    );
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({ f: 8, r: "work" });
   });
 
   it("room settings inside Options update the store", async () => {

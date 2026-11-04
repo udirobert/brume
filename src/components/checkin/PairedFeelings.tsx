@@ -36,7 +36,7 @@ export function PairedFeelings({
   showHint = true,
 }: {
   selectedIndex: number | null;
-  onChoose: (index: number, button: HTMLButtonElement, viaVoice?: boolean) => void;
+  onChoose: (index: number, button: HTMLButtonElement, fromOffer?: boolean) => void;
   onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
   showHint?: boolean;
 }) {
@@ -84,9 +84,10 @@ export function PairedFeelings({
   }, [hintOpen]);
 
   const handlePick = useCallback(
-    (pairIndex: number, button: HTMLButtonElement, viaVoice = false) => {
+    (pairIndex: number, button: HTMLButtonElement) => {
+      const wasOffered = suggested !== null;
       setSuggested(null);
-    const next = selectPairedFeel(
+      const next = selectPairedFeel(
         { faces, selected: selectedIndex },
         pairIndex,
       );
@@ -101,12 +102,16 @@ export function PairedFeelings({
         setHintOpen(true);
       }
       setAnnounce(`${FEELINGS[next.selected!].label} selected.`);
-      onChoose(next.selected!, button, viaVoice);
+      onChoose(next.selected!, button, wasOffered && next.selected === suggested);
     },
-    [faces, selectedIndex, onChoose, showHint],
+    [faces, selectedIndex, onChoose, showHint, suggested],
   );
 
-  // "Just say it" — tap the mic, speak a feeling, the chip answers.
+  // Voice proposes and never commits: whatever is heard, the closest word
+  // turns itself face-up and waits for a tap. A misread costs nothing and
+  // a hit and a miss are the same interaction — so there is no rule here
+  // the user has to remember, and nothing Brume can say about them that
+  // they did not confirm.
   const onMicTap = useCallback(async () => {
     if (micOn) {
       abortRef.current?.abort(); // tap again to stop early
@@ -117,42 +122,40 @@ export function PairedFeelings({
     onVoiceState?.("listening");
     abortRef.current = new AbortController();
     const { transcript, index, suggest } = await listenOnce(setHeard, abortRef.current.signal);
-    track("checkin_voice_used", { matched: index != null });
+    const offered = index ?? suggest;
+    track("checkin_voice_used", { matched: index != null, offered });
     setMicOn(false);
-    onVoiceState?.(index != null ? "matched" : "missed", index ?? undefined);
-    if (index == null) {
-      // Never a dead end — offer the closest feeling, face-up and glowing.
-      if (suggest != null) {
-        const pair = pairForFeel(suggest);
-        if (pair) {
-          const pi = FEELING_PAIRS.indexOf(pair);
-          setFaces((prev) => {
-            if (prev[pi] === suggest) return prev;
-            const nextFaces = [...prev];
-            nextFaces[pi] = suggest;
-            return nextFaces;
-          });
-          setFlips((f) => f.map((v, i) => (i === pi ? v + 1 : v)));
-          setSuggested(suggest);
-          setAnnounce(`Heard ${transcript} — maybe ${FEELINGS[suggest].label}? Tap to choose.`);
-          flashHeard(`heard “${transcript.trim().slice(0, 28)}” — maybe ${FEELINGS[suggest].label}?`);
-          return;
-        }
-      }
+    onVoiceState?.(offered != null ? "matched" : "missed", offered ?? undefined);
+    const snippet = transcript.trim().slice(0, 28);
+    const pair = offered == null ? null : pairForFeel(offered);
+    if (offered == null || !pair) {
       flashHeard(
         transcript
-          ? `heard “${transcript.trim().slice(0, 28)}” — tap a word`
+          ? `heard “${snippet}” — tap a word`
           : "didn't catch that — try again or tap",
       );
       return;
     }
-    flashHeard(`heard “${transcript.trim().slice(0, 28)}”`);
-    const pair = pairForFeel(index);
-    if (!pair) return;
+    if (selectedIndex === offered) {
+      // That is already the word you carry — nothing to offer.
+      flashHeard(`heard “${snippet}”`);
+      return;
+    }
     const pi = FEELING_PAIRS.indexOf(pair);
-    const btn = chipRefs.current[pi];
-    if (btn) handlePick(pi, btn, true); // spoken feelings are literal
-  }, [micOn, handlePick]);
+    if (faces[pi] !== offered) {
+      setFaces((prev) => {
+        const nextFaces = [...prev];
+        nextFaces[pi] = offered;
+        return nextFaces;
+      });
+      setFlips((f) => f.map((v, i) => (i === pi ? v + 1 : v)));
+    }
+    setSuggested(offered);
+    setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}? Tap to choose.`);
+    flashHeard(
+      `heard “${snippet}” — ${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`,
+    );
+  }, [micOn, faces, selectedIndex, onVoiceState]);
 
   return (
     <div className="brume-pairs" role="group" aria-label="Choose a feeling">

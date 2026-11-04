@@ -16,6 +16,7 @@ import {
 } from "@/lib/checkin";
 import { appendRoomLink } from "@/lib/invitation";
 import { copyText, shareMessageCard } from "@/lib/shareMessageCard";
+import { previewLine } from "@/lib/voiceCues";
 
 interface PostSessionWordsProps {
   /** Word chosen on the check-in path, if any — seeds the sentence. */
@@ -167,6 +168,17 @@ export function PostSessionWords({
               <button
                 type="button"
                 className="brume-btn brume-btn--soft"
+                title="Read aloud by our voice service"
+                onClick={() => {
+                  track("words_card_heard", { surface: "post_session", edited });
+                  previewLine(message);
+                }}
+              >
+                Hear it
+              </button>
+              <button
+                type="button"
+                className="brume-btn brume-btn--soft"
                 disabled={sharing}
                 onClick={() => void shareCard()}
               >
@@ -177,7 +189,8 @@ export function PostSessionWords({
         )}
 
         <p className="dc-field-note">
-          Edit it freely — nothing is sent without you.
+          Edit it freely — nothing is sent without you. "Hear it" sends
+          the words to our voice service to be spoken, nowhere else.
         </p>
       </section>
 

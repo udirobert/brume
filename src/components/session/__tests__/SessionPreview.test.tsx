@@ -46,7 +46,8 @@ describe("SessionPreview", () => {
     expect(html).toContain("breath");
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain("Hear a cue");
-    expect(html).toContain("nothing is sent anywhere");
+    expect(html).toContain("cue files stay on this device");
+    expect(html).toContain("voice service");
   });
 
   it("hides the cues row when the parent does not pass the choice", () => {

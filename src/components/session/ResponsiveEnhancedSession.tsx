@@ -22,7 +22,8 @@ import { SessionControls } from './SessionControls';
 import { EnhancedSessionLayout } from './EnhancedSessionLayout';
 import { SessionPreview } from './SessionPreview';
 import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
-import { preloadCues, setCueStyle as setVoiceCueStyle, setVoiceEnabled, speakCue, stopCues } from '../../lib/voiceCues';
+import { preloadCues, setCueStyle as setVoiceCueStyle, setVoiceEnabled, speakCue, speakLine, stopCues } from '../../lib/voiceCues';
+import { sessionGreeting } from '../../lib/spokenGreeting';
 import { applyFeel, feelAt } from '../../lib/feelTheme';
 import { demeanorForFeel } from '../../lib/roomExperience';
 
@@ -115,12 +116,19 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
 
   // Handle session start from the preview
   const handleSessionStart = React.useCallback(() => {
+    // "Meet me where I am": the line is spoken inside the tap itself —
+    // the gesture unlocks audio and consents to the words leaving the
+    // device. It hands you into the first breath; overlapping phase
+    // cues hold while it plays (see voiceCues).
+    if (session.audioEnabled && session.cueStyle === "spoken") {
+      speakLine(sessionGreeting(checkInIndex));
+    }
     // Always call session.start() - it handles the ready transition internally
     session.start();
 
     // CRITICAL FIX: Ensure no return value that could be interpreted as cleanup function
     return undefined;
-  }, [session]);
+  }, [session, checkInIndex]);
 
   const startConsumedRef = React.useRef(false);
   React.useEffect(() => {
@@ -143,12 +151,15 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
         enableAI: false,
       });
     }
+    if (session.audioEnabled && session.cueStyle === "spoken") {
+      speakLine(sessionGreeting(checkInIndex));
+    }
     session.start();
     navigate(location.pathname + location.search, {
       replace: true,
       state: { ...(location.state as object), startImmediately: false },
     });
-  }, [location.state, location.pathname, location.search, session, navigate, config.mode, flatPattern]);
+  }, [location.state, location.pathname, location.search, session, navigate, config.mode, flatPattern, checkInIndex]);
 
   const breathPhase: BreathPhase =
     (session.metrics?.currentPhase === "pause"

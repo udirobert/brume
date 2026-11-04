@@ -16,7 +16,8 @@ import {
   SUPPORT_SENTENCES,
   composeCheckInMessage,
 } from "../checkin";
-import { HOME_FEELING_COPY } from "../feelings";
+import { HOME_FEELING_COPY, FEELINGS } from "../feelings";
+import { sessionGreeting } from "../spokenGreeting";
 import { appendRoomLink, buildQuietPauseIcs, invitationShareText } from "../invitation";
 
 const BANNED =
@@ -101,13 +102,19 @@ describe("check-in copy", () => {
       "The mascot",
       "The room",
       "What it never does",
-      "No camera. No scores. No streaks. Sounds play from files on this device — nothing is sent anywhere.",
+      "No camera. No scores. No streaks. Breath cues play from files on this device — and if you ask Brume to say a line aloud, only those words go to our voice service to be spoken. Nothing else leaves.",
       "Include a quiet room link",
       "Hold 2 min on calendar",
       appendRoomLink(composeCheckInMessage(0, "listening"), "reset"),
       invitationShareText(BREATHING_PATTERNS.reset),
       buildQuietPauseIcs({ patternId: "reset" }),
+      "Hear it",
+      "Read aloud by our voice service",
+      sessionGreeting(null),
     );
+    for (let i = 0; i < FEELINGS.length; i++) {
+      strings.push(sessionGreeting(i));
+    }
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);
     }

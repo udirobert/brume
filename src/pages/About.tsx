@@ -76,8 +76,10 @@ export default function About() {
           What it never does
         </h2>
         <p className="mt-4 text-muted-foreground leading-relaxed">
-          No camera. No scores. No streaks. Sounds play from files on this
-          device — nothing is sent anywhere.
+          No camera. No scores. No streaks. Breath cues play from files on
+          this device — and if you ask Brume to say a line aloud, only
+          those words go to our voice service to be spoken. Nothing else
+          leaves.
         </p>
       </section>
 

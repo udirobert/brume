@@ -166,6 +166,7 @@ A test asserts every value sent is a number, a boolean or a short id.
 | `checkin_word` | `feeling` (index), `surface` | home chip or decompress |
 | `words_card_shown` | `surface`, `arm` | card mounts |
 | `words_card_copied` / `_shared` | `surface`, `arm`, `room_link`, `for_me`, `edited` | user copies / shares |
+| `words_card_heard` | `surface`, `edited` | "Hear it" speaks the card aloud |
 | `room_link_toggled` | `surface`, `on` | toggle |
 | `material_changed` | `to` (material or `auto`) | override picked in room settings |
 | `after_answer` | `choice`, `material_changes` | "How is it now?" answered; `material_changes` = overrides since the last answer (the E1 replenishment link) |

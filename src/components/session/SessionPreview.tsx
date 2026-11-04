@@ -177,7 +177,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
             >
               hear it
             </button>
-            {" — plays from files on this device, nothing is sent anywhere."}
+            {" — cue files stay on this device; spoken greets you aloud via our voice service."}
           </p>
         )}
       </div>

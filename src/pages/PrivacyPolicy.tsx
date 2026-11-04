@@ -136,6 +136,10 @@ const PrivacyPolicy = () => {
                 <li>Anything from the mist drawing</li>
                 <li>Camera or microphone input</li>
               </ul>
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">The voice service</h3>
+              <p className="text-gray-700 dark:text-gray-300 text-sm">
+                Breath cues are pre-recorded files that play on your device. Two optional moments speak through our voice service (AssemblyAI): the line Brume says when you tap Begin, and "Hear it" on your Words Card. Only the words being spoken are sent — never anything else — and "Just for me" cards never offer it.
+              </p>
               <p className="text-gray-700 dark:text-gray-300 mt-4 text-sm">
                 If you ever want us to stop counting, just leave the app. All data stays local unless you explicitly share a Words Card or proof image.
               </p>

@@ -9,8 +9,11 @@
   PNPM_VERSION = "10.33.2"
   VITE_APP_ENV = "production"
 
-# Note: API calls go directly to Hetzner server
-# Single frontend architecture - no functions needed
+# TTS proxy — the AssemblyAI key lives in the function env, never the bundle
+[[redirects]]
+  from = "/api/tts"
+  to = "/.netlify/functions/tts"
+  status = 200
 
 # SPA fallback
 [[redirects]]

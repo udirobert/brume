@@ -21,6 +21,7 @@ export interface BrumeEvents {
   words_card_shown: { surface: Surface; arm: "sentence" };
   words_card_copied: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
   words_card_shared: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
+  words_card_heard: { surface: Surface; edited: boolean };
   room_link_toggled: { surface: Surface; on: boolean };
   material_changed: { to: Material | "auto" };
   landing_reached: { seconds: number };

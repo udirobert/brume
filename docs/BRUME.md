@@ -218,11 +218,16 @@ narration**: the minimum speech needed so you can close your eyes.
    free via Web Speech API, AAI STT for the hackathon story.
 3. *"Say it kindly"* — Brume reads your composed check-in sentence back
    to you; hearing your own words said warmly is different from reading
-   them. Bridges to the share-with-a-human mechanic.
+   them. Bridges to the share-with-a-human mechanic. **Shipped
+   2026-11-04** ("Hear it" on the Words Card; not offered on
+   "just for me" — its contract is "nothing is sent").
 4. *"Meet me where I am"* — spoken opening line that names your context
-   ("A gentle rhythm between standup and the hard email"). Live TTS of
-   model text needs a proxy + explicit consent; the canned library
-   pre-renders free. Demo-worthy.
+   ("A gentle rhythm between standup and the hard email"). **Shipped
+   2026-11-04** as the Begin greeting, composed from closed vocabulary
+   (daypart + the feeling's own phrase — no model call, no user text).
+   Live TTS runs through `/api/tts` (`netlify/functions/tts.mjs` prod /
+   vite middleware dev); key stays server-side, browser voice is the
+   fallback, cues hold while a line speaks.
 5. *"Stay with me"* — sparse optional murmurs in Decompress ("stay as
    long as you like"). Companion made audible — must stay rare and
    off-able; talking during a pause is a fine line.

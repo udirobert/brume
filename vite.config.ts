@@ -1,8 +1,62 @@
 import { defineConfig } from "vitest/config";
+import { loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+
+// Dev twin of netlify/functions/tts.mjs — same contract, same env vars,
+// so `pnpm dev` speaks through AssemblyAI exactly like production does.
+const devTts = (env: Record<string, string>): Plugin => ({
+  name: "brume-tts-dev",
+  apply: "serve",
+  configureServer(server) {
+    server.middlewares.use("/api/tts", async (req, res) => {
+      if (req.method !== "POST") {
+        res.statusCode = 405;
+        return res.end(JSON.stringify({ error: "method_not_allowed" }));
+      }
+      const apiKey = env.ASSEMBLYAI_API_KEY;
+      if (!apiKey) {
+        res.statusCode = 503;
+        return res.end(JSON.stringify({ error: "voice_unavailable" }));
+      }
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      let text: unknown;
+      try {
+        text = JSON.parse(body || "{}").text;
+      } catch {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({ error: "bad_json" }));
+      }
+      if (typeof text !== "string" || !text.trim() || text.length > 280) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({ error: "bad_text" }));
+      }
+      const upstream = { text: (text as string).trim(), container: "wav", stream: false } as Record<string, unknown>;
+      if (env.ASSEMBLYAI_VOICE_ID) upstream.voice_id = env.ASSEMBLYAI_VOICE_ID;
+      try {
+        const r = await fetch("https://tts.us.assemblyai.com/v1/speech", {
+          method: "POST",
+          headers: { Authorization: apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify(upstream),
+          signal: AbortSignal.timeout(12_000),
+        });
+        if (!r.ok) {
+          res.statusCode = 502;
+          return res.end(JSON.stringify({ error: "upstream_error" }));
+        }
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "audio/wav");
+        res.end(Buffer.from(await r.arrayBuffer()));
+      } catch {
+        res.statusCode = 502;
+        res.end(JSON.stringify({ error: "upstream_unreachable" }));
+      }
+    });
+  },
+});
 
 /**
  * Vite Configuration - Production Optimized
@@ -19,6 +73,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      devTts(loadEnv(mode, process.cwd(), "")),
       react({
         include: "**/*.{jsx,tsx}",
       }),

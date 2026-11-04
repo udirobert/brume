@@ -76,10 +76,13 @@ export default function About() {
           What it never does
         </h2>
         <p className="mt-4 text-muted-foreground leading-relaxed">
-          No camera. No scores. No streaks. Breath cues play from files on
-          this device — and if you ask Brume to say a line aloud, only
-          those words go to our voice service to be spoken. Nothing else
-          leaves.
+          No camera. No scores. No streaks. Nothing about you is measured
+          or inferred. Breath cues play from files on this device. Two
+          moments use our voice service, and both wait for you to ask:
+          tapping "say it" sends a little audio while you speak, so Brume
+          can offer the closest word, and asking to hear a line sends that
+          line to be spoken back. Nothing from either is recorded — the
+          words are matched and dropped. Nothing else leaves.
         </p>
       </section>
 

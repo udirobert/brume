@@ -89,6 +89,19 @@ of one surface*, material variations (E1) are *skins*, never pages.
   check what is literal in source) and break the character: a companion
   that says something different every visit is a feed. Rules in
   `AGENTS.md`, invariants pinned in `spokenGreeting.test.ts`.
+- **We do not sense you.** The old clause was "no camera or microphone",
+  which the shipped voice check-in had already broken — and a rule the
+  product ignores is not a rule, it is a finding waiting to be written.
+  Rewritten as what it protected: no camera, no continuous, ambient or
+  biometric capture, nothing inferred from a signal. The one exception is
+  the check-in microphone: opt-in per utterance, one sentence per tap,
+  matched against the fourteen words and dropped — no audio stored, no
+  transcript in the ledger or in `track()`, and voice still only proposes.
+  A standing listen or any inference from the audio itself is outside the
+  rule, which is what closes E4 steps 2 and 3. Because the claim is now
+  live tension between two documents rather than a hypothetical, the
+  privacy page had to stop saying the microphone is never used
+  (`PrivacyPolicy.tsx`, `About.tsx`; pinned by their tests).
 
 ## Cut (2026-11-04)
 
@@ -129,8 +142,12 @@ a `viaVoice` exception. What left, and why:
 The research behind these experiments (slow breathing, art-making) can
 shape the *design*, but none of it may appear as a claim in the product,
 prompts or marketing: no health/medical/hormone/outcome claims, no
-scores, no streaks, no camera, no microphone (`AGENTS.md`). Describe the
-rhythm and the experience, never the result.
+scores, no streaks, and nothing sensed from the body or inferred from a
+signal (`AGENTS.md`, "We do not sense you"). The check-in microphone is
+the one bounded exception — one sentence per tap, matched to a closed set
+of fourteen words, nothing recorded — and it stays inside the rule only
+for as long as it does exactly that. Describe the rhythm and the
+experience, never the result.
 
 Design guidance we take from the research without quoting it:
 - No rhythm is magic (5.5 vs 12 breaths/min showed no difference in the
@@ -160,6 +177,7 @@ Design guidance we take from the research without quoting it:
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
 | Privacy copy for anonymous counts | **todo** (`PrivacyPolicy.tsx` wording is generic) |
+| Sensing rule ("we do not sense you") | **rewritten 2026-11-04** — the mic is transient, opt-in, records nothing; `PrivacyPolicy.tsx` + `About.tsx` no longer claim it is never used |
 | OneSignal dashboard | **check**: no streak-framed journey may exist (see `docs/BRUME.md` tag table) |
 | Bar for going live (X%, N) | **set** — 25% / 50 / +8pt gap / 5 voices |
 
@@ -210,10 +228,13 @@ A ladder; stop climbing when demand stops showing up.
    *Fallback if always-on proves noisy near Begin:* one deliberate
    gesture on the mascot (press and hold to enter drawing) — still no
    page and no menu.
-2. Opt-in microphone breath input, on-device, nothing recorded or sent.
-   Needs a decision to revisit "no microphone".
-3. Opt-in camera/face input. Heaviest: permissions, weak devices,
-   privacy perception, and a face on screen invites self-judgment.
+2. ~~Opt-in microphone breath input, on-device, nothing recorded or sent.~~
+   **Closed 2026-11-04, and it is now forbidden rather than undecided.** The
+   sensing rule allows capture that returns a word from a closed set and
+   keeps nothing; measuring the breath itself is inference from a signal,
+   which is exactly what the rule now names as not allowed. The check-in
+   mic that shipped is the ceiling, not a first step.
+3. ~~Opt-in camera/face input.~~ Same rule, decided: no.
 - **Step 1 question:** does anyone touch the room at all, and does it
   pull them toward Begin or away from it?
   **Signals:** `room_touch` (strokes, seconds, material) per Home visit;
@@ -326,14 +347,10 @@ Ten users beats a dashboard now. One optional question after a session
 
 ## Open decisions
 
-- Is "no camera / no microphone" up for review, or does E4 stay at step 1?
-  This is now live tension, not a future one: the voice check-in records
-  from the microphone on the web app, so the rule as written and the
-  shipped product disagree. Pick one — either the rule means *no
-  continuous or sensory analysis* (and opt-in, transient, on-device-
-  discarded capture is allowed and gets documented), or it means *no mic
-  at all* and the voice path comes out. Leaving it ambiguous is how an
-  audit finding gets written for us.
+- ~~Is "no camera / no microphone" up for review?~~ **Decided 2026-11-04**
+  (see "We do not sense you" above). The rule was already being broken by
+  shipped code, so the review was not optional; it was resolved as the
+  protection, not the device list.
 - Which persistent presence comes first — an Android widget in the empty
   Capacitor shell, or presence inside a host agent (Anna first, since it
   already ships)? They are the same bet about the companion's continuity

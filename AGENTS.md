@@ -42,12 +42,27 @@ Rules:
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the
   "Brume Executa Binaries" GitHub workflow.
-- No health, medical or hormone claims in copy or prompts; no scores,
-  streaks, camera or microphone.
+- No health, medical or hormone claims in copy or prompts, and no scores
+  or streaks — those clauses are the product's stance and stay absolute.
+- **We do not sense you.** No camera, and no continuous, ambient or
+  biometric capture of any kind. This is what the old "no camera or
+  microphone" clause was actually protecting, so it is written as the
+  protection rather than as a device list. One exception is shipped and
+  bounded: the check-in microphone (`src/lib/voiceCheckin.ts`) listens for
+  one sentence per tap, sends it to AssemblyAI to become words, matches
+  those words against the 14-feeling catalog and drops them. Nothing is
+  recorded; no transcript reaches `checkinLedger.ts` or `track()`; and
+  voice still only *proposes* (see the check-in doctrine below). Opt-in per
+  utterance is what keeps this inside the rule — a standing listen, an
+  always-on wake word, or any inference drawn from the audio itself (tone,
+  breath rate, affect) is not allowed and would break the rule outright.
 - Web app copy follows the same rule as Anna: no health/medical/hormone or
-  outcome claims, no scores, streaks, camera or microphone.
+  outcome claims, no scores or streaks, nothing sensed from the body.
   `src/lib/__tests__/copy-claims.test.ts` enforces this for pattern,
   recommendation and check-in strings — extend it when adding copy sources.
+  Privacy copy is part of the contract: `src/pages/PrivacyPolicy.tsx` must
+  describe the microphone as transient and opt-in, never as unused, and
+  `src/pages/__tests__/PrivacyPolicy.test.tsx` pins that wording.
 - `anna-app apps publish` uploads a new version (not a review submission);
   submitting for review is done by the owner in the Developer Console.
 
@@ -67,8 +82,10 @@ Shared brand tokens live in `anna/bundle/brand.css` (both UIs import the
 same file — retuning affects the Anna bundle too). Shared controls are in
 `src/styles/brume-controls.css` and `src/styles/brume-checkin.css`; the
 check-in vocabulary/message builder is `src/lib/checkin.ts`. The web app
-has no camera, no streaks UI and no scores; core loop is a breathing reset
-or `/decompress` → check-in word → optional one-sentence message.
+uses no camera and no scores or streaks UI, and its microphone is a
+transient, per-tap option that records nothing (see the sensing rule
+above); core loop is a breathing reset or `/decompress` → check-in word →
+optional one-sentence message.
 
 Doctrine for the check-in (2026-11-04, after two real-world misreads —
 read before adding anything to it):

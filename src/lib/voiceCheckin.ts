@@ -1,10 +1,13 @@
 /**
  * Voice check-in — "Just say it." Speak a feeling word instead of tapping.
  *
- * Capture is a short MediaRecorder clip POSTed to /api/stt (AssemblyAI on
- * the server); the browser's SpeechRecognition is the fallback path. The
- * transcript is matched against the 14-feeling catalog — the word you
- * said never leaves this page as data, only the chosen index.
+ * One tap listens for one sentence. Audio goes to AssemblyAI — streaming
+ * PCM16 over the realtime WS, a POSTed clip to /api/stt as the fallback,
+ * then the browser's SpeechRecognition. The transcript comes back, is
+ * matched against the 14-feeling catalog, and is dropped: this module
+ * stores no audio and no words. What a check-in records is the index you
+ * confirm, and only once you confirm it — voice proposes, never commits
+ * (AGENTS.md, "Doctrine for the check-in").
  */
 
 import { FEELINGS, pairForFeel } from "./feelings";

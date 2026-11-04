@@ -30,4 +30,10 @@ describe("About", () => {
     expect(html.toLowerCase()).not.toContain("stress relief");
     expect(html.toLowerCase()).not.toContain("sleep quality");
   });
+
+  it("admits the microphone instead of denying it", () => {
+    expect(html).toContain("sends a little audio while you speak");
+    expect(html).toContain("Nothing from either is recorded");
+    expect(html).not.toContain("Nothing else leaves without");
+  });
 });

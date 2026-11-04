@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
             How Brume protects your privacy and handles your data
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Last updated: October 16, 2026
+            Last updated: November 4, 2026
           </p>
         </div>
 
@@ -61,7 +61,7 @@ const PrivacyPolicy = () => {
             <nav className="space-y-2 text-blue-600 dark:text-blue-400">
               <a href="#information-we-collect" className="block hover:underline">1. Information We Collect</a>
               <a href="#how-we-use-information" className="block hover:underline">2. How We Use Your Information</a>
-              <a href="#video-camera-data" className="block hover:underline">3. Camera</a>
+              <a href="#video-camera-data" className="block hover:underline">3. Camera and microphone</a>
               <a href="#blockchain-data" className="block hover:underline">4. Blockchain and Web3 Data</a>
               <a href="#data-storage" className="block hover:underline">5. Data Storage and Security</a>
               <a href="#sharing" className="block hover:underline">6. Information Sharing</a>
@@ -134,11 +134,19 @@ const PrivacyPolicy = () => {
                 <li>Your words, message text, or check-in feelings</li>
                 <li>Your breath timing beyond duration and cycle count</li>
                 <li>Anything from the mist drawing</li>
-                <li>Camera or microphone input</li>
+                <li>Audio recordings — nothing you say is stored</li>
               </ul>
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">The voice service</h3>
               <p className="text-gray-700 dark:text-gray-300 text-sm">
-                Breath cues are pre-recorded files that play on your device. Two optional moments speak through our voice service (AssemblyAI): the line Brume says when you tap Begin, and "Hear it" on your Words Card. Only the words being spoken are sent — never anything else — and "Just for me" cards never offer it.
+                Breath cues are pre-recorded files that play on your device.
+                Three optional moments use our voice service (AssemblyAI): the
+                line Brume says when you tap Begin, "Hear it" on your Words
+                Card, and the check-in microphone when you tap "say it". The
+                first two send only the words being spoken, to be spoken back.
+                The third sends audio while you speak, returns words, and
+                matches them against the fourteen feelings — the audio is not
+                stored and the sentence is not kept. "Just for me" cards never
+                offer the spoken option. See "Camera and microphone" below.
               </p>
               <p className="text-gray-700 dark:text-gray-300 mt-4 text-sm">
                 If you ever want us to stop counting, just leave the app. All data stays local unless you explicitly share a Words Card or proof image.
@@ -164,7 +172,7 @@ const PrivacyPolicy = () => {
           {/* Section 3 */}
           <section id="video-camera-data" className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              3. Camera
+              3. Camera and microphone
             </h2>
             <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800 mb-4">
               <p className="text-green-800 dark:text-green-200 font-medium">
@@ -177,6 +185,26 @@ const PrivacyPolicy = () => {
                 captured, sent, or processed — sessions are guided breathing
                 only. Session history is stored on your device, and in
                 Supabase if you sign in.
+              </p>
+              <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+                Microphone
+              </h3>
+              <p>
+                The microphone stays off until you tap "say it" beside the
+                check-in words. One tap listens for one sentence. Your speech
+                goes to AssemblyAI to be turned into words; Brume matches
+                those words against the fourteen feelings and offers the
+                closest one face-up — it never chooses for you, and a sentence
+                containing "not" is never read as the opposite of itself.
+              </p>
+              <p>
+                Nothing from that moment is kept. The audio is not stored, the
+                transcript is not written to your history, and no count is made
+                of what you said — your history records the feeling you
+                confirmed, as a word you tapped. Your browser asks for
+                permission the first time and you can refuse it; every check-in
+                works by tapping instead, and nothing about Brume depends on
+                the microphone being on.
               </p>
             </div>
           </section>

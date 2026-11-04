@@ -15,6 +15,25 @@ export type VoiceCueId = keyof typeof VOICE_CUES;
 
 export type CueStyle = "spoken" | "breath";
 
+/**
+ * The three textures one session glyph cycles through: a voice counting,
+ * the sound of the breath itself, and nothing at all.
+ */
+export type CueState = CueStyle | "quiet";
+
+/** The cycle order, and the words both surfaces show — the ids read aloud. */
+export const CUE_STATES: readonly CueState[] = ["spoken", "breath", "quiet"];
+
+export function cueStateOf(audioEnabled: boolean, style: CueStyle): CueState {
+  return audioEnabled ? style : "quiet";
+}
+
+/** spoken → breath → quiet → spoken. */
+export function nextCueState(current: CueState): CueState {
+  const i = CUE_STATES.indexOf(current);
+  return CUE_STATES[(i + 1) % CUE_STATES.length];
+}
+
 // Breath-shaped cues: the sound's edge marks the change — an inhale
 // that runs out IS the hold beginning, so hold and rest need no cue.
 const BREATH_CUES: Partial<Record<VoiceCueId, string>> = {

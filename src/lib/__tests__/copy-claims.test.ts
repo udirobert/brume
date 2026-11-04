@@ -117,9 +117,14 @@ describe("check-in copy", () => {
       "private · stays on this device",
       "kept — just for you · stays on this device",
       sessionGreeting(null),
+      sessionGreeting(null, 6),
+      sessionGreeting(null, 18),
+      sessionGreeting(null, 23),
     );
     for (let i = 0; i < FEELINGS.length; i++) {
-      strings.push(sessionGreeting(i));
+      for (const hour of [6, 12, 18, 23]) {
+        strings.push(sessionGreeting(i, hour));
+      }
     }
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);

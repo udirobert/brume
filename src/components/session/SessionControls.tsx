@@ -1,13 +1,26 @@
 /**
  * Session controls — quiet, brand-shaped.
  * "End" is an outline pill (never red — this isn't a recorder);
- * pause/resume and audio are 48px ghost icon buttons.
+ * pause/resume and the cue cycle are 48px ghost icon buttons.
  */
 
 import React from "react";
-import { Pause, Play, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { Pause, Play, Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
 import { useSessionPhase } from "@/stores/sessionStore";
+import {
+  CueBreathIcon,
+  CueQuietIcon,
+  CueVoiceIcon,
+} from "@/components/icons/BrumeIcons";
+import {
+  cueStateOf,
+  nextCueState,
+  previewCue,
+  setCueStyle as setVoiceCueStyle,
+  setVoiceEnabled,
+} from "@/lib/voiceCues";
+import { track } from "@/lib/events";
 
 type SessionControlsProps = {
   onEndSession?: () => void;
@@ -30,11 +43,13 @@ export const SessionControls = ({
   const {
     isActive,
     isPaused,
-    audioEnabled: isAudioEnabled,
+    audioEnabled,
+    cueStyle,
     pause,
     resume,
     complete: stop,
-    toggleAudio,
+    setAudioEnabled,
+    setCueStyle,
   } = useSession();
   // The play/pause icon only exists once the breath is running: active
   // pauses it, paused resumes it. Any pre-start phase (setup/ready) or
@@ -61,17 +76,48 @@ export const SessionControls = ({
     stop();
   };
 
+  // One glyph, three textures — spoken, breath, quiet. Mid-breath is
+  // exactly when you find out which one you wanted, so the change lives on
+  // the session rather than in a drawer.
+  const cueState = cueStateOf(audioEnabled, cueStyle);
+  const nextCue = nextCueState(cueState);
+
+  const handleCycleCues = () => {
+    if (disabled || isLoading) return;
+    if (nextCue === "quiet") {
+      setAudioEnabled(false);
+      // Turning the voice off also cuts whichever cue is mid-breath; the
+      // parent syncs this from the store one render later.
+      setVoiceEnabled(false);
+    } else {
+      setAudioEnabled(true);
+      setCueStyle(nextCue);
+      // The audition reads the engine's own style, so it has to be set
+      // before this tap — otherwise the first breath you hear is the
+      // texture you just left.
+      setVoiceCueStyle(nextCue);
+      previewCue("inhale");
+    }
+    track("cue_changed", { from: cueState, to: nextCue });
+  };
+
   return (
     <div className={`z-20 flex items-center justify-center gap-4 ${className}`}>
       {showAudio && (
         <button
           type="button"
-          onClick={() => { if (!disabled && !isLoading) toggleAudio(); }}
+          onClick={handleCycleCues}
           className={ICON_BTN}
           disabled={disabled || isLoading}
-          aria-label={isAudioEnabled ? "Mute audio" : "Unmute audio"}
+          aria-label={`Breath cues: ${cueState} — tap for ${nextCue}.`}
         >
-          {isAudioEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
+          {cueState === "spoken" ? (
+            <CueVoiceIcon size={22} />
+          ) : cueState === "breath" ? (
+            <CueBreathIcon size={22} />
+          ) : (
+            <CueQuietIcon size={22} />
+          )}
         </button>
       )}
 

@@ -10,6 +10,7 @@
  */
 import { trackEvent } from "./analytics";
 import type { CheckInReasonId } from "./checkinLedger";
+import type { CueState } from "./voiceCues";
 
 type Surface = "post_session" | "decompress";
 type Material = "mist" | "waves" | "sand" | "cells" | "snow" | "ink";
@@ -27,6 +28,7 @@ export interface BrumeEvents {
   words_card_heard: { surface: Surface; edited: boolean };
   room_link_toggled: { surface: Surface; on: boolean };
   material_changed: { to: Material | "auto" };
+  cue_changed: { from: CueState; to: CueState };
   landing_reached: { seconds: number };
   landing_resumed: Record<string, never>;
   landing_settled: Record<string, never>;

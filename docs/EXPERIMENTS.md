@@ -79,6 +79,16 @@ of one surface*, material variations (E1) are *skins*, never pages.
   a ChatGPT app) already does better with a real model, owning the
   privacy story along with it. Brume holds the ritual, the room, the
   ledger and the mascot. The host holds the words.
+- **Brume has a character, and it is a string table.** What Brume says
+  about itself (`src/lib/spokenGreeting.ts`) comes from its own side of
+  the room — the hour, the breath, the room — never the user's choice
+  handed back with a reason attached, and never one of the fourteen
+  catalog words. Keyed `valence × daypart`, deterministic, ~14 words.
+  Generated lines would break the privacy property (the words sent to the
+  voice service are always ours), break `copy-claims.test.ts` (it can only
+  check what is literal in source) and break the character: a companion
+  that says something different every visit is a feed. Rules in
+  `AGENTS.md`, invariants pinned in `spokenGreeting.test.ts`.
 
 ## Cut (2026-11-04)
 
@@ -144,6 +154,8 @@ Design guidance we take from the research without quoting it:
 | Check-in classifier (modes, prompt deck) | **cut 2026-11-04** — one question; voice proposes only |
 | The margin (free-text note) | **cut** — replaced by closed-set reasons (`checkinLedger.ts`) |
 | The ledger (`checkinLedger.ts`) | **built**, device-local, tested; nothing reads it yet |
+| Cue texture mid-session (the glyph) | **built 2026-11-04** — spoken → breath → quiet on one button, browser-verified; preview row and glyph share `CUE_STATES` |
+| Brume's own spoken line (`spokenGreeting.ts`) | **rewritten 2026-11-04** — closed table keyed valence × daypart; never echoes the catalog, never generated |
 | E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo) |
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
@@ -270,6 +282,7 @@ A test asserts every value sent is a number, a boolean or a short id.
 | `words_card_heard` | `surface`, `edited` | "Hear it" speaks the card aloud |
 | `room_link_toggled` | `surface`, `on` | toggle |
 | `material_changed` | `to` (material or `auto`) | override picked in room settings |
+| `cue_changed` | `from`, `to` (spoken · breath · quiet) | the session glyph cycled |
 | `after_answer` | `choice`, `material_changes` | "How is it now?" answered; `material_changes` = overrides since the last answer (the E1 replenishment link) |
 | `room_touch` | `strokes`, `seconds`, `material` | once per Home visit with ≥1 stroke |
 

@@ -12,10 +12,12 @@ const sessionMock = {
   isActive: true,
   isPaused: false,
   audioEnabled: true,
+  cueStyle: "spoken" as "spoken" | "breath",
   pause: vi.fn(),
   resume: vi.fn(),
   complete: vi.fn(),
-  toggleAudio: vi.fn(),
+  setAudioEnabled: vi.fn(),
+  setCueStyle: vi.fn(),
 };
 
 // Real store phase, controllable per test.
@@ -28,6 +30,24 @@ vi.mock("@/hooks/useSession", () => ({
 vi.mock("@/stores/sessionStore", () => ({
   useSessionPhase: () => mockPhase,
 }));
+
+// The cycle logic stays real; only the sound side effects are watched.
+vi.mock("@/lib/voiceCues", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("@/lib/voiceCues")>();
+  return {
+    ...mod,
+    previewCue: vi.fn(),
+    setCueStyle: vi.fn(),
+    setVoiceEnabled: vi.fn(),
+  };
+});
+
+const trackMock = vi.fn();
+vi.mock("@/lib/events", () => ({
+  track: (...args: unknown[]) => trackMock(...args),
+}));
+
+import { previewCue, setCueStyle, setVoiceEnabled } from "@/lib/voiceCues";
 
 import { SessionControls } from "../SessionControls";
 
@@ -63,6 +83,7 @@ describe("SessionControls", () => {
     sessionMock.isActive = true;
     sessionMock.isPaused = false;
     sessionMock.audioEnabled = true;
+    sessionMock.cueStyle = "spoken";
     mockPhase = 'active';
   });
 
@@ -127,14 +148,77 @@ describe("SessionControls", () => {
     expect(sessionMock.pause).not.toHaveBeenCalled();
   });
 
-  it("audio and end buttons carry accessible labels; end fires only its callback", () => {
+  it("end fires only its callback", () => {
     const onEnd = vi.fn();
     render({ onEndSession: onEnd });
 
-    expect(buttonByLabel("Mute audio")).toBeTruthy();
     const end = buttonByLabel("End session");
     click(end);
     expect(onEnd).toHaveBeenCalledTimes(1);
     expect(sessionMock.complete).not.toHaveBeenCalled();
+  });
+
+  describe("the cue glyph", () => {
+    const cueBtn = () =>
+      buttonByLabel("Breath cues: spoken — tap for breath.");
+
+    it("names the texture you have and the one the next tap brings", () => {
+      render();
+      expect(cueBtn()).toBeTruthy();
+      expect(cueBtn().querySelector("svg")).toBeTruthy();
+    });
+
+    it("voice → breath: the store follows and the new texture auditions itself", () => {
+      render();
+      click(cueBtn());
+
+      expect(sessionMock.setAudioEnabled).toHaveBeenCalledWith(true);
+      expect(sessionMock.setCueStyle).toHaveBeenCalledWith("breath");
+      expect(setCueStyle).toHaveBeenCalledWith("breath");
+      expect(previewCue).toHaveBeenCalledWith("inhale");
+      expect(trackMock).toHaveBeenCalledWith("cue_changed", {
+        from: "spoken",
+        to: "breath",
+      });
+    });
+
+    it("breath → quiet: the voice is cut and nothing is auditioned", () => {
+      sessionMock.cueStyle = "breath";
+      render();
+      click(
+        buttonByLabel("Breath cues: breath — tap for quiet."),
+      );
+
+      expect(sessionMock.setAudioEnabled).toHaveBeenCalledWith(false);
+      expect(setVoiceEnabled).toHaveBeenCalledWith(false);
+      expect(previewCue).not.toHaveBeenCalled();
+      expect(trackMock).toHaveBeenCalledWith("cue_changed", {
+        from: "breath",
+        to: "quiet",
+      });
+    });
+
+    it("quiet → voice closes the loop, and audio off reads as quiet", () => {
+      sessionMock.audioEnabled = false;
+      render();
+      click(buttonByLabel("Breath cues: quiet — tap for spoken."));
+
+      expect(sessionMock.setAudioEnabled).toHaveBeenCalledWith(true);
+      expect(sessionMock.setCueStyle).toHaveBeenCalledWith("spoken");
+      // The audition must hear the new texture, not the one being left.
+      expect(setCueStyle).toHaveBeenCalledWith("spoken");
+      expect(previewCue).toHaveBeenCalledWith("inhale");
+      expect(trackMock).toHaveBeenCalledWith("cue_changed", {
+        from: "quiet",
+        to: "spoken",
+      });
+    });
+
+    it("disabled or loading leaves the sound alone", () => {
+      render({ disabled: true });
+      click(cueBtn());
+      expect(trackMock).not.toHaveBeenCalled();
+      expect(sessionMock.setCueStyle).not.toHaveBeenCalled();
+    });
   });
 });

@@ -205,6 +205,42 @@ describe("voiceCues", () => {
   });
 });
 
+describe("the session cue cycle", () => {
+  it("walks voice → breath → quiet → voice", () => {
+    expect(mod.nextCueState("spoken")).toBe("breath");
+    expect(mod.nextCueState("breath")).toBe("quiet");
+    expect(mod.nextCueState("quiet")).toBe("spoken");
+  });
+
+  it("reads the store's two fields as one state", () => {
+    expect(mod.cueStateOf(true, "spoken")).toBe("spoken");
+    expect(mod.cueStateOf(true, "breath")).toBe("breath");
+    // Audio off wins over the style — the texture is silence, whichever
+    // style is remembered underneath it.
+    expect(mod.cueStateOf(false, "breath")).toBe("quiet");
+    expect(mod.cueStateOf(false, "spoken")).toBe("quiet");
+  });
+
+  it("auditions the breath texture and never a spoken word for it", () => {
+    mod.setCueStyle("breath");
+    mod.setVoiceEnabled(false);
+    mod.previewCue("inhale");
+    expect(FakeAudio.instances[0].src).toBe("/voice/breath-in.mp3");
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+
+  it("breath style marks only the two edges — hold and rest stay silent", () => {
+    mod.setCueStyle("breath");
+    mod.setVoiceEnabled(true);
+    mod.previewCue("hold");
+    mod.previewCue("pause");
+    // An inhale that runs out IS the hold beginning; a cue there would
+    // be Brume talking over the breath instead of being it.
+    expect(FakeAudio.instances).toHaveLength(0);
+    expect(synth.speak).not.toHaveBeenCalled();
+  });
+});
+
 describe("spoken lines", () => {
   it("posts the line to the voice service and plays the returned audio", async () => {
     mod.speakLine("Evening. We'll take it slow.");
@@ -245,7 +281,7 @@ describe("spoken lines", () => {
   });
 
   it("a phase cue holds while a line is speaking, then works again", async () => {
-    mod.speakLine("You came in carrying a lot.");
+    mod.speakLine("Evening. Nothing to finish tonight. Just the long exhale.");
     await flush();
     const line = FakeAudio.instances[0];
     expect(line.src).toMatch(/^blob:/);

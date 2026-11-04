@@ -11,7 +11,8 @@ import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 import { CHECK_IN_PATTERN_IDS } from "@/components/home/TodayCard";
 import { feelingAt } from "@/lib/feelings";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
-import { previewCue } from "@/lib/voiceCues";
+import { CUE_STATES, cueStateOf, previewCue } from "@/lib/voiceCues";
+import type { CueState, CueStyle } from "@/lib/voiceCues";
 import { AlertCircle } from "lucide-react";
 
 interface SessionPreviewProps {
@@ -31,10 +32,10 @@ interface SessionPreviewProps {
   onCancel?: () => void;
   /** Session-level error (e.g. unavailable pattern) — rendered as an alert. */
   sessionError?: string | null;
-  /** Breath cues — spoken words, breath-shaped sounds, or off. */
+  /** Breath cues — spoken words, the breath itself, or quiet. */
   audioEnabled?: boolean;
-  cueStyle?: "spoken" | "breath";
-  onChooseCues?: (choice: "spoken" | "breath" | "off") => void;
+  cueStyle?: CueStyle;
+  onChooseCues?: (choice: CueState) => void;
   /** One quiet line naming the session's own ending, under the phases. */
   landingNote?: string;
   /** Brume waits with you — rendered above the pattern name. */
@@ -152,9 +153,9 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
         {audioEnabled !== undefined && cueStyle && onChooseCues && (
           <p className="text-xs text-muted-foreground/70 text-center mt-1">
             Breath cues:{" "}
-            {(["spoken", "breath", "off"] as const).map((kind, i) => {
+            {CUE_STATES.map((kind, i) => {
               const pressed =
-                kind === "off" ? !audioEnabled : audioEnabled && cueStyle === kind;
+                cueStateOf(!!audioEnabled, cueStyle) === kind;
               return (
                 <React.Fragment key={kind}>
                   {i > 0 && " · "}

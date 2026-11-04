@@ -23,10 +23,11 @@ so you can close your eyes.
 >   rendered with the TTS API and shipped as a small cue library, so a
 >   session needs no screen at all. (A gentler option swaps words for
 >   breath-shaped sounds.)
-> - **"Meet me where I am"** — when you tap Begin, Brume speaks one
->   line that names your moment — the time of day and the feeling you
->   checked in with ("Evening. You came in carrying a lot — we'll take
->   it slow."), synthesized live over the API.
+> - **"Meet me where I am"** — when you tap Begin, Brume speaks one line
+>   from its own side of the room: the hour, and what Brume does with it
+>   ("Evening. Nothing to finish tonight. Just the long exhale."),
+>   synthesized live over the API. It never repeats the word you checked
+>   in with — a receipt isn't a companion.
 > - **"Say it kindly"** — after a session you can write one sentence —
 >   to yourself or to someone else — and *hear* it spoken back. Hearing
 >   your own words said warmly lands differently than reading them.
@@ -52,10 +53,11 @@ agents: the product that needs the least of you.
 1. (0–10 s) Dark room, app on a phone: "Brume is a little room to
    breathe. Today it learned to speak."
 2. (10–25 s) Check in with a feeling ("A lot") → Begin → **the greeting
-   plays**: "Evening. You came in carrying a lot — we'll take it slow."
+   plays**: "Evening. Nothing to finish tonight. Just the long exhale."
    Screen can turn away — eyes closed.
-3. (25–45 s) Session running: spoken cues at each phase edge; show the
-   spoken/breath/off chooser + "hear it" audition on the preview.
+3. (25–45 s) Session running: spoken cues at each phase edge; the spoken
+   chooser + "hear it" audition on the preview, then the one glyph on the
+   session — spoken → breath → quiet, mid-breath, no menu.
 4. (45–65 s) Post-session: write the sentence → tap **Hear it** → the
    card is read back. Beat of quiet.
 5. (65–75 s) Code card: `/api/tts` → AssemblyAI TTS; fallback noted.

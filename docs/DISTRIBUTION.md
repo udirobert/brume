@@ -63,8 +63,8 @@ For competitive research on companion apps (Shmoody, Finch, Voidpet), see
      `VITE_HETZNER_SERVICE_URL`; fallbacks: `netlify/functions/tts.mjs`
      on the relative path, vite middleware in dev; key stays
      server-side, 280-char cap, text never logged): the session
-     greeting that names your moment on Begin, and "Hear it" on the
-     Words Card reading your sentence back. Browser voice is the
+     greeting — one line from Brume's own side of the room on Begin — and
+     "Hear it" on the Words Card reading your sentence back. Browser voice is the
      fallback; phase cues hold while a line speaks.
 
 ## Skipped (with reasons)

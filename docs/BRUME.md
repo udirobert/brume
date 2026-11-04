@@ -28,7 +28,9 @@ share it. No camera, no scores, no streaks, no account required.
    a word, or say it and the nearest word offers itself for a tap →
    **"here's a rhythm"**. Naming one thing behind it ("because · work") is
    optional, one tap, and stays on the device.
-2. Guided breathing session — breathing animation and clock only, nothing to get right
+2. Guided breathing session — breathing animation and clock only, nothing to get right.
+   One glyph on the breath cycles its sound — **spoken → breath → quiet** — mid-session,
+   no menu, each tap auditioning the texture it just switched to.
 3. Post-session: practice-time summary → "put it into words" — one honest sentence you can copy or share
 4. /decompress: two unhurried minutes, then the same check-in → words loop
 
@@ -49,7 +51,7 @@ to prove" rules out a classifier by definition.
 |---|---|
 | Onboarding | Emotional check-in; no permissions, no account |
 | Home | "How is it for you right now?" — check-in words suggest a rhythm; doors to reset and /decompress |
-| Session | Breathing animation only (no camera) |
+| Session | Breathing animation only (no camera); one cue glyph — spoken · breath · quiet |
 | Decompress | Two-minute pause → check-in → words card |
 | Post-session | Practice-time summary + words card (no score or verification marks) |
 | Progress | Sessions and minutes — plain facts, no streaks shown |
@@ -235,10 +237,12 @@ narration**: the minimum speech needed so you can close your eyes.
    them. Bridges to the share-with-a-human mechanic. **Shipped
    2026-11-04** ("Hear it" on the Words Card; not offered on
    "just for me" — its contract is "nothing is sent").
-4. *"Meet me where I am"* — spoken opening line that names your context
-   ("A gentle rhythm between standup and the hard email"). **Shipped
-   2026-11-04** as the Begin greeting, composed from closed vocabulary
-   (daypart + the feeling's own phrase — no model call, no user text).
+4. *"Meet me where I am"* — spoken opening line, from Brume's side of the
+   room ("Evening. Nothing to finish tonight. Just the long exhale.").
+   **Shipped 2026-11-04** as the Begin greeting; **rewritten 2026-11-04**
+   out of the receipt voice ("You came in restless — we'll take it slow").
+   Whole lines from a closed table keyed valence × daypart — no model call,
+   no user text, and never one of the fourteen words Brume just offered.
    Live TTS runs through `/api/tts` (primary: the Hetzner FastAPI
    service via `VITE_HETZNER_SERVICE_URL`; `netlify/functions/tts.mjs`
    is the relative-path fallback, vite middleware in dev); key stays

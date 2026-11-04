@@ -89,6 +89,23 @@ read before adding anything to it):
   analysis substrate. A new feature must say what it writes to the
   ledger, or it doesn't get built.
 
+Doctrine for Brume's own voice (`src/lib/spokenGreeting.ts`) — the lines
+Brume speaks, not the lines it reads:
+- **A closed table, never generated.** Whole lines keyed `valence × daypart`.
+  The safety property "the words going to the voice service are always ours,
+  never typed by the user" rests on this, and `copy-claims.test.ts` can only
+  check what is literal in source.
+- **From Brume's side of the room.** The hour, the breath, the room — never
+  the user's own choice handed back with a reason attached ("You came in
+  restless — we'll take it slow" is a receipt, and a receipt has no
+  character). Never one of the fourteen catalog words, either: "Early light"
+  beside the feeling Light reads as an echo either way.
+- **Same situation, same line.** No rotation, no RNG — consistency is what
+  makes it a someone rather than a feed.
+- **≤ ~14 words, imperative or observational, never explains itself.**
+  Instructions are allowed; predictions ("you'll feel", "this calms") are
+  outcome claims and are not.
+
 Verification: `pnpm vitest run`, `npx tsc --noEmit`, `pnpm lint`.
 
 Experiments + measurement: `docs/EXPERIMENTS.md` (hypotheses, kill

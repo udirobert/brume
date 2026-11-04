@@ -68,4 +68,30 @@ export const ResetIcon = make([
   "M8.2 12.4a4.1 4.1 0 0 1 7.2-2.1",
 ]);
 
-export default { HomeIcon, ProgressIcon, DecompressIcon, ProfileIcon, ResetIcon };
+/** Cue glyph: an open mouth-ring with one ripple across the room — a voice. */
+export const CueVoiceIcon = make([
+  "M10.4 15.6a4.3 4.3 0 1 1 4.2-6.9",
+  "M17.6 8.4c1.3 1.9 1.3 4.6 0 6.5",
+]);
+
+/** Cue glyph: two stacked mist curls — the sound of the breath, no words. */
+export const CueBreathIcon = make([
+  "M5.6 10c1.5-1.5 3.5-1.5 4.7-.2 1.2 1.2 3 1.1 4.2-.3",
+  "M8.1 14.6c1.5-1.5 3.5-1.5 4.7-.2 1.2 1.2 3 1.1 4.2-.3",
+]);
+
+/** Cue glyph: a resting crescent — the closed eye of the mascot, nothing heard. */
+export const CueQuietIcon = make([
+  "M6.4 10.6a6.4 6.4 0 0 0 11.2 0",
+]);
+
+export default {
+  HomeIcon,
+  ProgressIcon,
+  DecompressIcon,
+  ProfileIcon,
+  ResetIcon,
+  CueVoiceIcon,
+  CueBreathIcon,
+  CueQuietIcon,
+};

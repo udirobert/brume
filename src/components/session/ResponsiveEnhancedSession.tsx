@@ -384,7 +384,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
             audioEnabled={audioEnabled}
             cueStyle={session.cueStyle}
             onChooseCues={(choice) => {
-              if (choice === "off") {
+              if (choice === "quiet") {
                 session.setAudioEnabled(false);
               } else {
                 session.setCueStyle(choice);

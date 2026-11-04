@@ -2,6 +2,10 @@ version: '3.8'
 
 services:
   vision-service:
+    env_file:
+      # API keys live here on the server (/opt/vision-service/.env):
+      # LLM keys, REVENUECAT_*, ASSEMBLYAI_API_KEY/VOICE_ID, LENS_*, SENTRY_DSN
+      - .env
     build: .
     ports:
       - "8001:8001"
@@ -11,9 +15,6 @@ services:
       - MAX_CONCURRENT_SESSIONS=10
       - MODEL_DOWNLOAD_ON_START=true
       - LOG_LEVEL=info
-      # "Brume speaks" TTS — set in /opt/vision-service/.env on the server
-      - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY:-}
-      - ASSEMBLYAI_VOICE_ID=${ASSEMBLYAI_VOICE_ID:-}
     volumes:
       # Persist models across container restarts
       - ./models:/app/models
@@ -35,8 +36,12 @@ services:
           memory: 1G
           cpus: '0.5'
 
-  # Nginx reverse proxy for security and load balancing
+  # Nginx reverse proxy — standalone deploys only. On the production box
+  # the host nginx owns 80/443 (certbot TLS) and proxies to :8001, so this
+  # service is profile-gated: `docker-compose --profile standalone up`.
   nginx:
+    profiles:
+      - standalone
     image: nginx:alpine
     ports:
       - "80:80"

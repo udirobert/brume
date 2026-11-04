@@ -39,6 +39,12 @@ print_status "Deploying to $SERVER_USER@$SERVER_HOST"
 print_status "Creating deployment package..."
 tar -czf vision-service.tar.gz \
     main.py \
+    webhook_handler.py \
+    cerebras_client.py \
+    gemini_client.py \
+    openai_client.py \
+    siwe_endpoints.py \
+    revenuecat_config.py \
     requirements.txt \
     Dockerfile \
     docker-compose.yml \

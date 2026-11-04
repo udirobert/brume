@@ -63,12 +63,17 @@ agents: the product that needs the least of you.
 
 ## Pre-submit checklist
 
-- [ ] `ASSEMBLYAI_API_KEY` (+ optional `ASSEMBLYAI_VOICE_ID`) in
-      `/opt/vision-service/.env` on the Hetzner box, then
-      `pnpm deploy:vision` — the compose file passes both through;
-      `curl -X POST $VITE_HETZNER_SERVICE_URL/api/tts` to confirm
-- [ ] Set `ASSEMBLYAI_API_KEY` in Netlify env too — the function is the
-      fallback path if `VITE_HETZNER_SERVICE_URL` is ever unset
+- [x] `ASSEMBLYAI_API_KEY` in `/opt/vision-service/.env` on the Hetzner
+      box; full repo `main.py` deployed (previously ran an Oct-19 build
+      missing siwe/revenuecat/sentry — now caught up; box verified:
+      `POST /api/tts` → real WAV over HTTPS, empty → 400)
+- [x] Host nginx: `limit_req` 10 r/s/burst 20 → 429 on
+      api.brume.trustfall.xyz (mirrors api.famile.xyz); TLS via certbot;
+      compose nginx service now profile-gated (`standalone`) since the
+      host owns 80/443
+- [ ] `VITE_HETZNER_SERVICE_URL` confirmed in Netlify env (prod builds
+      must resolve `api.brume.trustfall.xyz/api/tts`; else they fall
+      back to the Netlify function — set `ASSEMBLYAI_API_KEY` there too)
 - [ ] Real-device pass: greeting on Begin, cues, hear-it, fallback with
       network off
 - [ ] Record the video above on the deployed URL (mic on, real audio)

@@ -16,20 +16,20 @@ const LISTEN_MS = 4000;
 
 // Colloquial words → feeling index (labels/phrases already covered).
 const SYNONYMS: Record<number, string[]> = {
-  0: ["ok", "fine", "alright", "okay"],
-  1: ["tense", "tight", "stressed", "stress", "stretched"],
-  2: ["busy", "racing", "scattered", "much"],
-  3: ["edge", "brink", "burning", "burnt", "limit"],
-  4: ["swamped", "drowning", "overwhelming"],
-  5: ["good", "great", "easy", "breezy"],
-  6: ["down", "low", "sad", "blue", "gloomy"],
-  7: ["pumped", "buzzed", "alive", "energy", "energized"],
-  8: ["tired", "exhausted", "sleepy", "fatigued", "empty", "wiped"],
-  9: ["calm", "peaceful", "content", "grounded", "steady"],
-  10: ["fidgety", "anxious", "wired", "jumpy", "antsy"],
-  11: ["close", "loved", "warm", "together"],
-  12: ["alone", "isolated", "lonesome"],
-  13: ["hope", "optimistic", "bright", "upbeat"],
+  0: ["ok", "fine", "alright", "okay", "neutral", "normal"],
+  1: ["tense", "tight", "stressed", "stress", "stretched", "frustrated", "annoyed", "irritated", "pressure"],
+  2: ["busy", "racing", "scattered", "much", "chaotic"],
+  3: ["edge", "brink", "burning", "burnt", "limit", "breaking", "snapping"],
+  4: ["swamped", "drowning", "overwhelming", "overloaded", "suffocating"],
+  5: ["good", "great", "easy", "breezy", "happy", "glad", "lovely"],
+  6: ["down", "low", "sad", "blue", "gloomy", "unhappy", "depressed", "miserable", "bad"],
+  7: ["pumped", "buzzed", "alive", "energy", "energized", "excited", "thrilled", "hyper", "stoked", "joyful"],
+  8: ["tired", "exhausted", "sleepy", "fatigued", "empty", "wiped", "shattered", "knackered", "lethargic"],
+  9: ["calm", "peaceful", "content", "grounded", "steady", "relaxed", "serene", "chilled", "mellow"],
+  10: ["fidgety", "anxious", "wired", "jumpy", "antsy", "nervous", "worried", "uneasy", "scared", "twitchy", "bored"],
+  11: ["close", "loved", "warm", "together", "grateful", "appreciated", "supported"],
+  12: ["alone", "isolated", "lonesome", "left out", "invisible", "unwanted"],
+  13: ["hope", "optimistic", "bright", "upbeat", "positive", "encouraged"],
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();

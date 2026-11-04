@@ -28,3 +28,14 @@ describe("matchFeeling", () => {
     expect(matchFeeling("REALLY GOOD!")).toBe(5);
   });
 });
+
+describe("matchFeeling — real speech", () => {
+  it("maps common emotion words", () => {
+    expect(matchFeeling("i feel excited")).toBe(7);
+    expect(matchFeeling("happy")).toBe(5);
+    expect(matchFeeling("nervous")).toBe(10);
+    expect(matchFeeling("frustrated")).toBe(1);
+    expect(matchFeeling("relaxed")).toBe(9);
+    expect(matchFeeling("sad")).toBe(6);
+  });
+});

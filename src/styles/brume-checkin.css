@@ -318,3 +318,38 @@
   margin: 0.15rem 0 0;
   text-align: center;
 }
+
+/* The margin — a private line beside the check-in, device-local. */
+.brume-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+}
+.brume-margin__input {
+  border: none;
+  border-bottom: 1px solid rgba(140, 120, 200, 0.35);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  font-style: italic;
+  text-align: center;
+  padding: 0.15rem 0.5rem;
+  width: min(14rem, 70vw);
+  opacity: 0.75;
+  outline: none;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+.brume-margin__input:focus {
+  opacity: 1;
+  border-color: rgba(140, 120, 200, 0.7);
+}
+.brume-margin__input::placeholder {
+  opacity: 0.5;
+}
+.brume-margin__hint {
+  font-size: 0.62rem;
+  opacity: 0.4;
+}

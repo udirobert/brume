@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
 import { Magnetic } from "@/lib/Magnetic";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
+import { CheckInMargin } from "@/components/checkin/CheckInMargin";
 import { type MascotReaction } from "@/components/BrumeMascot";
 import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
@@ -170,6 +171,8 @@ export default function Index() {
           setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` })
         }
       />
+
+      <CheckInMargin feeling={feelTap} />
 
       <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
         <button type="button" className="brume-btn brume-btn--push" onClick={begin}>

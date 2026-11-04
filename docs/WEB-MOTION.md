@@ -15,6 +15,7 @@ deform-along-velocity principle, MotionSites' spec-and-freeze-frame loop.
 | Settle ease (the *only* sanctioned overshoot — releases) | `cubic-bezier(0.34, 1.56, 0.64, 1)` | `EASE_SETTLE` + CSS `--press-return` |
 | Press squash (press) | `translateY 3px · scaleX 1.02 · scaleY 0.96`, 70ms fast-in | CSS `:active` rules + `PRESS` |
 | Press release | 260ms settle ease, passes rest once | CSS `--press-return` |
+| Room touch (Home) | press+drag on empty space leaves mist; radius/alpha follow the mascot's own 7 s breath cosine; strokes over ~600 px/s thin toward the mascot's 1200 px/s hush; dabs fade over 14 s; responds only to the hand, so no extra motion under reduced motion | `src/lib/mistBrush.ts` + `RoomTouch.tsx` |
 | Page change (core loop) | root out 180ms · in 320ms rise 0.6% · entry morph 340ms — **non-core routes only now** | `src/styles/brume-transitions.css` + `src/lib/viewTransition.ts` |
 | Companion glide (core journey) | 0.5s signature ease between anchors · immediate on scroll/resize · opacity-only under reduced motion | `src/components/companion/JourneyCompanion.tsx` |
 | Feeling flip (paired chips) | inner face rotateX −72° → 0 in 0.32s, button stays put · opacity-only under reduced motion | `src/components/checkin/PairedFeelings.tsx` |

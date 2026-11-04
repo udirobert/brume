@@ -72,6 +72,16 @@ or `/decompress` → check-in word → optional one-sentence message.
 
 Verification: `pnpm vitest run`, `npx tsc --noEmit`, `pnpm lint`.
 
+Experiments + measurement: `docs/EXPERIMENTS.md` (hypotheses, kill
+criteria, "bar for going live"). Every event goes through `track()` in
+`src/lib/events.ts` — its type map is the privacy contract (numbers,
+booleans, closed sets; never words, messages or drawings), so add events
+there and in the doc first. The room answers touch on Home only
+(`RoomTouch.tsx` + `src/lib/mistBrush.ts`: breath = the mascot's own
+7 s cosine, hush mirrors `ATTENTION.AGITATED`; tests pin both to the
+frozen mascot files). Focused tests:
+`pnpm vitest run src/lib/__tests__/events.test.ts src/lib/__tests__/mistBrush.test.ts src/components/atmosphere/__tests__/RoomTouch.test.tsx`.
+
 Motion: the archetype is CALM — one signature ease and three durations in
 `src/lib/motion.ts` (0.2/0.5/0.9 s); the breath itself uses `easeInOutSine`
 in `src/lib/breathCurve.ts`. Playful motion lives only on the mascot.
@@ -107,6 +117,19 @@ word's tint — and the heading takes focus on mount so the route change
 announces. `sessionStore` holds only the API callers use;
 `sessionSelectors.isActive` means `phase === 'active'` literally (not
 "session exists").
+
+## Product shape: compact, one room
+
+Brume stays a compact experience — one room + one companion persisting
+across routes; new kinds of surface are *states of the room* you toggle
+or trigger, never new destinations. **Do not add nav items, pages or
+routes** (nav = Home, Progress, Decompress, Profile). Cap of 3–4 verbs
+(breathe, touch, say, rest); a fifth replaces one. No settings drawers
+for surfaces (settings hold skins only), nothing saved/gallery'd, every
+surface ends at the same landing. Full rules and the four-question test:
+`docs/EXPERIMENTS.md` ("Product shape"). Current phase is B2C web
+experiments; MCP/Cloudflare/ChatGPT stay undeployed until retention is
+proven.
 
 ## Secrets
 

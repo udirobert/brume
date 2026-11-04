@@ -3,6 +3,8 @@
 Context: Anna Founding Builder Program needs ~200 MAU by 2026-11-30; store
 browse alone won't get there. Meanwhile the web app and the Anna toolset are
 the same product — "agent-friendly, not agentic" (see `docs/AGENTIC.md`).
+For competitive research on companion apps (Shmoody, Finch, Voidpet), see
+`docs/MASCOT-RESEARCH.md`.
 
 ## Ranked opportunities
 

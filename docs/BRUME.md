@@ -105,6 +105,14 @@ surfaces only; other screen animations are unchanged.
   the two-sided monetization story: consumers pay via RevenueCat, agents pay per call.
 - Port existing plumbing: `revenuecat_config.py`, `revenueCatAuthIntegration.ts`.
 
+## Mascot Strategy & Competitive Insights
+
+See [`docs/MASCOT-RESEARCH.md`](./MASCOT-RESEARCH.md) for full competitive research on Shmoody, Finch, and Voidpet.
+Key pillars:
+- **Anti-Tamagotchi stance:** Unlike Finch or Voidpet, Brume is not a pet you have to keep alive. The sprite asks nothing of you and holds the weight with you.
+- **Current phase:** B2C web experiments only; nothing deployed to Cloudflare/ChatGPT until retention is proven — see [`docs/EXPERIMENTS.md`](./EXPERIMENTS.md).
+- **Actionable outcome bridge:** Like Shmoody's action plans, Brume delivers a concrete output—the Post-Session Words Card ("say it in a sentence without explaining it") and AI conversation preparation on Anna.
+
 ## OneSignal Journeys (Keep Them Coming Back evidence)
 
 **Wired client-side** (`src/lib/notifications/oneSignal.ts`, hooks in `App.tsx` init +

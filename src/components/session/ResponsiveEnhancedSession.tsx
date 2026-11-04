@@ -377,6 +377,10 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
               description: config.pattern.description,
             }}
             sessionError={sessionError}
+            onVoiceState={(s) =>
+              s === "listening" &&
+              setMascotReaction({ name: "ready", key: `${reactionScope}-${++reactionSerial.current}` })
+            }
             audioEnabled={audioEnabled}
             cueStyle={session.cueStyle}
             onChooseCues={(choice) => {

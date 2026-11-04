@@ -39,6 +39,8 @@ interface SessionPreviewProps {
   landingNote?: string;
   /** Brume waits with you — rendered above the pattern name. */
   mascot?: React.ReactNode;
+  /** Voice check-in state — lets the parent perk the companion's ears. */
+  onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
 }
 
 export const SessionPreview: React.FC<SessionPreviewProps> = ({
@@ -49,6 +51,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
   sessionError,
   audioEnabled,
   cueStyle,
+  onVoiceState,
   onChooseCues,
   landingNote,
   mascot,
@@ -120,7 +123,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
               {feelingAt(checkInIndex)?.label}
             </span>
           </p>
-          <PairedFeelings selectedIndex={checkInIndex} onChoose={pickFeel} showHint={false} />
+          <PairedFeelings selectedIndex={checkInIndex} onChoose={pickFeel} onVoiceState={onVoiceState} showHint={false} />
         </div>
       )}
 

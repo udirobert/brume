@@ -74,7 +74,7 @@ const MAX_LISTEN_MS = 6000;
 
 // Live path: stream PCM16 to AssemblyAI's realtime WS — transcripts
 // arrive as we speak. Falls back to the file path on any failure.
-async function viaStreaming(onInterim?: (s: string) => void): Promise<string> {
+async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSignal): Promise<string> {
   const tok = await fetch(TOKEN_ENDPOINT, { method: "POST" });
   if (!tok.ok) throw new Error("no_token");
   const { token } = (await tok.json()) as { token: string };
@@ -93,6 +93,7 @@ async function viaStreaming(onInterim?: (s: string) => void): Promise<string> {
       resolve(v);
     };
     ws.onerror = () => reject(new Error("ws_error"));
+    signal?.addEventListener("abort", () => stop(final));
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.type === "Turn" && m.transcript) {
@@ -127,7 +128,7 @@ async function viaStreaming(onInterim?: (s: string) => void): Promise<string> {
   }
 }
 
-async function viaAssemblyAI(onInterim?: (s: string) => void): Promise<string> {
+async function viaAssemblyAI(onInterim?: (s: string) => void, signal?: AbortSignal): Promise<string> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   try {
     const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -153,7 +154,7 @@ async function viaAssemblyAI(onInterim?: (s: string) => void): Promise<string> {
         let peak = 0;
         for (const b of buf) peak = Math.max(peak, Math.abs(b - 128) / 128);
         if (peak > 0.02) { spoke = true; quietMs = 0; } else quietMs += 100;
-        if ((spoke && quietMs > SILENCE_MS) || (!spoke && quietMs > 2500)) {
+        if (signal?.aborted || (spoke && quietMs > SILENCE_MS) || (!spoke && quietMs > 2500)) {
           clearInterval(iv); resolve();
         }
       }, 100);
@@ -162,6 +163,7 @@ async function viaAssemblyAI(onInterim?: (s: string) => void): Promise<string> {
     rec.stop();
     ctx.close();
     await stopped;
+    if (spoke) onInterim?.("hearing…");
     const res = await fetch(STT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/octet-stream" },
@@ -200,13 +202,14 @@ function viaWebSpeech(onInterim?: (s: string) => void): Promise<string> {
 /** One shot: listen → transcribe → match. Returns the heard words too. */
 export async function listenOnce(
   onInterim?: (s: string) => void,
+  signal?: AbortSignal,
 ): Promise<HeardResult> {
   let transcript = "";
   try {
-    transcript = await viaStreaming(onInterim);
+    transcript = await viaStreaming(onInterim, signal);
   } catch {
     try {
-      transcript = await viaAssemblyAI(onInterim);
+      transcript = await viaAssemblyAI(onInterim, signal);
     } catch {
       transcript = await viaWebSpeech(onInterim).catch(() => "");
     }

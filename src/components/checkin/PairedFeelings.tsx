@@ -51,6 +51,7 @@ export function PairedFeelings({
   const hintSeenRef = useRef(readHintSeen());
   const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [micOn, setMicOn] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const [heard, setHeard] = useState("");
   const voiceOk = useMemo(() => voiceCheckinSupported(), []);
 
@@ -99,11 +100,15 @@ export function PairedFeelings({
 
   // "Just say it" — tap the mic, speak a feeling, the chip answers.
   const onMicTap = useCallback(async () => {
-    if (micOn) return;
+    if (micOn) {
+      abortRef.current?.abort(); // tap again to stop early
+      return;
+    }
     setMicOn(true);
     setHeard("listening…");
     onVoiceState?.("listening");
-    const { transcript, index } = await listenOnce(setHeard);
+    abortRef.current = new AbortController();
+    const { transcript, index } = await listenOnce(setHeard, abortRef.current.signal);
     track("checkin_voice_used", { matched: index != null });
     setMicOn(false);
     onVoiceState?.(index != null ? "matched" : "missed", index ?? undefined);

@@ -240,3 +240,52 @@
     animation: none;
   }
 }
+
+/* "say it" — voice check-in, mist styling. A soft halo breathes out
+   from the pill while it listens; chips dim so the voice moment owns
+   the room. Hearing state settles to a slower, steadier breath. */
+.brume-mic {
+  position: relative;
+}
+.brume-mic.is-listening::after,
+.brume-mic.is-hearing::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+  animation: brumeMicBreath 3.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+.brume-mic.is-hearing::after {
+  animation-duration: 7s;
+}
+.brume-mic.is-listening {
+  opacity: 1;
+  animation: none;
+}
+@keyframes brumeMicBreath {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  70%,
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+.brume-pairs:has(.brume-mic.is-listening) .brume-choice {
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-mic.is-listening::after,
+  .brume-mic.is-hearing::after {
+    animation: none;
+  }
+  .brume-pairs:has(.brume-mic.is-listening) .brume-choice {
+    opacity: 1;
+  }
+}

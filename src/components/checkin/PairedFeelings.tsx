@@ -204,7 +204,7 @@ export function PairedFeelings({
       {voiceOk && (
         <button
           type="button"
-          className={`brume-mic${micOn ? " is-listening" : ""}`}
+          className={`brume-mic${micOn ? (heard === "hearing…" ? " is-hearing" : " is-listening") : ""}`}
           aria-label="Say how you feel"
           aria-pressed={micOn}
           onClick={onMicTap}

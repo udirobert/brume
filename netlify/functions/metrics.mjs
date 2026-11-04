@@ -2,9 +2,9 @@
  * The counter — the only endpoint that receives anything from a session.
  *
  * One POST per wired event; what arrives is id-less and already limited to
- * numbers and short ids. Nothing is stored per person: each day's counters
- * live in one blob and are summed in place, so the most anyone can read out
- * of here is how many.
+ * numbers, booleans and short ids. Nothing is stored per person: each day's
+ * counters live in one blob and are summed in place, so the most anyone can
+ * read out of here is how many.
  *
  * Reading is a GET on the same path. If METRICS_READ_TOKEN is set in the
  * function env the read needs it in `Authorization`; if it isn't, the
@@ -22,6 +22,8 @@ export const ALLOWED = {
   session_complete: { pattern: "id", seconds: "num", cycles: "num" },
   session_abandon: { pattern: "id", phase: "id", seconds: "num" },
   after_answer: { choice: "id", material_changes: "num" },
+  words_card_shown: { surface: "id", arm: "id" },
+  words_written: { surface: "id", arm: "id", for_me: "bool" },
 };
 
 const ID_SHAPE = /^[a-z][a-z0-9_-]{0,23}$/;
@@ -42,6 +44,9 @@ export const empty = () => ({
   completes: {},
   abandons: {},
   after: {},
+  // shown: the sentence card opened. own: the composed sentence was changed,
+  // so a person's words exist somewhere. kept: they wrote it for themselves.
+  words: { shown: 0, own: 0, kept: 0 },
 });
 
 /**
@@ -76,6 +81,13 @@ export function add(day, name, props) {
       day.after[props.choice ?? "unknown"] =
         (day.after[props.choice ?? "unknown"] ?? 0) + 1;
       return;
+    case "words_card_shown":
+      day.words.shown += 1;
+      return;
+    case "words_written":
+      day.words.own += 1;
+      if (props.for_me === true) day.words.kept += 1;
+      return;
   }
 }
 
@@ -97,6 +109,7 @@ export function clean(name, props) {
     if (kind === "id" && typeof value === "string" && ID_SHAPE.test(value)) {
       out[key] = value;
     }
+    if (kind === "bool" && typeof value === "boolean") out[key] = value;
   }
   return Object.keys(out).length > 0 ? out : null;
 }
@@ -146,7 +159,10 @@ export default async (request) => {
 
   const key = new Date().toISOString().slice(0, 10);
   try {
-    const day = (await store.get(key, { type: "json" })) ?? empty();
+    const stored = await store.get(key, { type: "json" });
+    // A day written by an earlier version may lack a counter added since;
+    // merging the shape keeps the sum in place rather than failing the write.
+    const day = { ...empty(), ...(stored ?? {}) };
     add(day, body.name, props);
     await store.setJSON(key, day);
   } catch {

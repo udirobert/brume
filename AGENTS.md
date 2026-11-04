@@ -145,15 +145,17 @@ booleans, closed sets; never words, messages or drawings), so add events
 there and in the doc first. **The wire is `src/lib/metrics.ts`** — a
 same-origin counter (`/api/metrics`,
 `netlify/functions/metrics.mjs`, stored as daily aggregates in Netlify
-Blobs) that sends only the five events named in its `WIRE`: `visit`,
-`session_start`, `session_complete`, `session_abandon`, `after_answer`. Day
+Blobs) that sends only the seven events named in its `WIRE`: `visit`,
+`session_start`, `session_complete`, `session_abandon`, `after_answer`,
+`words_card_shown`, `words_written`. Day
 numbers, seconds and closed-set ids, no device key, no person to
 reconstruct; a value that isn't a number, a boolean or an id-shaped string
 is dropped before the request goes out. `trackEvent` still has no provider —
 adding one is a decision, not a dependency. Widening the wire takes three
 changes in one commit: the client `WIRE`, the function's `ALLOWED` map (the
 parity test fails otherwise), and `src/pages/PrivacyPolicy.tsx`, which names
-what may leave. The room answers touch on Home only
+what may leave — its test reads the length of `WIRE`, so an old number on the
+page fails. The room answers touch on Home only
 (`RoomTouch.tsx` + `src/lib/mistBrush.ts`: breath = the mascot's own
 7 s cosine, hush mirrors `ATTENTION.AGITATED`; tests pin both to the
 frozen mascot files). Focused tests:

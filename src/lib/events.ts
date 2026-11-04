@@ -24,6 +24,8 @@ export interface BrumeEvents {
   checkin_reason: { feeling: number; reason: CheckInReasonId };
   checkin_voice_used: { matched: boolean; offered: number | null };
   words_card_shown: { surface: Surface; arm: "sentence" };
+  /** The person changed the composed sentence — their words, not ours. */
+  words_written: { surface: Surface; arm: "sentence"; for_me: boolean };
   words_card_copied: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
   words_card_shared: { surface: Surface; arm: "sentence"; room_link: boolean; for_me: boolean; edited: boolean };
   words_card_heard: { surface: Surface; edited: boolean };

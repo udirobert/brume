@@ -10,6 +10,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import PrivacyPolicy from "../PrivacyPolicy";
+import { WIRE } from "@/lib/metrics";
 
 const html = renderToString(
   <MemoryRouter>
@@ -93,6 +94,20 @@ describe("PrivacyPolicy counting copy", () => {
     expect(html).toContain("Anything you typed");
     expect(html).toContain("Anything you said");
     expect(html).toContain("drops the sentence");
+  });
+
+  it("states as many events as the wire actually names", () => {
+    // Widening the wire without widening the page fails here, which is the
+    // only reason the rule in AGENTS.md is more than an intention.
+    const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+    const count = words[Object.keys(WIRE).length];
+    expect(count, "wire too long for the number table").toBeDefined();
+    expect(html.toLowerCase()).toContain(`${count} events are sent`);
+  });
+
+  it("counts the act of writing a sentence, never the sentence", () => {
+    expect(html).toContain("The sentence card");
+    expect(html).toContain("your sentence is never part of this count");
   });
 });
 

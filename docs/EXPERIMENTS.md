@@ -291,9 +291,11 @@ could be put into.
 
 **The wire is `src/lib/metrics.ts` (added 2026-11-04)** — a same-origin POST to
 `/api/metrics`, served by `netlify/functions/metrics.mjs` and stored in Netlify
-Blobs as one aggregate document per day. Only the five events named in its
+Blobs as one aggregate document per day. Only the seven events named in its
 `WIRE` leave the device: `visit` (two day numbers), `session_start`,
-`session_complete`, `session_abandon`, `after_answer`. A field the wire doesn't
+`session_complete`, `session_abandon`, `after_answer`, and the two sentence
+acts (`words_card_shown`, `words_written`) that make the qualitative bar
+countable — see "Qualitative" below. A field the wire doesn't
 name is dropped before the request; a string that isn't shaped like a catalog
 id is dropped too; the counter re-checks both and buckets every number, so the
 most anyone can read out of it is how many. `src/lib/__tests__/metrics.test.ts`
@@ -332,6 +334,7 @@ every value sent is a number, a boolean or a short id.
 | `checkin_word` | `feeling` (index), `surface` | home chip or decompress |
 | `checkin_reason` | `feeling` (index), `reason` (closed set) | a "because" tap |
 | `words_card_shown` | `surface`, `arm` | card mounts |
+| `words_written` | `surface`, `arm`, `for_me` | the first keystroke that makes the composed sentence theirs — the act, never the words |
 | `words_card_copied` / `_shared` | `surface`, `arm`, `room_link`, `for_me`, `edited` | user copies / shares |
 | `words_card_heard` | `surface`, `edited` | "Hear it" speaks the card aloud |
 | `room_link_toggled` | `surface`, `on` | toggle |
@@ -341,9 +344,11 @@ every value sent is a number, a boolean or a short id.
 | `room_touch` | `strokes`, `seconds`, `material` | once per Home visit with ≥1 stroke |
 
 **Wired to the counter:** `visit`, `session_start`, `session_complete`,
-`session_abandon`, `after_answer`. Everything else in the table is counted on
-the device and stays there — the table describes the contract, and `WIRE` in
-`src/lib/metrics.ts` is the subset that travels.
+`session_abandon`, `after_answer`, `words_card_shown`, `words_written`.
+Everything else in the table is counted on the device and stays there — the
+table describes the contract, and `WIRE` in `src/lib/metrics.ts` is the subset
+that travels. `PrivacyPolicy.test.tsx` reads the length of `WIRE`, so the page
+cannot keep saying an old number.
 
 **The ledger is not an event.** `checkinLedger.ts` holds the same three
 numbers plus a timestamp, on the device, and nothing from it is ever
@@ -359,7 +364,7 @@ for events is dev-only now.
 
 Each experiment still needs a flag so cohorts see different arms (todo; E2 `arm` is the first place it plugs in).
 Privacy copy must say these are aggregate and anonymous. — **done for the
-wired five** (`PrivacyPolicy.tsx` splits what is sent from what stays on the
+wired seven** (`PrivacyPolicy.tsx` splits what is sent from what stays on the
 device); re-read it whenever `WIRE` widens.
 
 ## Bar for going live (written before looking at data)
@@ -389,10 +394,56 @@ Only then do Cloudflare, ChatGPT and an Anna-wide push come back on the
 table — and what follows from a pass is paid sync plus the recap, not
 pattern unlocks. A solo dev does not out-content Calm.
 
-## Qualitative
+## Qualitative — the ten conversations
 
-Ten users beats a dashboard now. One optional question after a session
-("What was that like?"); read every answer.
+The bar's second half is *five people saying out loud they would miss it*. That
+is not a counter reading and it must not become one. The sentences stay on the
+device — `checkinLedger.ts` has no field a sentence could go into, and the
+wire carries the act of writing, never the words — so what anyone said exists
+only in the conversation it was said in.
+
+**The instrument, as shipped.** One optional question after a session, asked
+twice in two forms and never more: closed-set on the landing — *"How is it
+now?"* (lighter / about the same / still a lot) — and open in the sentence
+card, where the line Brume composed is theirs to rewrite. A third question
+would make the landing a survey, and a survey is a feed with a smiley.
+
+**What the counter can say about it.** `words_card_shown` — how many opened
+the card; `words_written` — how many made the sentence their own (first
+keystroke, once per card); `after_answer` — how many answered, and which of
+the three. Enough to size a cohort, not enough to know what anyone meant.
+
+**What happens by hand.** Ten conversations. Each one ends with the same two
+questions, in this order:
+
+1. *"What was that like?"* — then say nothing. The first answer to the silence
+   is the one worth reading.
+2. *"If Brume stopped tomorrow, would you miss it?"* — the bar's own wording,
+   on purpose. "It's nice" is not a yes, and a yes they had to be asked twice
+   for is not a yes either.
+
+Fill one row per person. Verdict in their terms, no sentences: what someone
+said in a conversation is not material for a public repository unless they
+offer it, and the row's job is to be countable, not to be evidence.
+
+| # | date | would they miss it? |
+| - | ---- | ------------------- |
+| 1 |      |                     |
+| 2 |      |                     |
+| 3 |      |                     |
+| 4 |      |                     |
+| 5 |      |                     |
+| 6 |      |                     |
+| 7 |      |                     |
+| 8 |      |                     |
+| 9 |      |                     |
+| 10|      |                     |
+
+**Reading it on 7 November:** five *yes* rows, five different people. Fewer
+than ten rows filled is a finding about reach, not about the product — say so
+in the row's absence rather than rounding up. If the table comes back empty,
+the honest line in the next version of this doc is "we heard nothing", and E6's
+percentage is then the only thing left to argue from.
 
 ## Open decisions
 

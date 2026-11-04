@@ -114,13 +114,14 @@ const PrivacyPolicy = () => {
             </h2>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed and no analytics company is involved: five events are sent to Brume's own counter on this site, and that counter keeps <strong>daily totals only</strong> — no device id, no cookie, no profile, nothing that could single anyone out. What follows is exactly what may leave your device, and every field in it is a number, a boolean, or a member of a closed list. Nothing else is sent.
+                Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed and no analytics company is involved: seven events are sent to Brume's own counter on this site, and that counter keeps <strong>daily totals only</strong> — no device id, no cookie, no profile, nothing that could single anyone out. What follows is exactly what may leave your device, and every field in it is a number, a boolean, or a member of a closed list. Nothing else is sent.
               </p>
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Sent to the counter</h3>
               <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">
                 <li>Visits — two day numbers: how long since your first visit, and how long since your last one</li>
                 <li>Sessions — that one started, and that it finished or was left, with the pattern name, seconds and cycles</li>
                 <li>How the room felt afterwards — one of three choices on a closed list, and how many times you changed the room before answering</li>
+                <li>The sentence card — that you opened it, and that you changed the sentence we offered into your own. Which is the act of writing, not the words: your sentence is never part of this count</li>
               </ul>
               <h3 className="font-medium text-gray-900 dark:text-gray-100 mt-4 mb-2">Counted on your device, never sent</h3>
               <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1 text-sm">

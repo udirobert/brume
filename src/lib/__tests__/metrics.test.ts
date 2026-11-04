@@ -52,9 +52,26 @@ describe("what leaves the device", () => {
   it("sends nothing for an event that is not wired", () => {
     sendMetrics("checkin_word", { feeling: 3, surface: "home" });
     sendMetrics("room_touch", { strokes: 2, seconds: 5, material: "mist" });
+    // E2's own events: they wait for the arm flag, so they stay local.
     sendMetrics("words_card_shared", { surface: "post_session" });
+    sendMetrics("words_card_copied", { surface: "post_session", edited: true });
     expect(posted).toEqual([]);
     expect(isWired("checkin_word")).toBe(false);
+  });
+
+  it("sends that a sentence was written, and never what was written", () => {
+    sendMetrics("words_written", {
+      surface: "post_session",
+      arm: "sentence",
+      for_me: true,
+      message: "It was the first night I slept without my chest being tight",
+    });
+    expect(posted).toEqual([
+      {
+        name: "words_written",
+        props: { surface: "post_session", arm: "sentence", for_me: true },
+      },
+    ]);
   });
 
   it("drops a value that is not a number, a boolean or an id", () => {
@@ -149,6 +166,9 @@ describe("the counter's arithmetic", () => {
     add(day, "session_complete", { pattern: "reset" });
     add(day, "session_abandon", { phase: "paused" });
     add(day, "after_answer", { choice: "lighter" });
+    add(day, "words_card_shown", { surface: "post_session", arm: "sentence" });
+    add(day, "words_written", { surface: "post_session", arm: "sentence", for_me: true });
+    add(day, "words_written", { surface: "post_session", arm: "sentence", for_me: false });
     expect(day).toEqual({
       since_first: { "0": 1, "8-30": 1, "31+": 1 },
       gaps: { "3": 1, "31+": 1 },
@@ -156,6 +176,21 @@ describe("the counter's arithmetic", () => {
       completes: { reset: 1 },
       abandons: { paused: 1 },
       after: { lighter: 1 },
+      words: { shown: 1, own: 2, kept: 1 },
     });
+  });
+
+  it("counts the act of writing a sentence and drops the sentence", () => {
+    const props = clean("words_written", {
+      surface: "post_session",
+      arm: "sentence",
+      for_me: true,
+      message: "It was the first night I slept without my chest being tight",
+    });
+    expect(props).toEqual({ surface: "post_session", arm: "sentence", for_me: true });
+    const day = empty();
+    add(day, "words_written", props!);
+    expect(JSON.stringify(day)).not.toMatch("slept");
+    expect(day.words.own).toBe(1);
   });
 });

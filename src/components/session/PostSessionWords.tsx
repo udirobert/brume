@@ -5,6 +5,11 @@
  * as a rendered card. The support-sentence default stays; the old
  * unexplained support grid is gone. "Just for me" keeps the check-in
  * contract: the message is only ever shown, never offered for share.
+ *
+ * What this writes: nothing to the ledger — a sentence is not analysis
+ * substrate, and the spine stays a closed set. The wire (`metrics.ts` WIRE)
+ * sees two acts and no words: that the card opened, and that the composed
+ * sentence became the person's own.
  */
 import { track } from "@/lib/events";
 import { useEffect, useState } from "react";
@@ -46,6 +51,7 @@ export function PostSessionWords({
   const [sharing, setSharing] = useState(false);
 
   const forMe = forChoice === "just_for_me";
+
   useEffect(() => {
     track("words_card_shown", { surface: "post_session", arm: "sentence" });
   }, []);
@@ -135,6 +141,15 @@ export function PostSessionWords({
           rows={4}
           value={message}
           onChange={(event) => {
+            // The first keystroke is the answer existing: ours becomes theirs.
+            // Counted as the act only — the sentence itself never leaves.
+            if (!edited) {
+              track("words_written", {
+                surface: "post_session",
+                arm: "sentence",
+                for_me: forMe,
+              });
+            }
             setMessage(event.target.value);
             setEdited(true);
           }}

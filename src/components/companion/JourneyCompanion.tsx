@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { onSpeaking } from "@/lib/voiceCues";
 import {
   animate,
   motion,
@@ -97,6 +98,16 @@ export function JourneyCompanionProvider({ children }: { children: React.ReactNo
 
   hiddenRef.current = hidden;
   reducedRef.current = !!reduced;
+
+  // The companion "is talking" — a body class follows the voice so the
+  // mascot's speaking shimmer works wherever it's anchored.
+  useEffect(
+    () =>
+      onSpeaking((speaking) => {
+        document.body.classList.toggle("brume-speaking", speaking);
+      }),
+    [],
+  );
 
   const jump = useCallback(
     (t: { x: number; y: number; scale: number; opacity: number }) => {

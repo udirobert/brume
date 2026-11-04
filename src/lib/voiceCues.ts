@@ -116,8 +116,21 @@ let lineAbort: AbortController | null = null;
 let lineActive = false;
 let lineGuard: ReturnType<typeof setTimeout> | undefined;
 
+// "The companion is talking" — lets visuals (mascot shimmer) follow
+// the voice. True only while a spoken line actually owns the channel.
+const speakListeners = new Set<(speaking: boolean) => void>();
+export function onSpeaking(cb: (speaking: boolean) => void): () => void {
+  speakListeners.add(cb);
+  return () => speakListeners.delete(cb);
+}
+function emitSpeaking(speaking: boolean): void {
+  speakListeners.forEach((cb) => cb(speaking));
+}
+
 function endLine(): void {
+  if (!lineActive) return;
   lineActive = false;
+  emitSpeaking(false);
   if (lineGuard) {
     clearTimeout(lineGuard);
     lineGuard = undefined;
@@ -169,6 +182,7 @@ function speakLineInternal(text: string): void {
   stopCues(); // one channel: cues, synth and any in-flight line all yield
   const serial = ++cueSerial;
   lineActive = true;
+  emitSpeaking(true);
   // A wedged 'ended' must never silence the breath cues — hard bound.
   lineGuard = setTimeout(endLine, Math.min(10_000, 2_000 + t.length * 90));
 

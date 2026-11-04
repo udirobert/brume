@@ -51,3 +51,25 @@
   .brume-mascot-frame[data-tap]:active .brume-mascot { transform: none; transition: none; }
   .brume-mascot--pulse::after { animation: none; }
 }
+
+/* The companion is speaking — a soft shimmer while the voice is out.
+   Web-layer only: the frozen mascot engine stays untouched. */
+.brume-speaking .brume-mascot {
+  animation: brumeSpeakShimmer 1.3s ease-in-out infinite;
+}
+@keyframes brumeSpeakShimmer {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.035);
+    filter: brightness(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-speaking .brume-mascot {
+    animation: none;
+  }
+}

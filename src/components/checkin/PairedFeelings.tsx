@@ -9,7 +9,7 @@ import {
   pairForFeel,
   selectPairedFeel,
 } from "@/lib/feelings";
-import { listenOnce, voiceCheckinSupported } from "@/lib/voiceCheckin";
+import { hasNegation, listenOnce, voiceCheckinSupported } from "@/lib/voiceCheckin";
 import { track } from "@/lib/events";
 
 const HINT_KEY = "brume.feelingFlipHint.v1";
@@ -136,6 +136,13 @@ export function PairedFeelings({
         onPatternOffer?.(pattern);
         setAnnounce("Heard a rhythm — tap Rhythm below to use it.");
         flashHeard(`heard “${snippet}” — a rhythm? below`);
+        return;
+      }
+      if (transcript && hasNegation(transcript)) {
+        // The refusal is the feature: it heard every word and chooses
+        // not to guess — say so, out loud, instead of a generic miss.
+        setAnnounce("Heard you — I'll ask instead of guessing.");
+        flashHeard(`heard “${snippet}” — I'll ask instead`);
         return;
       }
       flashHeard(

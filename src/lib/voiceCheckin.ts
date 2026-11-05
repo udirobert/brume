@@ -157,7 +157,11 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
   const { token } = (await tok.json()) as { token: string };
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true`);
-  let final = "";
+  // Turns are the transcript's phrases — "I'm tense — big call" arrives as
+  // several, and keeping only the last one drops the feeling word. Join
+  // them; the match layer sees the whole sentence.
+  const turns: string[] = [];
+  const final = () => turns.join(" ");
   let silenceSince = 0;
   const ctx = new AudioContext();
   const src = ctx.createMediaStreamSource(stream);
@@ -170,15 +174,15 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
       resolve(v);
     };
     ws.onerror = () => reject(new Error("ws_error"));
-    signal?.addEventListener("abort", () => stop(final));
+    signal?.addEventListener("abort", () => stop(final()));
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.type === "Turn" && m.transcript) {
-        final = m.transcript;
+        turns.push(m.transcript);
         silenceSince = Date.now();
-        if (!m.end_of_turn) onInterim?.(m.transcript);
-        else stop(m.transcript);
-      } else if (m.type === "Termination") stop(final);
+        if (!m.end_of_turn) onInterim?.(final());
+        else stop(final());
+      } else if (m.type === "Termination") stop(final());
     };
     proc.onaudioprocess = (ev) => {
       if (ws.readyState !== WebSocket.OPEN) return;
@@ -192,10 +196,10 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
         peak = Math.max(peak, Math.abs(s));
         pcm[i] = s * 32767;
       }
-      if (final && peak < 0.02 && Date.now() - silenceSince > SILENCE_MS) stop(final);
+      if (turns.length && peak < 0.02 && Date.now() - silenceSince > SILENCE_MS) stop(final());
       else ws.send(pcm.buffer);
     };
-    setTimeout(() => stop(final), MAX_LISTEN_MS);
+    setTimeout(() => stop(final()), MAX_LISTEN_MS);
   });
   try {
     return await heard;

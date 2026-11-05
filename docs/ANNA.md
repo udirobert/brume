@@ -568,8 +568,9 @@ published or tier-3 tested.
    "Alternative…" notes (seen on DeepSeek via prompt-check).
 5. ~~Regenerate listing screenshots/cover/logo with the mascot~~ —
    `anna/listing/candidate/` generated 2026-10-22 from synthetic fixtures
-   (UI demo only, not model-QA evidence); still needs upload in the
-   Developer Console.
+   (UI demo only, not model-QA evidence); **uploaded 2026-11-06** — logo
+   re-uploaded (new CDN hash), cover + five store shots now point at the
+   candidate PNGs in this repo.
 6. Fake-host harness for the binary smoke (answer storage reverse-RPCs).
 7. ~~Post the forum report on the 0.3.0 → 0.3.1 missing-tool delay~~ —
    **posted 2026-11-02** in Developers with tag `executa`, titled

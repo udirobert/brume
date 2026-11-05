@@ -387,9 +387,17 @@ after.
 answered both verbs with a 502: it returned a v1 `{statusCode, body}` object
 from a v2 function, and the read asked Blobs for `list().keys` where the
 installed version answers `list().blobs`. Nothing had ever been recorded. Both
-shapes are now pinned by a test that calls the handler, because a build passes
-and a deploy still fails. The consequence for the bar: the cohort window opens
-the day this deploys, and a D7 read is a week later at the earliest.
+shapes are now pinned by a test that calls the handler, which is the only
+reason either would have been caught: `tsc`, the suite and the build were all
+green while the endpoint was dead. The cohort window opens the day this
+deploys, and a D7 read is a week later at the earliest.
+
+The day's document filled within a minute of the fix going out — nine
+`since_first["0"]` arrivals, `session_starts` still zero. Nobody starts a
+breathing session by accident, so most of those are loads, not people: a
+crawler that runs JavaScript has no localStorage and looks exactly like a first
+visit. Until the arrival is gated on an act, read the count of new arrivals as
+an upper bound and the ratio between the counts as the thing with meaning.
 
 Both halves are load-bearing: a bare percentage at n=50 is noise with a
 decimal point attached, and "they said they'd miss it" on its own is a
@@ -466,5 +474,11 @@ percentage is then the only thing left to argue from.
 - Does the monthly recap get built before or after E6 reads? (Proposed:
   after. The recap is the reward for a mechanism we have not yet proven
   causes a return visit.)
+- Is an arrival a person? `visit` fires on load, so a JavaScript crawler is
+  counted as a new arrival and the ≥50-user half of the bar can be met by
+  spiders. Gating the send on a first act — a tap, a key, the tab becoming
+  visible — would fix the number and stop counting the person who reads the
+  page and leaves without touching it, which is a real arrival too. Not
+  decided, and not decided silently mid-window.
 - If E6 fails: is the product a session sold into hosts, and does the
   consumer web app become a demo of it?

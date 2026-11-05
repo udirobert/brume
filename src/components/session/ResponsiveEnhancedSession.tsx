@@ -190,8 +190,11 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
       return;
     }
     if (!sessionActive || !audioEnabled) return;
-    speakCue(breathPhase === 'hold_after_exhale' ? 'pause' : breathPhase);
-  }, [breathPhase, sessionActive, session.phase, audioEnabled]);
+    speakCue(
+      breathPhase === 'hold_after_exhale' ? 'pause' : breathPhase,
+      flatPattern[breathPhase] || undefined,
+    );
+  }, [breathPhase, sessionActive, session.phase, audioEnabled, flatPattern]);
 
   // Brume IS the breath: centred in the orb, same eased curve.
   const heavy = feelAt(checkInIndex)?.valence === 'heavy';

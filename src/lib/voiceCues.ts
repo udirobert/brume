@@ -90,7 +90,7 @@ function speakFallback(text: string, onend?: () => void) {
   synth.speak(utterance);
 }
 
-function playFile(id: string, file: string, fallback?: () => void): void {
+function playFile(id: string, file: string, fallback?: () => void, phaseSeconds?: number): void {
   stopCues();
   const serial = ++cueSerial;
 
@@ -98,6 +98,15 @@ function playFile(id: string, file: string, fallback?: () => void): void {
   if (!audio) {
     fallback?.();
     return;
+  }
+
+  // Breath cues ride the phase: the clip running out IS the boundary,
+  // so it must end exactly when the instruction changes. Stretch or
+  // squeeze it to span the phase — a whoosh at 0.6–1.6x still breathes.
+  if (phaseSeconds && Number.isFinite(audio.duration)) {
+    audio.playbackRate = Math.min(1.6, Math.max(0.6, audio.duration / phaseSeconds));
+  } else {
+    audio.playbackRate = 1;
   }
 
   const giveUp = () => {
@@ -268,7 +277,7 @@ export function previewLine(text: string): void {
   speakLineInternal(text);
 }
 
-function playCue(id: string, preview: boolean): void {
+function playCue(id: string, preview: boolean, phaseSeconds?: number): void {
   if ((!preview && !voiceEnabled) || typeof window === "undefined") return;
   // A spoken line owns the voice while it plays — the orb carries the
   // phase visually; skipping this edge beats two voices at once.
@@ -278,7 +287,7 @@ function playCue(id: string, preview: boolean): void {
     const file = BREATH_CUES[id as VoiceCueId];
     // No speech fallback here — a missing breath file stays quiet;
     // silence around the two edges is part of the design.
-    if (file) playFile(`breath:${id}`, file);
+    if (file) playFile(`breath:${id}`, file, undefined, phaseSeconds);
     return;
   }
 
@@ -287,8 +296,8 @@ function playCue(id: string, preview: boolean): void {
   playFile(id, cue.file, () => speakFallback(cue.text));
 }
 
-export function speakCue(id: string): void {
-  playCue(id, false);
+export function speakCue(id: string, phaseSeconds?: number): void {
+  playCue(id, false, phaseSeconds);
 }
 
 // Hear-it preview on the session preview screen: plays even when voice is

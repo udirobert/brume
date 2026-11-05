@@ -40,6 +40,8 @@ print_status "Creating deployment package..."
 tar -czf vision-service.tar.gz \
     main.py \
     webhook_handler.py \
+    voice_guard.py \
+    test_voice_guard.py \
     cerebras_client.py \
     gemini_client.py \
     openai_client.py \

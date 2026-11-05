@@ -43,6 +43,44 @@ so you can close your eyes.
 > voice layer added for this hackathon. The repo is public; the diff is
 > the work.
 
+## Update — Nov 5: the pitch deepened (use this framing)
+
+A judge pass found "TTS carries the voice" too shallow: readable as
+transcription-as-feature, replaceable. The pitch is now the *bounded
+voice architecture* — voice input that cannot misread you:
+
+- **Propose-never-commit voice** (named pattern): token →
+  `wss://streaming.assemblyai.com` (PCM16, `universal-3-6-pro`) →
+  turns joined → closed-set match → offer → tap → transcript dropped.
+- **Multilingual check-in**: `language_codes=["en","es","fr","de"]`
+  steers per-token with native code-switching; `LANG` alias catalogs
+  in `voiceCheckin.ts` widen the match set, never the interpretation.
+  *The closed catalog is what makes multilingual hearing safe.*
+- **`keyterms_prompt`** biases the recognizer toward the exact words it
+  may propose — the recognizer is primed by the grammar, not just
+  filtered by it.
+- **Legible refusal**: a negated transcript shows "I'll ask instead" on
+  screen — the product declines interpretation, visibly.
+- **Transcript dissolution**: heard words evaporate into the mist after
+  the match — privacy rendered as animation.
+- Turn detection tuned (`min_end_of_turn_silence_when_confident=600`,
+  `max_turn_silence=1400`) after the demo shoot exposed mid-sentence
+  clipping — shipped with a turn-join fix.
+- EU data residency is a one-line claim: `streaming.eu.assemblyai.com`.
+- Deliberately declined: LLM Gateway / sentiment / summarization —
+  violates "never interpret a feeling". The refusal is the pitch.
+
+Revised submission soundbite: *"Biased the recognizer toward a
+fourteen-word grammar, code-switched across four languages, joined the
+turns the pauses tried to split — and built the product that makes
+refusing to understand visible."*
+
+Video beats (supersedes below): hook ("voice that can't misread you") →
+non-English line → Tense flips → "not good" → "I'll ask instead" →
+transcript dissolves → breath cues ride the phase → pipeline card +
+`streaming.assemblyai.com` flash → "Fourteen words, every language,
+nothing kept."
+
 **Why it fits the brief:** assistants that talk back (Brume literally
 talks back — your own words, said kindly), accessibility (eyes-closed,
 hands-free use), and a deliberate counterpoint to always-on voice

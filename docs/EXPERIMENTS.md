@@ -393,11 +393,12 @@ green while the endpoint was dead. The cohort window opens the day this
 deploys, and a D7 read is a week later at the earliest.
 
 The day's document filled within a minute of the fix going out — nine
-`since_first["0"]` arrivals, `session_starts` still zero. Nobody starts a
-breathing session by accident, so most of those are loads, not people: a
-crawler that runs JavaScript has no localStorage and looks exactly like a first
-visit. Until the arrival is gated on an act, read the count of new arrivals as
-an upper bound and the ratio between the counts as the thing with meaning.
+`since_first["0"]` arrivals (one of them mine: the POST that proved the
+endpoint), `session_starts` still zero. Nobody starts a breathing session by
+accident, so most of those are loads, not people: a crawler that runs
+JavaScript has no localStorage and looks exactly like a first visit. Until the
+arrival is gated on an act, read the count of new arrivals as an upper bound
+and the ratio between the counts as the thing with meaning.
 
 Both halves are load-bearing: a bare percentage at n=50 is noise with a
 decimal point attached, and "they said they'd miss it" on its own is a

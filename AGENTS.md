@@ -245,6 +245,37 @@ it used to publish — which model, whether a key was configured, which sessions
 were live — belongs in the boot log. And the vision/AI-analysis endpoints still
 on that box belong to the product Brume was before: the web app calls neither.
 
+### Getting a change onto the box
+
+`deploy-hetzner.sh` is a provision-and-deploy script (explicit tar list →
+`scp` → `docker-compose down` → `build --no-cache` → rewrite the systemd unit),
+and it is not the route: it connects as `root@` on port 22, which times out,
+while the box is reachable as the `snel-bot` ssh alias — `deploy@157.180.36.156`
+port 49152, in the `docker` group, with `NOPASSWD: ALL`. It is also a shared
+box (`voisss_butler`, onpoint grafana/prometheus/node-exporter, ollama), so
+re-provisioning Docker and rewriting units for one project is out of scope.
+
+What works is the four-file deploy: `scp` the changed `.py` files to `/tmp`,
+`sudo cp` them into `/opt/vision-service` keeping a timestamped `.bak` of each
+file replaced, then rebuild. **Recreate with `sudo docker rm <stopped>` first,
+then `sudo docker-compose up -d --build vision-service`** — compose v1 on this
+box dies mid-recreate with `KeyError: 'ContainerConfig'` against the current
+engine, and it does so *after* stopping the old container, which leaves the
+voice service down with nothing running. Never `down`. `cd /opt/vision-service`
+or `env_file: .env` resolves to nothing and the keys vanish.
+
+Deployed this way on 5 November 2026 with the guard active and
+`VOICE_SHARED_SECRET` unset, so the routes stay keyless and only the limits
+apply — 8 per visitor per minute, 1500 per day. Verified from the public
+domain: a spoken line returns audio, an over-limit burst returns 429 from the
+app (not from the edge `limit_req`, which is a separate 10 r/s), and the 9
+guard tests pass inside the container. Host nginx sets `X-Real-IP`, which is
+what makes the per-visitor bucket per *visitor*; without it every request
+would share one bucket keyed on the proxy. `/opt/vision-service` is not a git
+checkout and the `deploy-hetzner.sh` sitting on the box is the September copy,
+so files land there only by this route — whoever runs the webhook runs that
+stale script, not this one.
+
 ## Secrets
 
 Never commit keys. Local secrets live in gitignored env files

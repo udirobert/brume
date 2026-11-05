@@ -394,8 +394,10 @@ deploys, and a D7 read is a week later at the earliest.
 
 The day's document filled within a minute of the fix going out — nine
 `since_first["0"]` arrivals (one of them mine: the POST that proved the
-endpoint), `session_starts` still zero. Nobody starts a breathing session by
-accident, so most of those are loads, not people: a crawler that runs
+endpoint), `session_starts` still zero. The next morning's document carries one
+more synthetic entry, an `after_answer` I posted to prove the route still
+accepts writes after a day rollover. Nobody starts a breathing session by
+accident, so most of those arrivals are loads, not people: a crawler that runs
 JavaScript has no localStorage and looks exactly like a first visit. Until the
 arrival is gated on an act, read the count of new arrivals as an upper bound
 and the ratio between the counts as the thing with meaning.

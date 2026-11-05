@@ -221,7 +221,7 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
   if (!tok.ok) throw new Error("no_token");
   const { token } = (await tok.json()) as { token: string };
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true&language_detection=true`);
+  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true&language_detection=true&speech_model=universal-3-6-pro&language_codes=["en","es","fr","de"]&keyterms_prompt=["Tense","Overwhelmed","Drained","Settled","Light","box breathing","4-7-8"]&min_end_of_turn_silence_when_confident=600&max_turn_silence=1400`);
   // Turns are the transcript's phrases — "I'm tense — big call" arrives as
   // several, and keeping only the last one drops the feeling word. Join
   // them; the match layer sees the whole sentence.

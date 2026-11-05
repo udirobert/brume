@@ -258,6 +258,27 @@ describe("spoken lines", () => {
     expect(synth.speak).not.toHaveBeenCalled();
   });
 
+  it("carries the voice key when the build has one", async () => {
+    vi.stubEnv("VITE_VOICE_KEY", "sable");
+    try {
+      mod.speakLine("Evening. Breathe out.");
+      await flush();
+      const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect((init.headers as Record<string, string>)["X-Brume-Voice-Key"]).toBe(
+        "sable",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("asks the same way without a key as it always did", async () => {
+    mod.speakLine("Evening. Breathe out.");
+    await flush();
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).toEqual({ "Content-Type": "application/json" });
+  });
+
   it("falls back to the browser voice when the service is unreachable", async () => {
     fetchMock.mockRejectedValueOnce(new Error("offline"));
     mod.speakLine("It's late. We'll take it slow.");

@@ -1,3 +1,5 @@
+import { voiceHeaders } from "./voiceKey";
+
 const SPEECH_RATE = 0.9;
 const SPEECH_PITCH = 1;
 const SPEECH_VOLUME = 0.85;
@@ -234,7 +236,7 @@ function speakLineInternal(text: string): void {
   lineAbort = new AbortController();
   fetch(TTS_ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: voiceHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ text: t }),
     signal: lineAbort.signal,
   })

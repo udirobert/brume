@@ -210,6 +210,41 @@ surface ends at the same landing. Full rules and the four-question test:
 experiments; MCP/Cloudflare/ChatGPT stay undeployed until retention is
 proven.
 
+## The voice server (`backend/vision-service/`)
+
+The FastAPI service on Hetzner (`api.brume.trustfall.xyz`) is what production
+voice actually talks to: `src/lib/voiceCues.ts` and `src/lib/voiceCheckin.ts`
+build their endpoint from `VITE_HETZNER_SERVICE_URL`, and `/api/tts` exists
+**three** times — the vite dev middleware, this server, and
+`netlify/functions/tts.mjs`, which only a build *without* the Hetzner var ever
+reaches. Same request/response contract on all three. So never conclude from a
+curl of the Netlify function that the voice is down; that is how it was
+concluded wrongly once, on a working deployment.
+
+A refused or unreachable voice request degrades rather than errors: a spoken
+line falls through to the browser's own voice, a check-in to the browser's own
+recognition — the same paths a network failure takes.
+
+`voice_guard.py` meters the three routes that spend the AssemblyAI quota, per
+visitor per minute and globally per day, and requires `X-Brume-Voice-Key`
+(⇔ `VOICE_SHARED_SECRET` on the server, `VITE_VOICE_KEY` in the build) only
+when that is set. Unset is a supported configuration, not a broken one: the
+limits alone are what bounds the cost, since anything shipped in a bundle is
+public. Verify: `python3 -m unittest test_voice_guard` in
+`backend/vision-service/`.
+
+**A push to `main` can redeploy this server.** `/webhook/github` runs
+`./deploy-hetzner.sh` on the box when the GitHub HMAC signature verifies, and
+refuses every request — correctly signed included — while
+`GITHUB_WEBHOOK_SECRET` is unset. So "every push deploys the site" also means
+"every push may restart the backend", and client and server changes to one
+contract ship together whether that was intended or not.
+
+`/health` is public and answers one question (`status`). The service inventory
+it used to publish — which model, whether a key was configured, which sessions
+were live — belongs in the boot log. And the vision/AI-analysis endpoints still
+on that box belong to the product Brume was before: the web app calls neither.
+
 ## Secrets
 
 Never commit keys. Local secrets live in gitignored env files

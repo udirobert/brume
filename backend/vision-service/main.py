@@ -5,7 +5,7 @@ Handles vision processing, face detection, landmark analysis, breathing pattern 
 and AI-powered session analysis.
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ from typing import Optional, List, Dict, Any
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from webhook_handler import process_webhook
+from voice_guard import voice_guard
 from revenuecat_config import router as revenuecat_router
 import cv2
 import mediapipe as mp
@@ -208,7 +209,9 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    # A custom header means a preflight; leaving it out of this list fails the
+    # browser's OPTIONS while curl still works, which is the worst kind of bug.
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Brume-Voice-Key"],
 )
 
 # Request/Response Models
@@ -853,7 +856,7 @@ STT_MAX_BYTES = 3 * 1024 * 1024
 STT_POLL_SECONDS = 0.4
 STT_POLL_TRIES = 30
 
-@app.post("/api/stt-token")
+@app.post("/api/stt-token", dependencies=[Depends(voice_guard)])
 async def stt_token():
     """Short-lived token for browser→AssemblyAI streaming STT."""
     api_key = os.getenv("ASSEMBLYAI_API_KEY")
@@ -872,7 +875,7 @@ async def stt_token():
         raise HTTPException(status_code=502, detail="token_error")
     return r.json()
 
-@app.post("/api/stt")
+@app.post("/api/stt", dependencies=[Depends(voice_guard)])
 async def speech_to_text(request: Request):
     """Transcribe a short voice clip. Returns {text}."""
     api_key = os.getenv("ASSEMBLYAI_API_KEY")
@@ -927,7 +930,7 @@ TTS_MAX_CHARS = 280
 class TTSRequest(BaseModel):
     text: str
 
-@app.post("/api/tts")
+@app.post("/api/tts", dependencies=[Depends(voice_guard)])
 async def text_to_speech(request: TTSRequest):
     """Speak one short line via AssemblyAI TTS. Text is never logged."""
     api_key = os.getenv("ASSEMBLYAI_API_KEY")
@@ -966,26 +969,12 @@ async def text_to_speech(request: TTSRequest):
 # AGGRESSIVE CONSOLIDATION: Single health check endpoint
 @app.get("/health")
 async def health_check():
-    """ENHANCED: Health check with Cerebras status"""
-    # CLEAN: Import Cerebras status
-    try:
-        from cerebras_client import get_status as cerebras_status
-        ai_status = cerebras_status()
-    except ImportError:
-        ai_status = {"available": False, "error": "cerebras_client not found"}
-    
-    return {
-        "status": "healthy",
-        "timestamp": time.time(),
-        "port": CONFIG["port"],
-        "services": {
-            "vision": "active",
-            "ai_analysis": "active" if ai_status.get("available") else "fallback",
-            "webhook": "active"
-        },
-        "ai_integration": ai_status,
-        "active_sessions": len(vision_processor.sessions)
-    }
+    """Alive, and nothing else. This route is unauthenticated by design — the
+    deploy health check reads it — so it answers one question. It used to list
+    which services were up, which model was configured and whether a key was
+    present, and that inventory is a map of what is worth attacking. The same
+    facts are in the log at boot."""
+    return {"status": "healthy", "timestamp": time.time()}
 
 @app.post("/webhook/github")
 async def github_webhook(request: Request, background_tasks: BackgroundTasks):

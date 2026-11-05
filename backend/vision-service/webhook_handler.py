@@ -17,11 +17,17 @@ logger = logging.getLogger(__name__)
 
 import os
 
-# Webhook secret (set in environment)
-WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "default-dev-secret-change-in-production")
+# Webhook secret (set in environment). There is deliberately no default: this
+# endpoint runs ./deploy-hetzner.sh as root on the box, so a well-known literal
+# fallback is a deploy trigger anyone can sign. Unset means nothing is accepted,
+# and the 503 below says so out loud instead of failing quietly.
+WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
 
 def verify_signature(payload: bytes, signature: str) -> bool:
     """Verify GitHub webhook signature"""
+    if not WEBHOOK_SECRET:
+        return False
+
     if not signature.startswith('sha256='):
         return False
     
@@ -89,7 +95,17 @@ async def process_webhook(request: Request, background_tasks: BackgroundTasks) -
         
         # Get payload
         payload_bytes = await request.body()
-        
+
+        # Refuse before verifying: a 401 here would read as "GitHub got the
+        # signature wrong", and the actual problem is that this box has no
+        # secret at all.
+        if not WEBHOOK_SECRET:
+            logger.error("GITHUB_WEBHOOK_SECRET is unset — /webhook/github refuses to deploy")
+            raise HTTPException(
+                status_code=503,
+                detail="webhook_secret_unset: set GITHUB_WEBHOOK_SECRET to the same secret the GitHub webhook uses",
+            )
+
         # Verify signature
         if not verify_signature(payload_bytes, signature):
             raise HTTPException(status_code=401, detail="Invalid signature")
@@ -116,6 +132,10 @@ async def process_webhook(request: Request, background_tasks: BackgroundTasks) -
         
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    except HTTPException:
+        # Without this the 401 and 503 above are rewritten into a 500 that
+        # quotes the error back — the caller stops learning why it was refused.
+        raise
     except Exception as e:
         logger.error(f"Webhook processing error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing error")

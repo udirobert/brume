@@ -11,6 +11,7 @@
  */
 
 import { FEELINGS, pairForFeel } from "./feelings";
+import { voiceHeaders } from "./voiceKey";
 
 const STT_ENDPOINT = import.meta.env.DEV
   ? "/api/stt"
@@ -124,7 +125,7 @@ const MAX_LISTEN_MS = 6000;
 // Live path: stream PCM16 to AssemblyAI's realtime WS — transcripts
 // arrive as we speak. Falls back to the file path on any failure.
 async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSignal): Promise<string> {
-  const tok = await fetch(TOKEN_ENDPOINT, { method: "POST" });
+  const tok = await fetch(TOKEN_ENDPOINT, { method: "POST", headers: voiceHeaders() });
   if (!tok.ok) throw new Error("no_token");
   const { token } = (await tok.json()) as { token: string };
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -215,7 +216,7 @@ async function viaAssemblyAI(onInterim?: (s: string) => void, signal?: AbortSign
     if (spoke) onInterim?.("hearing…");
     const res = await fetch(STT_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/octet-stream" },
+      headers: voiceHeaders({ "Content-Type": "application/octet-stream" }),
       body: new Blob(parts, { type: rec.mimeType || "audio/webm" }),
     });
     if (!res.ok) throw new Error(`stt ${res.status}`);

@@ -456,6 +456,19 @@ offer it, and the row's job is to be countable, not to be evidence.
 | 9 |      |                     |
 | 10|      |                     |
 
+**Running one.** Send the plain link, or the one *"Pass this break on"* makes:
+the invite URL lands straight on a breath, needs no account, and is the
+shortest honest ask available. Five of the ten should be people who owe you
+nothing — a friend's *yes* to the second question is often a kindness, and this
+bar is meant to count sentences nobody was obliged to say. Ask for one break
+and ten minutes afterwards, not for "feedback": a review invitation buys
+opinions about the interface, and the two questions above are about whether
+anything happened at all. Write each row the same day.
+
+**No third question.** Not "would you pay", not "what else is missing". A survey
+is a feed with a smiley, and money is a decision for the day this table comes
+back with five yeses in it — not something to sample out of ten kind people.
+
 **Reading it on 7 November:** five *yes* rows, five different people. Fewer
 than ten rows filled is a finding about reach, not about the product — say so
 in the row's absence rather than rounding up. If the table comes back empty,

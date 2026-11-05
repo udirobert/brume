@@ -8,13 +8,11 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-11-06): listing copy updated for **v0.3.8** —
-the description now leads with the companion that moved in this release
-(flies between screens, answers touch, reads the room, welcome-back)
-instead of treating the mascot as a logo. v0.3.7 remains the version
-shown as **Pending review** in the console (2026-11-03 check); publish
-0.3.8 with `anna-app apps publish`, then submit for review from the
-Developer Console. Bundled tool **0.4.4** (binaries in GitHub release
+Current state (2026-11-06): **v0.3.8 published and pending review**
+(version_id=1957, cut by `anna-app apps publish`; tool frozen at
+0.4.4/executa_version 790, reset-offer skill at 767). Listing copy now
+leads with the companion that moved in this release — `apps release`
+refuses until admin approves, so the console nudge is the remaining step. Bundled tool **0.4.4** (binaries in GitHub release
 `brume-executa-v0.4.4`). App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.

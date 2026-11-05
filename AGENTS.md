@@ -240,6 +240,16 @@ refuses every request — correctly signed included — while
 "every push may restart the backend", and client and server changes to one
 contract ship together whether that was intended or not.
 
+It is not wired up at the moment, and that is the safer half of the state: the
+box has a `GITHUB_WEBHOOK_SECRET` set and the hook on the repository does not
+agree with it, so every delivery is a clean 401 (before the hardening they were
+500s — the generic handler was rewriting its own signature refusal, which is how
+a working refusal looked like a broken endpoint). Whoever wants push-to-deploy
+sets both sides to the same value; whoever does not should leave them apart,
+because the script that would then run is the stale September copy on the box —
+`docker-compose down` plus `build --no-cache` on a shared machine, inside a
+300-second subprocess timeout.
+
 `/health` is public and answers one question (`status`). The service inventory
 it used to publish — which model, whether a key was configured, which sessions
 were live — belongs in the boot log. And the vision/AI-analysis endpoints still

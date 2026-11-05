@@ -227,12 +227,25 @@ export default function Decompress() {
     }, 950);
   };
 
+  const pointerFrameRef = useRef(0);
+  const pointerRef = useRef({ x: 0, y: 0 });
   const handleRoomPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const room = roomRef.current;
     if (!room) return;
     const rect = room.getBoundingClientRect();
-    room.style.setProperty("--dc-mx", `${event.clientX - rect.left}px`);
-    room.style.setProperty("--dc-my", `${event.clientY - rect.top}px`);
+    pointerRef.current = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+    // One write per frame — pointermove fires far more often than that.
+    if (pointerFrameRef.current) return;
+    pointerFrameRef.current = requestAnimationFrame(() => {
+      pointerFrameRef.current = 0;
+      const r = roomRef.current;
+      if (!r) return;
+      r.style.setProperty("--dc-mx", `${pointerRef.current.x}px`);
+      r.style.setProperty("--dc-my", `${pointerRef.current.y}px`);
+    });
   };
 
   const finish = () => {
@@ -262,9 +275,7 @@ export default function Decompress() {
   return (
     <div className="decompress-page" data-stage={stage}>
       <nav className="dc-nav-chip" aria-label="Decompress">
-        <Link to="/" className="dc-nav-chip__mark">
-          Brume
-        </Link>
+        <span className="dc-nav-chip__mark">Brume</span>
         <Link to="/" className="dc-nav-chip__action">
           Home
         </Link>
@@ -276,7 +287,6 @@ export default function Decompress() {
             className={`dc-room__field ${stage === "checkin" ? "dc-room__field--checkin" : ""}`}
             ref={roomRef}
             data-rhythm={stage === "pause" && musicOn && !isPaused}
-            aria-live="polite"
             onPointerMove={handleRoomPointer}
           >
             {sparkKey > 0 && <span key={sparkKey} className="dc-star-burst" aria-hidden="true" />}
@@ -287,7 +297,7 @@ export default function Decompress() {
 
             {stage === "pause" ? (
               <>
-            <div className="dc-room__cue">
+            <div className="dc-room__cue" aria-live="polite">
               <p className="dc-eyebrow">Settle</p>
               <h1 key={step.title}>{step.title}</h1>
               <p key={`${step.title}-cue`} className="dc-room__text">{step.cue}</p>
@@ -301,12 +311,10 @@ export default function Decompress() {
             <div
               className="dc-room__shoulder"
               role="progressbar"
-              aria-label="Pause progress · press to pause or resume"
+              aria-label="Pause progress"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round((elapsed / DECOMPRESS_SECONDS) * 100)}
-              onClick={togglePause}
-              title="Pause or resume"
             >
               <svg viewBox="0 0 320 92" aria-hidden="true">
                 <path className="dc-room__shoulder-back" d="M 8 58 C 78 30, 128 30, 160 42 C 192 30, 242 30, 312 58" />
@@ -346,14 +354,7 @@ export default function Decompress() {
               <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
             </button>
 
-            <div
-              className="dc-room__shoulder"
-              role="progressbar"
-              aria-label="Pause progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={100}
-            >
+            <div className="dc-room__shoulder" aria-hidden="true">
               <svg viewBox="0 0 320 92" aria-hidden="true">
                 <path className="dc-room__shoulder-back" d="M 8 58 C 78 30, 128 30, 160 42 C 192 30, 242 30, 312 58" />
                 <path className="dc-room__shoulder-front" d="M 8 64 C 78 36, 128 36, 160 48 C 192 36, 242 36, 312 64" />
@@ -431,7 +432,6 @@ export default function Decompress() {
           {stage === "arrive" && (
             <div className="dc-stage dc-stage--arrive">
               <div className="dc-stage__copy">
-                <p className="dc-eyebrow">Brume</p>
                 <h1>A little room <span className="brume-hl">for you.</span></h1>
                 <p className="dc-lede">
                   Two minutes, a soft rhythm, and one easy way to say how the

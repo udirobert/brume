@@ -23,16 +23,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Settings,
-  Crown,
-  Sparkles,
-  Zap,
-  RefreshCw,
-  Trash2,
-  Info,
-  CheckCircle,
-} from "lucide-react";
+// Dev-only glyphs — the product set stays in components/icons/BrumeIcons;
+// these draw themselves so this panel needs no icon dependency.
+const devIcon = (paths: string[]) =>
+  function Icon({ className }: { className?: string }) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+        {paths.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </svg>
+    );
+  };
+const Settings = devIcon([
+  "M12 9.3a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4z",
+  "M12 3.6v2.1", "M12 18.3v2.1", "M3.6 12h2.1", "M18.3 12h2.1",
+  "M6.1 6.1l1.5 1.5", "M16.4 16.4l1.5 1.5", "M17.9 6.1l-1.5 1.5", "M7.6 16.4l-1.5 1.5",
+]);
+const Crown = devIcon(["M5 16.5h14", "M6 16.5L4.6 8.6l4.4 3.4L12 6.2l3 5.8 4.4-3.4L18 16.5z"]);
+const Sparkles = devIcon(["M12 4.5l1.6 4.4 4.4 1.6-4.4 1.6L12 16.5l-1.6-4.4-4.4-1.6 4.4-1.6z"]);
+const Zap = devIcon(["M13 3.5L5.6 13.4H11l-1 7.1 7.4-9.9H12z"]);
+const RefreshCw = devIcon(["M20 12a8 8 0 1 1-2.4-5.6", "M20 3.4v4h-4"]);
+const Trash2 = devIcon(["M4.5 6.5h15", "M9.2 6.5V4.9a1.3 1.3 0 0 1 1.3-1.3h3a1.3 1.3 0 0 1 1.3 1.3v1.6", "M7 6.5l1 13h8l1-13"]);
+const Info = devIcon(["M12 20a8 8 0 1 1 0-16 8 8 0 0 1 0 16z", "M12 11v5", "M12 7.9v.1"]);
+const CheckCircle = devIcon(["M12 20a8 8 0 1 1 0-16 8 8 0 0 1 0 16z", "M8.6 12.3l2.4 2.4 4.6-4.9"]);
 import {
   getDeveloperOverride,
   setDeveloperOverride,

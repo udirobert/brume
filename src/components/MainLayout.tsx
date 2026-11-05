@@ -1,11 +1,23 @@
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { ResponsiveNavigation } from "./navigation/ResponsiveNavigation";
-import { SystemHealthMonitor } from "./monitoring/SystemHealthMonitor";
 import { development } from "../config/environment";
 import DeveloperTools from "./developer/DeveloperTools";
 import { Button } from "./ui/button";
-import { Settings } from "lucide-react";
+import { SettingsIcon } from "./icons/BrumeIcons";
+
+// Kept tiny and chrome-shaped so a lazy page never blanks the header or
+// tab bar — the suspense boundary lives here, inside the layout.
+const PageLoader = () => (
+  <div
+    className="flex items-center justify-center min-h-[50vh]"
+    role="status"
+    aria-label="Loading"
+  >
+    <span aria-hidden="true" style={{ width: 88, height: 88 }} />
+    <span className="sr-only">Loading</span>
+  </div>
+);
 
 const MainLayout = () => {
   const [showDevTools, setShowDevTools] = useState(false);
@@ -22,8 +34,9 @@ const MainLayout = () => {
             size="sm"
             variant="outline"
             className="bg-background/80 backdrop-blur-sm"
+            aria-label="Toggle developer tools"
           >
-            <Settings className="h-4 w-4" />
+            <SettingsIcon className="h-4 w-4" />
           </Button>
 
           {showDevTools && (
@@ -31,11 +44,11 @@ const MainLayout = () => {
               <DeveloperTools />
             </div>
           )}
-
-          <SystemHealthMonitor compact={true} />
         </div>
       )}
-      <Outlet />
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
     </ResponsiveNavigation>
   );
 };

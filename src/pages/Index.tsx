@@ -2,7 +2,6 @@ import { useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
-import { Magnetic } from "@/lib/Magnetic";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
 import { CheckInReasons } from "@/components/checkin/CheckInReasons";
 import { type MascotReaction } from "@/components/BrumeMascot";
@@ -55,7 +54,7 @@ function RhythmPicker({ value, onChange }: {
 
 export default function Index() {
   const navigate = useNavigate();
-  const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
+  const reduceMotion = useReducedMotion();
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
   const feelTap = useRoomExperience((s) => s.feelIndex);
@@ -164,11 +163,9 @@ export default function Index() {
 
       {feelTap !== null && <CheckInReasons feeling={feelTap} />}
 
-      <Magnetic className="brume-home__primary" pull={0.15} radius={110}>
-        <button type="button" className={`brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
-          Begin
-        </button>
-      </Magnetic>
+      <button type="button" className={`brume-home__primary brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
+        Begin
+      </button>
 
       <details className="brume-home-options" onKeyDown={(e) => {
         if (e.key !== "Escape") return;
@@ -206,7 +203,6 @@ export default function Index() {
           <div className="brume-home-options__row">
             <span>Brume</span>
             <div className="flex gap-2" role="group" aria-label="Brume presence">
-          <Magnetic pull={0.15} radius={110}>
             <button
               type="button"
               className={`brume-pill ${!companion ? "is-selected" : ""}`}
@@ -219,8 +215,6 @@ export default function Index() {
             >
               Quiet
             </button>
-          </Magnetic>
-          <Magnetic pull={0.15} radius={110}>
             <button
               type="button"
               className={`brume-pill ${companion ? "is-selected" : ""}`}
@@ -236,7 +230,6 @@ export default function Index() {
             >
               Company
             </button>
-          </Magnetic>
             </div>
           </div>
           <RoomSettings />

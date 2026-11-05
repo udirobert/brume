@@ -94,9 +94,12 @@ profile, the `/subscription` route, and every tier label in the UI.
 chain library, so that surface cannot come back quietly; the account shape
 that survived is `src/types/user.ts`. `src/lib/monetization/` stays only for
 the Capacitor build — on the web `revenueCatService.initialize()` returns
-before touching the SDK, so no sign-in reaches RevenueCat. The npm
-dependencies (`@onflow/fcl`, `wagmi`, `viem`, `@revenue-cat/*`) are still
-installed and now unreferenced; dropping them is its own decision.
+before touching the SDK, so no sign-in reaches RevenueCat. The chain-era
+dependencies (`@onflow`, `wagmi`, `viem`, `@lens-*`) were removed outright
+on 5 November 2026 along with `src/lib/ai`, `src/lib/sharing`, `src/lib/api`'s
+chain services, `src/lib/crypto`, `cadence/` and `flow.json`; `lucide-react`,
+`next-themes` and `recharts` went with them — `src/components/icons/BrumeIcons.tsx`
+is the only icon set.
 `docs/ARCHITECTURE.md` and `docs/API.md` still describe the chain design —
 read them as history, not as the app.
 

@@ -30,12 +30,13 @@ export const getSafeAreaInsets = () => {
 };
 
 export const enableMobileOptimizations = () => {
-  // Prevent zoom on input focus
+  // Zoom stays enabled — WCAG 1.4.4: a page must never pin
+  // maximum-scale/user-scalable=no, on touch devices or anywhere else.
   const viewport = document.querySelector('meta[name="viewport"]');
   if (viewport && isTouchDevice()) {
     viewport.setAttribute(
       'content',
-      'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+      'width=device-width, initial-scale=1.0, viewport-fit=cover'
     );
   }
 

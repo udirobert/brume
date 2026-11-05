@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { isTouchDevice } from "@/utils/mobile-detection";
-
+// Narrow viewport, not "has a touchscreen" — touch laptops and iPads in
+// landscape must keep the desktop chrome.
 const MOBILE_MQ = "(max-width: 767px)";
 
 function computeIsMobile() {
   if (typeof window === "undefined") return false;
-  return isTouchDevice() || window.matchMedia(MOBILE_MQ).matches;
+  return window.matchMedia(MOBILE_MQ).matches;
 }
 
 export function useIsMobile() {
@@ -13,7 +13,7 @@ export function useIsMobile() {
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_MQ);
-    const check = () => setIsMobile(isTouchDevice() || mq.matches);
+    const check = () => setIsMobile(mq.matches);
     check();
     mq.addEventListener("change", check);
     window.addEventListener("orientationchange", check);

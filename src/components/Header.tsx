@@ -10,8 +10,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import { ResetIcon, ProgressIcon, DecompressIcon, ProfileIcon } from "@/components/icons/BrumeIcons";
+import { ResetIcon, ProgressIcon, DecompressIcon, ProfileIcon, SignOutIcon } from "@/components/icons/BrumeIcons";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStatus } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
@@ -76,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               className="text-muted-foreground hover:text-foreground"
               aria-label="Sign out"
             >
-              <LogOut className="w-4 h-4" />
+              <SignOutIcon className="w-4 h-4" />
             </Button>
           ) : isLoading ? (
             // Session still resolving — don't flash "Sign in" at a signed-in user.

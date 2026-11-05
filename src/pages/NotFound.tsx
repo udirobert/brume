@@ -1,17 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { BrumeMascot } from "@/components/BrumeMascot";
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
   return (
     <div className="min-h-screen bg-calm-gradient flex items-center justify-center px-6">
       <div className="text-center space-y-4 max-w-sm">

@@ -2,7 +2,6 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useReducedMotion } from "framer-motion";
-import { Sparkles, Wind, ShieldCheck } from "lucide-react";
 import BreathingAnimation from "@/components/BreathingAnimation";
 import { BrumeMascot } from "@/components/BrumeMascot";
 
@@ -20,7 +19,7 @@ import { BrumeMascot } from "@/components/BrumeMascot";
  */
 export default function Onboarding() {
   const navigate = useNavigate();
-  const reduceMotion = useReducedMotion() || (typeof document !== "undefined" && document.hidden);
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="min-h-screen bg-calm-gradient flex flex-col items-center justify-center px-6 py-4 sm:py-12">
@@ -60,17 +59,10 @@ export default function Onboarding() {
           </p>
         </div>
 
-        {/* Trust badges — compact, not slides */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Wind className="w-3.5 h-3.5" />
-            Just breathe
-          </span>
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            No signup needed
-          </span>
-        </div>
+        {/* Trust line — compact, not slides */}
+        <p className="text-xs text-muted-foreground">
+          Just breathe · No signup needed
+        </p>
 
         <div className="flex flex-col items-center gap-3 pt-2 w-full">
           <Button
@@ -78,7 +70,6 @@ export default function Onboarding() {
             className="btn-pear rounded-full px-16 py-7 text-lg w-full max-w-xs"
             onClick={() => navigate("/session?pattern=reset")}
           >
-            <Sparkles className="w-4 h-4 mr-2" />
             Start my reset
           </Button>
           <button

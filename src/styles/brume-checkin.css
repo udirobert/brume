@@ -371,3 +371,22 @@
     box-shadow: 0 0 10px 1px rgba(140, 120, 200, 0.45);
   }
 }
+
+/* "put it down" — the only way back to no word at all. Quiet text,
+   never a chip: it releases rather than selects. */
+.brume-pairs__release {
+  flex-basis: 100%;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: inherit;
+  opacity: 0.55;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.brume-pairs__release:hover,
+.brume-pairs__release:focus-visible {
+  opacity: 0.9;
+}

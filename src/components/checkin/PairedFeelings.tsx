@@ -36,7 +36,7 @@ export function PairedFeelings({
   showHint = true,
 }: {
   selectedIndex: number | null;
-  onChoose: (index: number, button: HTMLButtonElement, fromOffer?: boolean) => void;
+  onChoose: (index: number | null, button: HTMLButtonElement, fromOffer?: boolean) => void;
   onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
   showHint?: boolean;
 }) {
@@ -252,6 +252,19 @@ export function PairedFeelings({
         <span className="brume-voice-heard" aria-hidden="true">
           {heard}
         </span>
+      )}
+      {selectedIndex !== null && (
+        <button
+          type="button"
+          className="brume-pairs__release"
+          onClick={(e) => {
+            setSuggested(null);
+            setAnnounce("Let it go.");
+            onChoose(null, e.currentTarget);
+          }}
+        >
+          put it down
+        </button>
       )}
       <span aria-live="polite" className="sr-only">
         {announce}

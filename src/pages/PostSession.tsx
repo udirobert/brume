@@ -21,7 +21,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { toast } from "sonner";
 
 export default function PostSession() {
   const location = useLocation();
@@ -97,7 +96,6 @@ export default function PostSession() {
             intent="save-session"
             defaultSignUp
             onComplete={() => {
-              toast.success("Saved.");
               setSaveOpen(false);
             }}
           />

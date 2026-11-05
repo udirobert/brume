@@ -29,10 +29,6 @@ import "./lib/developer/console-commands";
 import { runEnvironmentChecks } from "./utils/environment-check";
 import { optimizeForMobile } from "./utils/mobile-detection";
 
-// Explicitly set global references for old libraries that might expect them
-(window as unknown as { React: typeof React }).React = React;
-(window as unknown as { ReactDOM: typeof ReactDOM }).ReactDOM = ReactDOM;
-
 // Run environment checks before initializing the app
 const envCheck = runEnvironmentChecks();
 if (import.meta.env.DEV) {

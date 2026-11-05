@@ -1,5 +1,14 @@
 # API Documentation
 
+> **Status: historical.** This describes the vision service as it existed for
+> the chain-era product — frame analysis, AI insights, attestations, Lens
+> signing, RevenueCat. The web app no longer calls any vision/AI endpoint.
+> What production actually uses on this service (`api.brume.trustfall.xyz`)
+> today is the voice surface only: `/api/tts` (spoken lines) and the
+> check-in transcription route behind `src/lib/voiceCheckin.ts`, both
+> metered by `voice_guard.py`. See AGENTS.md "The voice server" for the
+> current contract.
+
 API reference for the Brume vision service (FastAPI, `backend/vision-service`).
 This is the service the frontend calls for frame analysis, AI insights, and
 proof-of-practice attestations.

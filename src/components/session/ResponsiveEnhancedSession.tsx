@@ -77,8 +77,7 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   React.useEffect(() => {
     applyFeel(checkInIndex);
   }, [checkInIndex]);
-  const skipEntranceMotion =
-    reduceMotion || (typeof document !== "undefined" && document.hidden);
+  const skipEntranceMotion = reduceMotion;
 
   // Session phase state - SINGLE SOURCE OF TRUTH
   const sessionPhase = useSessionPhase();

@@ -3,7 +3,7 @@
  * No camera, no metrics dashboard.
  */
 import React from "react";
-import { X } from "lucide-react";
+import { CloseIcon } from "@/components/icons/BrumeIcons";
 
 interface EnhancedSessionLayoutProps {
   breathingAnimation: React.ReactNode;
@@ -27,7 +27,7 @@ export const EnhancedSessionLayout: React.FC<EnhancedSessionLayoutProps> = ({
           className="absolute top-4 left-4 z-20 rounded-full p-2 text-muted-foreground/70 hover:text-foreground hover:bg-background/40 transition-colors"
           aria-label="Leave session"
         >
-          <X className="w-5 h-5" />
+          <CloseIcon className="w-5 h-5" />
         </button>
       )}
 

@@ -9,7 +9,6 @@ import { MistField } from "@/components/atmosphere/MistField";
 import { ProgressiveBlur } from "@/components/atmosphere/ProgressiveBlur";
 import { BrumeMascot } from "@/components/BrumeMascot";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
 
 function intentFromSearch(searchParams: URLSearchParams): SignInIntent {
   const context = searchParams.get("context");
@@ -42,7 +41,6 @@ const Auth = () => {
   }, [loading, isAuthenticated, navigate, redirectTo]);
 
   const handleAuthComplete = () => {
-    toast.success("Signed in. Your practice is saved.");
     navigate(redirectTo);
   };
 

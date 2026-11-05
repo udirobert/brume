@@ -13,7 +13,7 @@ import { feelingAt } from "@/lib/feelings";
 import { PairedFeelings } from "@/components/checkin/PairedFeelings";
 import { CUE_STATES, cueStateOf, previewCue } from "@/lib/voiceCues";
 import type { CueState, CueStyle } from "@/lib/voiceCues";
-import { AlertCircle } from "lucide-react";
+import { AlertIcon } from "@/components/icons/BrumeIcons";
 
 interface SessionPreviewProps {
   patternName: string;
@@ -65,15 +65,16 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
     : null;
 
   // Re-pick the feeling → swap the pattern preview without leaving.
-  const pickFeel = (index: number) => {
-    const next = getPattern(CHECK_IN_PATTERN_IDS[index]);
+  // Putting the word back down lands on the plain reset instead.
+  const pickFeel = (index: number | null) => {
+    const next = getPattern(index === null ? "reset" : CHECK_IN_PATTERN_IDS[index]);
     if (!next) return;
     navigate(`/session?pattern=${next.id}`, {
       replace: true,
       state: {
         reason: next.name,
         reasonDetail: next.description,
-        source: "From how you feel",
+        source: index === null ? "Your reset" : "From how you feel",
         checkInIndex: index,
       },
     });
@@ -105,7 +106,7 @@ export const SessionPreview: React.FC<SessionPreviewProps> = ({
           role="alert"
           className="flex items-start gap-2 text-sm text-destructive max-w-sm"
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <AlertIcon className="w-4 h-4 mt-0.5 shrink-0" />
           <span>{sessionError}</span>
         </div>
       )}

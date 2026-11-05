@@ -1,5 +1,23 @@
 # Architecture Overview
 
+> **Status: historical.** This document describes the chain-era product —
+> camera/vision analysis, Flow attestations, Lens social, subscriptions.
+> All of it was cut on 4 November 2026. Read sections below for institutional
+> history, not for what the app does today.
+>
+> **Current shape (November 2026):** a single-page React 19 + Vite app on
+> `src/`. One persistent room (`components/atmosphere/RoomEnvironment.tsx`,
+> WebGL1 + CSS fallback) and one persistent companion
+> (`components/companion/JourneyCompanion.tsx`) sit outside the routes.
+> Core loop: breathing session or `/decompress` -> check-in word -> optional
+> one-sentence message. Check-in is a closed set of 14 feelings
+> (`lib/feelings.ts`) written to an append-only, device-local ledger
+> (`lib/checkinLedger.ts`). Optional email sign-in via Supabase syncs history;
+> the check-in microphone and spoken cues go to the voice service on Hetzner
+> (see `docs/` + `backend/vision-service/`, voice routes only). Anonymous
+> daily counters leave via `lib/metrics.ts` -> `netlify/functions/metrics.mjs`.
+> No camera, no continuous sensing, no scores or streaks, nothing for sale.
+
 Technical architecture and system design for Brume.
 
 ## System Overview

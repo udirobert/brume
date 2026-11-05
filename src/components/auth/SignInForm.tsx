@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { AlertIcon, SpinnerIcon } from "@/components/icons/BrumeIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,8 +97,7 @@ export function SignInForm({
           className="flex items-center justify-center gap-2 font-bold text-primary mb-10 hover:opacity-80 transition-opacity"
         >
           <div className="rounded bg-primary/10 p-1">
-            <Sparkles className="w-4 h-4" />
-          </div>
+                      </div>
           <span className="text-lg">Brume</span>
         </Link>
       )}
@@ -115,7 +114,7 @@ export function SignInForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -154,7 +153,7 @@ export function SignInForm({
           disabled={isLoading || !email || !password}
           className="w-full rounded-full h-12 btn-pear"
         >
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          {isLoading && <SpinnerIcon className="h-4 w-4 animate-spin mr-2" />}
           {isSignUp ? "Create account" : "Sign in"}
         </Button>
       </form>

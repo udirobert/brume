@@ -69,7 +69,6 @@ function App() {
         <RoomEnvironment />
         <JourneyCompanionProvider>
         <LayoutGroup>
-          <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Main Application Routes with Header — no Web3 */}
           <Route element={<MainLayout />}>
@@ -96,12 +95,16 @@ function App() {
 
           <Route path="/decompress" element={
             <RouteErrorBoundary>
-              <Decompress />
+              <Suspense fallback={<PageLoader />}>
+                <Decompress />
+              </Suspense>
             </RouteErrorBoundary>
           } />
           <Route path="/auth" element={
             <RouteErrorBoundary>
-              <Auth />
+              <Suspense fallback={<PageLoader />}>
+                <Auth />
+              </Suspense>
             </RouteErrorBoundary>
           } />
           <Route path="/onboarding" element={<Onboarding />} />
@@ -125,7 +128,6 @@ function App() {
         </Routes>
 
         <Toaster />
-          </Suspense>
         </LayoutGroup>
         </JourneyCompanionProvider>
       </MotionConfig>

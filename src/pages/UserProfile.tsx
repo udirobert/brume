@@ -1,15 +1,13 @@
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
-  BarChart3,
-  Palette,
-  Shield,
-  LogOut,
-  HelpCircle,
-  ChevronRight,
-} from "lucide-react";
+  PrivacyIcon,
+  TermsIcon,
+  SignOutIcon,
+  ChevronRightIcon,
+  ProgressIcon,
+} from "@/components/icons/BrumeIcons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -24,30 +22,16 @@ import { cn } from "@/lib/utils";
  * settings. Nothing here is for sale: the room is finished, not tiered.
  */
 
-const THEME_LABEL: Record<string, string> = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
-};
-
 const UserProfilePage = () => {
   const { user, profile, loading: authLoading, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-
-  const cycleTheme = () => {
-    if (theme === "system") setTheme("light");
-    else if (theme === "light") setTheme("dark");
-    else setTheme("system");
-  };
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success("Signed out successfully");
       navigate("/");
     } catch (error) {
-      toast.error("Failed to sign out completely");
+      toast.error("Couldn't sign out — try again");
       console.error("Sign out error:", error);
     }
   };
@@ -115,7 +99,7 @@ const UserProfilePage = () => {
       <div className="mt-9 w-full">
         <ProfileAction
           to="/progress"
-          icon={BarChart3}
+          icon={ProgressIcon}
           title="Progress"
           copy="Your sessions"
         />
@@ -123,16 +107,10 @@ const UserProfilePage = () => {
 
       {/* Settings — one quiet list, no card chrome. */}
       <div className="mt-9 w-full overflow-hidden rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm divide-y divide-border/60">
+        <SettingsRow icon={PrivacyIcon} label="Privacy Policy" to="/privacy" />
+        <SettingsRow icon={TermsIcon} label="Terms of Service" to="/terms" />
         <SettingsRow
-          icon={Palette}
-          label="Theme"
-          value={THEME_LABEL[theme ?? "system"] ?? "System"}
-          onClick={cycleTheme}
-        />
-        <SettingsRow icon={Shield} label="Privacy Policy" to="/privacy" />
-        <SettingsRow icon={HelpCircle} label="Terms of Service" to="/terms" />
-        <SettingsRow
-          icon={LogOut}
+          icon={SignOutIcon}
           label="Sign out"
           destructive
           onClick={handleSignOut}
@@ -140,8 +118,8 @@ const UserProfilePage = () => {
       </div>
 
       <p className="mt-6 text-xs text-muted-foreground/70 text-center">
-        Your practice stays with you. Sessions live on Progress — video never
-        left your phone.
+        Your practice stays with you. Sessions live on Progress — nothing you
+        feel or say leaves this device unless you ask it to.
       </p>
     </div>
   );
@@ -163,7 +141,7 @@ function ProfileAction({
       to={to}
       className={cn(
         "group flex flex-col items-start gap-1 rounded-2xl border border-border/70 bg-card/70 p-4",
-        "backdrop-blur-sm transition-all duration-300",
+        "backdrop-blur-sm transition-[border-color,background-color] duration-300",
         "hover:border-primary/40 hover:bg-primary/5",
       )}
     >
@@ -177,14 +155,12 @@ function ProfileAction({
 function SettingsRow({
   icon: Icon,
   label,
-  value,
   to,
   onClick,
   destructive,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value?: string;
   to?: string;
   onClick?: () => void;
   destructive?: boolean;
@@ -197,11 +173,7 @@ function SettingsRow({
           {label}
         </span>
       </span>
-      {value ? (
-        <span className="text-xs text-muted-foreground capitalize">{value}</span>
-      ) : to ? (
-        <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-      ) : null}
+      {to && <ChevronRightIcon className="h-4 w-4 text-muted-foreground/60" />}
     </>
   );
 

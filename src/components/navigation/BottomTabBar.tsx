@@ -12,10 +12,6 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string; size?: number }>;
   path: string;
   isActive: boolean;
-  color: string;
-  activeColor: string;
-  description: string;
-  badge?: string;
 }
 
 const getNavItems = (user: any, locationPathname: string): NavItem[] => [
@@ -25,9 +21,6 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
     icon: HomeIcon,
     path: "/",
     isActive: locationPathname === "/",
-    color: "",
-    activeColor: "",
-    description: "How you feel today",
   },
   {
     id: "progress",
@@ -35,9 +28,6 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
     icon: ProgressIcon,
     path: "/progress",
     isActive: locationPathname.startsWith("/progress"),
-    color: "",
-    activeColor: "",
-    description: "Your practice",
   },
   {
     id: "decompress",
@@ -45,9 +35,6 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
     icon: DecompressIcon,
     path: "/decompress",
     isActive: locationPathname.startsWith("/decompress"),
-    color: "",
-    activeColor: "",
-    description: "Two minutes, no explaining",
   },
   {
     id: "profile",
@@ -55,9 +42,6 @@ const getNavItems = (user: any, locationPathname: string): NavItem[] => [
     icon: ProfileIcon,
     path: user ? "/profile" : "/auth",
     isActive: locationPathname === "/profile" || locationPathname === "/auth",
-    color: "",
-    activeColor: "",
-    description: user ? "Your profile and settings" : "Sign in",
   },
 ];
 
@@ -96,7 +80,6 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ className }) => {
 
   const handleNavigation = (item: NavItem) => {
     if (item.id === "profile" && !user) {
-      triggerHapticFeedback("subtle");
       const searchParams = new URLSearchParams();
       searchParams.set("context", "profile");
       searchParams.set("redirect", "/profile");
@@ -104,7 +87,6 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ className }) => {
       return;
     }
 
-    triggerHapticFeedback("subtle");
     navigate(item.path);
   };
 
@@ -133,7 +115,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ className }) => {
               }}
               className={cn(
                 "flex flex-col items-center gap-1 h-auto py-2 px-1 rounded-full",
-                "hover:bg-foreground/5 active:scale-95 transition-all duration-300",
+                "hover:bg-foreground/5 active:scale-95 transition-[transform,background-color,color] duration-300",
                 isActive
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground",

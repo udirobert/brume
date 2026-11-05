@@ -1,13 +1,14 @@
 /**
  * Error Boundary Components
- * 
+ *
  * React error boundaries with fallback UI and error reporting.
- * Provides different error boundaries for different parts of the app.
+ * One calm surface for every failure — the screen a user sees when
+ * something broke should feel like the same room, not another product.
  */
 
 import { BrumeMascot } from '../../components/BrumeMascot';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AppError, ErrorFactory, ErrorCategory, ErrorSeverity } from './error-types';
+import { AppError, ErrorFactory, ErrorCategory } from './error-types';
 import { errorReporter } from './error-reporter';
 
 interface ErrorBoundaryState {
@@ -39,7 +40,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     const appError = ErrorFactory.fromError(error);
-    
+
     return {
       hasError: true,
       error: appError,
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const appError = ErrorFactory.fromError(
-      error, 
+      error,
       this.props.category,
       {
         componentStack: errorInfo.componentStack,
@@ -93,6 +94,74 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 }
 
 /**
+ * The shared calm surface every fallback renders on: mist gradient,
+ * one card, the sleepy mascot, a push button, plain words.
+ */
+const CalmFallback: React.FC<{
+  title: string;
+  body: string;
+  action: ReactNode;
+  secondary?: ReactNode;
+  details?: ReactNode;
+}> = ({ title, body, action, secondary, details }) => (
+  <div className="min-h-screen bg-calm-gradient flex items-center justify-center px-6">
+    <div className="max-w-md w-full rounded-2xl border border-border/70 bg-card/70 backdrop-blur-sm p-8 text-center">
+      <BrumeMascot state="sleepy" size={88} className="mx-auto mb-4" layoutId="brume-companion" />
+      <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">{title}</h1>
+      <p className="text-muted-foreground mb-6 leading-relaxed">{body}</p>
+      <div className="flex flex-col items-center gap-3">
+        {action}
+        {secondary}
+      </div>
+      {details}
+    </div>
+  </div>
+);
+
+const PushButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
+  className,
+  ...props
+}) => (
+  <button
+    type="button"
+    className={`brume-btn brume-btn--push px-8 ${className ?? ""}`}
+    {...props}
+  />
+);
+
+const QuietLink: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
+  className,
+  ...props
+}) => (
+  <button
+    type="button"
+    className={`text-sm text-muted-foreground hover:text-foreground transition-colors ${className ?? ""}`}
+    {...props}
+  />
+);
+
+const DevDetails: React.FC<{ error: AppError }> = ({ error }) => {
+  if (process.env.NODE_ENV !== 'development') return null;
+  return (
+    <div className="mt-6 text-left">
+      <details className="text-sm">
+        <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+          Technical details
+        </summary>
+        <div className="mt-2 p-3 bg-foreground/5 rounded-xl text-xs space-y-1">
+          <p><strong>Error ID:</strong> {error.id}</p>
+          <p><strong>Category:</strong> {error.category}</p>
+          <p><strong>Message:</strong> {error.message}</p>
+          {error.stack && (
+            <pre className="mt-1 overflow-auto whitespace-pre-wrap">{error.stack}</pre>
+          )}
+        </div>
+      </details>
+    </div>
+  );
+};
+
+/**
  * Default Error Fallback Component
  */
 interface DefaultErrorFallbackProps {
@@ -100,470 +169,84 @@ interface DefaultErrorFallbackProps {
   onRetry: () => void;
 }
 
-const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, onRetry }) => {
-  const getSeverityColor = (severity: ErrorSeverity) => {
-    switch (severity) {
-      case ErrorSeverity.CRITICAL:
-        return 'border-red-500 bg-red-50';
-      case ErrorSeverity.HIGH:
-        return 'border-orange-500 bg-orange-50';
-      case ErrorSeverity.MEDIUM:
-        return 'border-yellow-500 bg-yellow-50';
-      case ErrorSeverity.LOW:
-        return 'border-blue-500 bg-blue-50';
-      default:
-        return 'border-gray-500 bg-gray-50';
-    }
-  };
-
-  const handleAction = async () => {
-    if (error.action) {
-      try {
-        await error.action();
-      } catch (actionError) {
-        console.error('Error action failed:', actionError);
-      }
-    } else {
-      onRetry();
-    }
-  };
-
-  return (
-    <div className={`border-2 rounded-lg p-6 m-4 ${getSeverityColor(error.severity)}`}>
-      <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0">
-          {error.severity === ErrorSeverity.CRITICAL && (
-            <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          )}
-          {error.severity === ErrorSeverity.HIGH && (
-            <svg className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
-          {(error.severity === ErrorSeverity.MEDIUM || error.severity === ErrorSeverity.LOW) && (
-            <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
-        </div>
-        
-        <div className="flex-1">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {error.severity === ErrorSeverity.CRITICAL ? 'Critical Error' :
-             error.severity === ErrorSeverity.HIGH ? 'Error' :
-             'Something went wrong'}
-          </h3>
-          
-          <p className="text-gray-700 mb-4">
-            {error.userMessage}
-          </p>
-
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleAction}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {error.actionLabel || 'Try Again'}
-            </button>
-            
-            {process.env.NODE_ENV === 'development' && (
-              <details className="text-xs">
-                <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
-                  Technical Details
-                </summary>
-                <div className="mt-2 p-2 bg-gray-100 rounded text-gray-800">
-                  <p><strong>Error ID:</strong> {error.id}</p>
-                  <p><strong>Category:</strong> {error.category}</p>
-                  <p><strong>Message:</strong> {error.message}</p>
-                  {error.context && Object.keys(error.context).length > 0 && (
-                    <div>
-                      <strong>Context:</strong>
-                      <pre className="text-xs mt-1 overflow-auto">
-                        {JSON.stringify(error.context, null, 2) as any}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </details>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, onRetry }) => (
+  <CalmFallback
+    title="Something slipped."
+    body={error.userMessage || "Something didn't go as expected. You can try again — nothing is lost."}
+    action={<PushButton onClick={onRetry}>Try again</PushButton>}
+    secondary={<QuietLink onClick={() => window.location.reload()}>Refresh page</QuietLink>}
+    details={<DevDetails error={error} />}
+  />
+);
 
 /**
- * Wallet Error Boundary
+ * Session-specific error boundary — a session that can't start or
+ * stumbles mid-breath lets itself down gently.
  */
-export const WalletErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      category={ErrorCategory.WALLET}
-      fallback={(error, retry) => (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <svg className="h-5 w-5 text-orange-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-orange-800">Wallet Connection Issue</h3>
-              <p className="text-orange-700 text-sm mt-1">{error.userMessage}</p>
-            </div>
-            <button
-              onClick={retry}
-              className="ml-4 px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
-
-/**
- * Session Error Boundary
- */
-export const SessionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      category={ErrorCategory.SESSION}
-      fallback={(_error, retry) => (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] p-6 text-center">
-          <BrumeMascot state="sleepy" size={88} className="mb-4" layoutId="brume-companion" />
-          <h3 className="text-lg font-semibold mb-2">Something slipped.</h3>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            Your breath is fine. Try again, or head home.
-          </p>
-          <div className="flex flex-col items-center gap-3">
-            <button onClick={retry} className="brume-btn brume-btn--push px-6">
-              Try again
-            </button>
-            <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Home
-            </a>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
-
-/**
- * Network Error Boundary
- */
-export const NetworkErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      category={ErrorCategory.NETWORK}
-      isolate={true} // Don't let network errors crash the whole app
-      fallback={(error, retry) => (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <svg className="h-5 w-5 text-blue-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-            </svg>
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-blue-800">Connection Issue</h3>
-              <p className="text-blue-700 text-sm mt-1">{error.userMessage}</p>
-            </div>
-            <button
-              onClick={retry}
-              className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
-
-/**
- * Enhanced Session Startup Error Boundary with better UX and recovery
- */
-export const SessionStartupErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      category={ErrorCategory.SESSION}
-      isolate={true} // Prevent session errors from crashing the whole app
-      fallback={(error, retry) => (
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
-          <div className="max-w-lg w-full bg-white shadow-2xl rounded-2xl p-8 mx-4">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Session Starting...</h1>
-              <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                We're preparing your breathing session. This should only take a moment.
-              </p>
-
-              <div className="space-y-4">
-                <button
-                  onClick={retry}
-                  className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-                >
-                  <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Retry Session
-                </button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    Refresh Page
-                  </button>
-
-                  <button
-                    onClick={() => window.history.back()}
-                    className="px-4 py-3 border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                  >
-                    Go Back
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-8 p-6 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mt-1">
-                    <span className="text-white text-sm">ℹ</span>
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold text-blue-900 mb-2">What to expect:</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Session will begin automatically</li>
-                      <li>• You can start breathing immediately</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
-                  </div>
-                  <p className="text-sm text-green-800">
-                    <strong>Good news:</strong> Your session will work perfectly even if some features take time to load.
-                  </p>
-                </div>
-              </div>
-
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-6 text-left">
-                  <details className="text-sm">
-                    <summary className="cursor-pointer font-medium text-gray-700">Technical Details</summary>
-                    <div className="mt-3 p-4 bg-gray-100 rounded-lg text-xs">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p><strong>Error ID:</strong> {error.id}</p>
-                          <p><strong>Category:</strong> {error.category}</p>
-                          <p><strong>Severity:</strong> {error.severity}</p>
-                          <p><strong>Recovery:</strong> {error.recovery}</p>
-                        </div>
-                        <div>
-                          <p><strong>Time:</strong> {new Date(error.timestamp).toLocaleTimeString()}</p>
-                          <p><strong>Session:</strong> {(error.context as any)?.sessionId || 'N/A'}</p>
-                        </div>
-                      </div>
-                      {error.message && (
-                        <div className="mt-3">
-                          <strong>Message:</strong>
-                          <p className="mt-1 p-2 bg-red-50 rounded text-red-800">{error.message}</p>
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
-
-/**
- * Enhanced Session Error Boundary with better UX
- */
-export const EnhancedSessionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      category={ErrorCategory.SESSION}
-      fallback={(error, retry) => (
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-green-50 to-blue-100">
-          <div className="max-w-lg w-full bg-white shadow-2xl rounded-2xl p-8 mx-4">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Session Needs Attention</h1>
-              <p className="text-gray-600 mb-8 text-lg">
-                {error.userMessage || "Your breathing session encountered an issue. Let's get you back on track."}
-              </p>
-
-              <div className="space-y-4">
-                <button
-                  onClick={retry}
-                  className="w-full px-6 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 text-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  Resume Session
-                </button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Restart
-                  </button>
-
-                  <button
-                    onClick={() => window.history.back()}
-                    className="px-4 py-3 border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    Go Back
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-                    <span className="text-white text-xs">💡</span>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-blue-900 mb-1">Session Recovery Tips</p>
-                    <ul className="text-xs text-blue-700 space-y-1">
-                      <li>• Check your connection</li>
-                      <li>• Try refreshing if issues persist</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-6 text-left">
-                  <details className="text-sm">
-                    <summary className="cursor-pointer font-medium text-gray-700">Technical Details</summary>
-                    <div className="mt-3 p-4 bg-gray-100 rounded-lg text-xs">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p><strong>Error ID:</strong> {error.id}</p>
-                          <p><strong>Category:</strong> {error.category}</p>
-                          <p><strong>Severity:</strong> {error.severity}</p>
-                        </div>
-                        <div>
-                          <p><strong>Recovery:</strong> {error.recovery}</p>
-                          <p><strong>Time:</strong> {new Date(error.timestamp).toLocaleTimeString()}</p>
-                        </div>
-                      </div>
-                      {error.message && (
-                        <div className="mt-3">
-                          <strong>Message:</strong>
-                          <p className="mt-1 p-2 bg-red-50 rounded text-red-800">{error.message}</p>
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
-
-/**
- * Global Error Boundary (catches all unhandled errors)
- */
-export const GlobalErrorBoundary: React.FC<ErrorBoundaryProps> = (props) => {
-  return (
-    <ErrorBoundary
-      {...props}
-      onError={(error) => {
-        // Log to console in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Global error caught:', error);
+export const SessionErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => (
+  <ErrorBoundary
+    {...props}
+    category={ErrorCategory.SESSION}
+    fallback={(error, retry) => (
+      <CalmFallback
+        title="Something slipped."
+        body={error.userMessage || "The session stumbled. You can start it again — nothing is lost."}
+        action={<PushButton onClick={retry}>Try again</PushButton>}
+        secondary={
+          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Back to Brume
+          </a>
         }
+      />
+    )}
+  />
+);
 
-        // Call custom handler if provided
-        props.onError?.(error);
-      }}
-      fallback={(error, retry) => (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
-            <div className="text-center">
-              <svg className="h-16 w-16 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
+/**
+ * Session startup boundary — guards the moment a session begins.
+ */
+export const SessionStartupErrorBoundary: React.FC<Omit<ErrorBoundaryProps, 'category'>> = (props) => (
+  <ErrorBoundary
+    {...props}
+    category={ErrorCategory.SESSION}
+    fallback={(error, retry) => (
+      <CalmFallback
+        title="The session couldn't get ready."
+        body={error.userMessage || "Preparing your breathing session hit a snag. Trying again usually clears it."}
+        action={<PushButton onClick={retry}>Try again</PushButton>}
+        secondary={
+          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Back to Brume
+          </a>
+        }
+      />
+    )}
+  />
+);
 
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Oops! Something went wrong</h1>
-              <p className="text-gray-600 mb-6">{error.userMessage}</p>
+/**
+ * Global error boundary — the last resort.
+ */
+export const GlobalErrorBoundary: React.FC<ErrorBoundaryProps> = (props) => (
+  <ErrorBoundary
+    {...props}
+    onError={(error) => {
+      // Log to console in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Global error caught:', error);
+      }
 
-              <div className="space-y-3">
-                <button
-                  onClick={retry}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Try Again
-                </button>
-
-                <button
-                  onClick={() => window.location.reload()}
-                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Refresh Page
-                </button>
-              </div>
-
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-6 text-left">
-                  <details className="text-sm">
-                    <summary className="cursor-pointer font-medium text-gray-700">Technical Details</summary>
-                    <div className="mt-2 p-3 bg-gray-100 rounded text-xs">
-                      <p><strong>Error ID:</strong> {error.id}</p>
-                      <p><strong>Message:</strong> {error.message}</p>
-                      <p><strong>Category:</strong> {error.category}</p>
-                      <p><strong>Severity:</strong> {error.severity}</p>
-                      {error.stack && (
-                        <div>
-                          <strong>Stack:</strong>
-                          <pre className="mt-1 overflow-auto whitespace-pre-wrap">{error.stack}</pre>
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    />
-  );
-};
+      // Call custom handler if provided
+      props.onError?.(error);
+    }}
+    fallback={(error, retry) => (
+      <CalmFallback
+        title="Something went wrong."
+        body={error.userMessage || "The app stumbled. Trying again usually clears it."}
+        action={<PushButton onClick={retry}>Try again</PushButton>}
+        secondary={<QuietLink onClick={() => window.location.reload()}>Refresh page</QuietLink>}
+        details={<DevDetails error={error} />}
+      />
+    )}
+  />
+);

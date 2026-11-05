@@ -3,7 +3,6 @@ import { loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // Dev twin of netlify/functions/tts.mjs — same contract, same env vars,
 // so `pnpm dev` speaks through AssemblyAI exactly like production does.
@@ -148,17 +147,6 @@ export default defineConfig(({ mode }) => {
         include: "**/*.{jsx,tsx}",
       }),
       tailwindcss(),
-
-      // Add Node.js polyfills for browser compatibility
-      nodePolyfills({
-        // Polyfill only what's needed
-        include: ["buffer", "process", "util", "events"],
-        globals: {
-          Buffer: true,
-          global: true,
-          process: true,
-        },
-      }),
     ],
 
     // Configure path aliases to match tsconfig
@@ -274,15 +262,10 @@ export default defineConfig(({ mode }) => {
         "react-dom/client",
         "react/jsx-runtime",
         "react-router-dom",
-        "scheduler",
-        "zustand",
+                "zustand",
         "@tanstack/react-query"
       ],
-      // Exclude optional dependencies that may not be available
-      exclude: [
-        "@lens-chain/sdk",
-        "@lens-chain/storage-client"
-      ],
+      exclude: [],
     },
 
     // Vitest configuration

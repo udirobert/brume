@@ -37,15 +37,16 @@
     --primary: var(--brume-primary);
     --primary-foreground: var(--brume-background);
 
-    --secondary: 66 16% 90%;
-    --secondary-foreground: 224 20% 30%;
+    --secondary: var(--brume-calm-2);
+    --secondary-foreground: var(--brume-foreground);
 
-    --muted: 66 16% 90%;
+    --muted: var(--brume-calm-2);
     --muted-foreground: var(--brume-muted);
 
-    --accent: 68 20% 88%;
-    --accent-foreground: 228 22% 16%;
+    --accent: var(--brume-surface);
+    --accent-foreground: var(--brume-foreground);
 
+    /* Functional colour, not a brand token — kept raw deliberately. */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
@@ -273,7 +274,7 @@
       rgba(0, 0, 0, 1) 100%);
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: reduce), (max-width: 767px) {
     .progressive-blur-top {
       display: none;
     }

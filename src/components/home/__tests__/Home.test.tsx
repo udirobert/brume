@@ -13,9 +13,6 @@ vi.mock("@/components/companion/JourneyCompanion", () => ({
     return <span data-mock-anchor data-state={props.state as string} data-demeanor={props.demeanor as string} />;
   },
 }));
-vi.mock("@/lib/Magnetic", () => ({
-  Magnetic: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
 vi.mock("@/components/atmosphere/AbsorbDroplet", () => ({ AbsorbDroplet: () => null }));
 vi.mock("@/hooks/useMascotPresence", () => ({
   useMascotPresence: () => ({ presence: "company", setPresence: vi.fn() }),

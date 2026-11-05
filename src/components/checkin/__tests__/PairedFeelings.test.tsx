@@ -35,7 +35,7 @@ import { PairedFeelings } from "../PairedFeelings";
 
 let container: HTMLDivElement;
 let root: Root;
-let chosen: number[];
+let chosen: (number | null)[];
 
 function Harness({ showHint = true, external }: { showHint?: boolean; external?: number | null }) {
   const [sel, setSel] = useState<number | null>(external ?? null);

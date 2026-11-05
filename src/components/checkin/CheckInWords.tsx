@@ -1,6 +1,6 @@
 /**
  * CheckInWords — the five-point "how is it for you" radiogroup.
- * Shared by Decompress and Home; pure presentation.
+ * Used by Decompress; pure presentation.
  */
 import {
   CHECK_IN_LABELS,

@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { Pause, Play, Loader2 } from "lucide-react";
+import { PauseIcon, PlayIcon, SpinnerIcon } from "@/components/icons/BrumeIcons";
 import { useSession } from "@/hooks/useSession";
 import { useSessionPhase } from "@/stores/sessionStore";
 import {
@@ -136,11 +136,11 @@ export const SessionControls = ({
           }
         >
           {isLoading ? (
-            <Loader2 size={22} className="animate-spin" />
+            <SpinnerIcon size={22} className="animate-spin" />
           ) : isPaused ? (
-            <Play size={22} />
+            <PlayIcon size={22} />
           ) : (
-            <Pause size={22} />
+            <PauseIcon size={22} />
           )}
         </button>
       )}

@@ -73,7 +73,7 @@ const TermsOfService = () => {
             { href: "#health-disclaimers", label: "7. Health and Wellness Disclaimers" },
             { href: "#limitation-liability", label: "8. Limitation of Liability" },
             { href: "#termination", label: "9. Termination" },
-            { href: "#governing-law", label: "10. Governing Law" },
+            { href: "#governing-law", label: "10. Dispute Resolution" },
             { href: "#changes", label: "11. Changes to Terms" },
             { href: "#contact", label: "12. Contact Information" },
           ]}
@@ -258,17 +258,7 @@ const TermsOfService = () => {
       </LegalSection>
 
       {/* Section 10 */}
-      <LegalSection id="governing-law" title="10. Governing Law and Dispute Resolution">
-        <div>
-          <LegalH3>Governing Law</LegalH3>
-          <p>
-            These Terms are governed by the laws of [Your Jurisdiction],
-            without regard to conflict of law principles. Any disputes
-            will be subject to the exclusive jurisdiction of courts in
-            [Your Jurisdiction].
-          </p>
-        </div>
-
+      <LegalSection id="governing-law" title="10. Dispute Resolution">
         <div>
           <LegalH3>Dispute Resolution</LegalH3>
           <LegalList>

@@ -279,7 +279,7 @@ const PrivacyPolicy = () => {
             <LegalH3>Service Providers</LegalH3>
             <LegalList>
               <li>Cloud infrastructure providers (Supabase, Hetzner)</li>
-              <li>AI service providers (OpenAI, Google, Anthropic) for enhanced features</li>
+              <li>AssemblyAI, via our own voice service, for the spoken lines and the check-in microphone</li>
               <li>Analytics services (anonymized usage data only)</li>
               <li>All providers are bound by strict data protection agreements</li>
             </LegalList>

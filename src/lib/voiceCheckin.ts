@@ -50,6 +50,30 @@ export function hasNegation(transcript: string): boolean {
   return NEGATION.test(transcript.toLowerCase());
 }
 
+// Rhythm names are a second closed catalog — proposed the same way a
+// feeling is (lit, waiting for a tap), never committed by voice. Digits
+// live in aliases ("4 7 8"), so this norm keeps them.
+const normPattern = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+
+const PATTERN_ALIASES: Record<string, string[]> = {
+  box: ["box", "box breathing", "square", "square breathing", "4 4 4 4", "four by four"],
+  relaxation: ["4 7 8", "478", "four seven eight", "relaxation", "relaxing breath"],
+  wim_hof: ["wim hof", "wimhof", "power breath"],
+  sleep: ["sleep", "sleep breath", "sleepy breath", "bedtime", "wind down"],
+};
+
+/** transcript → rhythm id, or null. Same rules: closed set, no negation. */
+export function matchPattern(transcript: string): string | null {
+  if (hasNegation(transcript)) return null;
+  const t = normPattern(transcript);
+  if (!t) return null;
+  for (const [id, aliases] of Object.entries(PATTERN_ALIASES)) {
+    if (aliases.some((a) => t === a || t.includes(a))) return id;
+  }
+  return null;
+}
+
 /** transcript → feeling index, or null when nothing matches. */
 export function matchFeeling(transcript: string): number | null {
   if (hasNegation(transcript)) return null;
@@ -115,6 +139,9 @@ export interface HeardResult {
   index: number | null;
   /** A near-match worth offering when index is null — never blocks. */
   suggest: number | null;
+  /** A rhythm name heard only when no feeling was offered — one
+   *  proposal at a time, and feelings always win the question. */
+  pattern: string | null;
 }
 
 const TOKEN_ENDPOINT = STT_ENDPOINT + "-token";
@@ -265,9 +292,11 @@ export async function listenOnce(
     }
   }
   const index = matchFeeling(transcript);
+  const suggest = index == null ? suggestFeeling(transcript) : null;
   return {
     transcript,
     index,
-    suggest: index == null ? suggestFeeling(transcript) : null,
+    suggest,
+    pattern: index == null && suggest == null ? matchPattern(transcript) : null,
   };
 }

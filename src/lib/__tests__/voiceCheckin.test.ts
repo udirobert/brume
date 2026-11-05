@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasNegation, matchFeeling, suggestFeeling } from "../voiceCheckin";
+import { hasNegation, matchFeeling, matchPattern, suggestFeeling } from "../voiceCheckin";
 
 describe("matchFeeling", () => {
   it("matches exact labels", () => {
@@ -88,5 +88,25 @@ describe("negation — ask, never declare", () => {
     expect(hasNegation("i know i am tired")).toBe(false);
     expect(hasNegation("nothing is wrong but i feel light")).toBe(true);
     expect(matchFeeling("i know i am tired")).toBe(8);
+  });
+});
+
+describe("matchPattern", () => {
+  it("matches rhythm names and aliases", () => {
+    expect(matchPattern("box")).toBe("box");
+    expect(matchPattern("box breathing")).toBe("box");
+    expect(matchPattern("4-7-8")).toBe("relaxation");
+    expect(matchPattern("four seven eight")).toBe("relaxation");
+    expect(matchPattern("wim hof please")).toBe("wim_hof");
+    expect(matchPattern("sleep breath")).toBe("sleep");
+  });
+  it("refuses negations like every other catalog", () => {
+    expect(matchPattern("not box")).toBeNull();
+    expect(matchPattern("no sleep breath")).toBeNull();
+  });
+  it("stays quiet on feeling words and noise", () => {
+    expect(matchPattern("i feel tense")).toBeNull();
+    expect(matchPattern("quantum banana")).toBeNull();
+    expect(matchPattern("")).toBeNull();
   });
 });

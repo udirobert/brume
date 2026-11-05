@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
@@ -34,11 +34,13 @@ const RHYTHMS = [
 ] as const;
 
 /** "More rhythms" — a quiet popover of direct rhythm picks. */
-function RhythmPicker({ value, onChange }: {
+function RhythmPicker({ value, onChange, suggested }: {
   value: string | null;
   onChange: (value: string | null) => void;
+  suggested?: string | null;
 }) {
   const id = useId();
+  const offer = suggested ? RHYTHMS.find((r) => r.id === suggested) : null;
   return (
     <div className="brume-home-options__row">
       <label htmlFor={id}>Rhythm</label>
@@ -48,6 +50,15 @@ function RhythmPicker({ value, onChange }: {
           <option key={r.id} value={r.id}>{r.label}</option>
         ))}
       </select>
+      {offer && (
+        <button
+          type="button"
+          className="brume-rhythm-offer"
+          onClick={() => onChange(offer.id)}
+        >
+          heard it — use {offer.label}?
+        </button>
+      )}
     </div>
   );
 }
@@ -59,6 +70,8 @@ export default function Index() {
   const companion = presence === "companion";
   const feelTap = useRoomExperience((s) => s.feelIndex);
   const [patternOverride, setPatternOverride] = useState<string | null>(null);
+  const [rhythmOffer, setRhythmOffer] = useState<string | null>(null);
+  const optionsRef = useRef<HTMLDetailsElement>(null);
   const [beginNudge, setBeginNudge] = useState(false);
   const reactionSerial = useRef(0);
   const [mascotReaction, setMascotReaction] = useState<
@@ -79,6 +92,11 @@ export default function Index() {
 
   const selectedPattern =
     getPattern(patternOverride ?? feel?.patternId ?? "reset");
+
+  // A rhythm heard aloud opens the options to show its offer.
+  useEffect(() => {
+    if (rhythmOffer && optionsRef.current) optionsRef.current.open = true;
+  }, [rhythmOffer]);
 
   // The chip sheds its word into the room: a droplet melts toward the
   // mascot while the mist takes the feeling's colour and weight.
@@ -159,6 +177,7 @@ export default function Index() {
           s === "listening" &&
           setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` })
         }
+        onPatternOffer={setRhythmOffer}
       />
 
       {feelTap !== null && <CheckInReasons feeling={feelTap} />}
@@ -167,7 +186,7 @@ export default function Index() {
         Begin
       </button>
 
-      <details className="brume-home-options" onKeyDown={(e) => {
+      <details ref={optionsRef} className="brume-home-options" onKeyDown={(e) => {
         if (e.key !== "Escape") return;
         e.currentTarget.open = false;
         e.currentTarget.querySelector("summary")?.focus();
@@ -233,7 +252,14 @@ export default function Index() {
             </div>
           </div>
           <RoomSettings />
-          <RhythmPicker value={patternOverride} onChange={setPatternOverride} />
+          <RhythmPicker
+            value={patternOverride}
+            suggested={rhythmOffer}
+            onChange={(v) => {
+              setPatternOverride(v);
+              setRhythmOffer(null);
+            }}
+          />
           <p className="brume-home-options__rhythm">
             {selectedPattern && `${selectedPattern.name} · ${formatPhases(selectedPattern)}`}
           </p>

@@ -390,3 +390,21 @@
 .brume-pairs__release:focus-visible {
   opacity: 0.9;
 }
+
+/* A rhythm heard aloud — quiet text beside the picker, tap to commit. */
+.brume-rhythm-offer {
+  margin-left: 0.5rem;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: inherit;
+  opacity: 0.55;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+.brume-rhythm-offer:hover,
+.brume-rhythm-offer:focus-visible {
+  opacity: 0.9;
+}

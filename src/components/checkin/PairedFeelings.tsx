@@ -33,11 +33,14 @@ export function PairedFeelings({
   selectedIndex,
   onChoose,
   onVoiceState,
+  onPatternOffer,
   showHint = true,
 }: {
   selectedIndex: number | null;
   onChoose: (index: number | null, button: HTMLButtonElement, fromOffer?: boolean) => void;
   onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
+  /** A rhythm name heard in the utterance — proposed, never committed. */
+  onPatternOffer?: (patternId: string) => void;
   showHint?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -121,14 +124,20 @@ export function PairedFeelings({
     setHeard("listening…");
     onVoiceState?.("listening");
     abortRef.current = new AbortController();
-    const { transcript, index, suggest } = await listenOnce(setHeard, abortRef.current.signal);
+    const { transcript, index, suggest, pattern } = await listenOnce(setHeard, abortRef.current.signal);
     const offered = index ?? suggest;
     track("checkin_voice_used", { matched: index != null, offered });
     setMicOn(false);
-    onVoiceState?.(offered != null ? "matched" : "missed", offered ?? undefined);
+    onVoiceState?.(offered != null || pattern != null ? "matched" : "missed", offered ?? undefined);
     const snippet = transcript.trim().slice(0, 28);
     const pair = offered == null ? null : pairForFeel(offered);
     if (offered == null || !pair) {
+      if (pattern) {
+        onPatternOffer?.(pattern);
+        setAnnounce("Heard a rhythm — tap Rhythm below to use it.");
+        flashHeard(`heard “${snippet}” — a rhythm? below`);
+        return;
+      }
       flashHeard(
         transcript
           ? `heard “${snippet}” — tap a word`
@@ -155,7 +164,7 @@ export function PairedFeelings({
     flashHeard(
       `heard “${snippet}” — ${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`,
     );
-  }, [micOn, faces, selectedIndex, onVoiceState]);
+  }, [micOn, faces, selectedIndex, onVoiceState, onPatternOffer]);
 
   return (
     <div className="brume-pairs" role="group" aria-label="Choose a feeling">

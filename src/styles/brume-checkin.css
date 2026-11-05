@@ -408,3 +408,16 @@
 .brume-rhythm-offer:focus-visible {
   opacity: 0.9;
 }
+
+/* The heard words dissolve into the mist — the transcript leaving. */
+.brume-voice-heard.is-dissolve {
+  animation: brumeHeardDissolve 1.7s ease-out forwards;
+}
+@keyframes brumeHeardDissolve {
+  0% { opacity: 0.6; filter: blur(0); letter-spacing: normal; }
+  55% { opacity: 0.35; filter: blur(1.5px); letter-spacing: 0.07em; }
+  100% { opacity: 0; filter: blur(4px); letter-spacing: 0.2em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-voice-heard.is-dissolve { animation: none; }
+}

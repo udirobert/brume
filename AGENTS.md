@@ -116,6 +116,14 @@ read before adding anything to it):
 - **One question.** *How are you feeling?* always. No modes, no rotating
   prompt deck — a rule that depends on the input channel or an RNG is a
   rule no user can hold.
+- **The pattern has a name — propose-never-commit voice**: token →
+  realtime stream (turns joined — a pause mid-sentence must not lose the
+  feeling word) → closed-set match → offer → tap → transcript dropped.
+  It is what makes multilingual hearing safe: `LANG` catalogs
+  (es/fr/de today) widen only the alias table, never the interpretation.
+  And it is what makes refusal legible — a negated utterance reads
+  "I'll ask instead" on screen, not a silent miss. Any new voice surface
+  implements this pattern or it does not ship.
 - **`src/lib/checkinLedger.ts` is the spine**: append-only, device-local
   `(t, feeling, reason, daypart)`. The recap, the memory line and any
   future host handoff read it. Closed sets only — free text is never

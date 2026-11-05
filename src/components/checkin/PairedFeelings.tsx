@@ -57,11 +57,21 @@ export function PairedFeelings({
   const [suggested, setSuggested] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [heard, setHeard] = useState("");
+  const [dissolve, setDissolve] = useState(false);
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const heardClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // The transcript is matched and dropped — so it dissolves, on screen,
+  // into the mist it came from. Nothing it heard is kept.
   const flashHeard = (s: string) => {
     setHeard(s);
+    setDissolve(false);
+    clearTimeout(heardClearTimer.current);
     clearTimeout(heardTimer.current);
-    heardTimer.current = setTimeout(() => setHeard(""), 6000);
+    heardTimer.current = setTimeout(() => setDissolve(true), 4200);
+    heardClearTimer.current = setTimeout(() => {
+      setHeard("");
+      setDissolve(false);
+    }, 6000);
   };
   const voiceOk = useMemo(() => voiceCheckinSupported(), []);
 
@@ -265,7 +275,7 @@ export function PairedFeelings({
         </button>
       )}
       {heard && (
-        <span className="brume-voice-heard" aria-hidden="true">
+        <span className={`brume-voice-heard${dissolve ? " is-dissolve" : ""}`} aria-hidden="true">
           {heard}
         </span>
       )}

@@ -36,7 +36,72 @@ const SYNONYMS: Record<number, string[]> = {
   13: ["hope", "optimistic", "bright", "upbeat", "positive", "encouraged"],
 };
 
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+// Beyond English: the closed catalog is what makes multilingual hearing
+// safe — a free-text matcher could never be trusted across languages, but
+// fourteen words can. Aliases are unaccented; norm() strips diacritics.
+const LANG: Record<string, Record<number, string[]>> = {
+  es: {
+    0: ["ok", "bien", "normal"],
+    1: ["tenso", "tensa", "estresado", "estresada", "estres"],
+    2: ["mucho", "acelerado", "ocupado"],
+    3: ["al limite", "quemado"],
+    4: ["abrumado", "agobiado", "superado"],
+    5: ["bien", "genial", "feliz", "contento"],
+    6: ["triste", "bajo", "mal"],
+    7: ["energico", "emocionado"],
+    8: ["cansado", "cansada", "agotado", "dormido"],
+    9: ["calmado", "tranquilo", "en paz"],
+    10: ["ansioso", "ansiosa", "nervioso", "inquieto"],
+    11: ["acompanado", "querido", "amado"],
+    12: ["solo", "sola", "aislado"],
+    13: ["esperanzado", "con esperanza", "ilusionado"],
+  },
+  fr: {
+    0: ["ok", "bien", "normal"],
+    1: ["tendu", "tendue", "stresse", "stressee"],
+    2: ["deborde", "occupe", "speed"],
+    3: ["a bout", "craque"],
+    4: ["depasse", "submerge"],
+    5: ["bien", "super", "genial", "content"],
+    6: ["triste", "bas", "mal"],
+    7: ["energique", "excite", "motive"],
+    8: ["fatigue", "fatiguee", "epuise"],
+    9: ["calme", "detendu", "apaise"],
+    10: ["anxieux", "nerveux"],
+    11: ["aime", "proche", "entoure"],
+    12: ["seul", "seule", "isole"],
+    13: ["optimiste", "espoir"],
+  },
+  de: {
+    0: ["okay", "gut", "normal"],
+    1: ["gestresst", "angespannt"],
+    2: ["viel", "uberlastet"],
+    3: ["am ende", "ausgebrannt"],
+    4: ["uberwaltigt", "uberfordert"],
+    5: ["gut", "super", "toll"],
+    6: ["traurig", "schlecht"],
+    7: ["motiviert", "energiegeladen"],
+    8: ["mude", "erschopft"],
+    9: ["ruhig", "gelassen"],
+    10: ["nervos", "angstlich", "unruhig"],
+    11: ["geliebt", "geborgen", "nah"],
+    12: ["allein", "einsam"],
+    13: ["hoffnungsvoll", "optimistisch"],
+  },
+};
+
+const synFor = (i: number): string[] => [
+  ...(SYNONYMS[i] ?? []),
+  ...Object.values(LANG).flatMap((l) => l[i] ?? []),
+];
+
+const norm = (s: string) =>
+  s.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 // "not good" is not Light. `norm` destroys the evidence — it turns
 // "don't" into "do t" and the word-length gates below drop "not" — so
@@ -87,7 +152,7 @@ export function matchFeeling(transcript: string): number | null {
     if (t === norm(f.label) || t === norm(f.longLabel)) score += 4;
     else if (t.includes(norm(f.label)) || t.includes(norm(f.phrase))) score += 3;
     for (const w of norm(f.phrase).split(" ")) if (w.length > 3 && words.has(w)) score += 1;
-    for (const w of SYNONYMS[i] ?? []) if (t.includes(w)) score += 2;
+    for (const w of synFor(i)) if (t.includes(w)) score += 2;
     if (score > 0 && (best === null || score > best.score)) best = { index: i, score };
   }
   return best?.index ?? null;
@@ -107,7 +172,7 @@ export function suggestFeeling(transcript: string): number | null {
     const cands = [
       norm(FEELINGS[i].label),
       norm(FEELINGS[i].longLabel),
-      ...(SYNONYMS[i] ?? []),
+      ...synFor(i),
     ];
     let hits = 0;
     for (const w of words)
@@ -156,7 +221,7 @@ async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSigna
   if (!tok.ok) throw new Error("no_token");
   const { token } = (await tok.json()) as { token: string };
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true`);
+  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true&language_detection=true`);
   // Turns are the transcript's phrases — "I'm tense — big call" arrives as
   // several, and keeping only the last one drops the feeling word. Join
   // them; the match layer sees the whole sentence.
@@ -264,7 +329,7 @@ function viaWebSpeech(onInterim?: (s: string) => void): Promise<string> {
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) return reject(new Error("no_speech_api"));
     const rec = new Ctor();
-    rec.lang = "en-US";
+    rec.lang = navigator.language || "en-US";
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     let final = "";

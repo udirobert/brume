@@ -127,7 +127,13 @@ read before adding anything to it):
   catalogs (es/fr/de today) widen only the alias table, never the
   interpretation.
   And it is what makes refusal legible — a negated utterance reads
-  "I'll ask instead" on screen, not a silent miss. Any new voice surface
+  "I'll ask instead" on screen, not a silent miss, and a stuck mic gets
+  a recovery, not an epitaph: the failure names the fix for *this*
+  device (in-app browser → open it in Safari; iOS → aA › Website
+  Settings; closed table `VOICE_HELP`, never generated), the card
+  persists until dismissed — the dissolve belongs to transcripts, which
+  are theirs, not to help, which is ours — and every card ends in the
+  exit: "Or just tap a word." Any new voice surface
   implements this pattern or it does not ship.
 - **`src/lib/checkinLedger.ts` is the spine**: append-only, device-local
   `(t, feeling, reason, daypart)`. The recap, the memory line and any

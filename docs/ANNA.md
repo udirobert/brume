@@ -876,3 +876,31 @@ Decision: **hold-to-talk is the default**; tap is an explicit opt-in.
 - Copy: About + PrivacyPolicy describe hold-by-default truthfully; tests
   pin it. Verified: 487 vitest, tsc/lint clean, real-browser check of the
   pill persisting across reload.
+
+### 12.15 A stuck mic gets a hand, not an epitaph (2026-11-06)
+
+Audit of the blocked-mic moment found the help evaporating: the failure
+line was rendered through the transcript's dissolve animation (4.2 s and
+gone) and said "allow it in your browser's site settings" — words nobody
+can act on, on the screen they're stuck on. Voice is the entry's headline;
+the stuck path is where judges land.
+
+- **Failures never dissolve.** Transcripts are theirs — that's why the
+  mist takes them. Help lines are Brume's own, from a closed table, and
+  stay until dismissed or the next press.
+- **`VOICE_HELP` closed table** (`voiceCheckin.ts`): per failure × device
+  (`deviceKindFromUA`: in-app browser / iOS / Android / other), always
+  ending in the exit — "Or just tap a word." In-app browsers hear "this
+  page is open inside another app's browser… open it in Safari or
+  Chrome"; iOS hears the aA › Website Settings path; Android the lock ›
+  Permissions path.
+- **The companion carries it**: `onVoiceState` gains `"blocked"`; Home's
+  mascot settles while the card explains — a blocked mic is a pause, not
+  an alarm.
+- **First-press expectation**: one-time line beside the mic ("hold to
+  speak — the browser asks for the mic the first time", mode-aware), so
+  the OS prompt is never a surprise. Most blocked mics are accidental
+  denials of a surprise prompt.
+- Copy-claims covers the whole table; UA detection, persistence, dismiss
+  and the hint are tested (494 vitest, tsc/lint clean); first-use hint
+  verified in a real mobile viewport.

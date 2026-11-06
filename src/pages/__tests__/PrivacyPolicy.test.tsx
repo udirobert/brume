@@ -44,8 +44,8 @@ describe("PrivacyPolicy microphone copy", () => {
   });
 
   it("says what the microphone does, and when", () => {
-    expect(html).toContain("The microphone stays off until you tap");
-    expect(html).toContain("One tap listens for one sentence");
+    expect(html).toContain("The microphone stays off until you hold or tap");
+    expect(html).toContain("Each hold or tap listens for one sentence");
     expect(html).toContain("AssemblyAI");
   });
 

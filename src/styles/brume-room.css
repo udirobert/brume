@@ -186,8 +186,21 @@ html:has(.brume-room) .dc-room__wisp {
   bottom: auto;
 }
 
-.brume-room-controls--decompress {
-  top: 76px;
+/* Desktop only: on phones the pill sits above the tab bar like everywhere
+   else, so it can't land on top of the page's own first row. */
+@media (min-width: 768px) {
+  .brume-room-controls--decompress {
+    top: 76px;
+  }
+}
+
+/* On a phone Decompress has the shared header above and the tab bar below,
+   and its own controls in between; the pill has nowhere to sit that isn't
+   on top of one of them. The same skins live in Home's Options. */
+@media (max-width: 767px) {
+  .brume-room-controls--decompress {
+    display: none;
+  }
 }
 
 .brume-room-controls--inline {

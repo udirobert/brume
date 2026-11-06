@@ -18,7 +18,9 @@ body:has(.decompress-page) {
 .decompress-page {
   position: relative;
   isolation: isolate;
-  min-height: 100dvh;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: clip;
@@ -40,69 +42,10 @@ body:has(.decompress-page) {
   color: inherit;
 }
 
-.dc-nav-chip {
-  position: fixed;
-  z-index: 20;
-  top: max(var(--space-md), env(safe-area-inset-top));
-  right: max(var(--space-md), env(safe-area-inset-right));
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-height: 2.75rem;
-  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
-  box-shadow: var(--shadow-card);
-  line-height: 1;
-}
-
-.dc-nav-chip__mark,
-.dc-nav-chip__action {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-.dc-nav-chip__mark {
-  font-weight: 800;
-  letter-spacing: -0.025em;
-}
-
-.dc-nav-chip__action {
-  padding-inline: var(--space-sm);
-  border-radius: var(--radius-pill);
-  background: var(--color-cyan-soft);
-  color: var(--color-cyan-deep);
-  font-size: 0.8125rem;
-  font-weight: 700;
-}
-
-.dc-nav-chip__mark:hover {
-  color: var(--color-cyan-deep);
-}
-
-.dc-nav-chip__mark:active,
-.dc-nav-chip__action:active {
-  transform: translateY(0.0625rem);
-}
-
-.dc-nav-chip__action:hover {
-  background: var(--color-mint-soft);
-}
-
-.dc-nav-chip__mark:focus-visible,
-.dc-nav-chip__action:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
 .dc-shell {
   width: min(100%, 70rem);
   margin-inline: auto;
-  padding: calc(var(--space-4xl) + env(safe-area-inset-top)) var(--space-md) var(--space-2xl);
+  padding: var(--space-xl) var(--space-md) var(--space-2xl);
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 0.34fr) minmax(0, 0.66fr);
@@ -433,19 +376,6 @@ body:has(.decompress-page) {
   margin-top: 0;
 }
 
-.decompress-page[data-stage="pause"] .dc-nav-chip,
-.decompress-page[data-stage="checkin"] .dc-nav-chip {
-  opacity: 0.18;
-  transition: opacity 180ms var(--ease-soft);
-}
-
-.decompress-page[data-stage="pause"] .dc-nav-chip:hover,
-.decompress-page[data-stage="checkin"] .dc-nav-chip:hover,
-.decompress-page[data-stage="pause"] .dc-nav-chip:focus-within,
-.decompress-page[data-stage="checkin"] .dc-nav-chip:focus-within {
-  opacity: 1;
-}
-
 .decompress-page[data-stage="pause"] .dc-footer,
 .decompress-page[data-stage="checkin"] .dc-footer {
   display: none;
@@ -470,7 +400,9 @@ body:has(.decompress-page) {
 
 .dc-room__field {
   position: relative;
-  min-height: 100dvh;
+  /* The shared header and (on phones) the tab bar sit outside this room,
+     so it fills what is left, not the whole screen. */
+  min-height: calc(100dvh - 3.75rem);
   overflow: clip;
 }
 
@@ -938,13 +870,76 @@ body:has(.decompress-page) {
 }
 
 @media (max-width: 42rem) {
+  /* One column. The arrive stage was a copy column beside a mascot card,
+     which on a phone left the headline 92px wide and 400px tall. */
+  .dc-stage--arrive {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-lg);
+  }
+
+  .dc-shell {
+    padding-top: var(--space-md);
+  }
+
+  /* The three-step rail becomes a quiet progress strip: dots and names,
+     not three stacked cards that push the content below the fold. */
+  .dc-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-xs);
+  }
+
+  .dc-rail__item {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    padding: var(--space-xs) var(--space-sm);
+    gap: var(--space-2xs);
+  }
+
+  .dc-rail__copy span {
+    display: none;
+  }
+
+  .dc-rail__item.is-active {
+    transform: none;
+  }
+
+  /* The room already fills the screen; the tab bar is 4.5rem tall. */
+  .dc-room__field {
+    min-height: calc(100dvh - 3.75rem - 4.5rem - env(safe-area-inset-bottom));
+  }
+
   .dc-room__field {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-md);
-    padding: var(--space-3xl) var(--space-sm) var(--space-4xl);
+    gap: var(--space-sm);
+    padding: var(--space-lg) var(--space-sm) var(--space-md);
+  }
+
+  /* Full-width buttons suit the arrive stage; inside the room they stacked
+     three tall rows and pushed Pause under the tab bar. A row, wrapping
+     only if it must. */
+  .dc-room__controls {
+    width: calc(100% - var(--space-md));
+    max-width: 24rem;
+    gap: var(--space-xs);
+  }
+
+  .decompress-page .dc-room__controls .brume-btn {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .dc-room__controls .brume-toggle {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  /* Pause is the thing you reach for; the caption under the companion is
+     the thing you can lose on a short screen. */
+  .dc-room__companion-caption {
+    display: none;
   }
 
   .dc-room__cue,
@@ -968,7 +963,7 @@ body:has(.decompress-page) {
   }
 
   .dc-room__shoulder {
-    width: min(100%, 20rem);
+    width: min(100%, 13rem);
     transform: translateY(var(--dc-depth-y));
   }
 
@@ -1058,12 +1053,6 @@ body:has(.decompress-page) {
 }
 
 @media (max-width: 22rem) {
-  .dc-nav-chip {
-    right: var(--space-xs);
-    gap: var(--space-2xs);
-    padding-left: var(--space-sm);
-  }
-
   .dc-panel {
     padding: var(--space-sm);
   }

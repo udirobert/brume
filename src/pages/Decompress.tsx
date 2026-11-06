@@ -274,13 +274,6 @@ export default function Decompress() {
 
   return (
     <div className="decompress-page" data-stage={stage}>
-      <nav className="dc-nav-chip" aria-label="Decompress">
-        <span className="dc-nav-chip__mark">Brume</span>
-        <Link to="/" className="dc-nav-chip__action">
-          Home
-        </Link>
-      </nav>
-
       <main className={roomMode ? "dc-room" : "dc-shell"}>
         {roomMode ? (
           <div
@@ -305,7 +298,7 @@ export default function Decompress() {
 
             <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
               <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
-              <span>with you · tap me</span>
+              <span className="dc-room__companion-caption">with you · tap me</span>
             </button>
 
             <div

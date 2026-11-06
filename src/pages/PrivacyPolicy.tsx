@@ -133,7 +133,7 @@ const PrivacyPolicy = () => {
             Breath cues are pre-recorded files that play on your device.
             Three optional moments use our voice service (AssemblyAI): the
             line Brume says when you tap Begin, "Hear it" on your Words
-            Card, and the check-in microphone when you tap "say it". The
+            Card, and the check-in microphone while you hold or tap "say it". The
             first two send only the words being spoken, to be spoken back.
             The third sends audio while you speak, returns words, and
             matches them against the fourteen feelings — the audio is not
@@ -174,8 +174,8 @@ const PrivacyPolicy = () => {
           </p>
           <LegalH3>Microphone</LegalH3>
           <p>
-            The microphone stays off until you tap "say it" beside the
-            check-in words. One tap listens for one sentence. Your speech
+            The microphone stays off until you hold or tap "say it" beside
+            the check-in words. Each hold or tap listens for one sentence. Your speech
             goes to AssemblyAI to be turned into words; Brume matches
             those words against the fourteen feelings and offers the
             closest one face-up — it never chooses for you, and a sentence
@@ -315,7 +315,7 @@ const PrivacyPolicy = () => {
             <LegalList>
               <li>The room: material and cue overrides, and a still room if you want one</li>
               <li>The voice: one glyph cycles spoken cues, breath-only cues, and quiet</li>
-              <li>The microphone: used only when you tap "say it", and your browser asks first</li>
+              <li>The microphone: used only while you hold or tap "say it", and your browser asks first</li>
               <li>There is no analytics switch, no AI switch and no sharing switch, because there is nothing behind them to turn off</li>
             </LegalList>
           </div>

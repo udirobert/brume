@@ -84,6 +84,13 @@ function App() {
                 </RouteErrorBoundary>
               </ProtectedRoute>
             } />
+            <Route path="/decompress" element={
+              <RouteErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Decompress />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
             <Route path="/about" element={<RouteErrorBoundary><About /></RouteErrorBoundary>} />
             {/* Consolidation redirects */}
             <Route path="/patterns" element={<PatternsRedirect />} />
@@ -93,13 +100,6 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardRedirect />} />
           </Route>
 
-          <Route path="/decompress" element={
-            <RouteErrorBoundary>
-              <Suspense fallback={<PageLoader />}>
-                <Decompress />
-              </Suspense>
-            </RouteErrorBoundary>
-          } />
           <Route path="/auth" element={
             <RouteErrorBoundary>
               <Suspense fallback={<PageLoader />}>

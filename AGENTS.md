@@ -49,7 +49,7 @@ Rules:
   microphone" clause was actually protecting, so it is written as the
   protection rather than as a device list. One exception is shipped and
   bounded: the check-in microphone (`src/lib/voiceCheckin.ts`) listens for
-  one sentence per tap, sends it to AssemblyAI to become words, matches
+  one sentence per press (hold or tap), sends it to AssemblyAI to become words, matches
   those words against the 14-feeling catalog and drops them. Nothing is
   recorded; no transcript reaches `checkinLedger.ts` or `track()`; and
   voice still only *proposes* (see the check-in doctrine below). Opt-in per

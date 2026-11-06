@@ -15,7 +15,7 @@ Anna is where Brume sits inside someone's workflow, and the Founding Builder Pro
 
 - **Proactive in suggestion only.** The agent may offer a reset from cues the user can see ("you usually pause before writing"). It never auto-starts and never interrupts. Every offer is dismissible, and the product works fully if the user never accepts one (`docs/ANNA.md` §6a).
 - **AI drafts, the user decides.** Preparation drafts are editable; model output is validated and filtered (health-claim and cue filters in `anna/bundle/plan.js` / `preparation.js`).
-- **No scores, streaks or camera — and no microphone in this surface.** The web app's bounded check-in microphone (one sentence per tap, nothing recorded) does not carry into Anna; nothing here captures audio. Same content rules as the web app (`AGENTS.md`, "We do not sense you").
+- **No scores, streaks or camera — and no microphone in this surface.** The web app's bounded check-in microphone (one sentence per hold or tap, nothing recorded) does not carry into Anna; nothing here captures audio. Same content rules as the web app (`AGENTS.md`, "We do not sense you").
 
 ## Agent-friendly, not agentic
 

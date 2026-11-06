@@ -9,7 +9,13 @@ import {
   pairForFeel,
   selectPairedFeel,
 } from "@/lib/feelings";
-import { hasNegation, listenOnce, voiceCheckinSupported } from "@/lib/voiceCheckin";
+import {
+  hasNegation,
+  listenOnce,
+  voiceCheckinSupported,
+  VOICE_FAILURE_COPY,
+  type ListenControl,
+} from "@/lib/voiceCheckin";
 import { track } from "@/lib/events";
 
 const HINT_KEY = "brume.feelingFlipHint.v1";
@@ -56,6 +62,16 @@ export function PairedFeelings({
   const [micOn, setMicOn] = useState(false);
   const [suggested, setSuggested] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Hold to talk: the mic stays open while the finger is down and stops on
+  // release. A press shorter than HOLD_TAP_MS settles into the old toggle —
+  // one press to start, another (or a quiet stretch) to finish — because a
+  // hold-only button is a wall for keyboard and switch users.
+  const HOLD_TAP_MS = 350;
+  const holdingRef = useRef(false);
+  const pressStartRef = useRef(0);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const ctlRef = useRef<ListenControl | null>(null);
+  const [holdUI, setHoldUI] = useState(false);
   const [heard, setHeard] = useState("");
   const [dissolve, setDissolve] = useState(false);
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -120,24 +136,39 @@ export function PairedFeelings({
     [faces, selectedIndex, onChoose, showHint, suggested],
   );
 
+  const stopListening = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   // Voice proposes and never commits: whatever is heard, the closest word
   // turns itself face-up and waits for a tap. A misread costs nothing and
   // a hit and a miss are the same interaction — so there is no rule here
   // the user has to remember, and nothing Brume can say about them that
   // they did not confirm.
-  const onMicTap = useCallback(async () => {
-    if (micOn) {
-      abortRef.current?.abort(); // tap again to stop early
-      return;
-    }
+  const beginListening = useCallback(async () => {
     setMicOn(true);
     setHeard("listening…");
     onVoiceState?.("listening");
     abortRef.current = new AbortController();
-    const { transcript, index, suggest, pattern } = await listenOnce(setHeard, abortRef.current.signal);
+    const ctl = ctlRef.current ?? { hold: false };
+    const { transcript, index, suggest, pattern, failure } = await listenOnce(
+      setHeard,
+      abortRef.current.signal,
+      ctl,
+    );
     const offered = index ?? suggest;
     track("checkin_voice_used", { matched: index != null, offered });
     setMicOn(false);
+    setHoldUI(false);
+    holdingRef.current = false;
+    if (failure && !transcript) {
+      // Said out loud, not shrugged off — the person should know whether it
+      // was permission, the network, or nothing heard at all.
+      onVoiceState?.("missed");
+      setAnnounce(VOICE_FAILURE_COPY[failure]);
+      flashHeard(VOICE_FAILURE_COPY[failure]);
+      return;
+    }
     onVoiceState?.(offered != null || pattern != null ? "matched" : "missed", offered ?? undefined);
     const snippet = transcript.trim().slice(0, 28);
     const pair = offered == null ? null : pairForFeel(offered);
@@ -181,7 +212,72 @@ export function PairedFeelings({
     flashHeard(
       `heard “${snippet}” — ${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`,
     );
-  }, [micOn, faces, selectedIndex, onVoiceState, onPatternOffer]);
+  }, [faces, selectedIndex, onVoiceState, onPatternOffer]);
+
+  const onMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // no focus ring dance, no synthesized click after
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { void 0; }
+    if (micOn) {
+      if (!holdingRef.current) stopListening(); // second press ends a tap-mode listen
+      return;
+    }
+    holdingRef.current = true;
+    pressStartRef.current = Date.now();
+    ctlRef.current = { hold: true };
+    // Confirmed hold: the silence rule switches off and release ends it.
+    holdTimerRef.current = setTimeout(() => {
+      if (holdingRef.current && ctlRef.current) {
+        setHoldUI(true);
+        setHeard("listening — let go when you're done");
+      }
+    }, HOLD_TAP_MS);
+    beginListening();
+  }, [micOn, beginListening, stopListening]);
+
+  const onMicPointerEnd = useCallback((release: boolean) => {
+    if (!holdingRef.current) return;
+    holdingRef.current = false;
+    clearTimeout(holdTimerRef.current);
+    if (!release) return;
+    const held = Date.now() - pressStartRef.current >= HOLD_TAP_MS;
+    if (!held && ctlRef.current) {
+      // Settled into a tap: keep listening, silence (or a second press) ends it.
+      ctlRef.current.hold = false;
+      return;
+    }
+    stopListening();
+  }, [stopListening]);
+
+  const onMicKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
+    // Keyboard push-to-talk: Space holds, Enter taps.
+    if (e.key === " " && !e.repeat) {
+      e.preventDefault();
+      if (!micOn) {
+        holdingRef.current = true;
+        ctlRef.current = { hold: true };
+        setHoldUI(true);
+        beginListening();
+      }
+    }
+  }, [micOn, beginListening]);
+
+  const onMicKeyUp = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === " " && ctlRef.current?.hold) {
+      e.preventDefault();
+      setHoldUI(false);
+      stopListening();
+    }
+  }, [stopListening]);
+
+  const onMicClick = useCallback(() => {
+    // detail 0 = keyboard Enter: behave like the old tap-to-toggle.
+    if (micOn) {
+      if (!ctlRef.current?.hold) stopListening();
+    } else {
+      ctlRef.current = { hold: false };
+      beginListening();
+    }
+  }, [micOn, beginListening, stopListening]);
 
   return (
     <div className="brume-pairs" role="group" aria-label="Choose a feeling">
@@ -253,10 +349,18 @@ export function PairedFeelings({
       {voiceOk && (
         <button
           type="button"
-          className={`brume-mic${micOn ? (heard === "hearing…" ? " is-hearing" : " is-listening") : ""}`}
-          aria-label="Say how you feel"
+          className={`brume-mic${micOn ? (heard === "hearing…" ? " is-hearing" : " is-listening") : ""}${holdUI ? " is-holding" : ""}`}
+          aria-label="Say how you feel — hold to speak, or tap"
           aria-pressed={micOn}
-          onClick={onMicTap}
+          onPointerDown={onMicPointerDown}
+          onPointerUp={() => onMicPointerEnd(true)}
+          onPointerCancel={() => onMicPointerEnd(false)}
+          onKeyDown={onMicKeyDown}
+          onKeyUp={onMicKeyUp}
+          onClick={(e) => {
+            if (e.detail === 0) onMicClick(); // keyboard Enter only
+          }}
+          onContextMenu={(e) => e.preventDefault()}
         >
           <svg
             aria-hidden="true"

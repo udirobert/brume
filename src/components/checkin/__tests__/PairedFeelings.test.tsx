@@ -207,3 +207,102 @@ describe("PairedFeelings", () => {
     expect(JSON.parse(flipped.getAttribute("data-animate")!)).toEqual({ opacity: 1 });
   });
 });
+
+// --- Hold-to-talk on the mic ------------------------------------------------
+vi.mock("@/lib/voiceCheckin", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/voiceCheckin")>();
+  return {
+    ...real,
+    voiceCheckinSupported: () => true,
+    listenOnce: (...args: unknown[]) => micMock.listenOnce(...(args as [])),
+  };
+});
+
+const micMock = vi.hoisted(() => ({
+  listenOnce: vi.fn(),
+  resolve: undefined as ((v: unknown) => void) | undefined,
+  arm() {
+    this.listenOnce.mockImplementation(
+      (_interim: unknown, signal: AbortSignal, ctl: { hold: boolean }) => {
+        this.lastCtl = ctl;
+        this.lastSignal = signal;
+        return new Promise((res) => {
+          this.resolve = (v: unknown) => res(v);
+          signal.addEventListener("abort", () =>
+            res({ transcript: "", index: null, suggest: null, pattern: null, failure: null }),
+          );
+        });
+      },
+    );
+  },
+  lastCtl: null as { hold: boolean } | null,
+  lastSignal: null as AbortSignal | null,
+}));
+
+describe("mic — hold to talk, tap to toggle", () => {
+  beforeEach(() => {
+    micMock.arm();
+  });
+
+  const mountPlain = async () => {
+    await act(async () => {
+      root.render(
+        <PairedFeelings selectedIndex={null} onChoose={(i: number | null) => chosen.push(i)} showHint={false} />,
+      );
+    });
+  };
+  const mic = () => container.querySelector<HTMLButtonElement>(".brume-mic")!;
+  const pointer = (type: string, el: HTMLElement) =>
+    act(() => {
+      el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 7 }));
+    });
+
+  it("a held press keeps the mic open past a quiet sentence, until release", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      pointer("pointerdown", mic());
+      expect(micMock.listenOnce).toHaveBeenCalledTimes(1);
+      expect(micMock.lastCtl!.hold).toBe(true);
+      await act(async () => { vi.advanceTimersByTime(400); });
+      expect(mic().classList.contains("is-holding")).toBe(true);
+      // Finger still down: no abort yet.
+      expect(micMock.lastSignal!.aborted).toBe(false);
+      pointer("pointerup", mic());
+      expect(micMock.lastSignal!.aborted).toBe(true);
+      // Resolve as if the last words landed.
+      await act(async () => {
+        micMock.resolve!({ transcript: "I am tense", index: 1, suggest: null, pattern: null, failure: null });
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a quick press settles into a tap: the mic stays open until stopped", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      pointer("pointerdown", mic());
+      pointer("pointerup", mic()); // under HOLD_TAP_MS
+      expect(micMock.lastSignal!.aborted).toBe(false);
+      expect(micMock.lastCtl!.hold).toBe(false);
+      // Second press ends the tap-mode listen.
+      pointer("pointerdown", mic());
+      expect(micMock.lastSignal!.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a failed listen names the failure instead of a generic miss", async () => {
+    micMock.listenOnce.mockResolvedValueOnce({
+      transcript: "", index: null, suggest: null, pattern: null, failure: "mic_blocked",
+    });
+    await mountPlain();
+    pointer("pointerdown", mic());
+    await act(async () => { vi.waitFor(() => expect(micMock.listenOnce).toHaveBeenCalled()); });
+    await act(async () => { await Promise.resolve(); });
+    expect(container.textContent).toContain("mic is blocked");
+  });
+});

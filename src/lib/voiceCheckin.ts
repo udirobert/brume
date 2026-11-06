@@ -199,6 +199,9 @@ export function voiceCheckinSupported(): boolean {
   );
 }
 
+/** Why a listen produced nothing — said out loud, not shrugged off. */
+export type VoiceFailure = "mic_blocked" | "no_mic" | "offline" | "unavailable";
+
 export interface HeardResult {
   transcript: string;
   index: number | null;
@@ -207,165 +210,421 @@ export interface HeardResult {
   /** A rhythm name heard only when no feeling was offered — one
    *  proposal at a time, and feelings always win the question. */
   pattern: string | null;
+  /** Set when listening itself failed (as opposed to hearing nothing). */
+  failure: VoiceFailure | null;
+}
+
+/**
+ * Whether the person is still holding the button. Read live, so one press
+ * can begin as a hold and be settled into a tap a moment later: a press
+ * shorter than the threshold turns the hold off and the usual silence rules
+ * take over; a longer one stays on until release.
+ */
+export interface ListenControl {
+  hold: boolean;
 }
 
 const TOKEN_ENDPOINT = STT_ENDPOINT + "-token";
 const WS_URL = "wss://streaming.assemblyai.com/v3/ws";
+const TARGET_RATE = 16000;
 const SILENCE_MS = 800;
 const MAX_LISTEN_MS = 6000;
+/** Held down, there is no silence rule — but a hot mic still has a ceiling. */
+const HOLD_MAX_MS = 20000;
+/** After release, how long to wait for the last words to be transcribed. */
+const RELEASE_GRACE_MS = 1500;
+/** Audio spoken before the socket opens is kept, not dropped (~8 s at 16 kHz). */
+const PENDING_MAX_BYTES = 16000 * 2 * 8;
+const SPEECH_PEAK = 0.02;
+
+// ---- pure helpers (tested) -------------------------------------------------
+
+/**
+ * Float samples at the context's own rate → PCM16 at 16 kHz, plus the peak.
+ * Phones run their audio context at 48 kHz, desktops at 44.1 — the rate is
+ * read, never assumed, and each output sample averages the input it spans
+ * (a box filter) rather than skipping samples, which aliases speech.
+ */
+export function toPcm16(input: Float32Array, inRate: number): { pcm: Int16Array; peak: number } {
+  const ratio = inRate > TARGET_RATE ? inRate / TARGET_RATE : 1;
+  const n = Math.floor(input.length / ratio);
+  const pcm = new Int16Array(n);
+  let peak = 0;
+  for (let i = 0; i < n; i++) {
+    const from = Math.floor(i * ratio);
+    const to = Math.max(from + 1, Math.min(input.length, Math.floor((i + 1) * ratio)));
+    let sum = 0;
+    for (let j = from; j < to; j++) sum += input[j];
+    const v = Math.max(-1, Math.min(1, sum / (to - from)));
+    peak = Math.max(peak, Math.abs(v));
+    pcm[i] = Math.round(v * 32767);
+  }
+  return { pcm, peak };
+}
+
+interface TurnMessage {
+  transcript?: string;
+  end_of_turn?: boolean;
+  turn_is_formatted?: boolean;
+}
+
+/**
+ * Joins what the recognizer sends into one sentence. A Turn message carries
+ * the whole turn so far, not a delta, so only the latest of an unfinished
+ * turn counts; a finished turn is kept, and the formatted repeat of a
+ * finished turn replaces its raw twin instead of doubling it. The pause
+ * that splits "I'm tense — big call" into two turns must not lose either.
+ */
+export function createTurnJoiner() {
+  const done: string[] = [];
+  let live = "";
+  let lastEndWasRaw = false;
+  return {
+    add(m: TurnMessage): void {
+      const t = (m.transcript ?? "").trim();
+      if (!t) return;
+      if (m.end_of_turn) {
+        if (lastEndWasRaw && m.turn_is_formatted) done[done.length - 1] = t;
+        else done.push(t);
+        lastEndWasRaw = !m.turn_is_formatted;
+        live = "";
+      } else {
+        live = t;
+        lastEndWasRaw = false;
+      }
+    },
+    text(): string {
+      return [...done, live].filter(Boolean).join(" ");
+    },
+    hasText(): boolean {
+      return done.length > 0 || live !== "";
+    },
+  };
+}
+
+/** getUserMedia refusals, told apart: blocked by the person, or no mic to use. */
+export function classifyMicError(err: unknown): VoiceFailure {
+  const name = (err as { name?: string } | null)?.name ?? "";
+  if (name === "NotAllowedError" || name === "SecurityError" || name === "PermissionDeniedError") {
+    return "mic_blocked";
+  }
+  return "no_mic";
+}
+
+/** What the screen says for each failure — short, and always with a way out. */
+export const VOICE_FAILURE_COPY: Record<VoiceFailure, string> = {
+  mic_blocked: "mic is blocked — allow it, or tap a word",
+  no_mic: "can’t reach the microphone — tap a word",
+  offline: "no connection — tap a word",
+  unavailable: "voice isn’t available just now — tap a word",
+};
+
+// The stage that failed and the error's class — never audio, never words.
+function trace(stage: string, err: unknown): void {
+  const e = err as { name?: string; message?: string } | null;
+  const what = e?.name && e.name !== "Error" ? e.name : (e?.message ?? "error");
+  console.warn(`[voice] ${stage} failed: ${what}`);
+}
+
+const offline = () => typeof navigator !== "undefined" && navigator.onLine === false;
+
+// ---- the three ways to hear -------------------------------------------------
 
 // Live path: stream PCM16 to AssemblyAI's realtime WS — transcripts
-// arrive as we speak. Falls back to the file path on any failure.
-async function viaStreaming(onInterim?: (s: string) => void, signal?: AbortSignal): Promise<string> {
+// arrive as we speak. Throws on any failure so the next path can try.
+async function viaStreaming(
+  stream: MediaStream,
+  ctx: AudioContext,
+  ctl: ListenControl,
+  onInterim?: (s: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
   const tok = await fetch(TOKEN_ENDPOINT, { method: "POST", headers: voiceHeaders() });
-  if (!tok.ok) throw new Error("no_token");
-  const { token } = (await tok.json()) as { token: string };
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=16000&format_turns=true&language_detection=true&speech_model=universal-3-6-pro&language_codes=["en","es","fr","de"]&keyterms_prompt=["Tense","Overwhelmed","Drained","Settled","Light","box breathing","4-7-8"]&min_end_of_turn_silence_when_confident=600&max_turn_silence=1400`);
-  // Turns are the transcript's phrases — "I'm tense — big call" arrives as
-  // several, and keeping only the last one drops the feeling word. Join
-  // them; the match layer sees the whole sentence.
-  const turns: string[] = [];
-  const final = () => turns.join(" ");
-  let silenceSince = 0;
-  const ctx = new AudioContext();
+  if (!tok.ok) throw new Error(`token_${tok.status}`);
+  const { token } = (await tok.json()) as { token?: string };
+  if (!token) throw new Error("token_empty");
+
+  const joiner = createTurnJoiner();
+  // The microphone starts feeding the moment the token is in hand, and the
+  // socket takes a beat to open — what is said in that beat is kept and sent
+  // on open, so the first word of a held press is not the one that is lost.
+  const pending: ArrayBuffer[] = [];
+  let pendingBytes = 0;
+
   const src = ctx.createMediaStreamSource(stream);
   const proc = ctx.createScriptProcessor(4096, 1, 1);
+  const sink = ctx.createGain();
+  sink.gain.value = 0; // the processor runs; the mic is never played back
   src.connect(proc);
-  proc.connect(ctx.destination);
-  const heard = new Promise<string>((resolve, reject) => {
-    const stop = (v: string) => {
-      try { ws.close(); } catch { void 0; }
-      resolve(v);
-    };
-    ws.onerror = () => reject(new Error("ws_error"));
-    signal?.addEventListener("abort", () => stop(final()));
-    ws.onmessage = (e) => {
-      const m = JSON.parse(e.data);
-      if (m.type === "Turn" && m.transcript) {
-        turns.push(m.transcript);
-        silenceSince = Date.now();
-        if (!m.end_of_turn) onInterim?.(final());
-        else stop(final());
-      } else if (m.type === "Termination") stop(final());
-    };
-    proc.onaudioprocess = (ev) => {
-      if (ws.readyState !== WebSocket.OPEN) return;
-      const f32 = ev.inputBuffer.getChannelData(0);
-      // 44.1k→16k naive decimation into PCM16
-      const n = Math.floor(f32.length / 2.756);
-      const pcm = new Int16Array(n);
-      let peak = 0;
-      for (let i = 0; i < n; i++) {
-        const s = Math.max(-1, Math.min(1, f32[Math.floor(i * 2.756)]));
-        peak = Math.max(peak, Math.abs(s));
-        pcm[i] = s * 32767;
-      }
-      if (turns.length && peak < 0.02 && Date.now() - silenceSince > SILENCE_MS) stop(final());
-      else ws.send(pcm.buffer);
-    };
-    setTimeout(() => stop(final()), MAX_LISTEN_MS);
-  });
-  try {
-    return await heard;
-  } finally {
-    proc.disconnect(); src.disconnect(); ctx.close();
-    stream.getTracks().forEach((t) => t.stop());
-  }
-}
+  proc.connect(sink);
+  sink.connect(ctx.destination);
 
-async function viaAssemblyAI(onInterim?: (s: string) => void, signal?: AbortSignal): Promise<string> {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=${TARGET_RATE}&format_turns=true&language_detection=true&speech_model=universal-3-6-pro&language_codes=["en","es","fr","de"]&keyterms_prompt=["Tense","Overwhelmed","Drained","Settled","Light","box breathing","4-7-8"]&min_end_of_turn_silence_when_confident=600&max_turn_silence=1400`);
+  const t0 = Date.now();
+  let silenceSince = t0;
+  let opened = false;
+  let releasing = false;
+  let spoke = false;
+
   try {
-    const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : "";
-    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-    const parts: Blob[] = [];
-    rec.ondataavailable = (e) => e.data.size && parts.push(e.data);
-    const stopped = new Promise<void>((r) => (rec.onstop = () => r()));
-    rec.start();
-    onInterim?.("listening…");
-    // Auto-stop on ~0.8 s of quiet after speech, hard cap 4 s.
-    const ctx = new AudioContext();
-    const an = ctx.createAnalyser();
-    an.fftSize = 512;
-    ctx.createMediaStreamSource(stream).connect(an);
-    const buf = new Uint8Array(an.frequencyBinCount);
-    let spoke = false;
-    let quietMs = 0;
-    await new Promise<void>((resolve) => {
-      const iv = setInterval(() => {
-        an.getByteTimeDomainData(buf);
-        let peak = 0;
-        for (const b of buf) peak = Math.max(peak, Math.abs(b - 128) / 128);
-        if (peak > 0.02) { spoke = true; quietMs = 0; } else quietMs += 100;
-        if (signal?.aborted || (spoke && quietMs > SILENCE_MS) || (!spoke && quietMs > 2500)) {
-          clearInterval(iv); resolve();
+    return await new Promise<string>((resolve, reject) => {
+      let settled = false;
+      let grace: ReturnType<typeof setTimeout> | undefined;
+      let cap: ReturnType<typeof setInterval> | undefined;
+      const close = () => {
+        settled = true;
+        clearTimeout(grace);
+        clearInterval(cap);
+        try { ws.close(); } catch { void 0; }
+      };
+      const stop = () => {
+        if (settled) return;
+        close();
+        resolve(joiner.text());
+      };
+      const fail = (e: Error) => {
+        if (settled) return;
+        close();
+        reject(e);
+      };
+      const forceEndpoint = () => {
+        try { ws.send(JSON.stringify({ type: "ForceEndpoint" })); } catch { void 0; }
+      };
+      // Letting go: ask for the turn to end now so the last word arrives,
+      // then wait briefly for it. Nothing said means nothing to wait for.
+      const release = () => {
+        if (releasing || settled) return;
+        releasing = true;
+        if (!spoke && !joiner.hasText()) return stop();
+        if (ws.readyState === WebSocket.OPEN) forceEndpoint();
+        grace = setTimeout(stop, RELEASE_GRACE_MS);
+      };
+
+      ws.onopen = () => {
+        opened = true;
+        for (const chunk of pending) ws.send(chunk);
+        pending.length = 0;
+        pendingBytes = 0;
+        if (releasing) forceEndpoint();
+      };
+      ws.onerror = () => fail(new Error("ws_error"));
+      ws.onclose = () => (opened ? stop() : fail(new Error("ws_closed")));
+      ws.onmessage = (e) => {
+        let m: { type?: string } & TurnMessage;
+        try { m = JSON.parse(e.data); } catch { return; }
+        if (m.type === "Turn" && m.transcript) {
+          joiner.add(m);
+          silenceSince = Date.now();
+          onInterim?.(joiner.text());
+          // Held, a finished turn is only a pause; released or tapped, it is the end.
+          if (m.end_of_turn && (releasing || !ctl.hold)) stop();
+        } else if (m.type === "Termination") stop();
+      };
+
+      proc.onaudioprocess = (ev) => {
+        if (settled) return;
+        const { pcm, peak } = toPcm16(ev.inputBuffer.getChannelData(0), ctx.sampleRate);
+        if (peak > SPEECH_PEAK) spoke = true;
+        if (!ctl.hold && !releasing && joiner.hasText() && peak < SPEECH_PEAK && Date.now() - silenceSince > SILENCE_MS) {
+          return stop();
         }
-      }, 100);
-      setTimeout(() => { clearInterval(iv); resolve(); }, LISTEN_MS);
+        if (opened && ws.readyState === WebSocket.OPEN) ws.send(pcm.buffer as ArrayBuffer);
+        else if (!opened && pendingBytes < PENDING_MAX_BYTES) {
+          pending.push(pcm.buffer as ArrayBuffer);
+          pendingBytes += pcm.byteLength;
+        }
+      };
+
+      cap = setInterval(() => {
+        if (Date.now() - t0 > (ctl.hold ? HOLD_MAX_MS : MAX_LISTEN_MS)) release();
+      }, 250);
+      if (signal?.aborted) release();
+      else signal?.addEventListener("abort", release);
     });
-    rec.stop();
-    ctx.close();
-    await stopped;
-    if (spoke) onInterim?.("hearing…");
-    const res = await fetch(STT_ENDPOINT, {
-      method: "POST",
-      headers: voiceHeaders({ "Content-Type": "application/octet-stream" }),
-      body: new Blob(parts, { type: rec.mimeType || "audio/webm" }),
-    });
-    if (!res.ok) throw new Error(`stt ${res.status}`);
-    const { text } = (await res.json()) as { text: string };
-    return text ?? "";
   } finally {
-    stream.getTracks().forEach((t) => t.stop());
+    proc.onaudioprocess = null;
+    proc.disconnect();
+    src.disconnect();
+    sink.disconnect();
   }
 }
 
-function viaWebSpeech(onInterim?: (s: string) => void): Promise<string> {
+// Fallback: record a clip, POST it, read the words back. Held, it records
+// until release; tapped, it stops on a quiet stretch after speech.
+async function viaAssemblyAI(
+  stream: MediaStream,
+  ctx: AudioContext,
+  ctl: ListenControl,
+  onInterim?: (s: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  const mime = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : "";
+  const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  const parts: Blob[] = [];
+  rec.ondataavailable = (e) => e.data.size && parts.push(e.data);
+  const stopped = new Promise<void>((r) => (rec.onstop = () => r()));
+  rec.start();
+  onInterim?.("listening…");
+
+  const an = ctx.createAnalyser();
+  an.fftSize = 512;
+  const node = ctx.createMediaStreamSource(stream);
+  node.connect(an);
+  const buf = new Uint8Array(an.frequencyBinCount);
+  let spoke = false;
+  let quietMs = 0;
+  let elapsed = 0;
+  await new Promise<void>((resolve) => {
+    const iv = setInterval(() => {
+      elapsed += 100;
+      an.getByteTimeDomainData(buf);
+      let peak = 0;
+      for (const b of buf) peak = Math.max(peak, Math.abs(b - 128) / 128);
+      if (peak > SPEECH_PEAK) { spoke = true; quietMs = 0; } else quietMs += 100;
+      const quietStop = !ctl.hold && ((spoke && quietMs > SILENCE_MS) || (!spoke && quietMs > 2500));
+      const capped = elapsed >= (ctl.hold ? HOLD_MAX_MS : LISTEN_MS);
+      if (signal?.aborted || quietStop || capped) {
+        clearInterval(iv);
+        resolve();
+      }
+    }, 100);
+  });
+  node.disconnect();
+  if (rec.state !== "inactive") rec.stop();
+  await stopped;
+  if (spoke) onInterim?.("hearing…");
+  const res = await fetch(STT_ENDPOINT, {
+    method: "POST",
+    headers: voiceHeaders({ "Content-Type": "application/octet-stream" }),
+    body: new Blob(parts, { type: rec.mimeType || "audio/webm" }),
+  });
+  if (!res.ok) throw new Error(`stt_${res.status}`);
+  const { text } = (await res.json()) as { text: string };
+  return text ?? "";
+}
+
+// Last resort: the browser's own recognition. "Heard nothing" is a miss and
+// resolves; only a refusal or a real fault rejects.
+function viaWebSpeech(
+  ctl: ListenControl,
+  onInterim?: (s: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const w = window as any;
-    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    const w = window as unknown as Record<string, unknown>;
+    const Ctor = (w.SpeechRecognition || w.webkitSpeechRecognition) as (new () => any) | undefined;
     if (!Ctor) return reject(new Error("no_speech_api"));
     const rec = new Ctor();
     rec.lang = navigator.language || "en-US";
     rec.interimResults = true;
+    rec.continuous = ctl.hold;
     rec.maxAlternatives = 1;
-    let final = "";
+    const finals: string[] = [];
     rec.onresult = (e: any) => {
-      const t = e.results[e.results.length - 1][0].transcript;
-      if (e.results[e.results.length - 1].isFinal) final = t;
+      const last = e.results[e.results.length - 1];
+      const t = last[0].transcript;
+      if (last.isFinal) finals.push(t);
       else onInterim?.(t);
     };
-    rec.onerror = () => reject(new Error("speech_error"));
-    rec.onend = () => resolve(final);
+    rec.onerror = (e: any) => {
+      const code = String(e?.error ?? "");
+      if (code === "no-speech" || code === "aborted") return resolve(finals.join(" "));
+      reject(new Error(code || "speech_error"));
+    };
+    rec.onend = () => resolve(finals.join(" "));
+    const stop = () => { try { rec.stop(); } catch { void 0; } };
+    if (signal?.aborted) return resolve("");
+    signal?.addEventListener("abort", stop);
     onInterim?.("listening…");
     rec.start();
   });
 }
 
-/** One shot: listen → transcribe → match. Returns the heard words too. */
+/**
+ * One shot: listen → transcribe → match. Returns the heard words too.
+ *
+ * Everything that needs the user's gesture — the audio context, the
+ * microphone request — happens before the first await, because iOS treats
+ * a context made later as not made by the person and leaves it asleep.
+ */
 export async function listenOnce(
   onInterim?: (s: string) => void,
   signal?: AbortSignal,
+  ctl: ListenControl = { hold: false },
 ): Promise<HeardResult> {
-  let transcript: string;
-  try {
-    transcript = await viaStreaming(onInterim, signal);
-  } catch {
-    try {
-      transcript = await viaAssemblyAI(onInterim, signal);
-    } catch {
-      transcript = await viaWebSpeech(onInterim).catch(() => "");
-    }
-  }
-  const index = matchFeeling(transcript);
-  const suggest = index == null ? suggestFeeling(transcript) : null;
-  return {
-    transcript,
-    index,
-    suggest,
-    pattern: index == null && suggest == null ? matchPattern(transcript) : null,
+  const result = (transcript: string, failure: VoiceFailure | null): HeardResult => {
+    const index = matchFeeling(transcript);
+    const suggest = index == null ? suggestFeeling(transcript) : null;
+    return {
+      transcript,
+      index,
+      suggest,
+      pattern: index == null && suggest == null ? matchPattern(transcript) : null,
+      failure,
+    };
   };
+
+  let ctx: AudioContext | null = null;
+  try {
+    const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+    const AC = w.AudioContext ?? w.webkitAudioContext;
+    ctx = AC ? new AC() : null;
+    void ctx?.resume().catch(() => {});
+  } catch (err) {
+    trace("audio", err);
+    ctx = null;
+  }
+  const micRequest: Promise<MediaStream> | null =
+    typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function"
+      ? navigator.mediaDevices.getUserMedia({ audio: true })
+      : null;
+
+  let stream: MediaStream | null = null;
+  const release = () => {
+    stream?.getTracks().forEach((t) => t.stop());
+    void ctx?.close().catch(() => {});
+  };
+
+  try {
+    if (micRequest) {
+      try {
+        stream = await micRequest;
+      } catch (err) {
+        trace("mic", err);
+        return result("", classifyMicError(err));
+      }
+    }
+    if (stream && ctx) {
+      try { await ctx.resume(); } catch (err) { trace("resume", err); }
+      try {
+        return result(await viaStreaming(stream, ctx, ctl, onInterim, signal), null);
+      } catch (err) {
+        trace("stream", err);
+      }
+      // Let go before the fallbacks if the person already has: a clip
+      // recorded from here would be silence they never spoke.
+      if (signal?.aborted) return result("", offline() ? "offline" : "unavailable");
+      try {
+        return result(await viaAssemblyAI(stream, ctx, ctl, onInterim, signal), null);
+      } catch (err) {
+        trace("clip", err);
+      }
+      if (signal?.aborted) return result("", offline() ? "offline" : "unavailable");
+    }
+    // The browser's recognizer opens the mic itself; hold ours back so the
+    // two don't fight over it.
+    stream?.getTracks().forEach((t) => t.stop());
+    try {
+      return result(await viaWebSpeech(ctl, onInterim, signal), null);
+    } catch (err) {
+      trace("speech", err);
+      const code = (err as Error)?.message ?? "";
+      if (code === "not-allowed" || code === "service-not-allowed") return result("", "mic_blocked");
+      return result("", offline() ? "offline" : "unavailable");
+    }
+  } finally {
+    release();
+  }
 }

@@ -110,3 +110,52 @@ describe("matchPattern", () => {
     expect(matchPattern("")).toBeNull();
   });
 });
+
+import { createTurnJoiner, toPcm16, classifyMicError, VOICE_FAILURE_COPY } from "../voiceCheckin";
+
+describe("toPcm16", () => {
+  it("keeps 16k samples as-is from a 16k context", () => {
+    const f32 = new Float32Array([0.5, -0.5, 0, 1, -1]);
+    const { pcm, peak } = toPcm16(f32, 16000);
+    expect(pcm.length).toBe(5);
+    expect(pcm[0]).toBe(Math.round(0.5 * 32767));
+    expect(peak).toBeCloseTo(1, 5);
+  });
+  it("downsamples 48k to 16k with the ratio it was given", () => {
+    const f32 = new Float32Array(4800).fill(0.25);
+    const { pcm } = toPcm16(f32, 48000);
+    expect(pcm.length).toBe(1600);
+    expect(pcm[0]).toBe(Math.round(0.25 * 32767));
+  });
+});
+
+describe("createTurnJoiner", () => {
+  it("joins turns and keeps interim live text", () => {
+    const j = createTurnJoiner();
+    j.add({ transcript: "I'm tense", end_of_turn: true, turn_is_formatted: true });
+    j.add({ transcript: "big call", end_of_turn: false });
+    expect(j.text()).toBe("I'm tense big call");
+    expect(j.hasText()).toBe(true);
+  });
+  it("replaces a raw end-of-turn with its formatted twin", () => {
+    const j = createTurnJoiner();
+    j.add({ transcript: "raw turn", end_of_turn: true, turn_is_formatted: false });
+    j.add({ transcript: "Raw turn.", end_of_turn: true, turn_is_formatted: true });
+    expect(j.text()).toBe("Raw turn.");
+  });
+});
+
+describe("classifyMicError", () => {
+  it("tells a refusal from a missing microphone", () => {
+    expect(classifyMicError({ name: "NotAllowedError" })).toBe("mic_blocked");
+    expect(classifyMicError({ name: "SecurityError" })).toBe("mic_blocked");
+    expect(classifyMicError({ name: "NotFoundError" })).toBe("no_mic");
+    expect(classifyMicError(new Error("x"))).toBe("no_mic");
+  });
+  it("every failure has a line to show", () => {
+    for (const k of ["mic_blocked", "no_mic", "offline", "unavailable"] as const) {
+      expect(VOICE_FAILURE_COPY[k].length).toBeGreaterThan(8);
+      expect(VOICE_FAILURE_COPY[k]).toMatch(/tap/i);
+    }
+  });
+});

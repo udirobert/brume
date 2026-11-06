@@ -202,9 +202,15 @@
   cursor: not-allowed;
 }
 
-/* "Just say it" — voice check-in mic affordance on the paired chips */
+/* "Just say it" — voice check-in mic affordance on the paired chips.
+   Hold-to-talk: the press owns the button, so no long-press callout,
+   no text selection, no scroll hijack on iOS. */
 .brume-mic {
   display: inline-flex;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   align-items: center;
   gap: 0.35rem;
   padding: 0.3rem 0.8rem;
@@ -238,6 +244,15 @@
 @media (prefers-reduced-motion: reduce) {
   .brume-mic.is-listening {
     animation: none;
+  }
+}
+.brume-mic.is-holding {
+  opacity: 1;
+  transform: scale(1.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-mic.is-holding {
+    transform: none;
   }
 }
 

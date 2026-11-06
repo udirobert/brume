@@ -176,7 +176,10 @@ button {
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
+button:hover { transform: translateY(-1px); }
+button:active { transform: translateY(0); }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -410,3 +413,16 @@ h1[tabindex="-1"]:focus { outline: none; }
 .adjust-row[aria-expanded="true"] .adjust-chevron { transform: rotate(90deg); }
 .adjust-opts { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; padding-left: 4px; }
 .adjust-opts .chip { min-height: 36px; padding: 4px 12px; font-size: .8rem; }
+
+/* Export / print support for the preparation card */
+@media print {
+  body { background: #fff !important; }
+  .brand-header, #task-banner, #task-status, #btn-home-nav, .mascot-slot { display: none !important; }
+  main { width: 100% !important; padding: 0 !important; }
+  .screen { display: none !important; }
+  #screen-prep-card { display: block !important; }
+  #screen-prep-card .btn-row, #card-save-note, #btn-card-save-retry { display: none !important; }
+  .prep-card-facts { break-inside: avoid; }
+  .prep-card-facts dd { white-space: pre-wrap; }
+  h1 { font-size: 1.25rem; }
+}

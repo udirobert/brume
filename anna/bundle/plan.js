@@ -122,6 +122,12 @@ export function cleanContext(input) {
 export const HEALTH_CLAIM_RE =
   /physiolog|arousal|nervous system|vagus|vagal|cortisol|hormon|testosterone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic nervous|fight.or.flight|your (body|system|brain|nervous system) (will|can|is going to)|\b(lowers?|reduces?|decreases?) (your )?(stress|anxiety|tension|cortisol|heart rate|blood pressure)|research (shows|suggests|finds|found)|studies (show|suggest|find|found)|study (shows|found|finds)|scientifically|clinically|proven to|\banxiety\b|insomnia|\b(cure|cures|heal|heals|healing|therapy|therapeutic|treatment)\b|\bhelps? (to |you |your )?(calm|relax|settle|soothe)\b|\bhelps? your (body|system|brain|mind|nerves|nervous system)\b|\byour (body|system|brain|mind) (will|can|is going to|to)\b/i
 
+// Outcome-claim backstop for reflections: even an observational memory
+// reference can slip into causal/benefit language ("it helped", "worked").
+// Such phrasing is replaced by the fallback note.
+export const OUTCOME_CLAIM_RE =
+  /\b(helped|worked|improved|caused|led to|resulted in|made you (calmer|relaxed|settled)|because of the (breath|practice|reset)|thanks to|effective|benefit(?:ed|s)?)\b/i
+
 // --- Plan prompt --------------------------------------------------------------
 
 const PLAN_LIBRARY_BLOCK = `You plan one short guided breathing break for a person at work. Choose from this fixed library only:
@@ -137,7 +143,7 @@ Never describe effects on the body, brain, nerves, hormones, sleep quality, stre
 
 // personalization: string like "cyclic-sigh: calmer 3 of 4; box: calmer 1
 // of 3" built from summary byPattern entries with >=2 ratings, or null.
-export function buildPlanPrompt(context, personalization) {
+export function buildPlanPrompt(context, personalization, prepPersonalization) {
   const ctx = cleanContext(context) || "nothing specific";
   const parts = [
     PLAN_LIBRARY_BLOCK,
@@ -147,6 +153,9 @@ export function buildPlanPrompt(context, personalization) {
     parts.push(
       `What has worked for them before (their own after-session ratings): ${personalization}. Prefer a pattern they rated calmer, unless their note clearly fits another one better.`,
     );
+  }
+  if (prepPersonalization) {
+    parts.push(prepPersonalization);
   }
   parts.push(PLAN_FORMAT_BLOCK);
   return parts.join("\n\n");
@@ -299,6 +308,7 @@ export function buildReflectionPrompt({
   cycles,
   interrupted,
   felt,
+  history,
 }) {
   const ctx = cleanContext(context) || "nothing specific";
   const feltWord =
@@ -306,13 +316,23 @@ export function buildReflectionPrompt({
     : felt === "same" ? "about the same"
     : felt === "wired" ? "still wired"
     : "not given";
+  const historyLine =
+    typeof history === "string"
+      ? history
+      : (history ? formatHistoryForPrompt(history) : null);
+  const facts = [
+    `- What they said they were doing or about to do: "${ctx}"`,
+    `- Pattern: ${patternName}`,
+    `- Active time: ${activeSeconds} seconds of a planned ${plannedSeconds}; cycles completed: ${cycles}; ended early: ${interrupted ? "yes" : "no"}`,
+    `- How they say they feel now: ${feltWord}`,
+  ];
+  if (historyLine) {
+    facts.push(`- Their own history (closed-set, observational only): ${historyLine}`);
+  }
   return `You write the short note shown after a guided breathing break.
 Facts:
-- What they said they were doing or about to do: "${ctx}"
-- Pattern: ${patternName}
-- Active time: ${activeSeconds} seconds of a planned ${plannedSeconds}; cycles completed: ${cycles}; ended early: ${interrupted ? "yes" : "no"}
-- How they say they feel now: ${feltWord}
-Write at most 2 sentences and 35 words in total. First, acknowledge how it went in plain words (if they are still wired or ended early, be matter-of-fact and never guilt them). Second, give one concrete next step tied to what they said they are doing next. Plain text only, no emoji, no medical or health claims, and do not mention breathing science.`;
+${facts.join("\n")}
+Write at most 2 sentences and 35 words in total. First, acknowledge how it went in plain words (if they are still wired or ended early, be matter-of-fact and never guilt them). Second, give one concrete next step tied to what they said they are doing next. If you mention their history, be observational only — say what they have used or felt before, never that it helped, worked, improved, calmed, or settled them. Plain text only, no emoji, no medical or health claims, and do not mention breathing science.`;
 }
 
 // Model text -> displayable note. Empty or JSON-ish output falls back.
@@ -334,7 +354,7 @@ export function cleanReflection(raw) {
   text = text.replace(/\s+/g, " ").trim();
   if (text.length > 1 && text.startsWith('"') && text.endsWith('"'))
     text = text.slice(1, -1).trim();
-  if (!text || text.startsWith("{") || HEALTH_CLAIM_RE.test(text)) {
+  if (!text || text.startsWith("{") || HEALTH_CLAIM_RE.test(text) || OUTCOME_CLAIM_RE.test(text)) {
     return FALLBACK_REFLECTION;
   }
   return text.length > 300 ? text.slice(0, 300).trim() : text;
@@ -411,6 +431,109 @@ export function personalizationFromSummary(summary) {
     parts.push(`${id}: ${label} ${count} of ${ratings}`);
   }
   return parts.length ? parts.join("; ") : null;
+}
+
+// --- Cross-flow history (closed-set only) --------------------------------------
+//
+// Joins reset sessions and preparation sessions into one observational
+// summary. Free text (context, event, goal) is never included — only
+// closed-set fields. Used to make reflections and plans pattern-aware.
+
+export function summarizeHistory(resetSessions, readySessions) {
+  const resets = Array.isArray(resetSessions) ? resetSessions : [];
+  const preps = Array.isArray(readySessions) ? readySessions : [];
+  const byPattern = {};
+  let calmer = 0, same = 0, wired = 0, interrupted = 0;
+  for (const r of resets) {
+    if (!r || typeof r !== "object") continue;
+    const pid = PATTERNS[r.pattern] ? r.pattern : null;
+    if (pid) {
+      if (!byPattern[pid]) byPattern[pid] = { sessions: 0, calmer: 0, same: 0, wired: 0 };
+      byPattern[pid].sessions += 1;
+      if (r.felt === "calmer") { byPattern[pid].calmer += 1; calmer += 1; }
+      else if (r.felt === "same") { byPattern[pid].same += 1; same += 1; }
+      else if (r.felt === "wired") { byPattern[pid].wired += 1; wired += 1; }
+    }
+    if (r.interrupted) interrupted += 1;
+  }
+  const byKind = {};
+  let rehearsed = 0;
+  for (const r of preps) {
+    if (!r || typeof r !== "object") continue;
+    const kind = typeof r.kind === "string" && r.kind ? r.kind : "other";
+    byKind[kind] = (byKind[kind] || 0) + 1;
+    if (r.rehearsed) rehearsed += 1;
+  }
+  const lastResetRec = resets.reduce(
+    (a, b) => (!a || String(b?.completedAt || "") > String(a?.completedAt || "")) ? b : a,
+    null,
+  );
+  const lastPrepRec = preps.reduce(
+    (a, b) => (!a || String(b?.completedAt || "") > String(a?.completedAt || "")) ? b : a,
+    null,
+  );
+  return {
+    version: 1,
+    resets: { total: resets.length, byPattern, calmer, same, wired, interrupted },
+    preparations: { total: preps.length, byKind, rehearsed },
+    lastReset: lastResetRec
+      ? { completedAt: lastResetRec.completedAt, pattern: lastResetRec.pattern, felt: lastResetRec.felt ?? null, interrupted: Boolean(lastResetRec.interrupted) }
+      : null,
+    lastPrep: lastPrepRec
+      ? { completedAt: lastPrepRec.completedAt, kind: lastPrepRec.kind ?? null, rehearsed: Boolean(lastPrepRec.rehearsed) }
+      : null,
+  };
+}
+
+export function formatHistoryForPrompt(summary) {
+  if (!summary || typeof summary !== "object") return null;
+  const r = summary.resets || {};
+  const p = summary.preparations || {};
+  const parts = [];
+  if ((r.total || 0) > 0) {
+    const bp = r.byPattern || {};
+    const patternParts = Object.keys(bp)
+      .map((id) => `${id} ${bp[id].sessions}`)
+      .join(", ");
+    parts.push(
+      `Resets: ${r.total}` +
+      (patternParts ? ` (${patternParts})` : "") +
+      `; felt calmer ${r.calmer || 0}, same ${r.same || 0}, still wired ${r.wired || 0}; ended early ${r.interrupted || 0}.`,
+    );
+  }
+  if ((p.total || 0) > 0) {
+    const byKind = p.byKind || {};
+    const kinds = Object.keys(byKind).map((k) => `${k} ${byKind[k]}`).join(", ");
+    parts.push(
+      `Preparations: ${p.total}` +
+      (kinds ? ` (${kinds})` : "") +
+      `; rehearsed ${p.rehearsed || 0}.`,
+    );
+  }
+  if (summary.lastReset) {
+    parts.push(
+      `Most recent reset: ${summary.lastReset.pattern || "unknown"}, felt ${summary.lastReset.felt || "not given"}${summary.lastReset.interrupted ? ", ended early" : ""}.`,
+    );
+  }
+  if (summary.lastPrep) {
+    parts.push(
+      `Most recent preparation: ${summary.lastPrep.kind || "conversation"}${summary.lastPrep.rehearsed ? ", rehearsed" : ""}.`,
+    );
+  }
+  return parts.length ? parts.join(" ") : null;
+}
+
+export function prepPersonalizationFromReady(readySessions) {
+  const preps = Array.isArray(readySessions) ? readySessions : [];
+  if (preps.length < 2) return null;
+  const byKind = {};
+  for (const r of preps) {
+    if (!r || typeof r !== "object") continue;
+    const kind = typeof r.kind === "string" && r.kind ? r.kind : "other";
+    byKind[kind] = (byKind[kind] || 0) + 1;
+  }
+  const parts = Object.keys(byKind).map((k) => `${k} ${byKind[k]}`);
+  return parts.length ? `They have prepared for: ${parts.join(", ")}.` : null;
 }
 
 // Session length is snapped to whole cycles: effective = max(1,

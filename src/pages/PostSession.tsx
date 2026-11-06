@@ -25,12 +25,22 @@ import {
 export default function PostSession() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { saveSession } = useSessionHistory();
+  const { saveSession, history = [] } = useSessionHistory();
   const { user } = useAuth();
   const hasSavedRef = useRef(false);
   const [saveOpen, setSaveOpen] = useState(false);
 
   const sessionData = useMemo(() => location.state || {}, [location.state]);
+  const insight = useMemo(() => {
+    const name = sessionData.patternName;
+    if (!name) return "";
+    const prior = (history || []).filter((s: any) => {
+      const pn = s?.pattern_name || s?.patternName;
+      return pn === name;
+    }).length;
+    if (prior <= 1) return `You practised ${name}.`;
+    return `You've practised ${name} ${prior} times. The room keeps it.`;
+  }, [history, sessionData.patternName]);
 
   // Save once on mount. Guests are already persisted by SessionModeWrapper.
   useEffect(() => {
@@ -68,7 +78,7 @@ export default function PostSession() {
           }}
           patternId={sessionData.patternId}
           checkInIndex={sessionData.checkInIndex ?? null}
-          insight={`You practised ${sessionData.patternName}.`}
+          insight={insight || `You practised ${sessionData.patternName}.`}
           isGuest={!user}
           onContinue={() => navigate("/")}
           onSeeProgress={() => navigate("/progress")}

@@ -771,3 +771,50 @@ day; all source-side, nothing published).
 - **Verified:** anna 116 tests, mcp 15, web 186 vitest + 13
   mascotFlight tests, tsc/lint clean, live browser QA of smear frames
   and lab strips. Docs: `docs/WEB-MOTION.md` carries the full grammar.
+
+### 12.12 Memory, reflection and art-as-artifact (2026-11-06, local, unpublished)
+
+Reaction to Anna Dev feedback (UI soothing, thin feature set, missing
+export/print). Doctrine held: no new routes, no scores/streaks, no
+sensing, closed-set ledger only.
+
+- **Export/print (Anna prep card).** `anna/bundle/index.html` gained
+  Export card + Print buttons; `app.js` adds `prepCardText`,
+  `exportPrepCard` (clipboard + dated `.txt` download) and
+  `printPrepCard` (`window.print()`); `app.css` adds `@media print` so
+  only the card prints. Highest-ROI item in the feedback; users asked
+  for it by name.
+- **Memory as reflection (Anna).** Home gained a `#memory-line` element;
+  `refreshHomeMeta()` writes an observational tally built only from
+  closed-set stored fields ("The room remembers N preparations. Last:
+  …"). Count, never a grade.
+- **Soothing UI pass (Anna).** Button transitions/hover lift; print
+  styles. Mascot motion untouched — only the container got quieter.
+- **Cross-flow pattern reflection (Anna).** New `summarizeHistory` +
+  `formatHistoryForPrompt` + `prepPersonalizationFromReady` in
+  `plan.js` (closed-set only, no free text); `buildReflectionPrompt`
+  accepts `history`; `OUTCOME_CLAIM_RE` backstop in `cleanReflection`.
+  `app.js` loads reset + ready sessions and threads them into
+  `fetchReflection` / `fetchPlan`. Anna now references the user's own
+  patterns observationally ("you've used before", never "it helped").
+- **Web parity.** `src/pages/Index.tsx` gained a memory line reading
+  `checkinLedger` (closed-set feeling word + daypart + count); room
+  material now remembers the user's weather via
+  `rememberedMaterialFromFeelings` in `src/lib/roomExperience.ts`
+  (E6a art-as-artifact arm, behind a flag, no number/label). `src/pages/PostSession.tsx`
+  insight is pattern-aware and closed-set ("You've practised {pattern}
+  N times. The room keeps it.").
+- **Anna Dev CLI.** `@anna-ai/cli` bumped to 0.1.64; smoke test adapted
+  to the new ACL shape (`storage.scopes`, `allowedTools`) and NO_MOCK
+  errors. `npm test` in `anna/` green (smoke 192 assertions + 117 unit
+  tests).
+- **Experiment spec.** `docs/EXPERIMENTS.md` gained the E6a
+  art-as-artifact arm under E6 (hypothesis: lifts D7 above the
+  line-only arm; kill if no added lift).
+- **Not done (deliberate):** web export/print (no prep flow on web),
+  manifest schema 4 migration (schemas 1-3 still work; needs validation
+  pass), shared Node/Chrome runtime (stdlib-only executa), progression
+  system (doctrine forbids scores/streaks — room change is the only
+  progression).
+- **Verified:** anna `npm test` green; web `vitest` 438/438, `tsc`
+  clean.

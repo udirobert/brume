@@ -11,8 +11,8 @@ import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
 import { track } from "@/lib/events";
 import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
-import { recordCheckIn } from "@/lib/checkinLedger";
-import { useRoomExperience } from "@/lib/roomExperience";
+import { recordCheckIn, readLedger } from "@/lib/checkinLedger";
+import { useRoomExperience, rememberedMaterialFromFeelings } from "@/lib/roomExperience";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
@@ -70,6 +70,7 @@ export default function Index() {
   const companion = presence === "companion";
   const feelTap = useRoomExperience((s) => s.feelIndex);
   const [patternOverride, setPatternOverride] = useState<string | null>(null);
+  const [memoryLine, setMemoryLine] = useState<string | null>(null);
   const [rhythmOffer, setRhythmOffer] = useState<string | null>(null);
   const optionsRef = useRef<HTMLDetailsElement>(null);
   const [beginNudge, setBeginNudge] = useState(false);
@@ -145,6 +146,37 @@ export default function Index() {
     });
   };
 
+  useEffect(() => {
+    try {
+      const entries = readLedger();
+      if (!entries.length) {
+        setMemoryLine(null);
+        return;
+      }
+      const last = entries[entries.length - 1];
+      const word = feelingAt(last.f)?.label ?? null;
+      const count = entries.length;
+      const line =
+        count > 1
+          ? `The room remembers ${count} check-ins. Last: ${word ?? "a moment"}${last.p ? ` · ${last.p}` : ""}.`
+          : `The room remembers your last check-in: ${word ?? "a moment"}${last.p ? ` · ${last.p}` : ""}.`;
+      setMemoryLine(line);
+    } catch {
+      setMemoryLine(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const entries = readLedger();
+      const indices = entries.map((e) => e.f);
+      const m = rememberedMaterialFromFeelings(indices);
+      useRoomExperience.getState().setRememberedMaterial(m);
+    } catch {
+      useRoomExperience.getState().setRememberedMaterial(null);
+    }
+  }, []);
+
   return (
     <div className="brume-home brume-home--compact">
       <h1>{HOME_FEELING_COPY.prompt}</h1>
@@ -181,6 +213,12 @@ export default function Index() {
       />
 
       {feelTap !== null && <CheckInReasons feeling={feelTap} />}
+
+      {memoryLine && (
+        <p className="brume-home__memory text-sm text-muted-foreground" aria-live="polite">
+          {memoryLine}
+        </p>
+      )}
 
       <button type="button" className={`brume-home__primary brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
         Begin

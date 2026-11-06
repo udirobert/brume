@@ -34,6 +34,31 @@ export function demeanorForFeel(index: number | null | undefined): RoomDemeanor 
   return feelingAt(index)?.demeanor ?? "open";
 }
 
+/**
+ * Art-as-artifact: a remembered room material derived only from closed-set
+ * ledger entries (feeling index). Majority material of the recent entries,
+ * falling back to the most recent. Returns null when there is no history.
+ * No free text, no scores — a skin, not a surface.
+ */
+export function rememberedMaterialFromFeelings(feelIndices: ReadonlyArray<number | null | undefined>): RoomMaterial | null {
+  const valid = feelIndices
+    .map((i) => (typeof i === "number" && Number.isInteger(i) ? i : null))
+    .filter((i): i is number => i !== null);
+  if (!valid.length) return null;
+  const recent = valid.slice(-7);
+  const counts = new Map<RoomMaterial, number>();
+  for (const i of recent) {
+    const m = materialForFeel(i);
+    counts.set(m, (counts.get(m) ?? 0) + 1);
+  }
+  let best: RoomMaterial = materialForFeel(recent[recent.length - 1]);
+  let bestN = 0;
+  for (const [m, n] of counts) {
+    if (n > bestN) { bestN = n; best = m; }
+  }
+  return best;
+}
+
 export function practiceProgress(seconds: number): number {
   return Number.isFinite(seconds) ? Math.min(Math.max(seconds / 90, 0), 1) : 0;
 }
@@ -48,6 +73,7 @@ export interface RoomPractice {
 export interface RoomExperienceState {
   feelIndex: number | null;
   materialOverride: RoomMaterial | null;
+  rememberedMaterial: RoomMaterial | null;
   still: boolean;
   progress: number;
   breath: number;
@@ -55,6 +81,7 @@ export interface RoomExperienceState {
   paused: boolean;
   setFeel: (index: number | null | undefined) => void;
   setMaterial: (material: RoomMaterial | null) => void;
+  setRememberedMaterial: (material: RoomMaterial | null) => void;
   setStill: (still: boolean) => void;
   setPractice: (practice: RoomPractice) => void;
   reset: () => void;
@@ -63,6 +90,7 @@ export interface RoomExperienceState {
 const ROOM_DEFAULTS = {
   feelIndex: null,
   materialOverride: null,
+  rememberedMaterial: null,
   still: false,
   progress: 0,
   breath: 0,
@@ -82,6 +110,8 @@ export const useRoomExperience = create<RoomExperienceState>((set, get) => ({
   },
   setMaterial: (material) =>
     set({ materialOverride: material && ROOM_MATERIALS.includes(material) ? material : null }),
+  setRememberedMaterial: (material) =>
+    set({ rememberedMaterial: material && ROOM_MATERIALS.includes(material) ? material : null }),
   setStill: (still) => set({ still: !!still }),
   setPractice: (practice) =>
     set((state) => {
@@ -110,6 +140,9 @@ export const useRoomExperience = create<RoomExperienceState>((set, get) => ({
 export function resolvedMaterial(state: {
   materialOverride: RoomMaterial | null;
   feelIndex: number | null;
+  rememberedMaterial?: RoomMaterial | null;
 }): RoomMaterial {
-  return state.materialOverride ?? materialForFeel(state.feelIndex);
+  if (state.materialOverride) return state.materialOverride;
+  if (state.feelIndex !== null) return materialForFeel(state.feelIndex);
+  return state.rememberedMaterial ?? "mist";
 }

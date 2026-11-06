@@ -10,6 +10,7 @@ import {
   cleanReflection,
   updateSummary,
   personalizationFromSummary,
+  prepPersonalizationFromReady,
   PLAN_MAX_TOKENS,
   REFLECTION_MAX_TOKENS,
   FALLBACK_REFLECTION,
@@ -256,7 +257,7 @@ async function callLlm(anna, prompt, maxTokens, timeoutMs) {
 // Plan via the model. Never throws — resolves {plan, plannedOffline}
 // where plan is a validated plan object; on any failure the plan is the
 // deterministic fallback for the same context.
-export async function fetchPlan(anna, { context, summary }, opts) {
+export async function fetchPlan(anna, { context, summary, readySessions }, opts) {
   lastLlmModel = null;
   const fb = () => fallbackPlan(context);
   if (!anna || typeof anna.llm?.complete !== "function") {
@@ -266,7 +267,11 @@ export async function fetchPlan(anna, { context, summary }, opts) {
   try {
     const raw = await callLlm(
       anna,
-      buildPlanPrompt(context, personalizationFromSummary(summary)),
+      buildPlanPrompt(
+        context,
+        personalizationFromSummary(summary),
+        prepPersonalizationFromReady(readySessions),
+      ),
       PLAN_MAX_TOKENS,
       timeoutMs,
     );

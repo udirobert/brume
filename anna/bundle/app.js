@@ -21,6 +21,7 @@ import {
   effectiveLengthSeconds,
   phaseWord,
   cleanReflection,
+  summarizeHistory,
 } from "./plan.js";
 import {
   PACE_LEVELS,
@@ -146,6 +147,8 @@ const els = {
   btnCardSaveRetry: $("#btn-card-save-retry"),
   btnCardDone: $("#btn-card-done"),
   btnCardHome: $("#btn-card-home"),
+  btnCardExport: $("#btn-card-export"),
+  btnCardPrint: $("#btn-card-print"),
   prepStatus: $("#prep-status"),
   prepStatusText: $("#prep-status-text"),
   btnPrepCancel: $("#btn-prep-cancel"),
@@ -223,6 +226,7 @@ const els = {
   btnSaveAnyway: $("#btn-save-anyway"),
   lastSession: $("[data-last-session]"),
   worked: $("[data-worked]"),
+  memoryLine: $("#memory-line"),
   toast: $("#toast"),
 };
 
@@ -616,7 +620,74 @@ async function refreshHomeMeta() {
         els.lastPrepSub.textContent = `${v.event ? v.event.slice(0, 60) : "Saved card"} · ${new Date(v.completedAt).toLocaleDateString()}`;
         els.btnLastPrep.hidden = false;
       }
+      // Memory as reflection (no scores, no streaks): a quiet, observational
+      // line built only from closed-set fields already stored. The room
+      // remembers that you prepared; it never grades the preparation.
+      if (els.memoryLine) {
+        try {
+          let count = 0;
+          if (anna?.storage?.list) {
+            const res = unwrapHostResponse(
+              await anna.storage.list({ prefix: "ready/sessions/", scope: "user" }),
+            );
+            count = (res?.keys || res?.items || []).length;
+          }
+          if (v && v.completedAt) {
+            const phrase = count > 1
+              ? `The room remembers ${count} preparations. Last: ${v.event ? v.event.slice(0, 40) : "a conversation"}.`
+              : `The room remembers your last preparation: ${v.event ? v.event.slice(0, 40) : "a conversation"}.`;
+            els.memoryLine.textContent = phrase;
+            els.memoryLine.hidden = false;
+          } else {
+            els.memoryLine.hidden = true;
+          }
+        } catch {
+          els.memoryLine.hidden = true;
+        }
+      }
     } catch {}
+  }
+}
+
+async function loadResetSessions(anna) {
+  if (!anna?.storage?.list) return [];
+  try {
+    const res = unwrapHostResponse(
+      await anna.storage.list({ prefix: "reset/sessions/", scope: "user" }),
+    );
+    const keys = res?.keys || res?.items || [];
+    const out = [];
+    for (const k of keys.slice(0, 40)) {
+      const key = k?.key ?? k;
+      try {
+        const v = storageValue(await anna.storage.get({ key, scope: "user" }));
+        if (v && typeof v === "object" && v.completedAt) out.push(v);
+      } catch {}
+    }
+    return out.sort((a, b) => String(b.completedAt || "").localeCompare(String(a.completedAt || "")));
+  } catch {
+    return [];
+  }
+}
+
+async function loadReadySessions(anna) {
+  if (!anna?.storage?.list) return [];
+  try {
+    const res = unwrapHostResponse(
+      await anna.storage.list({ prefix: "ready/sessions/", scope: "user" }),
+    );
+    const keys = res?.keys || res?.items || [];
+    const out = [];
+    for (const k of keys.slice(0, 40)) {
+      const key = k?.key ?? k;
+      try {
+        const v = storageValue(await anna.storage.get({ key, scope: "user" }));
+        if (v && typeof v === "object" && v.completedAt) out.push(v);
+      } catch {}
+    }
+    return out.sort((a, b) => String(b.completedAt || "").localeCompare(String(a.completedAt || "")));
+  } catch {
+    return [];
   }
 }
 
@@ -637,7 +708,9 @@ async function startPlanning() {
     return;
   }
   if (token !== planningToken || !ownsTask(taskId, gen)) return;
-  const { plan: p, offline } = await fetchPlan(anna, { context, summary });
+  let readySessions = [];
+  try { readySessions = await loadReadySessions(anna); } catch {}
+  const { plan: p, offline } = await fetchPlan(anna, { context, summary, readySessions });
   if (token !== planningToken || !ownsTask(taskId, gen)) return; // user skipped
   p.offline = offline;
   showPlan(p);
@@ -1076,6 +1149,20 @@ async function completeResult(felt) {
     els.btnSaveAnyway.hidden = false;
     return;
   }
+  if (!ownsTask(taskId, gen)) return;
+
+  // Cross-flow history (closed-set only) so the reflection can reference
+  // the user's own patterns observationally.
+  try {
+    const [resetSessions, readySessions] = await Promise.all([
+      loadResetSessions(anna),
+      loadReadySessions(anna),
+    ]);
+    if (ownsTask(taskId, gen) && resultState?.facts) {
+      resultState.facts.history = summarizeHistory(resetSessions, readySessions);
+    }
+  } catch {}
+
   if (!ownsTask(taskId, gen)) return;
 
   const reflection = qualifies
@@ -1928,6 +2015,62 @@ function renderPrepStage() {
   show(screenEl);
   if (prep.error) showPrepStatus(screenEl, { error: prep.error });
   snapshotReady(prep.stage);
+}
+
+function prepCardText() {
+  const lines = [];
+  lines.push("Brume preparation card");
+  lines.push("");
+  const goal = (els.cardGoal.textContent || "").trim();
+  if (goal && goal !== "—") lines.push(`Goal: ${goal}`);
+  const pairs = [
+    ["Opening", els.cardOpening],
+    ["Key point", els.cardKeypoint],
+    ["Approach", els.cardApproach],
+    ["Possible pushback", els.cardObjection],
+    ["Response", els.cardResponse],
+    ["Next step", els.cardNextstep],
+  ];
+  for (const [label, el] of pairs) {
+    const v = (el?.textContent || "").trim();
+    if (v) lines.push(`${label}: ${v}`);
+  }
+  const adj = (els.cardAdjustment?.textContent || "").trim();
+  if (adj) lines.push(adj);
+  lines.push("");
+  lines.push("Not a script. Take what helps.");
+  return lines.join("\n");
+}
+
+async function exportPrepCard() {
+  const text = prepCardText();
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch {}
+  // Always also offer a file download so the card can be saved/taken along.
+  try {
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `brume-preparation-card-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {}
+  toast(copied ? "Card copied and downloaded." : "Card downloaded.");
+}
+
+function printPrepCard() {
+  document.body.classList.add("printing-card");
+  // Ensure the card screen is the only visible content.
+  window.print();
+  setTimeout(() => document.body.classList.remove("printing-card"), 300);
 }
 
 function renderPrepCard() {
@@ -2912,6 +3055,8 @@ async function main() {
     els.prepAltConfirm.hidden = true;
   });
   els.btnCardSaveRetry.addEventListener("click", savePrepCard);
+  if (els.btnCardExport) els.btnCardExport.addEventListener("click", exportPrepCard);
+  if (els.btnCardPrint) els.btnCardPrint.addEventListener("click", printPrepCard);
   els.btnCardDone.addEventListener("click", async () => {
     if (!prep.saved && anna) {
       snapshotReady("card");

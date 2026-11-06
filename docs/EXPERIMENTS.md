@@ -270,6 +270,14 @@ remembered, and on its own it only proves we can interrupt someone.
   nothing off-device; the arm flag still needs deciding per the taxonomy
   note above (an arm is a name for a thing users can't see, so it must not
   leak into the UI).
+- **Art-as-artifact arm (E6a):** the same weather the line names also
+  tints the room — a subtle material shift derived from closed-set ledger
+  entries (majority material of the recent check-ins). No number, no label,
+  no level; a skin, not a surface. Implemented behind
+  `rememberedMaterial` in `src/lib/roomExperience.ts` and set on Home from
+  `readLedger()`. Hypothesis: a room that visibly remembers lifts D7
+  return above the line-only arm. Kill if the material shift adds no lift
+  over the line alone (then the visual is decoration).
 - **Healthy if:** the treated arm returns more *and* the returns are
   voluntary (no reminder needed) — E5 stays off in the treated arm so the
   two effects don't blur.

@@ -9,6 +9,6 @@
     "test:browser": "node test/browser-qa.mjs"
   },
   "devDependencies": {
-    "@anna-ai/cli": "^0.1.59"
+    "@anna-ai/cli": "^0.1.64"
   }
 }

@@ -48,7 +48,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.4"
+VERSION = "0.4.5"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------

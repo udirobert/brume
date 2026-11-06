@@ -8,14 +8,17 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-11-06): **v0.3.8 published and pending review**
-(version_id=1957, cut by `anna-app apps publish`; tool frozen at
-0.4.4/executa_version 790, reset-offer skill at 767). Listing copy now
-leads with the companion that moved in this release — `apps release`
-refuses until admin approves, so the console nudge is the remaining step. Bundled tool **0.4.4** (binaries in GitHub release
-`brume-executa-v0.4.4`). App id 582, slug `brume`, tool id
-`tool-papa-brume-htcxvfcr`. Product context and the full progress log:
-[`docs/ANNA.md`](../docs/ANNA.md) §12.
+Current state (2026-11-06): **v0.3.9 cut and pending review**
+(version_id=1987, cut by `anna-app apps publish --bump patch`; tool
+frozen at 0.4.5/executa_version 1012, reset-offer skill at 767).
+This is the review-feedback release: prep cards export/print/copy,
+cross-flow memory lines (Anna + web, web arm-gated), hold-to-talk
+voice check-in with named stuck-mic recovery, and the ten-lesson
+mascot expressiveness pass. Bundled tool **0.4.5** (binaries in GitHub
+release `brume-executa-v0.4.5`; the darwin-arm64 matrix moved to
+macos-15 after GitHub retired macos-14). App id 582, slug `brume`,
+tool id `tool-papa-brume-htcxvfcr`. Product context and the full
+progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
 ## Layout
 

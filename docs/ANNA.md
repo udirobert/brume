@@ -1073,3 +1073,30 @@ with fake timers and pins the once-per-edge behaviour directly.
 New tests: 2 integration (edge once under churn; resume re-orients
 once), 2 layout (dvh sizing, safe-area seat). 516 web tests, tsc
 clean, lint 0 errors.
+
+### 12.21 v0.3.9 — the review-feedback release (2026-11-06)
+
+Anna Dev's three points (UI not calming enough, thin feature set, no
+export/print) shipped as one cut. Everything from 12.12–12.20 is now
+immutable server-side:
+
+- **Plugin 0.4.5** (`executa_version=1012`): `clean_reflection` gained
+  the `OUTCOME_CLAIM_RE` backstop mirroring `plan.js`; binaries rebuilt
+  for all four platforms (`brume-executa-v0.4.5`). Note: GitHub retired
+  the `macos-14` runner image mid-flight — the darwin-arm64 matrix leg
+  now builds on `macos-15`.
+- **App 0.3.9** (`version_id=1987`) published via
+  `anna-app apps publish --bump patch` and submitted for review
+  (`status: pending_review`). Listing description now names the
+  export/copy/print card; metadata synced.
+- **Verification before cut:** anna `npm test` green (smoke + 126 unit),
+  `test_plan` 16/16, `prompt-check all` zero fallbacks on
+  gemini-3-flash-preview, web 516 vitest + tsc clean + lint 0 errors,
+  `anna-app validate --strict` passes (retired-fields warning only —
+  schema-4 migration still deferred).
+- **Still blocked:** the required fresh-install Cloud Agent e2e run —
+  account quota is 1000/1000 and the BYOK bug is platform-side. Track:
+  forum post at forum.anna.partners (Build Anna Better program = +1000
+  credits). Anna Dev confirmed the review run does NOT substitute for
+  the self-run test, so approval may still wait on quota even if 0.3.9
+  passes content review.

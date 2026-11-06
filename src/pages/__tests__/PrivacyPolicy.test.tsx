@@ -46,6 +46,9 @@ describe("PrivacyPolicy microphone copy", () => {
   it("says what the microphone does, and when", () => {
     expect(html).toContain("The microphone stays off until you hold or tap");
     expect(html).toContain("Each hold or tap listens for one sentence");
+    // Hold is the default; tap is an opt-in the page must describe truthfully.
+    expect(html).toContain("By default it listens while you hold the button");
+    expect(html).toContain("if you choose tap in the options");
     expect(html).toContain("AssemblyAI");
   });
 

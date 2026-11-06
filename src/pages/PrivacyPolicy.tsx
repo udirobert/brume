@@ -175,7 +175,10 @@ const PrivacyPolicy = () => {
           <LegalH3>Microphone</LegalH3>
           <p>
             The microphone stays off until you hold or tap "say it" beside
-            the check-in words. Each hold or tap listens for one sentence. Your speech
+            the check-in words. Each hold or tap listens for one sentence.
+            By default it listens while you hold the button and stops when
+            you let go; if you choose tap in the options, one tap starts it
+            and it stops on a quiet stretch or a second tap. Your speech
             goes to AssemblyAI to be turned into words; Brume matches
             those words against the fourteen feelings and offers the
             closest one face-up — it never chooses for you, and a sentence

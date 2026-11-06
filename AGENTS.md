@@ -119,8 +119,13 @@ read before adding anything to it):
 - **The pattern has a name — propose-never-commit voice**: token →
   realtime stream (turns joined — a pause mid-sentence must not lose the
   feeling word) → closed-set match → offer → tap → transcript dropped.
-  It is what makes multilingual hearing safe: `LANG` catalogs
-  (es/fr/de today) widen only the alias table, never the interpretation.
+  The input itself defaults to **hold** — the mic is open exactly while
+  the finger is down, so a pause can never cut a sentence and the ending
+  is always the user's; **tap** (one press starts, silence or a second
+  press ends) is an opt-in pill in Home's Options, for hands that can't
+  sustain a press. It is what makes multilingual hearing safe: `LANG`
+  catalogs (es/fr/de today) widen only the alias table, never the
+  interpretation.
   And it is what makes refusal legible — a negated utterance reads
   "I'll ask instead" on screen, not a silent miss. Any new voice surface
   implements this pattern or it does not ship.

@@ -17,6 +17,7 @@ import { e6Arm } from "@/lib/arms";
 import { memoryTreatment } from "@/lib/memoryLine";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
+import { getMicMode, setMicMode, voiceCheckinSupported, type MicMode } from "@/lib/voiceCheckin";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
 
 /**
@@ -73,6 +74,7 @@ export default function Index() {
   const feelTap = useRoomExperience((s) => s.feelIndex);
   const [patternOverride, setPatternOverride] = useState<string | null>(null);
   const [memoryLine, setMemoryLine] = useState<string | null>(null);
+  const [voiceMode, setVoiceMode] = useState<MicMode>(getMicMode);
   const [rhythmOffer, setRhythmOffer] = useState<string | null>(null);
   const optionsRef = useRef<HTMLDetailsElement>(null);
   const [beginNudge, setBeginNudge] = useState(false);
@@ -268,6 +270,27 @@ export default function Index() {
             </button>
             </div>
           </div>
+          {voiceCheckinSupported() && (
+            <div className="brume-home-options__row">
+              <span>Say it</span>
+              <div className="flex gap-2" role="group" aria-label="Voice check-in">
+                {(["hold", "tap"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`brume-pill ${voiceMode === m ? "is-selected" : ""}`}
+                    aria-pressed={voiceMode === m}
+                    onClick={() => {
+                      setMicMode(m);
+                      setVoiceMode(m);
+                    }}
+                  >
+                    {m === "hold" ? "hold" : "tap"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <RoomSettings />
           <RhythmPicker
             value={patternOverride}

@@ -850,3 +850,29 @@ changed, and what the earlier entry got wrong:
 - **Verified:** `prompt-check reflection` against Gemini 3 Flash with a
   history case — 4/4 shown, none replaced. `npm test` (anna), `python3 -m
   unittest test_plan`, mcp `npm test`, web vitest/tsc/lint — see commit.
+
+### 12.14 Voice input: hold is the default, tap is a choice (2026-11-06)
+
+Real-phone testing found the tap path (listen until silence) unreliable —
+silence detection cut sentences, and the pressed state did not persist.
+Decision: **hold-to-talk is the default**; tap is an explicit opt-in.
+
+- `getMicMode`/`setMicMode` in `voiceCheckin.ts` (`brume.micMode.v1`,
+  closed set, hold by default, storage refusal reads as hold).
+- Hold: mic open while the finger is down, no silence rule, release ends
+  it (ForceEndpoint + brief grace); a quick press still isn't a dead end —
+  it settles into listen-until-silence for that one sentence. Tap: first
+  press starts hands-free, release does nothing, silence or a second press
+  ends it.
+- The choice lives in Home's Options as a "Say it · hold / tap" pill row
+  (same pattern as the breath-cue pills), rendered only where the mic is
+  supported; the mic's accessible label follows the mode.
+- Failure copy now names the remedy: a no-prompt refusal means the site
+  was denied before (iOS remembers) or the browser withholds the mic
+  (in-app webviews) — the pill says "allow it in your browser's site
+  settings". Off-HTTPS is its own named failure.
+- The one-time hold tip ("keep your finger on it to take your time") only
+  ever shows to hold-mode users after a tapped match.
+- Copy: About + PrivacyPolicy describe hold-by-default truthfully; tests
+  pin it. Verified: 487 vitest, tsc/lint clean, real-browser check of the
+  pill persisting across reload.

@@ -10,6 +10,7 @@ import {
   selectPairedFeel,
 } from "@/lib/feelings";
 import {
+  getMicMode,
   hasNegation,
   listenOnce,
   voiceCheckinSupported,
@@ -170,9 +171,10 @@ export function PairedFeelings({
     setMicOn(false);
     setHoldUI(false);
     holdingRef.current = false;
-    if (wasTap && offered != null && !holdHintSeen()) {
+    if (wasTap && getMicMode() === "hold" && offered != null && !holdHintSeen()) {
       // They tapped and it worked — once, teach the easier way. It lands
-      // after the offer itself, so it never speaks over the match.
+      // after the offer itself, so it never speaks over the match. Never
+      // nudge someone who has chosen tap on purpose.
       writeHoldHintSeen();
       window.setTimeout(() => flashHeard("tip: keep your finger on it to take your time"), 1400);
     }
@@ -236,14 +238,19 @@ export function PairedFeelings({
       if (!holdingRef.current) stopListening(); // second press ends a tap-mode listen
       return;
     }
+    const mode = getMicMode();
     holdingRef.current = true;
     pressStartRef.current = Date.now();
-    ctlRef.current = { hold: true };
-    // Confirmed hold: the silence rule switches off and release ends it.
+    // Hold (the default): open while the finger is down, release ends it.
+    // Tap: hands-free from the first press — silence or a second press ends it.
+    ctlRef.current = { hold: mode === "hold" };
     holdTimerRef.current = setTimeout(() => {
-      if (holdingRef.current && ctlRef.current) {
+      if (!abortRef.current || abortRef.current.signal.aborted) return;
+      if (mode === "hold") {
         setHoldUI(true);
         setHeard("listening — let go when you're done");
+      } else {
+        setHeard("listening — tap again when done");
       }
     }, HOLD_TAP_MS);
     beginListening();
@@ -254,9 +261,11 @@ export function PairedFeelings({
     holdingRef.current = false;
     clearTimeout(holdTimerRef.current);
     if (!release) return;
+    if (getMicMode() === "tap") return; // hands-free: release changes nothing
     const held = Date.now() - pressStartRef.current >= HOLD_TAP_MS;
     if (!held && ctlRef.current) {
-      // Settled into a tap: keep listening, silence (or a second press) ends it.
+      // Even in hold mode a quick press is not a dead end: settle into
+      // listen-until-silence so a nervous tap still gets heard.
       ctlRef.current.hold = false;
       return;
     }
@@ -365,7 +374,11 @@ export function PairedFeelings({
         <button
           type="button"
           className={`brume-mic${micOn ? (heard === "hearing…" ? " is-hearing" : " is-listening") : ""}${holdUI ? " is-holding" : ""}`}
-          aria-label="Say how you feel — hold to speak, or tap"
+          aria-label={
+            getMicMode() === "hold"
+              ? "Say how you feel — hold to speak"
+              : "Say how you feel — tap to speak, tap again to stop"
+          }
           aria-pressed={micOn}
           onPointerDown={onMicPointerDown}
           onPointerUp={() => onMicPointerEnd(true)}

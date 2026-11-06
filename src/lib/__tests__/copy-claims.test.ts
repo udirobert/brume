@@ -105,7 +105,7 @@ describe("check-in copy", () => {
       "The mascot",
       "The room",
       "What it never does",
-      "No camera. No scores. No streaks. Nothing about you is measured or inferred. Breath cues play from files on this device. Two moments use our voice service, and both wait for you to ask: holding or tapping \"say it\" sends a little audio while you speak, so Brume can offer the closest word, and asking to hear a line sends that line to be spoken back. Nothing from either is recorded — the words are matched and dropped. Nothing else leaves.",
+      "No camera. No scores. No streaks. Nothing about you is measured or inferred. Breath cues play from files on this device. Two moments use our voice service, and both wait for you to ask: holding \"say it\" sends a little audio while you speak — or tapping it, if you choose tap in the options — so Brume can offer the closest word, and asking to hear a line sends that line to be spoken back. Nothing from either is recorded — the words are matched and dropped. Nothing else leaves.",
       "Include a quiet room link",
       "Hold 2 min on calendar",
       appendRoomLink(composeCheckInMessage(0, "listening"), "reset"),

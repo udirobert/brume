@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { hasNegation, matchFeeling, matchPattern, suggestFeeling } from "../voiceCheckin";
+import { getMicMode, hasNegation, matchFeeling, matchPattern, setMicMode, suggestFeeling } from "../voiceCheckin";
 
 describe("matchFeeling", () => {
   it("matches exact labels", () => {
@@ -160,5 +161,17 @@ describe("classifyMicError", () => {
   });
   it("the blocked-mic line says where to fix it", () => {
     expect(VOICE_FAILURE_COPY.mic_blocked).toMatch(/site settings/i);
+  });
+});
+
+describe("mic mode", () => {
+  it("is hold by default, round-trips, and ignores foreign values", () => {
+    expect(getMicMode()).toBe("hold");
+    setMicMode("tap");
+    expect(getMicMode()).toBe("tap");
+    setMicMode("hold");
+    expect(getMicMode()).toBe("hold");
+    window.localStorage.setItem("brume.micMode.v1", "a whole sentence");
+    expect(getMicMode()).toBe("hold");
   });
 });

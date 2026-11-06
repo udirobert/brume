@@ -224,6 +224,32 @@ export interface ListenControl {
   hold: boolean;
 }
 
+// ---- Voice input mode --------------------------------------------------------
+// Hold is the default: the mic is open exactly while the finger is down, so
+// a pause mid-sentence can never cut you off and the end is always yours.
+// Tap is the opt-in (kept for people who can't sustain a press): one press
+// starts hands-free, silence or a second press ends it. One sentence either
+// way — the mode changes who decides when it is over, nothing else.
+
+export type MicMode = "hold" | "tap";
+const MIC_MODE_KEY = "brume.micMode.v1";
+
+export function getMicMode(): MicMode {
+  try {
+    return window.localStorage.getItem(MIC_MODE_KEY) === "tap" ? "tap" : "hold";
+  } catch {
+    return "hold";
+  }
+}
+
+export function setMicMode(mode: MicMode): void {
+  try {
+    window.localStorage.setItem(MIC_MODE_KEY, mode);
+  } catch {
+    // Storage refused — the preference stays hold for this visit.
+  }
+}
+
 const TOKEN_ENDPOINT = STT_ENDPOINT + "-token";
 const WS_URL = "wss://streaming.assemblyai.com/v3/ws";
 const TARGET_RATE = 16000;

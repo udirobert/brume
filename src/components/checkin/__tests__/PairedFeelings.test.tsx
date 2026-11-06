@@ -323,6 +323,41 @@ describe("mic — hold to talk, tap to toggle", () => {
     }
   });
 
+  it("in tap mode, releasing changes nothing and a second press ends it", async () => {
+    window.localStorage.setItem("brume.micMode.v1", "tap");
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      pointer("pointerdown", mic());
+      expect(micMock.lastCtl!.hold).toBe(false); // hands-free from the first press
+      pointer("pointerup", mic());
+      expect(micMock.lastSignal!.aborted, "release must not end a tap-mode listen").toBe(false);
+      pointer("pointerdown", mic()); // the second press ends it
+      expect(micMock.lastSignal!.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("tap mode is never nudged toward hold", async () => {
+    window.localStorage.setItem("brume.micMode.v1", "tap");
+    micMock.listenOnce.mockResolvedValueOnce({
+      transcript: "tense", index: 1, suggest: null, pattern: null, failure: null,
+    });
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      pointer("pointerdown", mic());
+      pointer("pointerup", mic());
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(container.textContent).not.toContain("keep your finger on it");
+      expect(window.localStorage.getItem("brume.voiceHoldHint.v1")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("a failed listen names the failure instead of a generic miss", async () => {
     micMock.listenOnce.mockResolvedValueOnce({
       transcript: "", index: null, suggest: null, pattern: null, failure: "mic_blocked",

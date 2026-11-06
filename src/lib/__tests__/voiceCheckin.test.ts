@@ -152,10 +152,13 @@ describe("classifyMicError", () => {
     expect(classifyMicError({ name: "NotFoundError" })).toBe("no_mic");
     expect(classifyMicError(new Error("x"))).toBe("no_mic");
   });
-  it("every failure has a line to show", () => {
-    for (const k of ["mic_blocked", "no_mic", "offline", "unavailable"] as const) {
+  it("every failure has a line to show, ending in the tap-way-out", () => {
+    for (const k of ["mic_blocked", "no_mic", "offline", "unavailable", "insecure"] as const) {
       expect(VOICE_FAILURE_COPY[k].length).toBeGreaterThan(8);
-      expect(VOICE_FAILURE_COPY[k]).toMatch(/tap/i);
+      expect(VOICE_FAILURE_COPY[k]).toMatch(/tap a word/);
     }
+  });
+  it("the blocked-mic line says where to fix it", () => {
+    expect(VOICE_FAILURE_COPY.mic_blocked).toMatch(/site settings/i);
   });
 });

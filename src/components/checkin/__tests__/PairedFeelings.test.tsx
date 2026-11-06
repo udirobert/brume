@@ -71,6 +71,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  vi.restoreAllMocks(); // spies from one test must not leak into the next
 });
 
 describe("PairedFeelings", () => {
@@ -222,6 +223,8 @@ const micMock = vi.hoisted(() => ({
   listenOnce: vi.fn(),
   resolve: undefined as ((v: unknown) => void) | undefined,
   arm() {
+    // mockReset drops any leftover one-shot resolves from a previous test.
+    this.listenOnce.mockReset();
     this.listenOnce.mockImplementation(
       (_interim: unknown, signal: AbortSignal, ctl: { hold: boolean }) => {
         this.lastCtl = ctl;
@@ -295,6 +298,31 @@ describe("mic — hold to talk, tap to toggle", () => {
     }
   });
 
+  it("after a first tapped match, teaches the hold once and only once", async () => {
+    const done = { transcript: "tense", index: 1, suggest: null, pattern: null, failure: null };
+    micMock.listenOnce.mockResolvedValueOnce(done).mockResolvedValueOnce(done);
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      // Tap mode: quick press and release.
+      pointer("pointerdown", mic());
+      pointer("pointerup", mic());
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      // The tip lands after the offer, and exactly once.
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(container.textContent).toContain("keep your finger on it");
+      expect(window.localStorage.getItem("brume.voiceHoldHint.v1")).toBe("1");
+      // Second tapped match: the tip stays quiet.
+      pointer("pointerdown", mic());
+      pointer("pointerup", mic());
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(container.textContent).not.toContain("keep your finger on it");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("a failed listen names the failure instead of a generic miss", async () => {
     micMock.listenOnce.mockResolvedValueOnce({
       transcript: "", index: null, suggest: null, pattern: null, failure: "mic_blocked",
@@ -303,6 +331,6 @@ describe("mic — hold to talk, tap to toggle", () => {
     pointer("pointerdown", mic());
     await act(async () => { vi.waitFor(() => expect(micMock.listenOnce).toHaveBeenCalled()); });
     await act(async () => { await Promise.resolve(); });
-    expect(container.textContent).toContain("mic is blocked");
+    expect(container.textContent).toContain("mic is off for this site");
   });
 });

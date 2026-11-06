@@ -19,6 +19,14 @@ import {
 import { track } from "@/lib/events";
 
 const HINT_KEY = "brume.feelingFlipHint.v1";
+const HOLD_HINT_KEY = "brume.voiceHoldHint.v1";
+
+function holdHintSeen(): boolean {
+  try { return window.localStorage.getItem(HOLD_HINT_KEY) === "1"; } catch { return false; }
+}
+function writeHoldHintSeen() {
+  try { window.localStorage.setItem(HOLD_HINT_KEY, "1"); } catch (e) { void e; }
+}
 
 function readHintSeen(): boolean {
   try {
@@ -158,9 +166,16 @@ export function PairedFeelings({
     );
     const offered = index ?? suggest;
     track("checkin_voice_used", { matched: index != null, offered });
+    const wasTap = ctl.hold === false;
     setMicOn(false);
     setHoldUI(false);
     holdingRef.current = false;
+    if (wasTap && offered != null && !holdHintSeen()) {
+      // They tapped and it worked — once, teach the easier way. It lands
+      // after the offer itself, so it never speaks over the match.
+      writeHoldHintSeen();
+      window.setTimeout(() => flashHeard("tip: keep your finger on it to take your time"), 1400);
+    }
     if (failure && !transcript) {
       // Said out loud, not shrugged off — the person should know whether it
       // was permission, the network, or nothing heard at all.

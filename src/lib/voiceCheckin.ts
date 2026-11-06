@@ -200,7 +200,7 @@ export function voiceCheckinSupported(): boolean {
 }
 
 /** Why a listen produced nothing — said out loud, not shrugged off. */
-export type VoiceFailure = "mic_blocked" | "no_mic" | "offline" | "unavailable";
+export type VoiceFailure = "mic_blocked" | "no_mic" | "offline" | "unavailable" | "insecure";
 
 export interface HeardResult {
   transcript: string;
@@ -313,10 +313,13 @@ export function classifyMicError(err: unknown): VoiceFailure {
 
 /** What the screen says for each failure — short, and always with a way out. */
 export const VOICE_FAILURE_COPY: Record<VoiceFailure, string> = {
-  mic_blocked: "mic is blocked — allow it, or tap a word",
+  // A refusal with no prompt means the site was denied before (iOS keeps
+  // that memory) or the browser itself withholds the mic — say the fix.
+  mic_blocked: "mic is off for this site — allow it in your browser’s site settings, or tap a word",
   no_mic: "can’t reach the microphone — tap a word",
   offline: "no connection — tap a word",
   unavailable: "voice isn’t available just now — tap a word",
+  insecure: "the mic needs a private connection — tap a word",
 };
 
 // The stage that failed and the error's class — never audio, never words.
@@ -588,6 +591,12 @@ export async function listenOnce(
       failure,
     };
   };
+
+  // Browsers refuse the microphone outright off HTTPS — name that instead
+  // of failing deeper down where the reason is no longer visible.
+  if (typeof window !== "undefined" && window.isSecureContext === false) {
+    return result("", "insecure");
+  }
 
   let ctx: AudioContext | null = null;
   try {

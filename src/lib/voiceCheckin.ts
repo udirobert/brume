@@ -407,7 +407,12 @@ async function viaStreaming(
         for (const chunk of pending) ws.send(chunk);
         pending.length = 0;
         pendingBytes = 0;
-        if (releasing) forceEndpoint();
+        // Released while we were still connecting: the words sat in the
+        // buffer — send them, then ask for the turn to end.
+        if (releasing) {
+          forceEndpoint();
+          grace = setTimeout(stop, RELEASE_GRACE_MS);
+        }
       };
       ws.onerror = () => fail(new Error("ws_error"));
       ws.onclose = () => (opened ? stop() : fail(new Error("ws_closed")));
@@ -437,8 +442,11 @@ async function viaStreaming(
         }
       };
 
-      if (signal?.aborted) release();
-      else signal?.addEventListener("abort", release);
+      // If the finger came up while the socket is still connecting, do not
+      // give up on the utterance — keep buffering until it opens.
+      const onAbort = () => (opened ? release() : (releasing = true));
+      if (signal?.aborted) onAbort();
+      else signal?.addEventListener("abort", onAbort);
     });
   } finally {
     proc.onaudioprocess = null;

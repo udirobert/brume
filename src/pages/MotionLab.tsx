@@ -21,6 +21,8 @@ import {
   type BrumeMascotState,
   type MascotReaction,
 } from "../../anna/bundle/mascot.js";
+import { sampleMascot } from "../../anna/bundle/mascot-engine.js";
+import type { MascotPose } from "../../anna/bundle/mascot-engine.js";
 import "@/components/BrumeMascot.css";
 
 /** Eased progress at a stop, solved numerically from a CSS cubic-bezier. */
@@ -204,12 +206,22 @@ function MascotFrame({
   reactionName,
   reactionAge,
   smear,
+  t = 3,
+  stateAge,
+  gaze,
+  fromPose,
+  presence,
   label,
 }: {
   state?: BrumeMascotState;
   reactionName?: MascotReaction;
   reactionAge?: number;
   smear?: { x: number; y: number; strength: number; age: number };
+  t?: number;
+  stateAge?: number;
+  gaze?: { x: number; y: number };
+  fromPose?: MascotPose;
+  presence?: "quiet" | "companion";
   label: string;
 }) {
   const hostRef = useRef<HTMLSpanElement>(null);
@@ -217,8 +229,12 @@ function MascotFrame({
     const host = hostRef.current;
     if (!host) return;
     const m = createMascot(host, { autoAnimate: false });
-    m.renderAt(3, {
+    m.renderAt(t, {
       state,
+      presence,
+      stateAge,
+      gaze,
+      from: fromPose,
       reaction:
         reactionName !== undefined && reactionAge !== undefined
           ? { name: reactionName, age: reactionAge }
@@ -226,7 +242,7 @@ function MascotFrame({
       smear,
     });
     return () => m.destroy();
-  }, [state, reactionName, reactionAge, smear]);
+  }, [state, reactionName, reactionAge, smear, t, stateAge, gaze, fromPose, presence]);
   return (
     <figure className="flex flex-col items-center gap-2">
       <div className="relative flex h-40 w-72 items-center justify-center rounded-2xl border border-[var(--brume-rule)] bg-[var(--brume-card)]">
@@ -306,6 +322,55 @@ function MascotSmearStrip() {
             label={f.label}
             smear={{ ...dir, strength: 1, age: f.age }}
           />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Strip 8 — the expressiveness board: states as schedules. Frozen proof
+ * frames for each lesson — the micro-variant cycle, the blink-masked
+ * blend, sphere-depth eye compression, mirrored tilts, the scripted
+ * beats, and the spontaneous perk.
+ */
+function MascotExpressivenessStrip() {
+  // The far transition this board demonstrates: idle → proud.
+  const idlePose = sampleMascot(3, { state: "idle", stateAge: 0.5 }).pose;
+  const frames: {
+    key: string;
+    label: string;
+    props: Partial<React.ComponentProps<typeof MascotFrame>>;
+  }[] = [
+    { key: "drawn", label: "idle · enters as drawn (age 0)", props: { stateAge: 0 } },
+    { key: "v1", label: "idle · variant dwell (age 8)", props: { stateAge: 8 } },
+    { key: "v2", label: "idle · another variant (age 16)", props: { stateAge: 16 } },
+    {
+      key: "mask-mid",
+      label: "idle→proud · blink-masked blend (age 0.25)",
+      props: { state: "proud", stateAge: 0.25, fromPose: idlePose },
+    },
+    {
+      key: "mask-end",
+      label: "idle→proud · landed (age 0.5)",
+      props: { state: "proud", stateAge: 0.5, fromPose: idlePose },
+    },
+    { key: "depth", label: "gaze right · far eye narrows", props: { gaze: { x: 2.4, y: 0 } } },
+    { key: "tilt-heavy", label: "sleepy · outer corners down", props: { state: "sleepy", stateAge: 8 } },
+    { key: "tilt-bright", label: "bright · outer corners up", props: { state: "bright", stateAge: 8 } },
+    { key: "sigh", label: "exhale · the sigh (age 1.1)", props: { state: "exhale", stateAge: 1.1 } },
+    { key: "saccade", label: "thinking · upward saccade (age 0.35)", props: { state: "thinking", stateAge: 0.35 } },
+    {
+      key: "perk",
+      label: "bright companion · spontaneous perk (t 65.86)",
+      props: { state: "bright", presence: "companion", t: 65.86, stateAge: 60 },
+    },
+  ];
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="grid w-max grid-cols-[repeat(4,18rem)] gap-3">
+        {frames.map((f) => (
+          <MascotFrame key={f.key} label={f.label} {...f.props} />
         ))}
       </div>
     </div>
@@ -419,6 +484,21 @@ export default function MotionLab() {
           Mascot flight — deform along velocity
         </h2>
         <MascotSmearStrip />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
+          Mascot schedules — states as living timetables
+        </h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          The expressiveness pass: seeded micro-variants rotate on stateAge,
+          far expression changes land inside a forced blink, the far eye
+          compresses with gaze, tilts mirror per state, exhale/thinking/sleepy
+          carry one scripted beat each, and bright companions perk on their
+          own roughly once every 40 seconds. Everything is a pure function of
+          (t, options) — these frames are proofs, not settings.
+        </p>
+        <MascotExpressivenessStrip />
       </section>
     </div>
   );

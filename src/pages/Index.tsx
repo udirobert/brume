@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { DURATION, EASE } from "@/lib/motion";
@@ -82,6 +82,15 @@ export default function Index() {
   const [mascotReaction, setMascotReaction] = useState<
     { name: MascotReaction; key: string } | undefined
   >();
+  // The listening gaze: while voice is live the companion looks at what
+  // matters — the mic while hearing, the suggested word after a match,
+  // the help card when blocked. Resolved after commit so the element is
+  // in the DOM; released on miss and on commit.
+  const [lookSelector, setLookSelector] = useState<string | null>(null);
+  const [lookTarget, setLookTarget] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    setLookTarget(lookSelector ? document.querySelector<HTMLElement>(lookSelector) : null);
+  }, [lookSelector]);
   const [droplet, setDroplet] = useState<{
     key: number;
     from: { x: number; y: number };
@@ -107,6 +116,7 @@ export default function Index() {
   // mascot while the mist takes the feeling's colour and weight.
   // A null index means the word was put back down — the room lets go.
   const handleFeel = (index: number | null, chip?: HTMLElement, fromOffer = false) => {
+    setLookSelector(null); // a word chosen with the hand ends the gaze
     const a = chip?.getBoundingClientRect();
     applyFeel(
       index,
@@ -180,6 +190,7 @@ export default function Index() {
           tapReaction={feel?.reaction ?? "ready"}
           demeanor={feel?.demeanor ?? "open"}
           allowTapEscalation={!feel || isPositiveFeel(feelTap)}
+          lookAt={lookTarget}
         />
       </motion.div>
 
@@ -188,20 +199,26 @@ export default function Index() {
         onChoose={handleFeel}
         onVoiceState={(s, feltIndex) => {
           if (s === "listening") {
+            setLookSelector(".brume-mic");
             setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` });
           } else if (s === "blocked") {
             // The companion settles with you while the card explains —
-            // a blocked mic is a pause, not an alarm.
+            // a blocked mic is a pause, not an alarm. It reads the card
+            // with you.
+            setLookSelector(".brume-voice-help");
             setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` });
           } else if (s === "matched" && typeof feltIndex === "number") {
             // Acknowledgment only: the suggested word's own reaction, with
             // no tint, no ledger and no nudge — the tap still owns the
             // commit, but the room is no longer silent between hearing and
-            // choosing.
+            // choosing. The gaze stays on the word until it is chosen.
+            setLookSelector(".brume-choice.is-suggested");
             const felt = feelingAt(feltIndex);
             if (felt?.reaction) {
               setMascotReaction({ name: felt.reaction, key: `home-${++reactionSerial.current}` });
             }
+          } else {
+            setLookSelector(null);
           }
         }}
         onPatternOffer={setRhythmOffer}

@@ -193,10 +193,20 @@ export function createMascot(host, options = {}) {
     eyeL.setAttribute("rx", e.left.rx); eyeL.setAttribute("ry", e.left.ry);
     eyeR.setAttribute("cx", e.right.cx); eyeR.setAttribute("cy", e.right.cy);
     eyeR.setAttribute("rx", e.right.rx); eyeR.setAttribute("ry", e.right.ry);
+    // The state's mirrored eye tilt — rotate each eye (and its lid) about
+    // its own centre. Old frames without tilt render un-rotated.
+    const tiltL = e.left.tilt || 0;
+    const tiltR = e.right.tilt || 0;
+    eyeL.setAttribute("transform", tiltL ? `rotate(${tiltL} ${e.left.cx} ${e.left.cy})` : "");
+    eyeR.setAttribute("transform", tiltR ? `rotate(${tiltR} ${e.right.cx} ${e.right.cy})` : "");
     lidL.setAttribute("x", e.lidLeft.x); lidL.setAttribute("y", e.lidLeft.y);
     lidL.setAttribute("width", e.lidLeft.width); lidL.setAttribute("height", e.lidLeft.height);
+    lidL.setAttribute("transform", tiltL
+      ? `rotate(${tiltL} ${e.lidLeft.x + e.lidLeft.width / 2} ${e.lidLeft.y + 4})` : "");
     lidR.setAttribute("x", e.lidRight.x); lidR.setAttribute("y", e.lidRight.y);
     lidR.setAttribute("width", e.lidRight.width); lidR.setAttribute("height", e.lidRight.height);
+    lidR.setAttribute("transform", tiltR
+      ? `rotate(${tiltR} ${e.lidRight.x + e.lidRight.width / 2} ${e.lidRight.y + 4})` : "");
 
     mouth.setAttribute("d", frame.mouth.d);
     mouthG.setAttribute("transform", `translate(${frame.mouth.dx} ${frame.mouth.dy})`);
@@ -217,6 +227,21 @@ export function createMascot(host, options = {}) {
     swirl.setAttribute("transform", `rotate(${a.swirl.rotate} ${SWIRL.cx} ${SWIRL.cy})`);
   }
 
+  // Attention gaze: while opts.lookAt names a live element, the sprite
+  // looks at it instead of the pointer — tanh-damped so nearby targets
+  // don't cross the eyes and far ones reach full gaze.
+  function lookAtGaze(target = opts.lookAt) {
+    if (!target || typeof target.getBoundingClientRect !== "function") return null;
+    const h = host.getBoundingClientRect();
+    const g = target.getBoundingClientRect();
+    const dx = g.left + g.width / 2 - (h.left + h.width / 2);
+    const dy = g.top + g.height / 2 - (h.top + h.height / 2);
+    const dist = Math.hypot(dx, dy);
+    if (!Number.isFinite(dist) || dist < 1) return null;
+    const k = Math.tanh(dist / 180);
+    return { x: 2.4 * k * (dx / dist), y: 1.8 * k * (dy / dist) };
+  }
+
   function liveFrame(t) {
     return sampleMascot(t, {
       avatar,
@@ -230,7 +255,7 @@ export function createMascot(host, options = {}) {
         ? { x: smearVec.x, y: smearVec.y, strength: smearVec.strength, age: t - smearVec.start }
         : undefined,
       presence: opts.presence,
-      gaze: opts.gaze !== undefined ? opts.gaze : pointerGaze,
+      gaze: lookAtGaze() ?? (opts.gaze !== undefined ? opts.gaze : pointerGaze),
       hush: attentionTick(t),
       lean: opts.lean,
       reducedMotion: isReduced(),
@@ -505,7 +530,7 @@ export function createMascot(host, options = {}) {
       state: merged.state,
       breath: merged.breath,
       presence: merged.presence,
-      gaze: merged.gaze,
+      gaze: lookAtGaze(merged.lookAt) ?? merged.gaze,
       hush: merged.hush,
       lean: merged.lean,
       reducedMotion: merged.reducedMotion === true,

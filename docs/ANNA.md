@@ -947,3 +947,58 @@ gaze, seeded blink schedules with double blinks, and rare spontaneous
 one-shots in positive states. Not built yet; the engine is shared with
 Anna and frozen-contract, so each lesson is its own change with
 `anna/test/mascot.mjs` coverage.
+
+### 12.18 All ten lessons, one engine pass (2026-11-07)
+
+The research became a single expressiveness pass on
+`anna/bundle/mascot-engine.js` — all ten lessons, still one pure
+`sampleMascot(t, options)`:
+
+- **States as schedules.** `STATE_VARIANTS` rotates each state through
+  2–4 small variants (another mouth, ±0.5 dy, a touch of lid) on seeded
+  3.2–6.6 s dwells keyed on `stateAge`. Variant zero is the identity, so
+  every state still enters exactly as drawn; hold and topup keep one
+  variant — stillness and the puff are their whole part.
+- **Scripted beats.** One micro-narrative per state: the exhale sigh
+  (lids heavy over its first 2.2 s), a thinking saccade upward every
+  3.1 s, sleepy's slow 5.6 s drowsy blink.
+- **Blink-masked transitions.** A far expression change (mouth + lid +
+  dy distance > 0.75) lands inside a forced blink across the 0.5 s
+  blend — sin-shaped, exact at both endpoints. The breath loop
+  (inhale/topup/hold/exhale) is exempt: masking every cycle would be a
+  metronome, not a character.
+- **Sphere depth + mirrored tilts.** The eye toward the gaze edge
+  narrows up to 16 % of its rx; `EYE_TILTS` rotate per state (sleepy
+  −6° outer-corners-down, bright +3° up), mirrored between the eyes,
+  blended in pose space, painted by the adapter as a rotation about
+  each eye's own centre.
+- **Seeded aperiodic blinks.** Two candidate slots per 4 s cell, each
+  with its own fire probability and jittered offset — ~1 blink per
+  3.9 s, 18 % of them doubled 0.32 s later. The old 20 s/3-times
+  metronome is gone; the pins now scan the schedule and assert density,
+  determinism and doubles.
+- **Spontaneous perk.** Bright/proud companions lift on their own about
+  once per 40 s (seeded schedule on absolute t) — never quiet, never
+  hushed, never reduced.
+- **Landing wobble.** The hop's touchdown squash carries one decaying
+  counter-oscillation; both terms zero at the window's edges, so the
+  reaction still parks on exact rest (old pins untouched).
+- **Listening gaze.** The adapter learned `lookAt: Element` — tanh-damped
+  gaze (180 px scale, clamped to the engine's maxima) resolved every
+  frame *and* in `renderAt`. Home aims it at the mic while listening,
+  the suggested word after a match, the help card when blocked; a
+  hand-choice or a miss releases it.
+
+And the QA surface: MotionLab grew a "Mascot schedules" board — eleven
+frozen proof frames (variant dwells, the mask mid-blend, depth, tilts,
+each beat, the perk at t 65.86).
+
+Contract care: the export surface is unchanged; the blend pins now pass
+explicit `stateAge` on both sides (variants are a function of it) and
+the blend-open assertion expects the masked dip; pose and eye frames
+gained `tilt` (`mascot-engine.d.ts`, `mascot.d.ts`), and the adapter
+renders tilt-less frames un-rotated. Reduced motion still gets the
+pose, never the schedule — every new behaviour is gated behind it.
+
+41 engine tests (was 35), 510 web tests (was 501), anna 126, mcp 17 —
+all green; `anna-app validate --strict` passes.

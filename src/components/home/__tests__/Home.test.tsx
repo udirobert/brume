@@ -14,6 +14,31 @@ vi.mock("@/components/companion/JourneyCompanion", () => ({
   },
 }));
 vi.mock("@/components/atmosphere/AbsorbDroplet", () => ({ AbsorbDroplet: () => null }));
+
+// --- voice: the companion's listening gaze ---------------------------------
+const micMock = vi.hoisted(() => ({
+  listenOnce: vi.fn(),
+  resolve: undefined as ((v: unknown) => void) | undefined,
+  arm() {
+    this.listenOnce.mockReset();
+    this.listenOnce.mockImplementation((_interim: unknown, signal: AbortSignal) => {
+      return new Promise((res) => {
+        this.resolve = (v: unknown) => res(v);
+        signal.addEventListener("abort", () =>
+          res({ transcript: "", index: null, suggest: null, pattern: null, failure: null }),
+        );
+      });
+    });
+  },
+}));
+vi.mock("@/lib/voiceCheckin", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/voiceCheckin")>();
+  return {
+    ...real,
+    voiceCheckinSupported: () => true,
+    listenOnce: (...args: unknown[]) => micMock.listenOnce(...(args as [])),
+  };
+});
 vi.mock("@/hooks/useMascotPresence", () => ({
   useMascotPresence: () => ({ presence: "company", setPresence: vi.fn() }),
 }));
@@ -240,3 +265,67 @@ describe("Home — the room remembers (E6)", () => {
   });
 });
 
+
+
+describe("Home — the listening gaze", () => {
+  const lastAnchor = () => anchorProps[anchorProps.length - 1];
+  const mic = () => container.querySelector<HTMLButtonElement>(".brume-mic")!;
+  const press = (el: HTMLElement) =>
+    act(() => {
+      el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 7 }));
+    });
+  const release = (el: HTMLElement) =>
+    act(() => {
+      el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 7 }));
+    });
+  const resolveVoice = async (v: unknown) => {
+    await act(async () => {
+      micMock.resolve!(v);
+    });
+  };
+
+  beforeEach(() => micMock.arm());
+
+  it("while hearing, the companion looks at the mic", async () => {
+    await mount();
+    press(mic());
+    expect(lastAnchor().lookAt).toBe(container.querySelector(".brume-mic"));
+    release(mic());
+  });
+
+  it("after a match, the gaze moves to the suggested word and stays", async () => {
+    await mount();
+    press(mic());
+    release(mic());
+    await resolveVoice({ transcript: "drained", index: null, suggest: 6, pattern: null, failure: null });
+    const chip = container.querySelector(".brume-choice.is-suggested");
+    expect(chip).not.toBeNull();
+    expect(lastAnchor().lookAt).toBe(chip);
+  });
+
+  it("choosing the word with the hand releases the gaze", async () => {
+    await mount();
+    press(mic());
+    release(mic());
+    await resolveVoice({ transcript: "drained", index: null, suggest: 6, pattern: null, failure: null });
+    clickEl(container.querySelector(".brume-choice.is-suggested")!);
+    expect(lastAnchor().lookAt ?? null).toBeNull();
+  });
+
+  it("a blocked mic sends the gaze to the help card", async () => {
+    await mount();
+    press(mic());
+    release(mic());
+    await resolveVoice({ transcript: "", index: null, suggest: null, pattern: null, failure: "mic_blocked" });
+    expect(container.querySelector(".brume-voice-help")).not.toBeNull();
+    expect(lastAnchor().lookAt).toBe(container.querySelector(".brume-voice-help"));
+  });
+
+  it("a miss releases the gaze", async () => {
+    await mount();
+    press(mic());
+    release(mic());
+    await resolveVoice({ transcript: "the weather", index: null, suggest: null, pattern: null, failure: null });
+    expect(lastAnchor().lookAt ?? null).toBeNull();
+  });
+});

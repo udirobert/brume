@@ -8,6 +8,7 @@ import type { BrumeAvatar } from "../../../anna/bundle/mascot-engine.js";
 import { BrumeMascot } from "../BrumeMascot";
 
 const reactCalls: string[] = [];
+const optionCalls: Record<string, unknown>[] = [];
 vi.mock("../../../anna/bundle/mascot.js", async (importOriginal) => {
   const mod = await importOriginal<typeof import("../../../anna/bundle/mascot.js")>();
   return {
@@ -15,11 +16,16 @@ vi.mock("../../../anna/bundle/mascot.js", async (importOriginal) => {
     createMascot: (host: HTMLElement, opts?: Parameters<typeof mod.createMascot>[1]) => {
       const handle = mod.createMascot(host, opts);
       const react = handle.react;
+      const setOptions = handle.setOptions;
       return {
         ...handle,
         react: (name: string) => {
           reactCalls.push(name);
           react(name as Parameters<typeof react>[0]);
+        },
+        setOptions: (partial: Record<string, unknown>) => {
+          optionCalls.push(partial);
+          return setOptions(partial);
         },
       };
     },
@@ -353,6 +359,61 @@ describe("createMascot adapter", () => {
   });
 });
 
+describe("createMascot adapter — the expressiveness pass", () => {
+  const rect = (left: number, top: number, width: number, height: number) =>
+    () => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON() { return {}; } }) as DOMRect;
+
+  it("lookAt aims the gaze at the target, damped and bounded", () => {
+    const host = document.createElement("div");
+    const target = document.createElement("div");
+    document.body.append(host, target);
+    host.getBoundingClientRect = rect(0, 0, 100, 100);
+    target.getBoundingClientRect = rect(300, 10, 20, 20);
+    const m = createMascot(host, { autoAnimate: false, presence: "quiet" });
+    m.renderAt(3);
+    const eye = () => host.querySelector(".mascot-eye")!;
+    const cxPlain = parseFloat(eye().getAttribute("cx")!);
+    const cyPlain = parseFloat(eye().getAttribute("cy")!);
+    m.renderAt(3, { lookAt: target });
+    const cx = parseFloat(eye().getAttribute("cx")!);
+    const cy = parseFloat(eye().getAttribute("cy")!);
+    expect(cx).toBeGreaterThan(cxPlain + 1); // target is right of the sprite
+    expect(cy).toBeLessThan(cyPlain); // and above it
+    expect(cx - cxPlain).toBeLessThanOrEqual(2.5); // bounded by the gaze clamp
+    m.destroy();
+  });
+
+  it("a collapsed target (no size, no distance) releases the gaze", () => {
+    const host = document.createElement("div");
+    const target = document.createElement("div");
+    document.body.append(host, target);
+    host.getBoundingClientRect = rect(0, 0, 0, 0);
+    target.getBoundingClientRect = rect(0, 0, 0, 0);
+    const m = createMascot(host, { autoAnimate: false, presence: "quiet" });
+    m.renderAt(3);
+    const plain = svgOf(host);
+    m.renderAt(3, { lookAt: target });
+    expect(svgOf(host)).toBe(plain);
+    m.destroy();
+  });
+
+  it("state-owned eye tilts render as mirrored rotations", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const m = createMascot(host, { autoAnimate: false });
+    m.renderAt(3, { state: "sleepy" });
+    const eyes = host.querySelectorAll(".mascot-eye");
+    expect(eyes[0].getAttribute("transform")).toMatch(/rotate\(-6 /);
+    expect(eyes[1].getAttribute("transform")).toMatch(/rotate\(6 /);
+    m.renderAt(3, { state: "bright" });
+    expect(eyes[0].getAttribute("transform")).toMatch(/rotate\(3 /);
+    m.renderAt(3, { state: "idle" });
+    expect(eyes[0].getAttribute("transform")).toBe("");
+    expect(eyes[1].getAttribute("transform")).toBe("");
+    m.destroy();
+  });
+});
+
 describe("BrumeMascot React wrapper", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -390,6 +451,20 @@ describe("BrumeMascot React wrapper", () => {
     });
     expect(host.querySelector("svg")).toBe(svg);
     expect(host.getAttribute("data-state")).toBe("sleepy");
+  });
+
+  it("lookAt prop flows into setOptions and null releases it", async () => {
+    optionCalls.length = 0;
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    await act(async () => {
+      root.render(<BrumeMascot lookAt={target} />);
+    });
+    expect(optionCalls.some((c) => c.lookAt === target)).toBe(true);
+    await act(async () => {
+      root.render(<BrumeMascot lookAt={null} />);
+    });
+    expect(optionCalls[optionCalls.length - 1]).toMatchObject({ lookAt: undefined });
   });
 
   it("reaction prop fires react when the key changes, never on mount", async () => {

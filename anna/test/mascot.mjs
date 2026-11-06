@@ -57,26 +57,56 @@ test("unknown state falls back to idle; malformed args clamp or default", () => 
   assert.ok(Number.isFinite(nanGaze.eyes.left.cx));
 });
 
-test("deterministic blink closes and reopens on the fixed schedule", () => {
-  const open = (t) => sampleMascot(t, { state: "idle" }).eyes.left.ry;
-  assert.ok(open(4.8) < 1, "closed at 4.8");
-  assert.ok(open(4.8 + 20) < 1, "closed a cycle later");
-  assert.equal(open(3.0), 4, "open between blinks");
-  assert.equal(open(4.8), open(24.8), "same phase same frame");
-  assert.equal(sampleMascot(4.8, { state: "hold" }).eyes.left.ry, 4 * 0.12);
+// The blink schedule is seeded and aperiodic, so the pins scan for
+// behaviour instead of hardcoding times: density, determinism, doubles.
+function blinkCloses(state, horizon, step = 0.02) {
+  const closes = [];
+  let wasClosed = false;
+  for (let t = 0; t <= horizon; t += step) {
+    const closed = sampleMascot(t, { state }).eyes.left.ry < 2;
+    if (closed && !wasClosed) closes.push(t);
+    wasClosed = closed;
+  }
+  return closes;
+}
+
+test("blinks are a seeded aperiodic schedule — dense enough, repeatable", () => {
+  const closes = blinkCloses("idle", 60);
+  // ~one blink every 4s: plenty for a living face, never a metronome.
+  assert.ok(closes.length >= 8 && closes.length <= 22, `got ${closes.length}`);
+  // Not periodic: the gaps vary.
+  const gaps = closes.slice(1).map((t, i) => t - closes[i]);
+  assert.ok(new Set(gaps.map((g) => g.toFixed(1))).size >= 3, "gaps should vary");
+  // Deterministic: the same horizon scans identically.
+  assert.deepEqual(closes, blinkCloses("idle", 60));
+  // Eyes fully open at the classic probe times other pins rely on.
+  for (const t of [1.0, 3.0, 3.21, 5.0, 10.0]) {
+    assert.equal(sampleMascot(t, { state: "idle" }).eyes.left.ry, 4, `open at ${t}`);
+  }
+});
+
+test("about a fifth of blinks are doubled", () => {
+  const closes = blinkCloses("idle", 120);
+  const doubles = closes.filter((t, i) => i > 0 && t - closes[i - 1] < 0.7);
+  assert.ok(doubles.length >= 2, `expected doubles, got ${doubles.length}`);
 });
 
 test("blink runs in session states but not hold or sleepy", () => {
+  // Find a moment where idle is substantially closed, from the schedule.
+  const closedAt = blinkCloses("idle", 30)[0] + 0.06;
+  assert.ok(sampleMascot(closedAt, { state: "idle" }).eyes.left.ry < 2);
   for (const state of ["inhale", "exhale", "watching"]) {
-    const open = sampleMascot(4.8, { state }).eyes.left.ry;
+    const open = sampleMascot(closedAt, { state }).eyes.left.ry;
     const rested = sampleMascot(3.0, { state }).eyes.left.ry;
     assert.ok(open < rested, `${state} should blink`);
   }
   for (const state of ["hold", "sleepy"]) {
-    const at = sampleMascot(4.8, { state }).eyes.left.ry;
-    const between = sampleMascot(3.0, { state }).eyes.left.ry;
+    const at = sampleMascot(closedAt, { state, stateAge: 8 }).eyes.left.ry;
+    const between = sampleMascot(3.0, { state, stateAge: 8 }).eyes.left.ry;
     assert.equal(at, between, `${state} should not blink`);
   }
+  // hold keeps its narrowed eyes exactly, blink or no blink.
+  assert.equal(sampleMascot(closedAt, { state: "hold" }).eyes.left.ry, 4 * 0.12);
 });
 
 test("gaze shifts eyes and lids, mouth follows at 35%", () => {
@@ -245,18 +275,42 @@ test("sampleMascot does not mutate options or the avatar", () => {
 
 test("transitions blend from a frozen pose over 0.5s", () => {
   const t = 3.0;
-  const idlePose = sampleMascot(t, { state: "idle" }).pose;
+  const idlePose = sampleMascot(t, { state: "idle", stateAge: 0.5 }).pose;
   const atStart = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0 });
   assert.deepEqual(atStart.pose, idlePose);
-  const target = sampleMascot(t, { state: "proud" });
+  const target = sampleMascot(t, { state: "proud", stateAge: 0.5 });
   const atEnd = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0.5 });
   assert.deepEqual(atEnd.pose, target.pose);
   const mid = sampleMascot(t, { state: "proud", from: idlePose, stateAge: 0.25 });
-  assert.ok(mid.pose.open > target.pose.open && mid.pose.open < idlePose.open);
   assert.notEqual(mid.pose.mouth, idlePose.mouth);
   assert.notEqual(mid.pose.mouth, target.pose.mouth);
-  const noFrom = sampleMascot(t, { state: "proud", stateAge: 0 });
+  const noFrom = sampleMascot(t, { state: "proud", stateAge: 0.5 });
   assert.deepEqual(noFrom.pose, target.pose);
+});
+
+test("a far expression change is hidden inside a forced blink", () => {
+  // idle → proud changes the mouth and reads far: mid-blend the eyes
+  // close BELOW both endpoints — the change lands inside a blink.
+  const t = 3.0;
+  const from = sampleMascot(t, { state: "idle", stateAge: 0.5 }).pose;
+  const target = sampleMascot(t, { state: "proud", stateAge: 0.5 }).pose;
+  const mid = sampleMascot(t, { state: "proud", from, stateAge: 0.25 }).pose;
+  assert.ok(mid.open < target.open && mid.open < from.open, "eyes dip mid-blend");
+  // The mask is sin-shaped: exact at both endpoints of the window.
+  const start = sampleMascot(t, { state: "proud", from, stateAge: 0 }).pose;
+  assert.equal(start.open, from.open);
+  const end = sampleMascot(t, { state: "proud", from, stateAge: 0.5 }).pose;
+  assert.equal(end.open, target.open);
+});
+
+test("breath-loop transitions are never blink-masked", () => {
+  // inhale → hold is a far mouth change but part of the breath cycle —
+  // masking every cycle would be a metronome. The eyes simply lerp.
+  const t = 3.0;
+  const from = sampleMascot(t, { state: "inhale", stateAge: 0.5 }).pose;
+  const target = sampleMascot(t, { state: "hold", stateAge: 0.5 }).pose;
+  const mid = sampleMascot(t, { state: "hold", from, stateAge: 0.25 }).pose;
+  assert.ok(mid.open > target.open && mid.open < from.open, "plain lerp, no dip");
 });
 
 test("blendPath lerps matching structures and swaps mismatched at 0.5", () => {
@@ -464,4 +518,120 @@ test("silhouette deltas blend with the frozen pose", () => {
   assert.ok(mid.pose.b2y > 1 && mid.pose.b2y < target.pose.b2y, "silhouette keys lerp through");
   const started = sampleMascot(3, { state: "topup", from: idlePose, stateAge: 0 });
   assert.deepEqual(started.pose, idlePose, "blend still starts at the frozen pose");
+});
+
+// ---- the expressiveness pass: states as schedules ----
+
+test("states are schedules — micro-variants rotate on stateAge", () => {
+  // A fresh state enters exactly as drawn (variant zero is identity).
+  const fresh = sampleMascot(3.21, { state: "idle", stateAge: 0 }).pose;
+  assert.equal(fresh.mouth, "M 44 60 Q 50 63 56 60 Q 50 63 44 60 Z", "enters as drawn");
+  assert.equal(fresh.dy, 0);
+  // Given time, idle cycles through at least two different mouths.
+  const mouths = new Set();
+  for (let age = 0; age <= 40; age += 0.5) {
+    mouths.add(sampleMascot(3.21, { state: "idle", stateAge: age }).pose.mouth);
+  }
+  assert.ok(mouths.size >= 2, `idle mouthed ${mouths.size} ways`);
+  // hold keeps a single variant — stillness is its whole part.
+  const holdOpen = new Set();
+  for (let age = 0; age <= 40; age += 0.5) {
+    holdOpen.add(sampleMascot(3.21, { state: "hold", stateAge: age }).pose.open);
+  }
+  assert.equal(holdOpen.size, 1, "hold never varies");
+  // Variants are deterministic and seeded, not random.
+  const a = sampleMascot(3.21, { state: "thinking", stateAge: 17.3 }).pose;
+  const b = sampleMascot(3.21, { state: "thinking", stateAge: 17.3 }).pose;
+  assert.deepEqual(a, b);
+  // Reduced motion wears the drawn state, never the schedule.
+  const r1 = sampleMascot(3.21, { state: "idle", stateAge: 12, reducedMotion: true }).pose;
+  const r2 = sampleMascot(9.7, { state: "idle", stateAge: 33, reducedMotion: true }).pose;
+  assert.deepEqual(r1, r2);
+});
+
+test("scripted beats: the exhale sigh, thinking saccade, sleepy slow blink", () => {
+  // Exhale: lids grow heavy mid-beat (base lid is 0), then release.
+  const peak = sampleMascot(3.21, { state: "exhale", stateAge: 1.1 });
+  const base = sampleMascot(3.21, { state: "exhale", stateAge: 4 });
+  assert.ok(peak.eyes.lidLeft.height > base.eyes.lidLeft.height + 0.5, "the sigh closes in");
+  // Thinking: an upward saccade mid-cycle against a quiet point of the same t.
+  const up = sampleMascot(3.21, { state: "thinking", stateAge: 0.35 });
+  const flat = sampleMascot(3.21, { state: "thinking", stateAge: 2.4 });
+  assert.ok(up.gaze.y < flat.gaze.y - 0.4, "thinking looks up");
+  // Sleepy: a slow drowsy blink rides on the base 0.6 lid.
+  const drowsy = sampleMascot(3.21, { state: "sleepy", stateAge: 0.45 });
+  const awake = sampleMascot(3.21, { state: "sleepy", stateAge: 3.0 });
+  assert.ok(drowsy.eyes.lidLeft.height > awake.eyes.lidLeft.height + 1.5, "sleepy nods");
+  // None of it runs reduced.
+  const rA = sampleMascot(3.21, { state: "exhale", stateAge: 1.1, reducedMotion: true });
+  const rB = sampleMascot(3.21, { state: "exhale", stateAge: 4, reducedMotion: true });
+  assert.equal(rA.eyes.lidLeft.height, rB.eyes.lidLeft.height);
+});
+
+test("eyes compress on the far side of gaze — the sphere illusion", () => {
+  // Centred gaze: both eyes at (or whispering around) the drawn width.
+  const mid = sampleMascot(3.21, { state: "idle" }).eyes;
+  assert.ok(Math.abs(mid.left.rx - 3.2) < 0.2 && Math.abs(mid.right.rx - 3.2) < 0.2);
+  // Full gaze right: the right eye (toward the edge) narrows, the left
+  // eye keeps exactly its drawn width.
+  const right = sampleMascot(3.21, { state: "idle", gaze: { x: 2.4 } }).eyes;
+  assert.equal(right.left.rx, 3.2, "near eye keeps its width");
+  assert.ok(right.right.rx < 3.0, "eye toward the edge narrows");
+  assert.ok(right.right.rx >= 3.2 * (1 - 0.16) - 0.01, "never past the depth factor");
+  // Mirrored on the other side.
+  const left = sampleMascot(3.21, { state: "idle", gaze: { x: -2.4 } }).eyes;
+  assert.equal(left.right.rx, 3.2);
+  assert.ok(left.left.rx < 3.0);
+});
+
+test("eye tilts are mirrored and state-owned", () => {
+  const sleepy = sampleMascot(3.21, { state: "sleepy" }).eyes;
+  assert.equal(sleepy.left.tilt, -6, "heavy face: outer corners down");
+  assert.equal(sleepy.right.tilt, 6, "the right eye mirrors");
+  const bright = sampleMascot(3.21, { state: "bright" }).eyes;
+  assert.equal(bright.left.tilt, 3, "bright face: outer corners up");
+  assert.equal(bright.right.tilt, -3);
+  const idle = sampleMascot(3.21, { state: "idle" }).eyes;
+  assert.equal(idle.left.tilt, 0);
+  // Tilt blends with the pose, so a state change rotates the eyes smoothly.
+  const from = sampleMascot(3.21, { state: "idle", stateAge: 0.5 }).pose;
+  const midPose = sampleMascot(3.21, { state: "sleepy", from, stateAge: 0.25 }).pose;
+  assert.ok(midPose.tilt < 0 && midPose.tilt > -6, "tilt lerps through the blend");
+});
+
+test("bright companions perk on a seeded schedule; hush and quiet never do", () => {
+  let perkedAt = -1;
+  for (let t = 0; t <= 240; t += 0.05) {
+    if (sampleMascot(t, { state: "bright", presence: "companion" }).root.y < -1.2) {
+      perkedAt = t;
+      break;
+    }
+  }
+  assert.ok(perkedAt >= 0, "a spontaneous perk happens within four minutes");
+  assert.ok(perkedAt > 5, "never right after state entry");
+  // Hushed companions never perk.
+  for (let t = 0; t <= 240; t += 0.1) {
+    assert.ok(sampleMascot(t, { state: "bright", presence: "companion", hush: 1 }).root.y >= 0);
+  }
+  // Quiet presence never perks (its gentle 6s bob tops out near -0.35),
+  // and idle companions never do either.
+  for (let t = 0; t <= 240; t += 0.1) {
+    assert.ok(sampleMascot(t, { state: "bright", presence: "quiet" }).root.y > -0.8);
+    assert.ok(sampleMascot(t, { state: "idle", presence: "companion" }).root.y > -1.2);
+  }
+});
+
+test("hop touchdown carries a decaying wobble, and still parks on rest", () => {
+  const base = sampleMascot(5, { state: "idle", presence: "quiet" });
+  const act = (age) => sampleMascot(5, { state: "idle", presence: "quiet", reaction: { name: "hop", age } });
+  // The squash window is non-monotonic: one counter-oscillation inside.
+  const ys = [0.432, 0.445, 0.458, 0.47, 0.482].map((age) => act(age).root.sy);
+  const rises = ys.filter((y, i) => i > 0 && y > ys[i - 1]).length;
+  const falls = ys.filter((y, i) => i > 0 && y < ys[i - 1]).length;
+  assert.ok(rises >= 1 && falls >= 1, "the landing wobbles, not just squashes");
+  // The old pins still hold: touchdown squashes below rest, then parks exactly.
+  assert.ok(act(0.46).root.sy < base.root.sy);
+  assert.ok(act(0.46).root.y > base.root.y);
+  assert.deepEqual(act(0.499), base);
+  assert.deepEqual(act(0.5), base);
 });

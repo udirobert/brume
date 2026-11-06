@@ -21,6 +21,19 @@ from the frozen displayed pose), and one-shot `react("hop"|"settle"|"celebrate"|
 layers on top; reduced motion disables bob, blinks, drift, blends and
 reactions. Colours come from `--brume-mascot-*` tokens in
 `brand.css`. Focused test: `node --test test/mascot.mjs` (in `anna/`).
+Expressiveness doctrine (2026-11-07): states are schedules, not poses —
+seeded `STATE_VARIANTS` dwell on `stateAge` (variant 0 is the drawn
+state; hold/topup never vary), exhale/thinking/sleepy each own one
+scripted beat, and far expression changes land inside a forced blink
+(the breath loop is exempt). Blinks are a seeded aperiodic schedule with
+18 % doubles; eyes carry sphere-depth narrowing plus mirrored per-state
+`EYE_TILTS`; bright/proud companions perk spontaneously ~1 per 40 s.
+The adapter's `lookAt: Element` aims the gaze (Home points it at the mic
+while listening, the suggested word after a match, the help card when
+blocked; a hand-choice or a miss releases it). Every behaviour is a pure
+function of (t, options) and gated off under reduced motion — the pose
+stays, the schedule goes. MotionLab's "Mascot schedules" board keeps the
+proof frames.
 
 Verification (run from `anna/`, all free):
 

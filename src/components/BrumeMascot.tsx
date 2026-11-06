@@ -38,6 +38,8 @@ export interface BrumeMascotProps {
   tapReaction?: MascotReaction;
   demeanor?: RoomDemeanor;
   allowTapEscalation?: boolean;
+  /** Aim the companion's attention at an element while it's there. */
+  lookAt?: HTMLElement | null;
   /** Shared layoutId makes the sprite travel between mount points. */
   layoutId?: string;
 }
@@ -62,6 +64,7 @@ export function BrumeMascot({
   tapReaction,
   demeanor = "open",
   allowTapEscalation = true,
+  lookAt,
   layoutId,
 }: BrumeMascotProps) {
   const hostRef = useRef<HTMLElement>(null);
@@ -158,6 +161,11 @@ export function BrumeMascot({
   useEffect(() => {
     handleRef.current?.setOptions({ avatar: avatarForDemeanor(demeanor) });
   }, [demeanor]);
+
+  useEffect(() => {
+    // null falls back to the pointer/wander gaze inside the adapter.
+    handleRef.current?.setOptions({ lookAt: lookAt ?? undefined });
+  }, [lookAt]);
 
   useEffect(() => {
     handleRef.current?.setState(state);

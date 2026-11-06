@@ -3,13 +3,15 @@ import type { BrumeMascotState, MascotPresence, MascotReaction, SampleMascotOpti
 export interface CreateMascotOptions extends SampleMascotOptions {
   autoAnimate?: boolean;
   trackPointer?: boolean;
+  /** Aim the sprite's gaze at a live element; resolved every frame. */
+  lookAt?: Element | null;
 }
 
 export interface MascotHandle {
   setState: (name: BrumeMascotState) => void;
   setBreath: (scale01: number) => void;
   setOptions: (partial: Partial<CreateMascotOptions>) => void;
-  renderAt: (timeSeconds: number, overrides?: SampleMascotOptions) => void;
+  renderAt: (timeSeconds: number, overrides?: Partial<CreateMascotOptions>) => void;
   react: (name: MascotReaction) => void;
   /** One-shot flight smear: direction vector + strength 0..1 (default 1). */
   smearFrom: (v: { x: number; y: number; strength?: number }) => void;

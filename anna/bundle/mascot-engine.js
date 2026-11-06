@@ -14,6 +14,13 @@
  *   droops on sleepy.
  * - Transitions blend the whole pose (including silhouette keys)
  *   from a frozen displayed pose over 0.5s, easeOutQuint.
+ * - Expressiveness pass (the grokbot-face + bloub lessons): states are
+ *   schedules, not poses — seeded micro-expression cycles keyed on
+ *   stateAge, scripted beats for exhale/thinking/sleepy, far expression
+ *   changes masked by a forced blink, sphere-depth eye compression plus
+ *   mirrored eye tilts on gaze, an aperiodic seeded blink schedule with
+ *   double blinks, and rare spontaneous perks in bright/proud
+ *   companions. Everything stays a pure function of (t, options).
  */
 export const MASCOT_STATES = Object.freeze([
   "idle",
@@ -211,9 +218,15 @@ const EXPRESSIONS = Object.freeze({
   tender:    { open: 0.85, dy: 0.9, lid: 0.3, mouth: "smile" },
 });
 
-const BLINK_PERIOD = 20;
-const BLINK_TIMES = [4.8, 10.4, 17.2];
+// Blinking is a seeded aperiodic schedule, not a metronome: two
+// candidate slots per BLINK_CELL seconds, each firing with its own
+// probability at a jittered offset; ~18% of fired blinks are followed
+// by a double 0.32 s later. Pure in t — pause/resume and tests repeat
+// exactly, and no two minutes blink alike.
+const BLINK_CELL = 4;
 const BLINK_HALF = 0.14;
+const DOUBLE_BLINK_P = 0.18;
+const DOUBLE_BLINK_GAP = 0.32;
 
 const GAZE_MAX_X = 2.4;
 const GAZE_MAX_Y = 1.8;
@@ -264,6 +277,12 @@ const outBack = (x) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);
 /** Normalised 0..1 progress of p within the [a, b] window. */
 const seg = (p, a, b) => clamp((p - a) / (b - a), 0, 1);
 
+/** Deterministic 0..1 hash of two integers — the seeded schedule glue. */
+function hash01(n, salt) {
+  const v = Math.sin(n * 127.1 + salt * 311.7) * 43758.5453;
+  return v - Math.floor(v);
+}
+
 function lookBias(t) {
   if (!isFiniteNum(t) || t < 0) return { x: 0, y: 0 };
   const idx = Math.floor(t / LOOK_PERIOD);
@@ -313,7 +332,7 @@ function reactionCurve(name, rawP) {
   const segP = (a, b) => seg(p, a, b);
 
   if (name === "hop") {
-    const crouch = { dy: 2.2, sx: 1.02, sy: 0.95, open: 0.85 };
+    const crouch = { dy: 2.5, sx: 1.03, sy: 0.94, open: 0.82 };
     const apex = { dy: -6.5, sx: 0.96, sy: 1.06, open: 1.18 };
     if (p < 0.14) {
       const k = outQuad(segP(0, 0.14));
@@ -342,7 +361,12 @@ function reactionCurve(name, rawP) {
     // Touchdown: compression rises to its peak and returns to 0 —
     // continuous with the fall above and with rest below.
     if (p < 0.97) {
-      const squash = Math.sin(Math.PI * segP(0.86, 0.97));
+      // Touchdown with a velocity wobble: the primary squash plus one
+      // decaying counter-oscillation, so the landing reads as mass, not
+      // a keyframe. Both terms are 0 at the window's edges.
+      const sp = segP(0.86, 0.97);
+      const squash = Math.sin(Math.PI * sp)
+        * (1 - 0.22 * Math.sin(2 * Math.PI * sp) * (1 - sp));
       return { dy: 1.4 * squash, sx: 1 + 0.05 * squash, sy: 1 - 0.07 * squash, open: 1, cheek: 0, wisps: 0, mouth: null };
     }
     return REACTION_REST;
@@ -513,16 +537,109 @@ export function breathAmount(phase, progress01) {
   }
 }
 
+const blinkPulse = (dt) =>
+  Math.abs(dt) < BLINK_HALF ? 0.5 * (1 + Math.cos((Math.PI * dt) / BLINK_HALF)) : 0;
+
 function blinkOpen(t) {
-  const m = ((t % BLINK_PERIOD) + BLINK_PERIOD) % BLINK_PERIOD;
   let closed = 0;
-  for (const bt of BLINK_TIMES) {
-    const dt = Math.abs(m - bt);
-    if (dt < BLINK_HALF) {
-      closed = Math.max(closed, 0.5 * (1 + Math.cos((Math.PI * dt) / BLINK_HALF)));
+  const cell = Math.floor(t / BLINK_CELL);
+  for (let c = cell - 1; c <= cell; c += 1) {
+    for (let slot = 0; slot < 2; slot += 1) {
+      const p = slot === 0 ? 0.55 : 0.3;
+      if (hash01(c, slot * 3 + 11) >= p) continue;
+      const start = c * BLINK_CELL + 0.4 + hash01(c, slot * 3 + 12) * (BLINK_CELL - 1.2);
+      closed = Math.max(closed, blinkPulse(t - start));
+      if (hash01(c, slot * 3 + 13) < DOUBLE_BLINK_P) {
+        closed = Math.max(closed, blinkPulse(t - start - DOUBLE_BLINK_GAP));
+      }
     }
   }
   return 1 - (1 - 0.12) * closed;
+}
+
+// States are schedules, not poses: each state rotates through small
+// expression variants on seeded dwell times keyed on stateAge. Variant
+// zero is always the identity, so a fresh state enters as drawn and
+// then starts living. hold/topup keep a single variant — stillness and
+// the puff are their whole part.
+const STATE_VARIANTS = Object.freeze({
+  idle:     Object.freeze([Object.freeze({}), Object.freeze({ mouth: "flat" }), Object.freeze({ dy: 0.3 }), Object.freeze({ open: 1.08 })]),
+  thinking: Object.freeze([Object.freeze({}), Object.freeze({ dy: -2.7 }), Object.freeze({ mouth: "closed" }), Object.freeze({ dy: -1.4, lid: 0.1 })]),
+  watching: Object.freeze([Object.freeze({}), Object.freeze({ open: 1.3 }), Object.freeze({ dy: -0.4 }), Object.freeze({ lid: 0.08 })]),
+  bright:   Object.freeze([Object.freeze({}), Object.freeze({ open: 1.35 }), Object.freeze({ mouth: "open" }), Object.freeze({ dy: -0.4 })]),
+  tender:   Object.freeze([Object.freeze({}), Object.freeze({ lid: 0.42 }), Object.freeze({ dy: 1.2 }), Object.freeze({ mouth: "closed" })]),
+  proud:    Object.freeze([Object.freeze({}), Object.freeze({ dy: -0.5 }), Object.freeze({ mouth: "open" })]),
+  sleepy:   Object.freeze([Object.freeze({}), Object.freeze({ lid: 0.72 }), Object.freeze({ dy: 2.1 })]),
+  hum:      Object.freeze([Object.freeze({}), Object.freeze({ mouth: "closed" }), Object.freeze({ dy: 0.4 })]),
+  stretch:  Object.freeze([Object.freeze({}), Object.freeze({ open: 1.2 }), Object.freeze({ dy: -0.5 })]),
+  inhale:   Object.freeze([Object.freeze({}), Object.freeze({ open: 1.08 })]),
+  exhale:   Object.freeze([Object.freeze({}), Object.freeze({ lid: 0.12 })]),
+  hold:     Object.freeze([Object.freeze({})]),
+  topup:    Object.freeze([Object.freeze({})]),
+});
+
+function stateSalt(state) {
+  let salt = 0;
+  for (let i = 0; i < state.length; i += 1) salt += state.charCodeAt(i) * (i + 7);
+  return salt;
+}
+
+function microVariant(state, stateAge) {
+  const list = STATE_VARIANTS[state];
+  if (!list || list.length < 2 || !isFiniteNum(stateAge)) return list ? list[0] : null;
+  const salt = stateSalt(state);
+  const age = Math.max(0, stateAge);
+  let at = 0;
+  let idx = 0;
+  for (let step = 0; step < 64; step += 1) {
+    const dwell = 3.2 + hash01(salt + idx * 13 + step, 7) * 3.4;
+    if (age < at + dwell) break;
+    at += dwell;
+    idx = (idx + 1 + Math.floor(hash01(salt + step, 9) * (list.length - 1))) % list.length;
+  }
+  return list[idx];
+}
+
+// Mirrored eye tilts per state — outer corners down for the heavy and
+// drowsy faces, up for the bright ones. Sign convention: the value is
+// the LEFT eye's rotation in degrees (SVG y-down), the right eye takes
+// the mirror. Negative drops the outer corner.
+const EYE_TILTS = Object.freeze({
+  sleepy: -6, exhale: -3.5, tender: -3, hold: -2,
+  bright: 3, proud: 2.5, stretch: 2,
+});
+
+// The sphere-depth factor: looking sideways, the eye toward the edge
+// compresses — the whole illusion of volume on a flat sprite.
+const EYE_DEPTH_K = 0.16;
+
+// Rare spontaneous perk for bright/proud companions: a seeded schedule
+// on absolute t, roughly one per 40 s — a small un-prompted lift of the
+// body. Delight that never asks for an event.
+const PERK_CELL = 12;
+const PERK_DURATION = 0.6;
+
+function perkPulse(t) {
+  const cell = Math.floor(t / PERK_CELL);
+  for (let c = cell - 1; c <= cell; c += 1) {
+    if (hash01(c, 41) > 0.3) continue;
+    const start = c * PERK_CELL + 2 + hash01(c, 42) * (PERK_CELL - 3);
+    const dt = t - start;
+    if (dt >= 0 && dt < PERK_DURATION) return Math.sin((Math.PI * dt) / PERK_DURATION);
+  }
+  return 0;
+}
+
+// The breath-loop states flow into each other every cycle — masking
+// those transitions with blinks would be a metronome, not a character.
+const BREATH_LOOP = new Set(["inhale", "topup", "hold", "exhale"]);
+
+/** How far apart two poses read, expression-wise (breath excluded). */
+function poseDistance(a, b) {
+  let d = Math.abs((a.lid ?? 0) - (b.lid ?? 0));
+  d += Math.abs((a.dy ?? 0) - (b.dy ?? 0)) / 4;
+  if (a.mouth !== b.mouth) d += 1;
+  return d;
 }
 
 export function sampleMascot(timeSeconds, options = {}) {
@@ -553,7 +670,20 @@ export function sampleMascot(timeSeconds, options = {}) {
 
   let open = expr.open;
   let dy = expr.dy;
-  const lid = expr.lid;
+  let lid = expr.lid;
+  let mouthKey = expr.mouth;
+
+  // The state's schedule: a seeded micro-variant keyed on stateAge.
+  // Identity at age 0, so every state still enters exactly as drawn.
+  if (!reduced) {
+    const variant = microVariant(state, opts.stateAge);
+    if (variant) {
+      if (variant.mouth) mouthKey = variant.mouth;
+      dy += variant.dy || 0;
+      open += variant.open || 0;
+      lid += variant.lid || 0;
+    }
+  }
 
   let lookX = 0;
   let lookY = 0;
@@ -565,6 +695,23 @@ export function sampleMascot(timeSeconds, options = {}) {
   if (lookOff) {
     lookX = clamp(lookX + lookOff.x, -GAZE_MAX_X, GAZE_MAX_X);
     lookY = clamp(lookY + lookOff.y, -GAZE_MAX_Y, GAZE_MAX_Y);
+  }
+
+  if (!reduced && isFiniteNum(opts.stateAge)) {
+    // Scripted beats — one small narrative per state, keyed on stateAge:
+    // the sigh on exhale, the upward saccade of thinking, the slow
+    // drowsy blink of sleepy. States that own their stillness (hold)
+    // keep none.
+    const age = opts.stateAge;
+    if (state === "exhale" && age < 2.2) {
+      lid += 0.2 * Math.sin(Math.PI * clamp(age / 2.2, 0, 1));
+    } else if (state === "thinking") {
+      const cyc = age % 3.1;
+      if (cyc < 0.7) lookY += -0.7 * Math.sin(Math.PI * (cyc / 0.7));
+    } else if (state === "sleepy") {
+      const cyc = age % 5.6;
+      if (cyc < 0.9) lid += 0.3 * Math.sin(Math.PI * (cyc / 0.9));
+    }
   }
 
   if (!reduced) {
@@ -591,13 +738,15 @@ export function sampleMascot(timeSeconds, options = {}) {
     lid,
     lookX,
     lookY,
-    mouth: avatar.mouths[expr.mouth],
+    mouth: avatar.mouths[mouthKey],
     cheek: cheekTarget,
     arms: state === "stretch" ? 1 : 0,
     wisps: wisped ? 1 : 0,
     waves: state === "hum" ? 0.8 : 0,
     swirl: state === "thinking" ? 0.8 : 0,
     bodyScale: bodyScaleTarget,
+    // Mirrored eye tilt — the state's facial grammar.
+    tilt: EYE_TILTS[state] || 0,
     // Silhouette deltas — the state's actual shape in pose space.
     ...(BODY_POSES[state] || NEUTRAL_BODY),
   };
@@ -621,10 +770,23 @@ export function sampleMascot(timeSeconds, options = {}) {
     waves: num("waves"),
     swirl: num("swirl"),
     bodyScale: num("bodyScale"),
+    tilt: num("tilt"),
     b0x: num("b0x"), b0y: num("b0y"), b0d: num("b0d"),
     b1x: num("b1x"), b1y: num("b1y"), b1d: num("b1d"),
     b2x: num("b2x"), b2y: num("b2y"), b2d: num("b2d"),
   };
+
+  // A far expression change is hidden inside a forced blink — the
+  // bloub lesson. Only outside the breath loop (those flow every
+  // cycle), only during the blend window, and sin(0) = sin(pi) = 0,
+  // so the blend's two endpoints stay exact.
+  if (from && !reduced && stateAge < 0.5
+      && !BREATH_LOOP.has(state)) {
+    const dist = poseDistance(from, target);
+    if (dist > 0.75) {
+      pose.open *= 1 - 0.88 * Math.sin(Math.PI * clamp(stateAge / 0.5, 0, 1));
+    }
+  }
 
   const rName = opts.reaction && typeof opts.reaction === "object"
       && MASCOT_REACTIONS.includes(opts.reaction.name)
@@ -664,20 +826,28 @@ export function sampleMascot(timeSeconds, options = {}) {
   const eyeBase = avatar.eyes;
   const ry = Math.max(0.4, eyeBase.ry * pose.open);
   const lidHeight = 9 * pose.lid;
+  // Sphere depth: the eye toward the edge we look to compresses — the
+  // near eye keeps its drawn width. Subtle: 16% at full gaze.
+  const gxn = clamp(gazeX / GAZE_MAX_X, -1, 1);
+  const rxL = eyeBase.rx * (1 - EYE_DEPTH_K * Math.max(0, -gxn));
+  const rxR = eyeBase.rx * (1 - EYE_DEPTH_K * Math.max(0, gxn));
+  const tilt = pose.tilt;
   const eyes = {
-    left: { cx: eyeBase.leftX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: eyeBase.rx, ry },
-    right: { cx: eyeBase.rightX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: eyeBase.rx, ry },
+    left: { cx: eyeBase.leftX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: rxL, ry, tilt },
+    right: { cx: eyeBase.rightX + gazeX, cy: eyeBase.y + pose.dy + gazeY, rx: rxR, ry, tilt: -tilt },
     lidLeft: {
       x: eyeBase.leftX + gazeX - 4,
       y: eyeBase.y - 4 + pose.dy + gazeY,
       width: 8,
       height: lidHeight,
+      tilt,
     },
     lidRight: {
       x: eyeBase.rightX + gazeX - 4,
       y: eyeBase.y - 4 + pose.dy + gazeY,
       width: 8,
       height: lidHeight,
+      tilt: -tilt,
     },
   };
 
@@ -699,6 +869,15 @@ export function sampleMascot(timeSeconds, options = {}) {
       : 1;
     root.sx = puff;
     root.sy = puff;
+    if (companion && (state === "bright" || state === "proud")) {
+      // A rare un-prompted lift — the schedule decides, never an RNG.
+      const perk = perkPulse(t) * (1 - hush);
+      if (perk > 0) {
+        root.y -= 2.4 * perk;
+        root.sy *= 1 + 0.035 * perk;
+        root.sx *= 1 - 0.02 * perk;
+      }
+    }
     if (rActive) {
       root.y += rc.dy;
       root.sx *= rc.sx;

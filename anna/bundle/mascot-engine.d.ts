@@ -10,6 +10,8 @@ export interface MascotPose {
   open: number;
   dy: number;
   lid: number;
+  /** Degrees — the state's mirrored eye tilt (left eye; right mirrors). */
+  tilt: number;
   lookX: number;
   lookY: number;
   mouth: string;
@@ -76,10 +78,10 @@ export interface MascotFrame {
     prims: { sx: number; sy: number; dy: number }[];
   };
   eyes: {
-    left: { cx: number; cy: number; rx: number; ry: number };
-    right: { cx: number; cy: number; rx: number; ry: number };
-    lidLeft: { x: number; y: number; width: number; height: number };
-    lidRight: { x: number; y: number; width: number; height: number };
+    left: { cx: number; cy: number; rx: number; ry: number; tilt: number };
+    right: { cx: number; cy: number; rx: number; ry: number; tilt: number };
+    lidLeft: { x: number; y: number; width: number; height: number; tilt: number };
+    lidRight: { x: number; y: number; width: number; height: number; tilt: number };
   };
   mouth: { d: string; dx: number; dy: number };
   gaze: { x: number; y: number };

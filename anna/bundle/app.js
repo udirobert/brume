@@ -22,6 +22,7 @@ import {
   phaseWord,
   cleanReflection,
   summarizeHistory,
+  preparationMemoryLine,
 } from "./plan.js";
 import {
   PACE_LEVELS,
@@ -620,27 +621,14 @@ async function refreshHomeMeta() {
         els.lastPrepSub.textContent = `${v.event ? v.event.slice(0, 60) : "Saved card"} · ${new Date(v.completedAt).toLocaleDateString()}`;
         els.btnLastPrep.hidden = false;
       }
-      // Memory as reflection (no scores, no streaks): a quiet, observational
-      // line built only from closed-set fields already stored. The room
-      // remembers that you prepared; it never grades the preparation.
+      // Memory as reflection (no scores, no streaks, no typed text): names a
+      // kind of preparation that recurred, from the closed `kind` field only,
+      // and stays hidden until one has.
       if (els.memoryLine) {
         try {
-          let count = 0;
-          if (anna?.storage?.list) {
-            const res = unwrapHostResponse(
-              await anna.storage.list({ prefix: "ready/sessions/", scope: "user" }),
-            );
-            count = (res?.keys || res?.items || []).length;
-          }
-          if (v && v.completedAt) {
-            const phrase = count > 1
-              ? `The room remembers ${count} preparations. Last: ${v.event ? v.event.slice(0, 40) : "a conversation"}.`
-              : `The room remembers your last preparation: ${v.event ? v.event.slice(0, 40) : "a conversation"}.`;
-            els.memoryLine.textContent = phrase;
-            els.memoryLine.hidden = false;
-          } else {
-            els.memoryLine.hidden = true;
-          }
+          const line = preparationMemoryLine(await loadReadySessions(anna));
+          els.memoryLine.textContent = line || "";
+          els.memoryLine.hidden = !line;
         } catch {
           els.memoryLine.hidden = true;
         }

@@ -218,6 +218,31 @@
       "name": "clean two sentences",
       "raw": "You ended a little early and that is fine. Head into the call with the same easy pace.",
       "expect": "You ended a little early and that is fine. Head into the call with the same easy pace."
+    },
+    {
+      "name": "outcome claim -> fallback",
+      "raw": "It helped you calm down. Head back to the call.",
+      "expect": "FALLBACK"
+    },
+    {
+      "name": "outcome claim: that worked -> fallback",
+      "raw": "That worked well for you last time. Take the same pace into the call.",
+      "expect": "FALLBACK"
+    },
+    {
+      "name": "outcome claim: thanks to -> fallback",
+      "raw": "Thanks to the breath you are ready. Open the doc.",
+      "expect": "FALLBACK"
+    },
+    {
+      "name": "plain 'worked through' is a fact, not a claim",
+      "raw": "You worked through all 10 cycles. Open the report and list the headings first.",
+      "expect": "You worked through all 10 cycles. Open the report and list the headings first."
+    },
+    {
+      "name": "observational history is allowed",
+      "raw": "This is your third box round this week. Open the report and list the headings first.",
+      "expect": "This is your third box round this week. Open the report and list the headings first."
     }
   ],
   "agent_args": [
@@ -486,6 +511,105 @@
     {
       "text": "A steady rhythm for the minutes before your call.",
       "expect": "pass"
+    }
+  ],
+  "preparation_memory": [
+    {
+      "name": "no sessions",
+      "sessions": [],
+      "expect": null
+    },
+    {
+      "name": "one is not a pattern",
+      "sessions": [
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-01T10:00:00Z"
+        }
+      ],
+      "expect": null
+    },
+    {
+      "name": "two interviews",
+      "sessions": [
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-01T10:00:00Z"
+        },
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-02T10:00:00Z"
+        }
+      ],
+      "expect": "Interviews, twice."
+    },
+    {
+      "name": "most common wins",
+      "sessions": [
+        {
+          "kind": "meeting",
+          "completedAt": "2026-11-01T10:00:00Z"
+        },
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-02T10:00:00Z"
+        },
+        {
+          "kind": "meeting",
+          "completedAt": "2026-11-03T10:00:00Z"
+        },
+        {
+          "kind": "meeting",
+          "completedAt": "2026-11-04T10:00:00Z"
+        },
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-05T10:00:00Z"
+        }
+      ],
+      "expect": "Meetings, three times."
+    },
+    {
+      "name": "tie goes to the most recent",
+      "sessions": [
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-01T10:00:00Z"
+        },
+        {
+          "kind": "interview",
+          "completedAt": "2026-11-02T10:00:00Z"
+        },
+        {
+          "kind": "presentation",
+          "completedAt": "2026-11-03T10:00:00Z"
+        },
+        {
+          "kind": "presentation",
+          "completedAt": "2026-11-04T10:00:00Z"
+        }
+      ],
+      "expect": "Presentations, twice."
+    },
+    {
+      "name": "typed text and unknown kinds are ignored",
+      "sessions": [
+        {
+          "kind": "my secret plan to quit",
+          "event": "quit job",
+          "completedAt": "2026-11-01T10:00:00Z"
+        },
+        {
+          "kind": "my secret plan to quit",
+          "event": "quit job",
+          "completedAt": "2026-11-02T10:00:00Z"
+        },
+        {
+          "kind": null,
+          "completedAt": "2026-11-03T10:00:00Z"
+        }
+      ],
+      "expect": null
     }
   ]
 }

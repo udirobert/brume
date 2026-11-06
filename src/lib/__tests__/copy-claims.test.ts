@@ -19,6 +19,8 @@ import {
 import { HOME_FEELING_COPY, FEELINGS } from "../feelings";
 import { CHECKIN_REASONS } from "../checkinLedger";
 import { sessionGreeting } from "../spokenGreeting";
+import { memoryLine } from "../memoryLine";
+import type { LedgerEntry } from "../checkinLedger";
 import { appendRoomLink, buildQuietPauseIcs, invitationShareText } from "../invitation";
 
 const BANNED =
@@ -128,6 +130,29 @@ describe("check-in copy", () => {
     }
     for (const str of strings) {
       expect(str, `"${str}"`).not.toMatch(BANNED);
+    }
+  });
+
+  it("the memory line, for every feeling and part of the day, is rhythm-only", () => {
+    const now = Date.UTC(2026, 10, 6, 12);
+    const lines: string[] = [];
+    for (let f = 0; f < FEELINGS.length; f++) {
+      for (const p of ["dawn", "day", "dusk", "night"] as const) {
+        const rows: LedgerEntry[] = Array.from({ length: 7 }, (_, i) => ({
+          t: now - (i + 1) * 3_600_000,
+          f,
+          r: null,
+          p,
+        }));
+        const line = memoryLine(rows, now);
+        expect(line, `${f}/${p}`).not.toBeNull();
+        lines.push(line!);
+      }
+    }
+    for (const str of lines) {
+      expect(str, `"${str}"`).not.toMatch(BANNED);
+      // It names a feeling's own phrase, never a verdict or a number.
+      expect(str, `"${str}"`).not.toMatch(/\d|better|worse|improv|progress|streak|score/i);
     }
   });
 });

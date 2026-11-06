@@ -354,6 +354,13 @@ HEALTH_CLAIM_RE = re.compile(
 
 
 
+# Outcome-claim backstop for reflections — mirror of OUTCOME_CLAIM_RE in
+# bundle/plan.js (see plan-cases.json "reflection_outputs").
+OUTCOME_CLAIM_RE = re.compile(
+    r"\b(helped|improved|caused|led to|resulted in|made you (calmer|relaxed|settled)|because of the (breath|practice|reset)|thanks to|effective(ly)?|benefit(?:ed|s)?|(it|this|that|which|they|breathing|the (breath|reset|practice)) (has |have |really )?worked)\b",
+    re.IGNORECASE,
+)
+
 _STRIP_RE = re.compile(
     "[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2060\\ufeff\\ufe0f"
     "\\U0001f000-\\U0001faff\\u2600-\\u27bf\\u2b00-\\u2bff]"
@@ -639,7 +646,12 @@ def clean_reflection(raw: Any) -> str:
         or (text.startswith("'") and text.endswith("'"))
     ):
         text = text[1:-1].strip()
-    if not text or text.startswith("{") or HEALTH_CLAIM_RE.search(text):
+    if (
+        not text
+        or text.startswith("{")
+        or HEALTH_CLAIM_RE.search(text)
+        or OUTCOME_CLAIM_RE.search(text)
+    ):
         return FALLBACK_REFLECTION
     return text[:300].strip()
 

@@ -12,7 +12,9 @@ import { applyFeel } from "@/lib/feelTheme";
 import { track } from "@/lib/events";
 import { feelingAt, HOME_FEELING_COPY, isPositiveFeel } from "@/lib/feelings";
 import { recordCheckIn, readLedger } from "@/lib/checkinLedger";
-import { useRoomExperience, rememberedMaterialFromFeelings } from "@/lib/roomExperience";
+import { useRoomExperience } from "@/lib/roomExperience";
+import { e6Arm } from "@/lib/arms";
+import { memoryTreatment } from "@/lib/memoryLine";
 import { RoomSettings } from "@/components/atmosphere/RoomControls";
 import { useSessionStore } from "@/stores/sessionStore";
 import { formatPhases, getPattern } from "@/lib/breathingPatterns";
@@ -146,35 +148,12 @@ export default function Index() {
     });
   };
 
+  // Decided once on arrival, not on every ledger write: a line that flipped
+  // the moment you tapped a word would be a receipt, not a memory.
   useEffect(() => {
-    try {
-      const entries = readLedger();
-      if (!entries.length) {
-        setMemoryLine(null);
-        return;
-      }
-      const last = entries[entries.length - 1];
-      const word = feelingAt(last.f)?.label ?? null;
-      const count = entries.length;
-      const line =
-        count > 1
-          ? `The room remembers ${count} check-ins. Last: ${word ?? "a moment"}${last.p ? ` · ${last.p}` : ""}.`
-          : `The room remembers your last check-in: ${word ?? "a moment"}${last.p ? ` · ${last.p}` : ""}.`;
-      setMemoryLine(line);
-    } catch {
-      setMemoryLine(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const entries = readLedger();
-      const indices = entries.map((e) => e.f);
-      const m = rememberedMaterialFromFeelings(indices);
-      useRoomExperience.getState().setRememberedMaterial(m);
-    } catch {
-      useRoomExperience.getState().setRememberedMaterial(null);
-    }
+    const { line, material } = memoryTreatment(readLedger(), e6Arm());
+    setMemoryLine(line);
+    useRoomExperience.getState().setRememberedMaterial(material);
   }, []);
 
   return (
@@ -215,7 +194,7 @@ export default function Index() {
       {feelTap !== null && <CheckInReasons feeling={feelTap} />}
 
       {memoryLine && (
-        <p className="brume-home__memory text-sm text-muted-foreground" aria-live="polite">
+        <p className="brume-home__memory text-sm text-muted-foreground">
           {memoryLine}
         </p>
       )}

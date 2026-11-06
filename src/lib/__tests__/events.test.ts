@@ -109,6 +109,8 @@ describe("recordVisit", () => {
     recordVisit(day(4));
     expect(Number(window.localStorage.getItem("brume/first-seen"))).toBeGreaterThan(0);
     expect(Number(window.localStorage.getItem("brume/last-visit"))).toBeGreaterThan(0);
-    expect(window.localStorage.length).toBe(2);
+    // The two day numbers, plus the E6 arm (arms.ts) the visit reports.
+    expect(window.localStorage.length).toBe(3);
+    expect(window.localStorage.getItem("brume/arm-e6")).toMatch(/^(control|line|line_room)$/);
   });
 });

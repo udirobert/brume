@@ -164,6 +164,7 @@ describe("the counter's side of the contract", () => {
     expect(wireFields("visit")).toEqual([
       ["days_since_first", "num"],
       ["days_since_last", "num"],
+      ["arm", "id"],
     ]);
     for (const name of Object.keys(WIRE) as Array<keyof typeof WIRE>) {
       for (const [key] of wireFields(name)) {
@@ -204,12 +205,36 @@ describe("the counter's arithmetic", () => {
     expect(day).toEqual({
       since_first: { "0": 1, "8-30": 1, "31+": 1 },
       gaps: { "3": 1, "31+": 1 },
+      by_arm: {},
       session_starts: 1,
       completes: { reset: 1 },
       abandons: { paused: 1 },
       after: { lighter: 1 },
       words: { shown: 1, own: 2, kept: 1 },
     });
+  });
+
+  it("splits the visit histograms by arm, and only by an arm on the list", () => {
+    const day = empty();
+    add(day, "visit", { days_since_first: 0, arm: "line" });
+    add(day, "visit", { days_since_first: 7, days_since_last: 7, arm: "control" });
+    add(day, "visit", { days_since_first: 7, days_since_last: 7, arm: "control" });
+    add(day, "visit", { days_since_first: 3, arm: "whatever_i_typed" });
+    expect(day.by_arm).toEqual({
+      line: { since_first: { "0": 1 }, gaps: {} },
+      control: { since_first: { "7": 2 }, gaps: { "7": 2 } },
+    });
+    // The unsplit totals still see every visit.
+    expect(day.since_first).toEqual({ "0": 1, "7": 2, "3": 1 });
+  });
+
+  it("carries the arm as an id on the wire and drops anything shaped like a sentence", () => {
+    track("visit", { days_since_first: 2, arm: "line_room" });
+    sendMetrics("visit", { days_since_first: 2, arm: "A whole sentence" });
+    expect(posted.map((p) => p.props)).toEqual([
+      { days_since_first: 2, arm: "line_room" },
+      { days_since_first: 2 },
+    ]);
   });
 
   it("counts the act of writing a sentence and drops the sentence", () => {

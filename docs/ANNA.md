@@ -818,3 +818,35 @@ sensing, closed-set ledger only.
   progression).
 - **Verified:** anna `npm test` green; web `vitest` 438/438, `tsc`
   clean.
+
+### 12.13 Corrections to 12.12 (2026-11-06, local, unpublished)
+
+A review of 12.12 found it had drifted from the doctrine it cites. What
+changed, and what the earlier entry got wrong:
+
+- **E6 is now an experiment.** 12.12 shipped the web memory line and the
+  remembered room material to everyone, with no control. They sit behind
+  `src/lib/arms.ts` now (control / line / line_room); the arm rides the
+  `visit` event as one closed id and the counter keeps `by_arm`
+  histograms. Privacy page names it.
+- **The web line is a pattern, not a tally.** "The room remembers 4
+  check-ins. Last: Restless · dusk." was a receipt. It is now
+  `memoryLine.ts`: gated at ≥7 entries, names a recurring feeling and
+  daypart ("Restless, three mornings this week."), silent otherwise.
+- **Anna's memory line no longer prints typed text.** 12.12 claimed
+  "closed-set stored fields" while interpolating `event.slice(0, 40)` —
+  the user's own sentence. It is now `preparationMemoryLine` in `plan.js`
+  (stored `kind` only: "Interviews, twice."), silent until a kind
+  recurs, pinned by `preparation_memory` cases in `plan-cases.json`.
+- **PostSession insight reverted** to "You practised {pattern}." The
+  per-pattern counter had no test, was race-prone against the save
+  effect, and was a progress number by another name.
+- **`OUTCOME_CLAIM_RE` was mirrored nowhere and over-broad.** The
+  Python executa did not have it (the plan.js header says the two share
+  one contract), and bare `worked` would have rejected "you worked through
+  all 10 cycles". Now mirrored in `brume_plugin.py` with `worked` only
+  matched as a claim ("that worked"), and covered by five new
+  `reflection_outputs` cases that both runtimes run.
+- **Verified:** `prompt-check reflection` against Gemini 3 Flash with a
+  history case — 4/4 shown, none replaced. `npm test` (anna), `python3 -m
+  unittest test_plan`, mcp `npm test`, web vitest/tsc/lint — see commit.

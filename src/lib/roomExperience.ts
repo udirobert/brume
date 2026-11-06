@@ -35,26 +35,27 @@ export function demeanorForFeel(index: number | null | undefined): RoomDemeanor 
 }
 
 /**
- * Art-as-artifact: a remembered room material derived only from closed-set
- * ledger entries (feeling index). Majority material of the recent entries,
- * falling back to the most recent. Returns null when there is no history.
- * No free text, no scores — a skin, not a surface.
+ * Art-as-artifact (E6a): a remembered room material derived only from
+ * closed-set ledger entries (feeling index). The majority material of the
+ * last seven entries; a tie goes to the most recent. Null when there is no
+ * usable history. No free text, no scores — a skin, not a surface.
  */
 export function rememberedMaterialFromFeelings(feelIndices: ReadonlyArray<number | null | undefined>): RoomMaterial | null {
-  const valid = feelIndices
-    .map((i) => (typeof i === "number" && Number.isInteger(i) ? i : null))
-    .filter((i): i is number => i !== null);
-  if (!valid.length) return null;
-  const recent = valid.slice(-7);
+  const recent = feelIndices
+    .filter((i): i is number => feelingAt(i) !== null)
+    .slice(-7)
+    .map((i) => materialForFeel(i));
+  if (!recent.length) return null;
   const counts = new Map<RoomMaterial, number>();
-  for (const i of recent) {
-    const m = materialForFeel(i);
-    counts.set(m, (counts.get(m) ?? 0) + 1);
-  }
-  let best: RoomMaterial = materialForFeel(recent[recent.length - 1]);
-  let bestN = 0;
-  for (const [m, n] of counts) {
-    if (n > bestN) { bestN = n; best = m; }
+  for (const m of recent) counts.set(m, (counts.get(m) ?? 0) + 1);
+  let best = recent[recent.length - 1];
+  let bestN = counts.get(best) ?? 0;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const n = counts.get(recent[i]) ?? 0;
+    if (n > bestN) {
+      best = recent[i];
+      bestN = n;
+    }
   }
   return best;
 }

@@ -123,10 +123,12 @@ export const HEALTH_CLAIM_RE =
   /physiolog|arousal|nervous system|vagus|vagal|cortisol|hormon|testosterone|heart rate|\bhrv\b|blood pressure|relaxation response|parasympathetic|sympathetic nervous|fight.or.flight|your (body|system|brain|nervous system) (will|can|is going to)|\b(lowers?|reduces?|decreases?) (your )?(stress|anxiety|tension|cortisol|heart rate|blood pressure)|research (shows|suggests|finds|found)|studies (show|suggest|find|found)|study (shows|found|finds)|scientifically|clinically|proven to|\banxiety\b|insomnia|\b(cure|cures|heal|heals|healing|therapy|therapeutic|treatment)\b|\bhelps? (to |you |your )?(calm|relax|settle|soothe)\b|\bhelps? your (body|system|brain|mind|nerves|nervous system)\b|\byour (body|system|brain|mind) (will|can|is going to|to)\b/i
 
 // Outcome-claim backstop for reflections: even an observational memory
-// reference can slip into causal/benefit language ("it helped", "worked").
-// Such phrasing is replaced by the fallback note.
+// reference can slip into causal/benefit language ("it helped", "that
+// worked"). Such phrasing is replaced by the fallback note. "worked" alone
+// is NOT matched — "you worked through all ten cycles" is a fact.
+// Mirrored in executas/brume/brume_plugin.py; cases in plan-cases.json.
 export const OUTCOME_CLAIM_RE =
-  /\b(helped|worked|improved|caused|led to|resulted in|made you (calmer|relaxed|settled)|because of the (breath|practice|reset)|thanks to|effective|benefit(?:ed|s)?)\b/i
+  /\b(helped|improved|caused|led to|resulted in|made you (calmer|relaxed|settled)|because of the (breath|practice|reset)|thanks to|effective(ly)?|benefit(?:ed|s)?|(it|this|that|which|they|breathing|the (breath|reset|practice)) (has |have |really )?worked)\b/i
 
 // --- Plan prompt --------------------------------------------------------------
 
@@ -521,6 +523,43 @@ export function formatHistoryForPrompt(summary) {
     );
   }
   return parts.length ? parts.join(" ") : null;
+}
+
+// The home memory line for preparations. Closed set only: the stored `kind`
+// (interview | presentation | hard-conversation | meeting), never `event`,
+// `goal` or any other typed text. Names a kind that recurred and says nothing
+// otherwise — a tally of how many times you used the app is not a memory.
+const PREP_KIND_LABEL = {
+  interview: "Interviews",
+  presentation: "Presentations",
+  "hard-conversation": "Hard conversations",
+  meeting: "Meetings",
+};
+const TIMES_WORD = { 2: "twice", 3: "three times", 4: "four times", 5: "five times" };
+
+export function preparationMemoryLine(readySessions) {
+  const preps = Array.isArray(readySessions) ? readySessions : [];
+  const counts = {};
+  const last = {};
+  for (const r of preps) {
+    if (!r || typeof r !== "object") continue;
+    const kind = Object.hasOwn(PREP_KIND_LABEL, r.kind) ? r.kind : null;
+    if (!kind) continue;
+    counts[kind] = (counts[kind] || 0) + 1;
+    const at = String(r.completedAt || "");
+    if (at > (last[kind] || "")) last[kind] = at;
+  }
+  let best = null;
+  for (const kind of Object.keys(counts)) {
+    if (counts[kind] < 2) continue;
+    if (
+      !best ||
+      counts[kind] > counts[best] ||
+      (counts[kind] === counts[best] && last[kind] > last[best])
+    ) best = kind;
+  }
+  if (!best) return null;
+  return `${PREP_KIND_LABEL[best]}, ${TIMES_WORD[counts[best]] || "many times"}.`;
 }
 
 export function prepPersonalizationFromReady(readySessions) {

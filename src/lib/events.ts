@@ -12,6 +12,7 @@
 import { record } from "./metrics";
 import type { CheckInReasonId } from "./checkinLedger";
 import type { CueState } from "./voiceCues";
+import { e6Arm, type E6Arm } from "./arms";
 
 type Surface = "post_session" | "decompress";
 type Material = "mist" | "waves" | "sand" | "cells" | "snow" | "ink";
@@ -37,7 +38,7 @@ export interface BrumeEvents {
   landing_settled: Record<string, never>;
   after_answer: { choice: "lighter" | "same" | "heavy"; material_changes: number };
   room_touch: { strokes: number; seconds: number; material: Material };
-  visit: { days_since_first: number; days_since_last?: number };
+  visit: { days_since_first: number; days_since_last?: number; arm?: E6Arm };
 }
 
 let materialChanges = 0;
@@ -63,8 +64,9 @@ const dayNumber = (d: Date) =>
   Math.floor((d.getTime() - d.getTimezoneOffset() * 60_000) / DAY_MS);
 
 /**
- * One `visit` per calendar day, carrying only two numbers: how many days
- * since the first visit, and how many since the previous one. The gap is
+ * One `visit` per calendar day, carrying two numbers — how many days
+ * since the first visit, and how many since the previous one — and the E6
+ * arm, one id from a closed list of three (arms.ts). The gap is
  * what answers "do people come back" without an id — no cookie, no device
  * key, nothing sent but the pair, and the counter keeps daily aggregates.
  */
@@ -77,7 +79,7 @@ export function recordVisit(now: Date = new Date()): void {
     if (!Number.isFinite(first) || first <= 0) {
       window.localStorage.setItem(FIRST_KEY, String(today));
       window.localStorage.setItem(LAST_KEY, String(today));
-      track("visit", { days_since_first: 0 });
+      track("visit", { days_since_first: 0, arm: e6Arm() });
       return;
     }
     if (last === today) return;
@@ -86,6 +88,7 @@ export function recordVisit(now: Date = new Date()): void {
     track("visit", {
       days_since_first: Math.max(0, today - first),
       days_since_last: Math.max(1, today - previous),
+      arm: e6Arm(),
     });
   } catch {
     // Storage unavailable — skip silently.

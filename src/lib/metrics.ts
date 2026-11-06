@@ -34,7 +34,7 @@ export type WiredEvent =
   | "words_written";
 
 export const WIRE: Record<WiredEvent, Fields> = {
-  visit: { num: ["days_since_first", "days_since_last"] },
+  visit: { num: ["days_since_first", "days_since_last"], id: ["arm"] },
   session_start: { id: ["pattern", "mode"] },
   session_complete: { id: ["pattern"], num: ["seconds", "cycles"] },
   session_abandon: { id: ["pattern", "phase"], num: ["seconds"] },

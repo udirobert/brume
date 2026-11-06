@@ -108,7 +108,7 @@ const PrivacyPolicy = () => {
           </p>
           <h3 className="font-medium text-foreground mb-2">Sent to the counter</h3>
           <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
-            <li>Visits — two day numbers: how long since your first visit, and how long since your last one</li>
+            <li>Visits — two day numbers: how long since your first visit, and how long since your last one, plus which of three versions of the home screen this device was given (a closed list; it is what lets us tell whether a change makes people come back)</li>
             <li>Sessions — that one started, and that it finished or was left, with the pattern name, seconds and cycles</li>
             <li>How the room felt afterwards — one of three choices on a closed list, and how many times you changed the room before answering</li>
             <li>The sentence card — that you opened it, and that you changed the sentence we offered into your own. Which is the act of writing, not the words: your sentence is never part of this count</li>

@@ -180,3 +180,63 @@ describe("Home", () => {
     expect(useRoomExperience.getState().still).toBe(true);
   });
 });
+
+describe("Home — the room remembers (E6)", () => {
+  const RESTLESS = 10;
+  const seedWeek = () => {
+    const now = Date.now();
+    const rows = [
+      ...[1, 2, 3].map((d) => ({ t: now - d * 3_600_000 * 24 + 1000, f: RESTLESS, r: null, p: "dawn" })),
+      { t: now - 4 * 86_400_000, f: 0, r: null, p: "dusk" },
+      { t: now - 5 * 86_400_000, f: 1, r: null, p: "night" },
+      { t: now - 5 * 86_400_000 + 5, f: 2, r: null, p: "day" },
+      { t: now - 6 * 86_400_000, f: 3, r: null, p: "night" },
+    ];
+    window.localStorage.setItem("brume.checkin.ledger.v1", JSON.stringify(rows));
+  };
+  const memory = () => container.querySelector(".brume-home__memory");
+
+  it("shows the control arm nothing, however much the ledger holds", async () => {
+    seedWeek();
+    window.localStorage.setItem("brume/arm-e6", "control");
+    await mount();
+    expect(memory()).toBeNull();
+    expect(useRoomExperience.getState().rememberedMaterial).toBeNull();
+  });
+
+  it("shows the line arm one named pattern and leaves the room alone", async () => {
+    seedWeek();
+    window.localStorage.setItem("brume/arm-e6", "line");
+    await mount();
+    expect(memory()?.textContent).toBe("Restless, three mornings this week.");
+    expect(useRoomExperience.getState().rememberedMaterial).toBeNull();
+  });
+
+  it("tints the room too for line_room, and the arm name never reaches the page", async () => {
+    seedWeek();
+    window.localStorage.setItem("brume/arm-e6", "line_room");
+    await mount();
+    expect(memory()?.textContent).toBe("Restless, three mornings this week.");
+    expect(useRoomExperience.getState().rememberedMaterial).not.toBeNull();
+    expect(container.innerHTML).not.toMatch(/line_room|arm-e6/);
+  });
+
+  it("says nothing on a fresh ledger, in every arm", async () => {
+    for (const arm of ["control", "line", "line_room"]) {
+      window.localStorage.clear();
+      window.localStorage.setItem("brume/arm-e6", arm);
+      await mount();
+      expect(memory(), arm).toBeNull();
+      act(() => root.unmount());
+      root = createRoot(container);
+    }
+  });
+
+  it("does not announce itself — a memory is not an alert", async () => {
+    seedWeek();
+    window.localStorage.setItem("brume/arm-e6", "line");
+    await mount();
+    expect(memory()?.getAttribute("aria-live")).toBeNull();
+  });
+});
+

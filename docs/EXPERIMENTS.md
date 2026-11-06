@@ -173,7 +173,7 @@ Design guidance we take from the research without quoting it:
 | The ledger (`checkinLedger.ts`) | **built**, device-local, tested; nothing reads it yet |
 | Cue texture mid-session (the glyph) | **built 2026-11-04** — spoken → breath → quiet on one button, browser-verified; preview row and glyph share `CUE_STATES` |
 | Brume's own spoken line (`spokenGreeting.ts`) | **rewritten 2026-11-04** — closed table keyed valence × daypart; never echoes the catalog, never generated |
-| E6 — the room remembers | **not started**: needs the ledger (done) + an arm flag (todo); the counter now exists, so D7 is readable from day one of traffic |
+| E6 — the room remembers | **built 2026-11-06, arm-gated**: `arms.ts` assigns control / line / line_room once per device, `memoryLine.ts` composes the pattern line (≥7 entries, a feeling+daypart that recurred), `visit` carries the arm and the counter keeps `by_arm` histograms. Needs traffic to read |
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
 | Privacy copy for anonymous counts | **corrected 2026-11-04** — the page now separates the five events the counter receives from the counts that stay on the device; the check-in is counted as a position and never as a word, the mic is transient; any widening of `WIRE` updates this page in the same commit |
@@ -267,15 +267,22 @@ remembered, and on its own it only proves we can interrupt someone.
   `visit` carries the day gap and the counter buckets it, so returns read
   from `GET /api/metrics` as soon as there are enough new arrivals. The
   ledger half (≥7 entries → one line on Home) is buildable now and reads
-  nothing off-device; the arm flag still needs deciding per the taxonomy
-  note above (an arm is a name for a thing users can't see, so it must not
-  leak into the UI).
+  nothing off-device. **Arm flag (2026-11-06):** `src/lib/arms.ts` picks
+  one of `control` / `line` / `line_room` at random, once, and keeps it in
+  localStorage (`brume/arm-e6`); storage that refuses reads as `control`.
+  The arm never appears in the UI (a Home test pins that). It leaves the
+  device in one place — the `visit` event's `arm` id — and the counter
+  tallies `since_first`/`gaps` per arm in `by_arm`, so the +8pt gap in the
+  bar below reads straight off `GET /api/metrics`. The line is
+  `memoryLine.ts`: "Restless, three mornings this week." — silent under
+  seven entries, silent when nothing recurred, never a count of check-ins.
 - **Art-as-artifact arm (E6a):** the same weather the line names also
   tints the room — a subtle material shift derived from closed-set ledger
-  entries (majority material of the recent check-ins). No number, no label,
-  no level; a skin, not a surface. Implemented behind
-  `rememberedMaterial` in `src/lib/roomExperience.ts` and set on Home from
-  `readLedger()`. Hypothesis: a room that visibly remembers lifts D7
+  entries (majority material of the last seven, ties to the most recent).
+  No number, no label, no level; a skin, not a surface. It is the
+  `line_room` arm only (`rememberedMaterial` in `src/lib/roomExperience.ts`,
+  set on Home from `memoryTreatment`), so `line` vs `line_room` is the
+  clean comparison. Hypothesis: a room that visibly remembers lifts D7
   return above the line-only arm. Kill if the material shift adds no lift
   over the line alone (then the visual is decoration).
 - **Healthy if:** the treated arm returns more *and* the returns are

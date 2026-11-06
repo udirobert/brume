@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   buildPlanPrompt, parseModelPlan, PLAN_MAX_TOKENS, CUE_FORBIDDEN_RE, HEALTH_CLAIM_RE,
-  buildReflectionPrompt, cleanReflection, REFLECTION_MAX_TOKENS, FALLBACK_REFLECTION,
+  buildReflectionPrompt, summarizeHistory, cleanReflection, REFLECTION_MAX_TOKENS, FALLBACK_REFLECTION,
 } from "../bundle/plan.js";
 import { alertnessNotePrompt, ALERTNESS_FALLBACK_NOTE } from "../bundle/alertness.js";
 
@@ -114,6 +114,13 @@ const REFLECTION_CASES = [
   { context: "Big call with my manager in 10 minutes", patternName: "Cyclic sigh", activeSeconds: 90, plannedSeconds: 90, cycles: 10, interrupted: false, felt: "calmer" },
   { context: "Need to focus on writing a report next", patternName: "Box", activeSeconds: 64, plannedSeconds: 64, cycles: 4, interrupted: false, felt: "same" },
   { context: "Been debugging for 3 hours", patternName: "Long exhale", activeSeconds: 31, plannedSeconds: 90, cycles: 3, interrupted: true, felt: "wired" },
+  // With history: the note may say what they have used, never that it helped.
+  { context: "Big call with my manager in 10 minutes", patternName: "Box", activeSeconds: 64, plannedSeconds: 64, cycles: 4, interrupted: false, felt: "calmer",
+    history: summarizeHistory(
+      [{ completedAt: "2026-11-04T09:00:00Z", pattern: "box", felt: "calmer", interrupted: false },
+       { completedAt: "2026-11-05T09:00:00Z", pattern: "box", felt: "calmer", interrupted: false },
+       { completedAt: "2026-11-05T15:00:00Z", pattern: "cyclic-sigh", felt: "wired", interrupted: true }],
+      [{ completedAt: "2026-11-03T09:00:00Z", kind: "interview", rehearsed: true }]) },
 ];
 
 async function checkReflections() {

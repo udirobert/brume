@@ -4,6 +4,7 @@ import {
   demeanorForFeel,
   materialForFeel,
   practiceProgress,
+  rememberedMaterialFromFeelings,
   resolvedMaterial,
   useRoomExperience,
 } from "../roomExperience";
@@ -115,6 +116,7 @@ describe("useRoomExperience", () => {
 
   it("reset restores every default", () => {
     const s = useRoomExperience.getState();
+    s.setRememberedMaterial("ink");
     s.setFeel(3);
     s.setMaterial("snow");
     s.setStill(true);
@@ -124,12 +126,52 @@ describe("useRoomExperience", () => {
     expect(state).toMatchObject({
       feelIndex: null,
       materialOverride: null,
+      rememberedMaterial: null,
       still: false,
       progress: 0,
       breath: 0,
       practicing: false,
       paused: false,
     });
+  });
+});
+
+describe("remembered material (E6a)", () => {
+  const sandFeel = 5; // Light -> sand
+  const wavesFeel = 0; // Okay -> waves
+  const snowFeel = 9; // Settled -> snow
+
+  it("is null with nothing usable in the ledger", () => {
+    expect(rememberedMaterialFromFeelings([])).toBeNull();
+    expect(rememberedMaterialFromFeelings([null, undefined, 99, -1, 1.5])).toBeNull();
+  });
+
+  it("takes the majority material of the last seven", () => {
+    expect(rememberedMaterialFromFeelings([sandFeel, wavesFeel, wavesFeel, sandFeel, wavesFeel])).toBe("waves");
+  });
+
+  it("lets older entries fall out of the window", () => {
+    const older = Array(10).fill(wavesFeel);
+    const recent = Array(7).fill(snowFeel);
+    expect(rememberedMaterialFromFeelings([...older, ...recent])).toBe("snow");
+  });
+
+  it("breaks a tie toward the most recent entry, whatever the order", () => {
+    expect(rememberedMaterialFromFeelings([sandFeel, wavesFeel])).toBe("waves");
+    expect(rememberedMaterialFromFeelings([wavesFeel, sandFeel])).toBe("sand");
+  });
+
+  it("only tints an otherwise unanswered room", () => {
+    const base = { materialOverride: null, feelIndex: null, rememberedMaterial: "snow" as const };
+    expect(resolvedMaterial(base)).toBe("snow");
+    expect(resolvedMaterial({ ...base, feelIndex: 4 })).toBe("ink");
+    expect(resolvedMaterial({ ...base, materialOverride: "sand" })).toBe("sand");
+    expect(resolvedMaterial({ ...base, rememberedMaterial: null })).toBe("mist");
+  });
+
+  it("rejects an unknown remembered material", () => {
+    useRoomExperience.getState().setRememberedMaterial("bogus" as never);
+    expect(useRoomExperience.getState().rememberedMaterial).toBeNull();
   });
 });
 

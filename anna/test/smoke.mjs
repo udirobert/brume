@@ -310,6 +310,13 @@ ok("formatHistoryForPrompt renders", plan.formatHistoryForPrompt(h).includes("Re
 const rph = plan.buildReflectionPrompt({ context: "call", patternName: "Box", activeSeconds: 30, plannedSeconds: 120, cycles: 2, interrupted: false, felt: "calmer", history: h });
 ok("reflection prompt includes history", rph.includes("Their own history"));
 ok("outcome claim rejected", plan.cleanReflection("It helped you calm down.") === plan.FALLBACK_REFLECTION);
+for (const tc of planCases.preparation_memory ?? []) {
+  ok(`preparation memory "${tc.name}"`, plan.preparationMemoryLine(tc.sessions) === tc.expect);
+}
+ok("memory line never carries typed text", !String(plan.preparationMemoryLine([
+  { kind: "interview", event: "SECRETWORD", completedAt: "a" },
+  { kind: "interview", event: "SECRETWORD", completedAt: "b" },
+])).includes("SECRETWORD"));
 for (const tc of planCases.reflection_outputs ?? []) {
   const want = tc.expect === "FALLBACK" ? plan.FALLBACK_REFLECTION : tc.expect;
   ok(`reflection "${tc.name}"`, plan.cleanReflection(tc.raw) === want);

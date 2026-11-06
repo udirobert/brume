@@ -149,6 +149,16 @@ class Reflection(unittest.TestCase):
             want = bp.FALLBACK_REFLECTION if tc["expect"] == "FALLBACK" else tc["expect"]
             self.assertEqual(bp.clean_reflection(tc["raw"]), want, tc["name"])
 
+    def test_outcome_claim_backstop(self):
+        # "worked" alone is a fact ("worked through all ten cycles"); the
+        # claim forms are what the mirror of OUTCOME_CLAIM_RE must catch.
+        self.assertEqual(bp.clean_reflection("It helped you calm down."), bp.FALLBACK_REFLECTION)
+        self.assertEqual(bp.clean_reflection("That worked well for you."), bp.FALLBACK_REFLECTION)
+        self.assertEqual(
+            bp.clean_reflection("You worked through all 10 cycles."),
+            "You worked through all 10 cycles.",
+        )
+
     def test_prompt_facts(self):
         p = bp.build_reflection_prompt("call", "Box", 30, 120, 2, True, "wired")
         self.assertIn("still wired", p)

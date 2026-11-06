@@ -17,7 +17,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Mirrors WIRE in src/lib/metrics.ts. A field not listed here is dropped. */
 export const ALLOWED = {
-  visit: { days_since_first: "num", days_since_last: "num" },
+  visit: { days_since_first: "num", days_since_last: "num", arm: "id" },
   session_start: { pattern: "id", mode: "id" },
   session_complete: { pattern: "id", seconds: "num", cycles: "num" },
   session_abandon: { pattern: "id", phase: "id", seconds: "num" },
@@ -25,6 +25,9 @@ export const ALLOWED = {
   words_card_shown: { surface: "id", arm: "id" },
   words_written: { surface: "id", arm: "id", for_me: "bool" },
 };
+
+/** Mirrors E6_ARMS in src/lib/arms.ts; an arm not listed is not tallied. */
+const ARMS = ["control", "line", "line_room"];
 
 const ID_SHAPE = /^[a-z][a-z0-9_-]{0,23}$/;
 
@@ -45,6 +48,9 @@ const bucket = (n) => (n <= 7 ? String(n) : n <= 30 ? "8-30" : "31+");
 export const empty = () => ({
   since_first: {},
   gaps: {},
+  // The same two histograms split by E6 arm, so D7 can be compared between
+  // arms without a person in the data: { control: { since_first, gaps } }.
+  by_arm: {},
   session_starts: 0,
   completes: {},
   abandons: {},
@@ -61,16 +67,20 @@ export const empty = () => ({
  */
 export function add(day, name, props) {
   switch (name) {
-    case "visit":
+    case "visit": {
+      const arm = ARMS.includes(props.arm) ? (day.by_arm[props.arm] ??= { since_first: {}, gaps: {} }) : null;
       if (typeof props.days_since_first === "number") {
         const key = bucket(props.days_since_first);
         day.since_first[key] = (day.since_first[key] ?? 0) + 1;
+        if (arm) arm.since_first[key] = (arm.since_first[key] ?? 0) + 1;
       }
       if (typeof props.days_since_last === "number") {
         const key = bucket(props.days_since_last);
         day.gaps[key] = (day.gaps[key] ?? 0) + 1;
+        if (arm) arm.gaps[key] = (arm.gaps[key] ?? 0) + 1;
       }
       return;
+    }
     case "session_start":
       day.session_starts += 1;
       return;

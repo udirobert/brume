@@ -927,3 +927,23 @@ between hearing and choosing was the bug.
   transcript clear, retirement on tap / next press / okay, companion
   receives `("matched", index)`; tap-mode localStorage leak between
   tests fixed with a storage clear in the mic describe (499 vitest).
+
+### 12.17 The confirmation spin (2026-11-06)
+
+"Even if drained was face up I would expect it to react." When the heard
+word is already showing — or already chosen — the flip has nothing to do,
+and the room used to nod silently. Now the chip plays a confirmation
+spin: one rotateY turn with a soft swell (0.9 s, transform-only; an
+opacity pulse under reduced motion), distinct from the flip's rotateX,
+retired by onAnimationEnd with a timeout guarantee (jsdom never fires the
+event — noted in the test). The invitation pill stands beside it; the
+chosen-word case adds no pill, that word is already theirs.
+
+Mascot research the same evening (grokbot-face + bloub, both studied in
+full): ten lessons recorded against `anna/bundle/mascot-engine.js` —
+chief among them states-as-schedules (micro-expression cycles + per-state
+blink rates), blink-masked state changes, sphere-depth eye compression on
+gaze, seeded blink schedules with double blinks, and rare spontaneous
+one-shots in positive states. Not built yet; the engine is shared with
+Anna and frozen-contract, so each lesson is its own change with
+`anna/test/mascot.mjs` coverage.

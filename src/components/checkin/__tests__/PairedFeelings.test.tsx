@@ -450,6 +450,43 @@ describe("mic — hold to talk, tap to toggle", () => {
     }
   });
 
+  it("a word already face-up is acknowledged with a spin, not silence", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(8, "i am feeling drained");
+      // Drained is the energy pair's initial face: no flip possible, so
+      // the chip spins and the invitation still stands.
+      expect(buttons()[1].classList.contains("is-confirming")).toBe(true);
+      expect(offer()?.textContent).toContain("Drained? tap to choose");
+      // The spin retires itself just past its 0.9 s.
+      await act(async () => { vi.advanceTimersByTime(1000); });
+      expect(buttons()[1].classList.contains("is-confirming")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a word already chosen spins its chip and adds no invitation", async () => {
+    await act(async () => {
+      root.render(
+        <PairedFeelings
+          selectedIndex={8}
+          onChoose={(i: number | null) => chosen.push(i)}
+          showHint={false}
+        />,
+      );
+    });
+    vi.useFakeTimers();
+    try {
+      await speakMatch(8, "still drained");
+      expect(buttons()[1].classList.contains("is-confirming")).toBe(true);
+      expect(offer()).toBeNull(); // that word is already theirs to carry
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("their words dissolve; the invitation stays until a chip is tapped", async () => {
     await mountPlain();
     vi.useFakeTimers();

@@ -86,7 +86,8 @@ export function PairedFeelings({
   // release. A press shorter than HOLD_TAP_MS settles into the old toggle —
   // one press to start, another (or a quiet stretch) to finish — because a
   // hold-only button is a wall for keyboard and switch users.
-  const HOLD_TAP_MS = 350;
+  const CONFIRM_SPIN_MS = 900;
+const HOLD_TAP_MS = 350;
   const holdingRef = useRef(false);
   const pressStartRef = useRef(0);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -103,6 +104,11 @@ export function PairedFeelings({
   // that is the privacy story, made visible — but a suggestion that
   // evaporates with it reads as nothing happening. Ours, so it stays.
   const [offer, setOffer] = useState<string | null>(null);
+  // The confirmation spin: when the heard word is ALREADY face-up (or
+  // already chosen), there is no flip to play — so the chip acknowledges
+  // with a spin instead. Delight is feedback too.
+  const [confirm, setConfirm] = useState<{ pair: number; n: number } | null>(null);
+  const confirmSerial = useRef(0);
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const heardClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // The transcript is matched and dropped — so it dissolves, on screen,
@@ -136,6 +142,14 @@ export function PairedFeelings({
   useEffect(() => {
     if (selectedIndex != null) setOffer(null);
   }, [selectedIndex]);
+
+  // The spin clears itself. onAnimationEnd is the fast path in a real
+  // browser; this timeout is the guarantee (and the only path jsdom gets).
+  useEffect(() => {
+    if (!confirm) return;
+    const t = window.setTimeout(() => setConfirm(null), CONFIRM_SPIN_MS + 50);
+    return () => window.clearTimeout(t);
+  }, [confirm]);
 
   useEffect(() => {
     if (!hintOpen) return;
@@ -241,7 +255,10 @@ export function PairedFeelings({
       return;
     }
     if (selectedIndex === offered) {
-      // That is already the word you carry — nothing to offer.
+      // That is already the word you carry — nothing to offer, but the
+      // room still nods: the chosen chip spins once.
+      const cpi = FEELING_PAIRS.indexOf(pair);
+      if (cpi >= 0) setConfirm({ pair: cpi, n: ++confirmSerial.current });
       flashHeard(`heard “${snippet}”`);
       return;
     }
@@ -253,6 +270,9 @@ export function PairedFeelings({
         return nextFaces;
       });
       setFlips((f) => f.map((v, i) => (i === pi ? v + 1 : v)));
+    } else {
+      // Already face-up: the flip has nothing to do, so the spin speaks.
+      setConfirm({ pair: pi, n: ++confirmSerial.current });
     }
     setSuggested(offered);
     setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}? Tap to choose.`);
@@ -357,7 +377,10 @@ export function PairedFeelings({
             ref={(el) => {
               chipRefs.current[i] = el;
             }}
-            className={`brume-choice brume-choice--flip${selected ? " is-selected" : ""}${feel.valence === "positive" ? " is-positive" : ""}${suggested === face ? " is-suggested" : ""}`}
+            className={`brume-choice brume-choice--flip${selected ? " is-selected" : ""}${feel.valence === "positive" ? " is-positive" : ""}${suggested === face ? " is-suggested" : ""}${confirm?.pair === i ? " is-confirming" : ""}`}
+            onAnimationEnd={(e) => {
+              if (e.target === e.currentTarget) setConfirm(null);
+            }}
             aria-pressed={selected}
             aria-label={feel.label}
             aria-describedby={

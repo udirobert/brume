@@ -359,6 +359,39 @@
     transform: translateY(0.35rem);
   }
 }
+/* Confirmation spin: the heard word was already face-up (or already
+   chosen), so there is no flip to play — the chip acknowledges with one
+   horizontal turn and a soft swell. Transform-only, per the motion rule;
+   rotateY to stay distinct from the flip's rotateX. */
+.brume-choice.is-confirming {
+  animation: brumeConfirmSpin 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes brumeConfirmSpin {
+  0% {
+    transform: perspective(30rem) rotateY(0) scale(1);
+  }
+  45% {
+    transform: perspective(30rem) rotateY(180deg) scale(1.07);
+  }
+  100% {
+    transform: perspective(30rem) rotateY(360deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-choice.is-confirming {
+    animation: brumeConfirmPulse 0.9s ease-out both;
+  }
+  @keyframes brumeConfirmPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    45% {
+      opacity: 0.55;
+    }
+  }
+}
+
 /* The spoken-match invitation: their transcript dissolved, this stays
    until they tap a chip, press the mic again, or dismiss it. */
 .brume-voice-offer {

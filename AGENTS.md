@@ -133,7 +133,13 @@ read before adding anything to it):
   Settings; closed table `VOICE_HELP`, never generated), the card
   persists until dismissed — the dissolve belongs to transcripts, which
   are theirs, not to help, which is ours — and every card ends in the
-  exit: "Or just tap a word." Any new voice surface
+  exit: "Or just tap a word." Symmetrically, a spoken *match* splits the
+  same way: the transcript dissolves (theirs) while the invitation —
+  "Drained? tap to choose" — stands as a persistent pill until a chip is
+  tapped, the mic is pressed again, or it is dismissed; and the
+  companion acknowledges the match with the suggested word's own
+  reaction (acknowledgment only — no tint, no ledger, the tap still
+  owns the commit). Any new voice surface
   implements this pattern or it does not ship.
 - **`src/lib/checkinLedger.ts` is the spine**: append-only, device-local
   `(t, feeling, reason, daypart)`. The recap, the memory line and any

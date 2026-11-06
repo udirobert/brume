@@ -244,6 +244,7 @@ const micMock = vi.hoisted(() => ({
 
 describe("mic — hold to talk, tap to toggle", () => {
   beforeEach(() => {
+    window.localStorage.clear(); // mode/hint flags must not leak between tests
     micMock.arm();
   });
 
@@ -418,6 +419,104 @@ describe("mic — hold to talk, tap to toggle", () => {
     pointer("pointerdown", mic());
     expect(help()).toBeNull();
     pointer("pointerup", mic());
+  });
+
+  // The real hold flow: the finger stays past HOLD_TAP_MS (else the press
+  // downgrades to a tap and the one-time hold tip joins the scene), and
+  // release finalizes the turn with the words.
+  const speakMatch = async (index: number, transcript: string) => {
+    micMock.listenOnce.mockResolvedValueOnce({
+      transcript, index, suggest: null, pattern: null, failure: null,
+    });
+    pointer("pointerdown", mic());
+    await act(async () => { vi.advanceTimersByTime(400); });
+    pointer("pointerup", mic());
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  };
+  const offer = () => container.querySelector<HTMLDivElement>(".brume-voice-offer");
+
+  it("a spoken match that already shows still leaves a standing invitation", async () => {
+    // The exact reported case: "i am feeling drained" — Drained is the
+    // energy pair's initial face, so there is no flip to see. The room
+    // must not go silent anyway.
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(8, "i am feeling drained");
+      expect(offer()?.textContent).toContain("Drained? tap to choose");
+      expect(container.querySelector(".is-suggested")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("their words dissolve; the invitation stays until a chip is tapped", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(6, "heavy day");
+      // The matched chip turns face-up and glows.
+      expect(buttons()[0].textContent).toContain("Heavy");
+      expect(buttons()[0].classList.contains("is-suggested")).toBe(true);
+      // Past the transcript's 6 s clear window the heard line is gone…
+      await act(async () => { vi.advanceTimersByTime(7000); });
+      expect(container.querySelector(".brume-voice-heard")).toBeNull();
+      // …and the invitation is still standing.
+      expect(offer()?.textContent).toContain("Heavy? tap to choose");
+      // Tapping the word commits it — and retires the invitation.
+      click(0);
+      expect(chosen.at(-1)).toBe(6);
+      expect(offer()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the invitation retires on the next press and on okay", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(6, "heavy day");
+      expect(offer()).not.toBeNull();
+      // Trying again: they are speaking, the invitation has done its job.
+      pointer("pointerdown", mic());
+      expect(offer()).toBeNull();
+      // The pending listen resolves with the new words before release.
+      await act(async () => {
+        micMock.resolve!({ transcript: "still heavy", index: 6, suggest: null, pattern: null, failure: null });
+      });
+      pointer("pointerup", mic());
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(offer()).not.toBeNull();
+      await act(async () => {
+        offer()!.querySelector("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(offer()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a matched word tells the companion which feeling arrived", async () => {
+    const states: Array<[string, number | undefined]> = [];
+    await act(async () => {
+      root.render(
+        <PairedFeelings
+          selectedIndex={null}
+          onChoose={(i: number | null) => chosen.push(i)}
+          onVoiceState={(st, i) => states.push([st, i])}
+          showHint={false}
+        />,
+      );
+    });
+    vi.useFakeTimers();
+    try {
+      await speakMatch(6, "heavy day");
+      expect(states).toContainEqual(["listening", undefined]);
+      expect(states).toContainEqual(["matched", 6]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("before the first press, sets the permission-prompt expectation once", async () => {

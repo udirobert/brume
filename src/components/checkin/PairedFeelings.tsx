@@ -99,6 +99,10 @@ export function PairedFeelings({
   const [micUsed, setMicUsed] = useState(micEverUsed);
   const [heard, setHeard] = useState("");
   const [dissolve, setDissolve] = useState(false);
+  // The invitation ("Drained? tap to choose"). The transcript dissolves —
+  // that is the privacy story, made visible — but a suggestion that
+  // evaporates with it reads as nothing happening. Ours, so it stays.
+  const [offer, setOffer] = useState<string | null>(null);
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const heardClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // The transcript is matched and dropped — so it dissolves, on screen,
@@ -128,6 +132,11 @@ export function PairedFeelings({
     });
   }, [selectedIndex]);
 
+  // A word is chosen by any path — the invitation has done its job.
+  useEffect(() => {
+    if (selectedIndex != null) setOffer(null);
+  }, [selectedIndex]);
+
   useEffect(() => {
     if (!hintOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -142,6 +151,7 @@ export function PairedFeelings({
       const wasOffered = suggested !== null;
       setSuggested(null);
       setHelp(null);
+      setOffer(null);
       const next = selectPairedFeel(
         { faces, selected: selectedIndex },
         pairIndex,
@@ -246,9 +256,9 @@ export function PairedFeelings({
     }
     setSuggested(offered);
     setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}? Tap to choose.`);
-    flashHeard(
-      `heard “${snippet}” — ${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`,
-    );
+    // Their words pass through the mist; the invitation persists below.
+    flashHeard(`heard “${snippet}”`);
+    setOffer(`${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`);
   }, [faces, selectedIndex, onVoiceState, onPatternOffer]);
 
   const onMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
@@ -260,6 +270,7 @@ export function PairedFeelings({
     }
     const mode = getMicMode();
     setHelp(null); // the moment they try again, the card has done its job
+    setOffer(null);
     if (!micUsed) {
       markMicUsed();
       setMicUsed(true);
@@ -447,6 +458,14 @@ export function PairedFeelings({
         <div className="brume-voice-help" role="note">
           <p>{help}</p>
           <button type="button" onClick={() => setHelp(null)}>
+            okay
+          </button>
+        </div>
+      )}
+      {offer && (
+        <div className="brume-voice-offer" role="note">
+          <p>{offer}</p>
+          <button type="button" onClick={() => setOffer(null)}>
             okay
           </button>
         </div>

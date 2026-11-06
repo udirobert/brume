@@ -359,6 +359,47 @@
     transform: translateY(0.35rem);
   }
 }
+/* The spoken-match invitation: their transcript dissolved, this stays
+   until they tap a chip, press the mic again, or dismiss it. */
+.brume-voice-offer {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, currentColor 7%, transparent);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: left;
+  animation: brumeHelpIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.brume-voice-offer p {
+  margin: 0;
+}
+.brume-voice-offer button {
+  min-height: 1.7rem;
+  padding: 0.1rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.brume-voice-offer button:hover,
+.brume-voice-offer button:focus-visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-voice-offer {
+    animation: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .brume-voice-help {
     animation: none;

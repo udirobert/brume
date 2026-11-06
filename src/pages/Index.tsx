@@ -186,13 +186,22 @@ export default function Index() {
       <PairedFeelings
         selectedIndex={feelTap}
         onChoose={handleFeel}
-        onVoiceState={(s) => {
+        onVoiceState={(s, feltIndex) => {
           if (s === "listening") {
             setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` });
           } else if (s === "blocked") {
             // The companion settles with you while the card explains —
             // a blocked mic is a pause, not an alarm.
             setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` });
+          } else if (s === "matched" && typeof feltIndex === "number") {
+            // Acknowledgment only: the suggested word's own reaction, with
+            // no tint, no ledger and no nudge — the tap still owns the
+            // commit, but the room is no longer silent between hearing and
+            // choosing.
+            const felt = feelingAt(feltIndex);
+            if (felt?.reaction) {
+              setMascotReaction({ name: felt.reaction, key: `home-${++reactionSerial.current}` });
+            }
           }
         }}
         onPatternOffer={setRhythmOffer}

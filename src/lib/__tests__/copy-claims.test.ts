@@ -157,6 +157,12 @@ describe("check-in copy", () => {
     }
   });
 
+  it("the spoken-match invitation suffixes are rhythm-only", () => {
+    for (const str of ["? tap to choose", "maybe ", "heard ", "okay"]) {
+      expect(str, `"${str}"`).not.toMatch(BANNED);
+    }
+  });
+
   it("the stuck-mic help table is rhythm-only too", () => {
     const strings: string[] = [VOICE_HELP_EXIT];
     for (const entry of Object.values(VOICE_HELP)) {

@@ -904,3 +904,26 @@ the stuck path is where judges land.
 - Copy-claims covers the whole table; UA detection, persistence, dismiss
   and the hint are tested (494 vitest, tsc/lint clean); first-use hint
   verified in a real mobile viewport.
+
+### 12.16 Their words dissolve; our invitation stays (2026-11-06)
+
+"I said drained and nothing happened." Four things stacked: Drained is
+the energy pair's initial face, so the matched-flip had nothing to move;
+the "Drained? tap to choose" line rode the transcript's dissolve and was
+gone in 4.2 s; the glow is subtle; and Index ignored `onVoiceState
+("matched", index)` entirely — a wiring oversight. The backdrop/ledger/
+commit gating on the tap is the doctrine and stays; the feedback desert
+between hearing and choosing was the bug.
+
+- **The invitation is now a standing pill** (`.brume-voice-offer`):
+  their transcript passes through the mist, our invitation persists
+  until a chip is tapped (any path — `selectedIndex` effect), the mic is
+  pressed again, or "okay" dismisses it. Same doctrine as the help card:
+  theirs dissolves, ours stays.
+- **The companion acknowledges the match**: Index's `onVoiceState` now
+  takes the suggested index and plays the feeling's own reaction. No
+  tint, no ledger, no Begin nudge — acknowledgment, not commitment.
+- Tests: already-face-up match ("drained"), persistence past the 6 s
+  transcript clear, retirement on tap / next press / okay, companion
+  receives `("matched", index)`; tap-mode localStorage leak between
+  tests fixed with a storage clear in the mic describe (499 vitest).

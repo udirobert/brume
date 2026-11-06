@@ -948,7 +948,7 @@ one-shots in positive states. Not built yet; the engine is shared with
 Anna and frozen-contract, so each lesson is its own change with
 `anna/test/mascot.mjs` coverage.
 
-### 12.18 All ten lessons, one engine pass (2026-11-07)
+### 12.18 All ten lessons, one engine pass (2026-11-06)
 
 The research became a single expressiveness pass on
 `anna/bundle/mascot-engine.js` — all ten lessons, still one pure

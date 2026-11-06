@@ -370,7 +370,9 @@ async function viaStreaming(
     return await new Promise<string>((resolve, reject) => {
       let settled = false;
       let grace: ReturnType<typeof setTimeout> | undefined;
-      let cap: ReturnType<typeof setInterval> | undefined;
+      const cap = setInterval(() => {
+        if (Date.now() - t0 > (ctl.hold ? HOLD_MAX_MS : MAX_LISTEN_MS)) release();
+      }, 250);
       const close = () => {
         settled = true;
         clearTimeout(grace);
@@ -435,9 +437,6 @@ async function viaStreaming(
         }
       };
 
-      cap = setInterval(() => {
-        if (Date.now() - t0 > (ctl.hold ? HOLD_MAX_MS : MAX_LISTEN_MS)) release();
-      }, 250);
       if (signal?.aborted) release();
       else signal?.addEventListener("abort", release);
     });
@@ -512,9 +511,25 @@ function viaWebSpeech(
   onInterim?: (s: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
+  interface SpeechRecognitionLike {
+    lang: string;
+    interimResults: boolean;
+    continuous: boolean;
+    maxAlternatives: number;
+    onresult: ((e: SpeechLikeEvent) => void) | null;
+    onerror: ((e: { error?: string }) => void) | null;
+    onend: (() => void) | null;
+    start(): void;
+    stop(): void;
+  }
+  interface SpeechLikeEvent {
+    results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+  }
   return new Promise((resolve, reject) => {
     const w = window as unknown as Record<string, unknown>;
-    const Ctor = (w.SpeechRecognition || w.webkitSpeechRecognition) as (new () => any) | undefined;
+    const Ctor = (w.SpeechRecognition || w.webkitSpeechRecognition) as
+      | (new () => SpeechRecognitionLike)
+      | undefined;
     if (!Ctor) return reject(new Error("no_speech_api"));
     const rec = new Ctor();
     rec.lang = navigator.language || "en-US";
@@ -522,13 +537,13 @@ function viaWebSpeech(
     rec.continuous = ctl.hold;
     rec.maxAlternatives = 1;
     const finals: string[] = [];
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechLikeEvent) => {
       const last = e.results[e.results.length - 1];
       const t = last[0].transcript;
       if (last.isFinal) finals.push(t);
       else onInterim?.(t);
     };
-    rec.onerror = (e: any) => {
+    rec.onerror = (e: { error?: string }) => {
       const code = String(e?.error ?? "");
       if (code === "no-speech" || code === "aborted") return resolve(finals.join(" "));
       reject(new Error(code || "speech_error"));

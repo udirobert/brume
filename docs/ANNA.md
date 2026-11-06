@@ -1100,3 +1100,50 @@ immutable server-side:
   credits). Anna Dev confirmed the review run does NOT substitute for
   the self-run test, so approval may still wait on quota even if 0.3.9
   passes content review.
+
+### 12.22 "Arrive" — the anti-chatbot research and the gesture grammar (2026-11-06)
+
+Trigger: a teammate's fresh look at 0.3.9 still read as "essentially a
+chatbot" — conversation plus a breathing rhythm. Anna Dev's review
+asked for a core strength users can't get elsewhere and more
+emotion-regulation tools. Tavily research across the competitive
+landscape:
+
+- **Chatbots** (Woebot, Wysa, Anna's own chat path): words all the way
+  down — the exact thinness flagged.
+- **Mood→strategy mappers** (How We Feel / Yale, Daylio): feeling →
+  regulation strategies is proven UX, but strategies are lists and
+  short videos; nothing you do with your hands.
+- **Companion pets** (Finch, 4.9★/750k ratings): acts nurture a pet —
+  but progression is streaks/goals/checklists, all doctrine-forbidden.
+- **Art therapy** (Scribble Journey, ZenFlow, Palette): guided drawing
+  lessons; art is saved and judged, never released.
+- **Micro-technique lists** (butterfly hug, 5-4-3-2-1, physiological
+  sigh, category games): 30–60s evidence-aligned resets exist only as
+  bullet points — nobody made the gesture itself the product.
+
+**The gap:** an in-the-moment, eyes-down, hands-busy ritual where the
+feeling is expressed and *released*, not tracked or discussed.
+"Draw it, watch it become mist" exists nowhere — art apps save the
+work, mood apps log it, chatbots ask about it.
+
+**Design (approved direction):** "Arrive" — one tap, one act, never a
+menu.
+
+- Feeling picker is a **mist ring**, not a form: curated ~8 words
+  (Wired, Restless, Heavy, Drained, Anxious, Okay, Light, Grateful)
+  drift around the mascot; tap one and it floats over and settles
+  beside it. Exploration is touching, not choosing — the primitive
+  that makes a richer set feel playful instead of paralysing
+  (How We Feel deliberately simplifies to a navigator for the same
+  reason).
+- Brume proposes **exactly one act** — deterministic feeling→act map;
+  the LLM writes only the one-line observational invitation (never
+  interprets the feeling). No menu: choice paralysis is the enemy.
+- Acts are **gestures that end in release**, all <60s, states of the
+  room: *Scatter* (draw ~20s → strokes lift and dissolve into mist —
+  the flagship), *Set down* (drag the weight off — arousal-down),
+  *Name it* (tap a word into a sentence the LLM completes
+  observationally). Breathing and prep remain the standing doors.
+- **Nothing persists.** No saving, streaks or scores; v1 writes no
+  ledger entries at all (a later arm may add a closed-set act id).

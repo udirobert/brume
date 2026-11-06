@@ -38,6 +38,7 @@ import {
   summaryLine,
   fetchPlan,
   fetchReflection,
+  fetchInvite,
   lastReflectionModel,
   FALLBACK_REFLECTION,
   responseText,
@@ -60,6 +61,15 @@ import {
 import { createCheckpointStore } from "./recovery.js";
 import { MOMENTS, normaliseWordingStyle, parseReadyHandoff } from "./experience.js";
 import { loadWordingPreference, saveWordingPreference } from "./ready-preferences.js";
+import {
+  FEELINGS,
+  ACTS,
+  feelingById,
+  actFor,
+  inviteFallback,
+  createScatter,
+  createSetdown,
+} from "./arrive.js";
 
 const SDK_URL = "/static/anna-apps/_sdk/latest/index.js";
 const TICK_MS = 200;
@@ -150,6 +160,25 @@ const els = {
   btnCardHome: $("#btn-card-home"),
   btnCardExport: $("#btn-card-export"),
   btnCardPrint: $("#btn-card-print"),
+  btnArrive: $("#btn-arrive"),
+  feelingRing: $("#feeling-ring"),
+  arriveAct: $("#arrive-act"),
+  arriveActName: $("#arrive-act-name"),
+  arriveInvite: $("#arrive-invite"),
+  btnArriveGo: $("#btn-arrive-go"),
+  btnArriveBack: $("#btn-arrive-back"),
+  scatterCanvas: $("#scatter-canvas"),
+  scatterHint: $("#scatter-hint"),
+  scatterControls: $("#scatter-controls"),
+  btnScatterGo: $("#btn-scatter-go"),
+  btnScatterBack: $("#btn-scatter-back"),
+  scatterDone: $("#scatter-done"),
+  btnScatterHome: $("#btn-scatter-home"),
+  setdownWeight: $("#setdown-weight"),
+  setdownHint: $("#setdown-hint"),
+  btnSetdownBack: $("#btn-setdown-back"),
+  setdownDone: $("#setdown-done"),
+  btnSetdownHome: $("#btn-setdown-home"),
   prepStatus: $("#prep-status"),
   prepStatusText: $("#prep-status-text"),
   btnPrepCancel: $("#btn-prep-cancel"),
@@ -185,6 +214,9 @@ const els = {
     prepFeedback: $("#screen-prep-feedback"),
     prepCard: $("#screen-prep-card"),
     readyRun: $("#screen-ready-run"),
+    arrive: $("#screen-arrive"),
+    scatter: $("#screen-scatter"),
+    setdown: $("#screen-setdown"),
   },
   contextInput: $("#context-input"),
   btnPlan: $("#btn-plan"),
@@ -301,9 +333,27 @@ const SCREEN_MASCOT = {
   prepFeedback: { el: "prep-feedback", state: "thinking" },
   prepCard: { el: "prep-card", state: "proud" },
   readyRun: { el: "ready-run", state: "idle" },
+  arrive: { el: "arrive", state: "tender" },
+  scatter: { el: "scatter", state: "watching" },
+  setdown: { el: "setdown", state: "tender" },
 };
 
+let scatterCtl = null;
+let setdownCtl = null;
+
+function leaveActScreens(screen) {
+  if (screen !== els.screens.scatter && scatterCtl) {
+    scatterCtl.destroy();
+    scatterCtl = null;
+  }
+  if (screen !== els.screens.setdown && setdownCtl) {
+    setdownCtl.destroy();
+    setdownCtl = null;
+  }
+}
+
 function show(screen) {
+  leaveActScreens(screen);
   for (const el of Object.values(els.screens)) el.hidden = el !== screen;
   for (const [key, conf] of Object.entries(SCREEN_MASCOT)) {
     const s = els.screens[key];
@@ -677,6 +727,118 @@ async function loadReadySessions(anna) {
   } catch {
     return [];
   }
+}
+
+// --- Arrive: how are you arriving? ------------------------------------------
+// One tap, one act, never a menu. The ring is a closed set; the map picks
+// the act; the model writes only the invitation line. Acts persist nothing.
+
+let arriveRingBuilt = false;
+let arriveSelection = null;
+let arriveInviteToken = 0;
+
+function buildFeelingRing() {
+  if (arriveRingBuilt || !els.feelingRing) return;
+  arriveRingBuilt = true;
+  const n = FEELINGS.length;
+  FEELINGS.forEach((f, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "ring-word";
+    b.dataset.feeling = f.id;
+    b.textContent = f.label;
+    const ang = (-90 + (i * 360) / n) * (Math.PI / 180);
+    b.style.left = `${50 + 39 * Math.cos(ang)}%`;
+    b.style.top = `${50 + 40 * Math.sin(ang)}%`;
+    b.style.setProperty("--d", `${(i % 5) * 0.9}s`);
+    b.addEventListener("click", () => pickFeeling(f.id));
+    els.feelingRing.appendChild(b);
+  });
+}
+
+function resetArrive() {
+  arriveSelection = null;
+  arriveInviteToken += 1;
+  els.arriveAct.hidden = true;
+  for (const w of els.feelingRing.querySelectorAll(".ring-word")) {
+    w.classList.remove("selected", "dim");
+  }
+}
+
+function pickFeeling(id) {
+  const f = feelingById(id);
+  if (!f || loadBlocked()) return;
+  arriveSelection = f;
+  for (const w of els.feelingRing.querySelectorAll(".ring-word")) {
+    const sel = w.dataset.feeling === id;
+    w.classList.toggle("selected", sel);
+    w.classList.toggle("dim", !sel);
+  }
+  mascot("arrive")?.react("hop");
+  const act = actFor(id);
+  els.arriveActName.textContent = act ? ACTS[act].name : "Steady";
+  els.arriveInvite.textContent = inviteFallback(id);
+  els.btnArriveGo.textContent = act ? "Begin" : "Carry on";
+  els.arriveAct.hidden = false;
+  const token = ++arriveInviteToken;
+  fetchInvite(anna, { feeling: id, act }).then((line) => {
+    if (token === arriveInviteToken && arriveSelection?.id === id) {
+      els.arriveInvite.textContent = line;
+    }
+  });
+}
+
+function enterScatter() {
+  els.scatterCanvas.hidden = false;
+  els.scatterHint.hidden = false;
+  els.scatterControls.hidden = false;
+  els.scatterDone.hidden = true;
+  els.btnScatterHome.hidden = true;
+  show(els.screens.scatter);
+  scatterCtl = createScatter({
+    canvas: els.scatterCanvas,
+    reducedMotion: REDUCED_MOTION,
+    onDone: finishScatter,
+  });
+}
+
+function finishScatter() {
+  mascot("scatter")?.react("celebrate");
+  els.scatterCanvas.hidden = true;
+  els.scatterHint.hidden = true;
+  els.scatterControls.hidden = true;
+  els.scatterDone.hidden = false;
+  els.btnScatterHome.hidden = false;
+}
+
+function enterSetdown() {
+  els.setdownTrack.hidden = false;
+  els.setdownHint.hidden = false;
+  els.btnSetdownBack.hidden = false;
+  els.setdownDone.hidden = true;
+  els.btnSetdownHome.hidden = true;
+  els.setdownWeight.style.cssText = "";
+  els.setdownWeight.classList.remove("held");
+  show(els.screens.setdown);
+  setdownCtl = createSetdown({
+    weight: els.setdownWeight,
+    reducedMotion: REDUCED_MOTION,
+    onDone: finishSetdown,
+  });
+}
+
+function finishSetdown() {
+  mascot("setdown")?.react("settle");
+  els.setdownTrack.hidden = true;
+  els.setdownHint.hidden = true;
+  els.btnSetdownBack.hidden = true;
+  els.setdownDone.hidden = false;
+  els.btnSetdownHome.hidden = false;
+}
+
+function backToArrive() {
+  resetArrive();
+  show(els.screens.arrive);
 }
 
 // --- Planning ---------------------------------------------------------------
@@ -2908,6 +3070,27 @@ async function main() {
       showAlertSetup();
     });
   });
+  els.btnArrive.addEventListener("click", () => {
+    if (loadBlocked()) return;
+    buildFeelingRing();
+    resetArrive();
+    show(els.screens.arrive);
+  });
+  els.btnArriveGo.addEventListener("click", () => {
+    const act = arriveSelection ? actFor(arriveSelection.id) : null;
+    if (!act) {
+      show(els.screens.home);
+      return;
+    }
+    if (act === "scatter") enterScatter();
+    else if (act === "setdown") enterSetdown();
+  });
+  els.btnArriveBack.addEventListener("click", resetArrive);
+  els.btnScatterGo.addEventListener("click", () => scatterCtl?.letGo());
+  els.btnScatterBack.addEventListener("click", backToArrive);
+  els.btnScatterHome.addEventListener("click", () => show(els.screens.home));
+  els.btnSetdownBack.addEventListener("click", backToArrive);
+  els.btnSetdownHome.addEventListener("click", () => show(els.screens.home));
   $("#btn-alert-start").addEventListener("click", startAlertCountdown);
   $("#btn-alert-skip-kss").addEventListener("click", () => {
     alertKss = null;

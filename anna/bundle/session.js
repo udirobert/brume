@@ -16,6 +16,13 @@ import {
   FALLBACK_REFLECTION,
   SUMMARY_KEY,
 } from "./plan.js";
+import {
+  buildInvitePrompt,
+  cleanInvite,
+  inviteFallback,
+  INVITE_MAX_TOKENS,
+  INVITE_TIMEOUT_MS,
+} from "./arrive.js";
 
 export { FALLBACK_REFLECTION };
 // Back-compat export name used by the smoke test / app.
@@ -304,6 +311,25 @@ export async function fetchReflection(anna, facts, opts) {
     return t;
   } catch {
     return FALLBACK_REFLECTION;
+  }
+}
+
+// Invite line for the Arrive act card. Never throws — resolves the
+// cleaned model line or the closed fallback for the feeling.
+export async function fetchInvite(anna, { feeling, act }) {
+  if (!anna || typeof anna.llm?.complete !== "function") {
+    return inviteFallback(feeling);
+  }
+  try {
+    const raw = await callLlm(
+      anna,
+      buildInvitePrompt({ feeling, act }),
+      INVITE_MAX_TOKENS,
+      INVITE_TIMEOUT_MS,
+    );
+    return cleanInvite(raw, feeling) || inviteFallback(feeling);
+  } catch {
+    return inviteFallback(feeling);
   }
 }
 

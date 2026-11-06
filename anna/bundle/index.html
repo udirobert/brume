@@ -86,6 +86,10 @@
             <span class="card-line muted" id="alert-line" hidden></span>
             <canvas id="alert-spark" width="140" height="24" hidden></canvas>
           </button>
+          <button id="btn-arrive" class="card" type="button">
+            <span class="card-title">How are you arriving?</span>
+            <span class="card-sub">A word for right now — Brume has a small act for it</span>
+          </button>
         </div>
         <p class="muted" data-last-session hidden></p>
         <p class="muted" id="memory-line" hidden></p>
@@ -166,6 +170,46 @@
           <button type="button" data-felt="wired">Still wired</button>
           <button class="chip" type="button" data-felt="">Skip</button>
         </div>
+      </section>
+
+      <section id="screen-arrive" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-arrive" aria-hidden="true"></div>
+        <h1>How are you arriving?</h1>
+        <div class="feeling-ring" id="feeling-ring" role="group" aria-label="How are you feeling?"></div>
+        <div class="arrive-act" id="arrive-act" hidden>
+          <p class="arrive-act-name" id="arrive-act-name"></p>
+          <p class="arrive-invite" id="arrive-invite"></p>
+          <div class="btn-row">
+            <button id="btn-arrive-go" class="primary" type="button">Begin</button>
+            <button id="btn-arrive-back" type="button">Never mind</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-scatter" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-scatter" aria-hidden="true"></div>
+        <h1 id="scatter-title">Scatter</h1>
+        <canvas id="scatter-canvas" tabindex="0" aria-label="Draw here — it will not stay"></canvas>
+        <p class="hint" id="scatter-hint">Draw it — anything. It won't stay.</p>
+        <div class="btn-row" id="scatter-controls">
+          <button id="btn-scatter-go" class="primary" type="button">Let it go</button>
+          <button id="btn-scatter-back" type="button">Back</button>
+        </div>
+        <p class="closing-line" id="scatter-done" hidden>It's gone — it was never yours to keep.</p>
+        <button id="btn-scatter-home" class="primary" type="button" hidden>Back home</button>
+      </section>
+
+      <section id="screen-setdown" class="screen" hidden>
+        <div class="mascot-slot mascot-md" id="mascot-setdown" aria-hidden="true"></div>
+        <h1 id="setdown-title">Set it down</h1>
+        <div class="setdown-track" id="setdown-track">
+          <div class="setdown-line" aria-hidden="true"></div>
+          <div class="setdown-weight" id="setdown-weight" role="button" tabindex="0" aria-label="Pull the weight down slowly"></div>
+        </div>
+        <p class="hint" id="setdown-hint">Press the weight and pull it down — slowly.</p>
+        <button id="btn-setdown-back" type="button">Back</button>
+        <p class="closing-line" id="setdown-done" hidden>Set down.</p>
+        <button id="btn-setdown-home" class="primary" type="button" hidden>Back home</button>
       </section>
 
       <section id="screen-alert" class="screen" hidden>

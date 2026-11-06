@@ -426,3 +426,130 @@ h1[tabindex="-1"]:focus { outline: none; }
   .prep-card-facts dd { white-space: pre-wrap; }
   h1 { font-size: 1.25rem; }
 }
+
+/* --- Arrive: feeling ring + acts ---------------------------------------- */
+
+.feeling-ring {
+  position: relative;
+  height: 218px;
+  margin: 6px auto 0;
+  max-width: 340px;
+}
+.ring-word {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--brume-border));
+  background: hsl(var(--brume-surface) / .82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font: inherit;
+  font-size: .88rem;
+  color: var(--fg);
+  cursor: pointer;
+  animation: ring-drift 7s ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s);
+  transition: opacity .25s ease, background .25s ease, border-color .25s ease, transform .25s ease;
+}
+.ring-word:hover { border-color: hsl(var(--brume-primary) / .5); }
+.ring-word:focus-visible { outline: 2px solid var(--brume-focus, var(--accent)); outline-offset: 2px; }
+.ring-word.dim { opacity: .35; }
+.ring-word.selected {
+  background: hsl(var(--brume-primary));
+  border-color: hsl(var(--brume-primary));
+  color: hsl(var(--brume-background));
+  opacity: 1;
+}
+@keyframes ring-drift {
+  from { translate: 0 0; }
+  to   { translate: 0 -7px; }
+}
+
+.arrive-act {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid hsl(var(--brume-border));
+  border-radius: var(--brume-radius-card);
+  background: hsl(var(--brume-surface) / .85);
+}
+.arrive-act-name {
+  margin: 0 0 4px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.arrive-invite {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: .95rem;
+  min-height: 1.2em;
+}
+
+/* Scatter — the draw-and-release canvas */
+#scatter-canvas {
+  display: block;
+  width: 100%;
+  height: clamp(240px, 44vh, 380px);
+  margin: 8px auto 4px;
+  border: 1px solid hsl(var(--brume-border));
+  border-radius: var(--brume-radius-card);
+  background: hsl(var(--brume-surface) / .6);
+  touch-action: none;
+  cursor: crosshair;
+}
+#scatter-canvas:focus-visible { outline: 2px solid var(--brume-focus, var(--accent)); outline-offset: 2px; }
+
+/* Set down — the weighted pull */
+.setdown-track {
+  position: relative;
+  width: min(280px, 78%);
+  height: 190px;
+  margin: 10px auto 4px;
+}
+.setdown-line {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 26px;
+  width: 1px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    hsl(var(--brume-border)) 0 5px,
+    transparent 5px 11px
+  );
+}
+.setdown-landing {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 120px;
+  height: 14px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, hsl(var(--brume-muted) / .35), transparent 70%);
+}
+.setdown-weight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 58px;
+  height: 58px;
+  margin-left: -29px;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  background: radial-gradient(circle at 34% 30%,
+    rgb(var(--brume-mist-r, 233) var(--brume-mist-g, 224) var(--brume-mist-b, 184) / .55) 0%,
+    hsl(var(--brume-primary)) 78%);
+  box-shadow: 0 6px 18px hsl(var(--brume-primary) / .28);
+  transition: box-shadow .2s ease;
+}
+.setdown-weight.held { cursor: grabbing; box-shadow: 0 10px 26px hsl(var(--brume-primary) / .4); }
+.setdown-weight:focus-visible { outline: 2px solid var(--brume-focus, var(--accent)); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-word { animation: none; }
+  .ring-word, .arrive-act { transition: opacity .2s ease; }
+}

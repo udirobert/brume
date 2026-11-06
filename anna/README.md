@@ -8,17 +8,20 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-11-06): **v0.3.9 cut and pending review**
-(version_id=1987, cut by `anna-app apps publish --bump patch`; tool
+Current state (2026-11-06): **v0.4.0 cut and pending review**
+(version_id=1990, cut by `anna-app apps publish --bump minor`; tool
 frozen at 0.4.5/executa_version 1012, reset-offer skill at 767).
-This is the review-feedback release: prep cards export/print/copy,
-cross-flow memory lines (Anna + web, web arm-gated), hold-to-talk
-voice check-in with named stuck-mic recovery, and the ten-lesson
-mascot expressiveness pass. Bundled tool **0.4.5** (binaries in GitHub
-release `brume-executa-v0.4.5`; the darwin-arm64 matrix moved to
-macos-15 after GitHub retired macos-14). App id 582, slug `brume`,
-tool id `tool-papa-brume-htcxvfcr`. Product context and the full
-progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
+This is the review-feedback release plus **Arrive** — the
+anti-chatbot surface: a feeling ring (nine closed-set words) proposes
+exactly one small act — Scatter (draw → mist) or Set it down (pull
+the weight down) — with the model writing only the invitation line.
+Nothing persists. Also in this line: prep cards export/print/copy,
+cross-flow memory lines, hold-to-talk voice check-in, and the
+ten-lesson mascot expressiveness pass. Bundled tool **0.4.5**
+(binaries in GitHub release `brume-executa-v0.4.5`; the darwin-arm64
+matrix leg moved to macos-15 after GitHub retired macos-14). App id
+582, slug `brume`, tool id `tool-papa-brume-htcxvfcr`. Product context
+and the full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
 ## Layout
 

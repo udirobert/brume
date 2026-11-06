@@ -1147,3 +1147,30 @@ menu.
   observationally). Breathing and prep remain the standing doors.
 - **Nothing persists.** No saving, streaks or scores; v1 writes no
   ledger entries at all (a later arm may add a closed-set act id).
+
+### 12.23 Arrive ships — v0.4.0 in review (2026-11-06)
+
+The 12.22 design landed same-day as **v0.4.0** (version_id=1990,
+`pending_review`, re-pinned via `apps submit-review`):
+
+- `anna/bundle/arrive.js` — FEELINGS (9 closed-set words: Wired, Heavy,
+  Restless, Drained, Anxious, Foggy, Overwhelmed, Stuck, Okay), the
+  feeling→act map (scatter | setdown | null), invite prompt builder +
+  `cleanInvite` (claim-word and feeling-echo rejection, word/char caps),
+  closed `INVITE_FALLBACK` per feeling, and the two act controllers
+  (`createScatter` canvas→mist dissolve, `createSetdown` weighted pull).
+- `session.js` — `fetchInvite` (never throws; fallback on any failure).
+- Home gained a third card ("How are you arriving?"); three new
+  screens (arrive/scatter/setdown) with mascot states tender/watching.
+  Acts are NOT tasks — nothing checkpoints, nothing writes storage.
+- Verified: 133 anna tests (7 new arrive tests), browser QA on the
+  fake host drove ring → pick → invite → both acts to completion;
+  reduced-motion paths are opacity-only; keyboard paths exist
+  (Enter/Space on canvas, ArrowDown on the weight).
+- Invite prompt spot-checked on gemini-3-flash-preview: real lines
+  pass the cleaner; free-tier rate limits produced empties, which the
+  fallback covers by design.
+- Listing description gained section 4 (Arrive); metadata synced.
+
+Open: Name-it act and Set-down polish are fast follows; a future arm
+may write a closed-set `(feeling, act)` id if E6 measurement wants it.

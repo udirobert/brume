@@ -337,6 +337,54 @@ export function classifyMicError(err: unknown): VoiceFailure {
   return "no_mic";
 }
 
+// ---- Recovery help -----------------------------------------------------------
+// The pill line names the failure; the help card says what to actually do.
+// Closed table (like spokenGreeting): everything a stuck person can read is
+// ours, literal in source, and checked by copy-claims.test.ts.
+
+/** Browsers embedded inside other apps withhold the microphone entirely. */
+const IN_APP_RE =
+  /instagram|fban|fbav|fb_iab|linkedin|twitter|tiktok|snapchat|micromessenger|\bline\/|kakaotalk|pinterest|discord|telegram|wechat/i;
+
+export type DeviceKind = "inapp" | "ios" | "android" | "other";
+
+export function deviceKindFromUA(ua: string): DeviceKind {
+  if (IN_APP_RE.test(ua)) return "inapp";
+  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+  if (/android/i.test(ua)) return "android";
+  return "other";
+}
+
+/** The exit is always part of the help — the chips work without the mic. */
+export const VOICE_HELP_EXIT = "Or just tap a word.";
+
+export const VOICE_HELP: Record<VoiceFailure, Record<DeviceKind, string> | string> = {
+  mic_blocked: {
+    inapp:
+      "This page is open inside another app’s browser, and those don’t share the microphone. Open it in Safari or Chrome, then try again.",
+    ios:
+      "The microphone is switched off for this site. Tap aA in the address bar, choose Website Settings, and turn Microphone on.",
+    android:
+      "The microphone is switched off for this site. Tap the lock in the address bar, choose Permissions, and allow the microphone.",
+    other:
+      "The microphone is switched off for this site. Allow it in your browser’s site settings, then try again.",
+  },
+  no_mic: "There’s no microphone this page can reach. The words below still work.",
+  offline:
+    "There’s no connection right now, and the voice needs one. It usually comes back on its own.",
+  unavailable:
+    "The voice isn’t available just now. The words below still work.",
+  insecure:
+    "The microphone only works over a private (https) connection. Open the usual address, or use the words below.",
+};
+
+/** Full card text for a failure on this device — step plus the way out. */
+export function voiceHelpFor(failure: VoiceFailure, ua: string): string {
+  const entry = VOICE_HELP[failure];
+  const step = typeof entry === "string" ? entry : entry[deviceKindFromUA(ua)];
+  return `${step} ${VOICE_HELP_EXIT}`;
+}
+
 /** What the screen says for each failure — short, and always with a way out. */
 export const VOICE_FAILURE_COPY: Record<VoiceFailure, string> = {
   // A refusal with no prompt means the site was denied before (iOS keeps

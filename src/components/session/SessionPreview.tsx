@@ -41,7 +41,7 @@ interface SessionPreviewProps {
   /** Brume waits with you — rendered above the pattern name. */
   mascot?: React.ReactNode;
   /** Voice check-in state — lets the parent perk the companion's ears. */
-  onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
+  onVoiceState?: (state: "listening" | "matched" | "missed" | "blocked", index?: number) => void;
 }
 
 export const SessionPreview: React.FC<SessionPreviewProps> = ({

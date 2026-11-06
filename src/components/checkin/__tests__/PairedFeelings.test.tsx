@@ -368,4 +368,75 @@ describe("mic — hold to talk, tap to toggle", () => {
     await act(async () => { await Promise.resolve(); });
     expect(container.textContent).toContain("mic is off for this site");
   });
+
+  const help = () => container.querySelector<HTMLDivElement>(".brume-voice-help");
+  const failBlocked = () =>
+    micMock.listenOnce.mockResolvedValueOnce({
+      transcript: "", index: null, suggest: null, pattern: null, failure: "mic_blocked",
+    });
+
+  it("the blocked-mic help card stays put, says the fix for this device, and can be dismissed", async () => {
+    failBlocked();
+    await mountPlain();
+    pointer("pointerdown", mic());
+    pointer("pointerup", mic());
+    await act(async () => { vi.waitFor(() => expect(help()).not.toBeNull()); });
+    // jsdom's UA is desktop-ish: site settings guidance + the way out.
+    expect(help()!.textContent).toContain("switched off for this site");
+    expect(help()!.textContent).toContain("Or just tap a word.");
+    // It does not dissolve: transcripts are theirs, help is ours. Fast-forward
+    // past the transcript's 6 s clear window and it must still be there.
+    vi.useFakeTimers();
+    await act(async () => { vi.advanceTimersByTime(7000); });
+    vi.useRealTimers();
+    expect(help()).not.toBeNull();
+    // Dismiss.
+    await act(async () => {
+      help()!.querySelector("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(help()).toBeNull();
+  });
+
+  it("trying again retires the card, and blocked reports itself as blocked", async () => {
+    const states: string[] = [];
+    await act(async () => {
+      root.render(
+        <PairedFeelings
+          selectedIndex={null}
+          onChoose={(i: number | null) => chosen.push(i)}
+          onVoiceState={(st) => states.push(st)}
+          showHint={false}
+        />,
+      );
+    });
+    failBlocked();
+    pointer("pointerdown", mic());
+    pointer("pointerup", mic());
+    await act(async () => { vi.waitFor(() => expect(help()).not.toBeNull()); });
+    expect(states).toContain("blocked");
+    // The next press clears the card — the person is trying, help is done.
+    pointer("pointerdown", mic());
+    expect(help()).toBeNull();
+    pointer("pointerup", mic());
+  });
+
+  it("before the first press, sets the permission-prompt expectation once", async () => {
+    await mountPlain();
+    const hint = container.querySelector(".brume-mic-hint");
+    expect(hint?.textContent).toContain("hold to speak");
+    expect(hint?.textContent).toContain("the browser asks for the mic the first time");
+    micMock.listenOnce.mockResolvedValueOnce({
+      transcript: "tense", index: 1, suggest: null, pattern: null, failure: null,
+    });
+    pointer("pointerdown", mic());
+    pointer("pointerup", mic());
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(container.querySelector(".brume-mic-hint")).toBeNull();
+    expect(window.localStorage.getItem("brume.micUsed.v1")).toBe("1");
+    // Next mount: the hint has said its one line.
+    act(() => root.unmount());
+    root = createRoot(container);
+    await mountPlain();
+    expect(container.querySelector(".brume-mic-hint")).toBeNull();
+  });
 });

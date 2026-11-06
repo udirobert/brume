@@ -186,10 +186,15 @@ export default function Index() {
       <PairedFeelings
         selectedIndex={feelTap}
         onChoose={handleFeel}
-        onVoiceState={(s) =>
-          s === "listening" &&
-          setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` })
-        }
+        onVoiceState={(s) => {
+          if (s === "listening") {
+            setMascotReaction({ name: "ready", key: `home-${++reactionSerial.current}` });
+          } else if (s === "blocked") {
+            // The companion settles with you while the card explains —
+            // a blocked mic is a pause, not an alarm.
+            setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` });
+          }
+        }}
         onPatternOffer={setRhythmOffer}
       />
 

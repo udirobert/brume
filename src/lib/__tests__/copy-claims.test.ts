@@ -20,6 +20,7 @@ import { HOME_FEELING_COPY, FEELINGS } from "../feelings";
 import { CHECKIN_REASONS } from "../checkinLedger";
 import { sessionGreeting } from "../spokenGreeting";
 import { memoryLine } from "../memoryLine";
+import { VOICE_HELP, VOICE_HELP_EXIT } from "../voiceCheckin";
 import type { LedgerEntry } from "../checkinLedger";
 import { appendRoomLink, buildQuietPauseIcs, invitationShareText } from "../invitation";
 
@@ -153,6 +154,18 @@ describe("check-in copy", () => {
       expect(str, `"${str}"`).not.toMatch(BANNED);
       // It names a feeling's own phrase, never a verdict or a number.
       expect(str, `"${str}"`).not.toMatch(/\d|better|worse|improv|progress|streak|score/i);
+    }
+  });
+
+  it("the stuck-mic help table is rhythm-only too", () => {
+    const strings: string[] = [VOICE_HELP_EXIT];
+    for (const entry of Object.values(VOICE_HELP)) {
+      if (typeof entry === "string") strings.push(entry);
+      else strings.push(...Object.values(entry));
+    }
+    expect(strings.length).toBeGreaterThanOrEqual(9);
+    for (const str of strings) {
+      expect(str, `"${str}"`).not.toMatch(BANNED);
     }
   });
 });

@@ -1,6 +1,16 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { getMicMode, hasNegation, matchFeeling, matchPattern, setMicMode, suggestFeeling } from "../voiceCheckin";
+import {
+  deviceKindFromUA,
+  getMicMode,
+  hasNegation,
+  matchFeeling,
+  matchPattern,
+  setMicMode,
+  suggestFeeling,
+  voiceHelpFor,
+  VOICE_HELP_EXIT,
+} from "../voiceCheckin";
 
 describe("matchFeeling", () => {
   it("matches exact labels", () => {
@@ -173,5 +183,37 @@ describe("mic mode", () => {
     expect(getMicMode()).toBe("hold");
     window.localStorage.setItem("brume.micMode.v1", "a whole sentence");
     expect(getMicMode()).toBe("hold");
+  });
+});
+
+describe("stuck-mic help", () => {
+  const IPHONE =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const INSTAGRAM =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 300.0";
+  const ANDROID =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Mobile Safari/537.36";
+  const DESKTOP =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36";
+
+  it("tells in-app browsers apart from the real ones", () => {
+    expect(deviceKindFromUA(INSTAGRAM)).toBe("inapp");
+    expect(deviceKindFromUA(IPHONE)).toBe("ios");
+    expect(deviceKindFromUA(ANDROID)).toBe("android");
+    expect(deviceKindFromUA(DESKTOP)).toBe("other");
+  });
+
+  it("every failure ends in the tap-way-out", () => {
+    for (const f of ["mic_blocked", "no_mic", "offline", "unavailable", "insecure"] as const) {
+      for (const ua of [INSTAGRAM, IPHONE, ANDROID, DESKTOP]) {
+        expect(voiceHelpFor(f, ua), f).toContain(VOICE_HELP_EXIT);
+      }
+    }
+  });
+
+  it("points at the address bar on phones, not 'browser settings'", () => {
+    expect(voiceHelpFor("mic_blocked", IPHONE)).toContain("aA");
+    expect(voiceHelpFor("mic_blocked", ANDROID)).toContain("lock in the address bar");
+    expect(voiceHelpFor("mic_blocked", INSTAGRAM)).toContain("another app");
   });
 });

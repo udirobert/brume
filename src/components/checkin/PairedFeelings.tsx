@@ -14,6 +14,7 @@ import {
   hasNegation,
   listenOnce,
   voiceCheckinSupported,
+  voiceHelpFor,
   VOICE_FAILURE_COPY,
   type ListenControl,
 } from "@/lib/voiceCheckin";
@@ -27,6 +28,16 @@ function holdHintSeen(): boolean {
 }
 function writeHoldHintSeen() {
   try { window.localStorage.setItem(HOLD_HINT_KEY, "1"); } catch (e) { void e; }
+}
+
+// First press is the scary one — the browser prompt appears with no
+// warning. A one-time line beside the mic sets the expectation.
+const MIC_USED_KEY = "brume.micUsed.v1";
+function micEverUsed(): boolean {
+  try { return window.localStorage.getItem(MIC_USED_KEY) === "1"; } catch { return true; }
+}
+function markMicUsed() {
+  try { window.localStorage.setItem(MIC_USED_KEY, "1"); } catch (e) { void e; }
 }
 
 function readHintSeen(): boolean {
@@ -53,7 +64,7 @@ export function PairedFeelings({
 }: {
   selectedIndex: number | null;
   onChoose: (index: number | null, button: HTMLButtonElement, fromOffer?: boolean) => void;
-  onVoiceState?: (state: "listening" | "matched" | "missed", index?: number) => void;
+  onVoiceState?: (state: "listening" | "matched" | "missed" | "blocked", index?: number) => void;
   /** A rhythm name heard in the utterance — proposed, never committed. */
   onPatternOffer?: (patternId: string) => void;
   showHint?: boolean;
@@ -81,6 +92,11 @@ export function PairedFeelings({
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const ctlRef = useRef<ListenControl | null>(null);
   const [holdUI, setHoldUI] = useState(false);
+  // Help for a stuck microphone. Unlike heard transcripts — which are the
+  // person's words, and dissolve — this is Brume's own line from a closed
+  // table: it stays until the next press proves the moment has passed.
+  const [help, setHelp] = useState<string | null>(null);
+  const [micUsed, setMicUsed] = useState(micEverUsed);
   const [heard, setHeard] = useState("");
   const [dissolve, setDissolve] = useState(false);
   const heardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -125,6 +141,7 @@ export function PairedFeelings({
     (pairIndex: number, button: HTMLButtonElement) => {
       const wasOffered = suggested !== null;
       setSuggested(null);
+      setHelp(null);
       const next = selectPairedFeel(
         { faces, selected: selectedIndex },
         pairIndex,
@@ -179,10 +196,13 @@ export function PairedFeelings({
       window.setTimeout(() => flashHeard("tip: keep your finger on it to take your time"), 1400);
     }
     if (failure && !transcript) {
-      // Said out loud, not shrugged off — the person should know whether it
-      // was permission, the network, or nothing heard at all.
-      onVoiceState?.("missed");
-      setAnnounce(VOICE_FAILURE_COPY[failure]);
+      // Said out loud, not shrugged off — and with the actual way through.
+      // The short line flashes; the help card stays, because instructions
+      // that evaporate in four seconds are a finding, not a feature.
+      const card = voiceHelpFor(failure, navigator.userAgent);
+      onVoiceState?.(failure === "mic_blocked" || failure === "insecure" ? "blocked" : "missed");
+      setAnnounce(card);
+      setHelp(card);
       flashHeard(VOICE_FAILURE_COPY[failure]);
       return;
     }
@@ -239,6 +259,11 @@ export function PairedFeelings({
       return;
     }
     const mode = getMicMode();
+    setHelp(null); // the moment they try again, the card has done its job
+    if (!micUsed) {
+      markMicUsed();
+      setMicUsed(true);
+    }
     holdingRef.current = true;
     pressStartRef.current = Date.now();
     // Hold (the default): open while the finger is down, release ends it.
@@ -406,10 +431,25 @@ export function PairedFeelings({
           {micOn ? "" : "say it"}
         </button>
       )}
+      {!micUsed && voiceOk && !micOn && (
+        <span className="brume-mic-hint">
+          {getMicMode() === "hold"
+            ? "hold to speak — the browser asks for the mic the first time"
+            : "tap to speak — the browser asks for the mic the first time"}
+        </span>
+      )}
       {heard && (
         <span className={`brume-voice-heard${dissolve ? " is-dissolve" : ""}`} aria-hidden="true">
           {heard}
         </span>
+      )}
+      {help && (
+        <div className="brume-voice-help" role="note">
+          <p>{help}</p>
+          <button type="button" onClick={() => setHelp(null)}>
+            okay
+          </button>
+        </div>
       )}
       {selectedIndex !== null && (
         <button

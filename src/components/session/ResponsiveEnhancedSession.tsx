@@ -184,16 +184,26 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
     setVoiceCueStyle(session.cueStyle);
   }, [session.cueStyle]);
 
+  // The cue belongs to the phase EDGE. This effect also re-runs for reasons
+  // that are not the breath moving (config identity churn, audio toggle,
+  // pause/resume) — without the ref, a stray re-run calls speakCue for the
+  // current phase again: playFile stops the still-playing cue and restarts
+  // it, which is exactly "breathe out" twice in a row, cut off mid-word.
+  const lastCueRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (session.phase === 'paused' || session.phase === 'complete') {
       stopCues();
+      lastCueRef.current = null; // a resume re-orients with one cue
       return;
     }
-    if (!sessionActive || !audioEnabled) return;
-    speakCue(
-      breathPhase === 'hold_after_exhale' ? 'pause' : breathPhase,
-      flatPattern[breathPhase] || undefined,
-    );
+    if (!sessionActive || !audioEnabled) {
+      lastCueRef.current = null; // enabling voice speaks the current phase
+      return;
+    }
+    const cueId = breathPhase === 'hold_after_exhale' ? 'pause' : breathPhase;
+    if (lastCueRef.current === cueId) return;
+    lastCueRef.current = cueId;
+    speakCue(cueId, flatPattern[breathPhase] || undefined);
   }, [breathPhase, sessionActive, session.phase, audioEnabled, flatPattern]);
 
   // Brume IS the breath: centred in the orb, same eased curve.

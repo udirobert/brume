@@ -251,6 +251,15 @@ announces. `sessionStore` holds only the API callers use;
 `sessionSelectors.isActive` means `phase === 'active'` literally (not
 "session exists").
 
+Spoken breath cues belong to the phase **edge**, not to renders: the
+cue effect in `ResponsiveEnhancedSession` keeps a `lastCueRef` so a
+stray re-run (config identity churn, the 5 s offline-status poll) stays
+silent, and pause/resume resets the ref so a resume re-orients with one
+cue. The session shell sizes to the *dynamic* viewport
+(`supports-[height:100dvh]:h-[100dvh]`, `h-screen` fallback, no
+`min-h-screen`) so pause/breathe/end never slide behind a mobile browser
+bar.
+
 ## Product shape: compact, one room
 
 Brume stays a compact experience — one room + one companion persisting

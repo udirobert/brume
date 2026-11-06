@@ -17,6 +17,21 @@ vi.mock("@/lib/notifications/oneSignal", () => ({
   trackSessionCompleted: vi.fn(),
 }));
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+// The voice engine is observed, not exercised, here: the tests pin WHEN
+// the component speaks (phase edges only), never the audio plumbing.
+vi.mock("@/lib/voiceCues", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/voiceCues")>();
+  return {
+    ...actual,
+    speakCue: vi.fn(),
+    speakLine: vi.fn(),
+    stopCues: vi.fn(),
+    preloadCues: vi.fn(),
+    setVoiceEnabled: vi.fn(),
+    setCueStyle: vi.fn(),
+    previewCue: vi.fn(),
+  };
+});
 vi.mock("../../BreathingAnimation", () => ({ default: () => null }));
 vi.mock("../EnhancedSessionLayout", () => ({
   EnhancedSessionLayout: (props: { controls?: React.ReactNode }) =>
@@ -25,6 +40,7 @@ vi.mock("../EnhancedSessionLayout", () => ({
 
 import { ResponsiveEnhancedSession } from "../ResponsiveEnhancedSession";
 import { useSessionStore } from "@/stores/sessionStore";
+import { speakCue, stopCues } from "@/lib/voiceCues";
 
 const state = () => useSessionStore.getState();
 const nestedBox = {
@@ -109,6 +125,69 @@ describe("ResponsiveEnhancedSession integration", () => {
     expect(state().phase).toBe("active");
     expect(gum).not.toHaveBeenCalled();
   });
+
+describe("voice cue edges", () => {
+  // One cue per phase edge — a repeated "breathe out" was the report.
+  // Fake timers advance performance.now, which the phase math reads;
+  // the 100ms tick interval rides the same clock.
+  const cueCalls = () => vi.mocked(speakCue).mock.calls.map((c) => c[0]);
+
+  it("speaks a phase edge once and stays silent under config churn", async () => {
+    vi.useFakeTimers();
+    ({ container, root } = mount({}, { startImmediately: true }));
+    await act(async () => {});
+    expect(state().phase).toBe("active");
+    vi.mocked(speakCue).mockClear();
+
+    // inhale (4s) → hold: exactly one cue at the edge
+    act(() => { vi.advanceTimersByTime(4_300); });
+    await act(async () => {});
+    expect(state().metrics.currentPhase).toBe("hold");
+    expect(cueCalls().filter((id) => id === "hold")).toHaveLength(1);
+    const countAtHold = cueCalls().length;
+
+    // Mid-phase identity churn — a fresh but identical config object,
+    // what the wrapper rebuilt on every render before it was memoized:
+    // the effect re-runs, the edge ref refuses to speak again.
+    act(() => {
+      root.render(
+        React.createElement(
+          MemoryRouter,
+          { initialEntries: [{ pathname: "/session", state: { startImmediately: true } }] },
+          React.createElement(ResponsiveEnhancedSession, {
+            config: {
+              pattern: { ...nestedBox, phases: { ...nestedBox.phases } },
+              mode: "enhanced",
+            },
+            onSessionComplete: vi.fn(),
+            onSessionExit: vi.fn(),
+          }),
+        ),
+      );
+    });
+    await act(async () => {});
+    expect(state().metrics.currentPhase).toBe("hold");
+    expect(cueCalls().length).toBe(countAtHold);
+  });
+
+  it("a resume re-orients with exactly one cue for the current phase", async () => {
+    vi.useFakeTimers();
+    ({ container, root } = mount({}, { startImmediately: true }));
+    await act(async () => {});
+    act(() => { vi.advanceTimersByTime(4_300); });
+    await act(async () => {});
+    expect(state().metrics.currentPhase).toBe("hold");
+
+    act(() => { state().pauseSession(); });
+    await act(async () => {});
+    expect(vi.mocked(stopCues)).toHaveBeenCalled();
+
+    vi.mocked(speakCue).mockClear();
+    act(() => { state().resumeSession(); });
+    await act(async () => {});
+    expect(cueCalls()).toEqual(["hold"]);
+  });
+});
 
   it("startImmediately consumes once into an active session", async () => {
     ({ container, root } = mount({}, { startImmediately: true }));

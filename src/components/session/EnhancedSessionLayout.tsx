@@ -17,7 +17,11 @@ export const EnhancedSessionLayout: React.FC<EnhancedSessionLayoutProps> = ({
   onExit,
 }) => {
   return (
-    <div className="relative flex flex-col h-[100dvh] min-h-screen overflow-hidden">
+    // h-screen is the fallback for browsers without dvh; when 100dvh is
+    // supported it wins — and there is deliberately no min-h-screen here:
+    // 100vh is the viewport WITH the mobile URL bar retracted, so as a
+    // minimum it pushes the controls behind the browser's own bar.
+    <div className="relative flex flex-col h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/15 rounded-full blur-[120px] -z-10" />
 
       {onExit && (

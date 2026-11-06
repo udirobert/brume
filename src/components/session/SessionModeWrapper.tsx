@@ -180,16 +180,22 @@ export const SessionModeWrapper: React.FC = () => {
     [handleSessionComplete, initialPattern]
   );
 
-  const responsiveConfig = {
-    pattern: {
-      id: sessionConfig.pattern.id,
-      name: sessionConfig.pattern.name,
-      phases: sessionConfig.pattern.phases,
-      benefits: sessionConfig.pattern.benefits,
-      description: sessionConfig.pattern.description,
-    },
-    mode: 'enhanced' as 'classic' | 'enhanced',
-  };
+  // Memoized: the child's cue and init effects key off config.pattern
+  // identity — an inline rebuild here re-fires them on every wrapper
+  // render (which is how a breath cue got spoken twice in a row).
+  const responsiveConfig = useMemo(
+    () => ({
+      pattern: {
+        id: sessionConfig.pattern.id,
+        name: sessionConfig.pattern.name,
+        phases: sessionConfig.pattern.phases,
+        benefits: sessionConfig.pattern.benefits,
+        description: sessionConfig.pattern.description,
+      },
+      mode: 'enhanced' as 'classic' | 'enhanced',
+    }),
+    [sessionConfig],
+  );
 
   return (
     <SessionErrorBoundary>

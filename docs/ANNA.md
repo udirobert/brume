@@ -1041,3 +1041,35 @@ Verified with ego-browser at 375×667 (everything above the tab bar,
 zero scroll), 320×568 (Begin still pinned and clear, reasons scroll
 beneath it) and desktop (seat at the column's foot, no tab bar). 512
 web tests, tsc clean, lint 0 errors.
+
+### 12.20 The session fits the viewport, and the voice speaks once per edge (2026-11-06)
+
+Two phone reports from a live breath, both fixed at the root:
+
+- **Controls no longer hide behind the browser bar.** The session shell
+  was `h-[100dvh] min-h-screen` — and `min-height: 100vh` is the
+  viewport *with the URL bar retracted*, so it forced the box taller
+  than the visible area and pushed pause/breathe/end behind the
+  browser's own chrome. Now it is `h-screen` with a
+  `supports-[height:100dvh]:h-[100dvh]` upgrade and no minimum; the
+  safe-area-aware bottom padding does the rest. Verified in a prod
+  build at 390×700: End at y=674, zero scroll.
+- **"Breathe out" twice in a row, cut off.** The phase-cue effect
+  keys off `flatPattern` identity, and `SessionModeWrapper` rebuilt
+  its config inline while `useOfflineManager` polls `getSyncStatus()`
+  (a fresh object) every 5 s — so every poll re-ran the effect and
+  `playFile` restarted the *still-speaking* cue from the top. Two
+  fixes that each close the door alone: the wrapper's config is
+  memoized, and the cue effect keeps a `lastCueRef` so a cue belongs
+  to the phase **edge** — stray re-runs stay silent, pause/resume
+  resets the ref so a resume re-orients with exactly one cue.
+
+A dev-only artifact worth knowing: in `vite dev` (StrictMode
+double-mount) the manageTiming owner unmounts mid-startup and its
+cleanup pauses the brand-new session, so Begin lands on "Resume".
+Production builds run active; the jsdom integration suite drives time
+with fake timers and pins the once-per-edge behaviour directly.
+
+New tests: 2 integration (edge once under churn; resume re-orients
+once), 2 layout (dvh sizing, safe-area seat). 516 web tests, tsc
+clean, lint 0 errors.

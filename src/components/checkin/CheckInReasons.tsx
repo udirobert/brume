@@ -13,12 +13,24 @@ import { track } from "@/lib/events";
  * without storing a single private string. Nothing here is fetched or
  * logged; the row is optional and disappears if left alone.
  */
-export function CheckInReasons({ feeling }: { feeling: number }) {
+export function CheckInReasons({ feeling, onPick }: {
+  feeling: number;
+  /** Fired after the reason is kept — the room may acknowledge it. */
+  onPick?: (id: CheckInReasonId) => void;
+}) {
   const [kept, setKept] = useState<CheckInReasonId | null>(null);
 
   if (kept !== null) {
+    // The row transforms instead of vanishing: one confirmed pill, the
+    // same height as the row, so nothing below jumps. A choice made is
+    // still visible — that is the feedback.
+    const label = CHECKIN_REASONS.find((r) => r.id === kept)?.label ?? "";
     return (
-      <p className="brume-reasons__kept">kept — just for you · stays on this device</p>
+      <div className="brume-reasons brume-reasons--kept">
+        <span className="brume-reasons__kept" role="status">
+          because {label} · kept on this device
+        </span>
+      </div>
     );
   }
 
@@ -26,6 +38,7 @@ export function CheckInReasons({ feeling }: { feeling: number }) {
     attachReason(id);
     track("checkin_reason", { feeling, reason: id });
     setKept(id);
+    onPick?.(id);
   };
 
   return (

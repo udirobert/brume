@@ -6,6 +6,7 @@ import { PairedFeelings } from "@/components/checkin/PairedFeelings";
 import { CheckInReasons } from "@/components/checkin/CheckInReasons";
 import { type MascotReaction } from "@/components/BrumeMascot";
 import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AbsorbDroplet } from "@/components/atmosphere/AbsorbDroplet";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
 import { applyFeel } from "@/lib/feelTheme";
@@ -69,6 +70,7 @@ function RhythmPicker({ value, onChange, suggested }: {
 export default function Index() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
   const { presence, setPresence } = useMascotPresence();
   const companion = presence === "companion";
   const feelTap = useRoomExperience((s) => s.feelIndex);
@@ -182,7 +184,7 @@ export default function Index() {
       >
         <CompanionAnchor
           state={feel?.state ?? "idle"}
-          size={156}
+          size={isMobile ? 132 : 156}
           presence={presence}
           breathing={companion}
           trackPointer={companion}
@@ -224,7 +226,14 @@ export default function Index() {
         onPatternOffer={setRhythmOffer}
       />
 
-      {feelTap !== null && <CheckInReasons feeling={feelTap} />}
+      {feelTap !== null && (
+        <CheckInReasons
+          feeling={feelTap}
+          onPick={() =>
+            setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` })
+          }
+        />
+      )}
 
       {memoryLine && (
         <p className="brume-home__memory text-sm text-muted-foreground">
@@ -232,9 +241,15 @@ export default function Index() {
         </p>
       )}
 
+      {/* The action seat: margin-top:auto puts Begin at the bottom of a
+          short screen, position:sticky keeps it there on a long one —
+          Begin is always in view, above the tab bar. Options stays in
+          flow below it: a pinned Options would cover the reason chips. */}
+      <div className="brume-home__footer">
       <button type="button" className={`brume-home__primary brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
         Begin
       </button>
+      </div>
 
       <details ref={optionsRef} className="brume-home-options" onKeyDown={(e) => {
         if (e.key !== "Escape") return;

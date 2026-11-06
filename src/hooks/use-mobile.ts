@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 const MOBILE_MQ = "(max-width: 767px)";
 
 function computeIsMobile() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia(MOBILE_MQ).matches;
 }
 
@@ -12,6 +12,7 @@ export function useIsMobile() {
   const [isMobile, setIsMobile] = useState(computeIsMobile);
 
   useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia(MOBILE_MQ);
     const check = () => setIsMobile(mq.matches);
     check();

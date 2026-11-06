@@ -360,7 +360,11 @@ const HOLD_TAP_MS = 350;
   }, [micOn, beginListening, stopListening]);
 
   return (
-    <div className="brume-pairs" role="group" aria-label="Choose a feeling">
+    <div
+      className={`brume-pairs${selectedIndex !== null ? " has-selection" : ""}`}
+      role="group"
+      aria-label="Choose a feeling"
+    >
       {FEELING_PAIRS.map((pair, i) => {
         const face = faces[i];
         const feel = FEELINGS[face];

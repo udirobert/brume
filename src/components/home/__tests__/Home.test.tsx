@@ -190,6 +190,37 @@ describe("Home", () => {
     expect(stored[0]).toMatchObject({ f: 8, r: "work" });
   });
 
+  it("keeping a reason transforms the row — named, acknowledged, no jump", async () => {
+    await mount();
+    clickEl(container.querySelectorAll(".brume-choice--flip")[1]);
+    const row = container.querySelector(".brume-reasons")!;
+    const rowHeight = row.getBoundingClientRect().height; // jsdom: 0 — structure only
+    void rowHeight;
+    const chips = [
+      ...container.querySelectorAll<HTMLButtonElement>(".brume-reasons__chip"),
+    ];
+    clickEl(chips.find((c) => c.textContent === "sleep")!);
+    // The row becomes one confirmed pill that names the choice.
+    const kept = container.querySelector(".brume-reasons__kept")!;
+    expect(kept.textContent).toContain("because sleep");
+    expect(kept.getAttribute("role")).toBe("status");
+    expect(container.querySelector(".brume-reasons--kept")).not.toBeNull();
+    // The companion acknowledges with a settle.
+    const last = anchorProps[anchorProps.length - 1];
+    expect((last.reaction as { name: string }).name).toBe("settle");
+  });
+
+  it("Begin sits in a pinnable action seat; Options follows in flow", async () => {
+    await mount();
+    const footer = container.querySelector(".brume-home__footer")!;
+    expect(footer).not.toBeNull();
+    expect(footer.querySelector(".brume-home__primary")).not.toBeNull();
+    // Options is a sibling after the seat — pinning it would cover the
+    // reason chips on a short screen.
+    expect(footer.querySelector(".brume-home-options")).toBeNull();
+    expect(footer.nextElementSibling?.classList.contains("brume-home-options")).toBe(true);
+  });
+
   it("room settings inside Options update the store", async () => {
     await mount();
     const details = container.querySelector<HTMLDetailsElement>(".brume-home-options")!;

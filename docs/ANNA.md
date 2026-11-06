@@ -1002,3 +1002,42 @@ pose, never the schedule — every new behaviour is gated behind it.
 
 41 engine tests (was 35), 510 web tests (was 501), anna 126, mcp 17 —
 all green; `anna-app validate --strict` passes.
+
+### 12.19 The home column stops floating — Begin always in view (2026-11-06)
+
+Phone review found the mobile home stack broken in four ways: the title
+floating low under a centred wrapper, Begin below the fold (and behind
+the fixed tab bar) once a feeling was chosen, the reason row collapsing
+into near-invisible text on pick ("nothing seems to happen"), and the
+mascot squishing or overlaying chips. Measured live at 375×667,
+320×568 and desktop before touching anything.
+
+- **Home opts out of the shared vertical centreing** —
+  `main:has(> .brume-home--compact) { justify-content: flex-start }`
+  plus trimmed top padding; the column owns its own rhythm (title near
+  the nav, action at the bottom) and `flex-grow: 1` fills the room.
+  Every child is `flex: none` — the squish was flexbox shrinking the
+  anchor box on overflow.
+- **The action seat**: Begin sits in `.brume-home__footer` —
+  `margin-top: auto` seats it at the bottom of a short screen,
+  `position: sticky` pins it above the tab bar
+  (`bottom: safe-area + 88px`, inside the layout's 96px reservation)
+  on a long one. Only Begin pins; Options stays in flow so an opened
+  sheet never covers the chips, and the seat's fade gradient is
+  `pointer-events: none` — chips under it stay tappable (verified with
+  elementFromPoint at 320×568).
+- **Reasons transform instead of vanishing**: the picked word stays as
+  one confirmed pill ("because sleep · kept on this device",
+  `role="status"`, same 40px beat as the row so Begin doesn't jump),
+  and the companion settles once in acknowledgment (`onPick`).
+- **Selection focus**: `.brume-pairs.has-selection` dims the unchosen
+  words to 0.55 (same grammar as the listening dim); hover/focus
+  restore them.
+- **The mascot yields on mobile**: home anchor 156 → 132 on
+  `useIsMobile` (the hook learned a `matchMedia` guard for jsdom),
+  companion margins trimmed.
+
+Verified with ego-browser at 375×667 (everything above the tab bar,
+zero scroll), 320×568 (Begin still pinned and clear, reasons scroll
+beneath it) and desktop (seat at the column's foot, no tab bar). 512
+web tests, tsc clean, lint 0 errors.

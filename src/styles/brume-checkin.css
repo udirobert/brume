@@ -295,6 +295,14 @@
   opacity: 0.45;
   transition: opacity 0.4s ease;
 }
+.brume-pairs.has-selection .brume-choice--flip:not(.is-selected) {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+.brume-pairs.has-selection .brume-choice--flip:not(.is-selected):hover,
+.brume-pairs.has-selection .brume-choice--flip:not(.is-selected):focus-visible {
+  opacity: 0.95;
+}
 @media (prefers-reduced-motion: reduce) {
   .brume-mic.is-listening::after,
   .brume-mic.is-hearing::after {
@@ -502,12 +510,29 @@
   font-size: 0.62rem;
   opacity: 0.4;
 }
+.brume-reasons--kept {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px; /* the same beat as the chip row — nothing jumps */
+  margin-top: 0.5rem;
+}
 .brume-reasons__kept {
-  font-size: 0.7rem;
-  font-style: italic;
-  opacity: 0.5;
+  font-size: 0.74rem;
+  font-style: normal;
+  opacity: 0.8;
   text-align: center;
-  margin: 0.4rem 0 0;
+  margin: 0;
+  border: 1px solid rgba(140, 120, 200, 0.35);
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  animation: brumeReasonKept 0.2s ease;
+}
+@keyframes brumeReasonKept {
+  from { opacity: 0; transform: scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-reasons__kept { animation: none; }
 }
 
 /* Voice-matched check-in nudges the next step — Begin glows briefly. */

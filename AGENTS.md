@@ -227,6 +227,19 @@ Core-loop navigation is direct — no `viewTransitionTo` snapshots.
 Focused tests:
 `pnpm vitest run src/lib/__tests__/feelings.test.ts src/lib/__tests__/roomExperience.test.ts src/lib/__tests__/mascotDemeanor.test.ts src/components/atmosphere/__tests__/RoomEnvironment.test.tsx src/components/checkin/__tests__/PairedFeelings.test.tsx src/components/home/__tests__/Home.test.tsx`.
 
+Home mobile layout (2026-11-06, after a real-phone review): the home
+column opts out of the shared centring (`main:has(> .brume-home--compact)`
+→ `flex-start`, children `flex: none` — flex-shrink was the mascot
+squish). Begin lives in `.brume-home__footer`: `margin-top: auto` seats
+it, `position: sticky` pins it above the fixed tab bar on overflow
+(mobile `bottom: safe-area + 88px`, inside the layout's `pb-24`
+reservation) — Begin is always in view. Only Begin pins; Options stays
+in flow, and the seat's fade is `pointer-events: none` so chips beneath
+it stay tappable. Reasons transform on pick into one confirmed pill
+(same height as the row — nothing jumps) and the companion settles once
+(`onPick`); `.brume-pairs.has-selection` dims the unchosen words. Home
+mascot anchor is 132px on `useIsMobile`, 156 otherwise.
+
 Session lifecycle: the session offers its own ending — past
 `LANDING_SECONDS` (90 s, matching `practiceProgress` fullness) in
 `ResponsiveEnhancedSession`, the next inhale boundary self-pauses into

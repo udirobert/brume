@@ -21,7 +21,24 @@
   width: 100%;
   margin: 0 auto;
   gap: 0;
-  padding: 1rem 0.25rem;
+  padding: 0.25rem;
+  /* Home fills the room: the action footer seats itself at the bottom
+     instead of the whole stack floating mid-screen. */
+  flex-grow: 1;
+}
+/* The shared page wrapper centres short pages; Home is a column that
+   owns its own vertical rhythm — title near the nav, action at the
+   bottom. (No-op where :has is unsupported: the page degrades to the
+   old centred layout.) */
+main:has(> .brume-home--compact) {
+  justify-content: flex-start;
+}
+/* Nothing in the column may shrink — a squeezed stack is how the
+   mascot gets squished and controls overlap on short screens. When the
+   column is taller than the screen the page scrolls and the footer
+   below stays pinned. */
+.brume-home--compact > * {
+  flex: none;
 }
 .brume-home--compact h1 {
   font-size: clamp(1.65rem, 4vw, 2.2rem);
@@ -31,7 +48,7 @@
   margin: 0;
 }
 .brume-home--compact .brume-home__companion {
-  margin: 12px auto 16px;
+  margin: 4px auto 8px;
 }
 .brume-pairs {
   width: 100%;
@@ -72,15 +89,47 @@
   background: color-mix(in srgb, var(--brume-orb-mist, #b9c6ee) 15%, var(--brume-card, #fff));
   border-color: var(--brume-rule);
 }
+/* The action seat for Begin. margin-top:auto puts it at the bottom of
+   a short column; sticky keeps it in view when the column scrolls —
+   on mobile it parks just above the fixed tab bar. Only Begin pins:
+   Options stays in flow so an opened sheet never covers the chips. */
+.brume-home__footer {
+  margin-top: auto;
+  position: sticky;
+  bottom: 12px;
+  width: min(100%, 18rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px 6px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--background, #fff) 90%, transparent) 60%,
+    transparent
+  );
+  /* The fade is decorative: on very short screens chips may sit under
+     it, and they must stay tappable through the gradient. */
+  pointer-events: none;
+}
+.brume-home__footer .brume-home__primary {
+  pointer-events: auto;
+}
+@media (max-width: 767px) {
+  /* The layout reserves pb-24 (96px) for the fixed tab bar; pin just
+     inside it so Begin never sits under the bar. */
+  .brume-home__footer {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
+}
 .brume-home--compact .brume-home__primary {
   width: min(100%, 18rem);
-  margin-top: 20px;
+  margin-top: 8px;
 }
 .brume-home--compact .brume-home__primary .brume-btn {
   width: 100%;
 }
 .brume-home-options {
-  margin: 12px auto 0;
+  margin: 2px auto 0;
   width: min(100%, 24rem);
 }
 .brume-home-options > summary {

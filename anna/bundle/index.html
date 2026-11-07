@@ -189,14 +189,17 @@
       <section id="screen-scatter" class="screen" hidden>
         <div class="mascot-slot mascot-md" id="mascot-scatter" aria-hidden="true"></div>
         <h1 id="scatter-title">Scatter</h1>
-        <canvas id="scatter-canvas" tabindex="0" aria-label="Draw here — it will not stay"></canvas>
-        <p class="hint" id="scatter-hint">Draw it — anything. It won't stay.</p>
+        <canvas id="scatter-canvas" tabindex="0" aria-label="Drawing space — draw with a finger, a mouse or the arrow keys; Enter lets it go" aria-describedby="scatter-hint"></canvas>
+        <p class="hint act-line" id="scatter-hint">Draw it — anything. It won't stay.</p>
+        <p class="closing-line act-line" id="scatter-done" hidden>The page is clear.</p>
         <div class="btn-row" id="scatter-controls">
-          <button id="btn-scatter-go" class="primary" type="button">Let it go</button>
+          <button id="btn-scatter-go" class="primary" type="button" disabled>Let it go</button>
           <button id="btn-scatter-back" type="button">Back</button>
         </div>
-        <p class="closing-line" id="scatter-done" hidden>It's gone — it was never yours to keep.</p>
-        <button id="btn-scatter-home" class="primary" type="button" hidden>Back home</button>
+        <div class="btn-row" id="scatter-end" hidden>
+          <button id="btn-scatter-home" class="primary" type="button">Back home</button>
+          <button id="btn-scatter-again" type="button">Once more</button>
+        </div>
       </section>
 
       <section id="screen-setdown" class="screen" hidden>
@@ -204,12 +207,23 @@
         <h1 id="setdown-title">Set it down</h1>
         <div class="setdown-track" id="setdown-track">
           <div class="setdown-line" aria-hidden="true"></div>
-          <div class="setdown-weight" id="setdown-weight" role="button" tabindex="0" aria-label="Pull the weight down slowly"></div>
+          <div class="setdown-trail" aria-hidden="true"></div>
+          <div class="setdown-ground" aria-hidden="true">
+            <span class="setdown-shadow"></span>
+            <span class="setdown-puff"></span>
+            <span class="setdown-puff setdown-puff--b"></span>
+          </div>
+          <div class="setdown-weight" id="setdown-weight" role="button" tabindex="0" aria-label="The weight — press and pull it down slowly, or hold the down arrow" aria-describedby="setdown-hint"></div>
         </div>
-        <p class="hint" id="setdown-hint">Press the weight and pull it down — slowly.</p>
-        <button id="btn-setdown-back" type="button">Back</button>
-        <p class="closing-line" id="setdown-done" hidden>Set down.</p>
-        <button id="btn-setdown-home" class="primary" type="button" hidden>Back home</button>
+        <p class="hint act-line" id="setdown-hint" aria-live="polite">Press the weight and pull it down — slowly.</p>
+        <p class="closing-line act-line" id="setdown-done" hidden>Set down. It can stay there.</p>
+        <div class="btn-row" id="setdown-controls">
+          <button id="btn-setdown-back" type="button">Back</button>
+        </div>
+        <div class="btn-row" id="setdown-end" hidden>
+          <button id="btn-setdown-home" class="primary" type="button">Back home</button>
+          <button id="btn-setdown-again" type="button">Once more</button>
+        </div>
       </section>
 
       <section id="screen-alert" class="screen" hidden>

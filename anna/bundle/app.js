@@ -174,12 +174,17 @@ const els = {
   btnScatterBack: $("#btn-scatter-back"),
   scatterDone: $("#scatter-done"),
   btnScatterHome: $("#btn-scatter-home"),
+  btnScatterAgain: $("#btn-scatter-again"),
+  scatterEnd: $("#scatter-end"),
   setdownTrack: $("#setdown-track"),
   setdownWeight: $("#setdown-weight"),
   setdownHint: $("#setdown-hint"),
+  setdownControls: $("#setdown-controls"),
   btnSetdownBack: $("#btn-setdown-back"),
   setdownDone: $("#setdown-done"),
+  setdownEnd: $("#setdown-end"),
   btnSetdownHome: $("#btn-setdown-home"),
+  btnSetdownAgain: $("#btn-setdown-again"),
   prepStatus: $("#prep-status"),
   prepStatusText: $("#prep-status-text"),
   btnPrepCancel: $("#btn-prep-cancel"),
@@ -341,15 +346,19 @@ const SCREEN_MASCOT = {
 
 let scatterCtl = null;
 let setdownCtl = null;
+let setdownHintTimer = 0;
 
 function leaveActScreens(screen) {
   if (screen !== els.screens.scatter && scatterCtl) {
     scatterCtl.destroy();
     scatterCtl = null;
+    mascots.scatter?.setOptions({ lookAt: undefined, gaze: undefined });
   }
   if (screen !== els.screens.setdown && setdownCtl) {
     setdownCtl.destroy();
     setdownCtl = null;
+    clearTimeout(setdownHintTimer);
+    mascots.setdown?.setOptions({ lookAt: undefined });
   }
 }
 
@@ -795,54 +804,96 @@ function pickFeeling(id) {
   });
 }
 
+// The companion watches the page while you draw, breathes out with the
+// mist, and settles — acknowledgment, never celebration of a feeling.
 function enterScatter() {
-  els.scatterCanvas.hidden = false;
+  if (scatterCtl) {
+    scatterCtl.destroy();
+    scatterCtl = null;
+  }
   els.scatterHint.hidden = false;
-  els.scatterControls.hidden = false;
   els.scatterDone.hidden = true;
-  els.btnScatterHome.hidden = true;
+  els.scatterControls.hidden = false;
+  els.scatterEnd.hidden = true;
+  els.btnScatterGo.disabled = true;
+  els.scatterCanvas.classList.remove("is-released");
   show(els.screens.scatter);
+  mascot("scatter")?.setOptions({ lookAt: els.scatterCanvas, gaze: undefined });
   scatterCtl = createScatter({
     canvas: els.scatterCanvas,
     reducedMotion: REDUCED_MOTION,
+    onInk: () => { els.btnScatterGo.disabled = false; },
+    onRelease: releaseScatter,
     onDone: finishScatter,
   });
 }
 
-function finishScatter() {
+function releaseScatter() {
   haptic();
-  mascot("scatter")?.react("celebrate");
-  els.scatterCanvas.hidden = true;
+  els.btnScatterGo.disabled = true;
+  els.scatterCanvas.classList.add("is-released");
+  const m = mascot("scatter");
+  m?.setOptions({ lookAt: undefined, gaze: { x: 0.4, y: -1.6 } });
+  m?.setState("exhale");
+}
+
+function finishScatter() {
+  const m = mascot("scatter");
+  m?.setOptions({ gaze: undefined });
+  m?.setState("tender");
+  m?.react("settle");
+  const hadFocus = els.screens.scatter.contains(document.activeElement);
   els.scatterHint.hidden = true;
-  els.scatterControls.hidden = true;
   els.scatterDone.hidden = false;
-  els.btnScatterHome.hidden = false;
+  els.scatterControls.hidden = true;
+  els.scatterEnd.hidden = false;
+  if (hadFocus) els.btnScatterHome.focus({ preventScroll: true });
 }
 
 function enterSetdown() {
-  els.setdownTrack.hidden = false;
+  if (setdownCtl) {
+    setdownCtl.destroy();
+    setdownCtl = null;
+  }
+  clearTimeout(setdownHintTimer);
+  els.setdownHint.textContent = ACTS.setdown.hint;
   els.setdownHint.hidden = false;
-  els.btnSetdownBack.hidden = false;
   els.setdownDone.hidden = true;
-  els.btnSetdownHome.hidden = true;
+  els.setdownControls.hidden = false;
+  els.setdownEnd.hidden = true;
   els.setdownWeight.style.cssText = "";
   els.setdownWeight.classList.remove("held");
   show(els.screens.setdown);
+  mascot("setdown")?.setOptions({ lookAt: els.setdownWeight });
   setdownCtl = createSetdown({
+    track: els.setdownTrack,
     weight: els.setdownWeight,
     reducedMotion: REDUCED_MOTION,
+    onSlip: slipSetdown,
     onDone: finishSetdown,
   });
 }
 
+function slipSetdown() {
+  clearTimeout(setdownHintTimer);
+  els.setdownHint.textContent = ACTS.setdown.slip;
+  setdownHintTimer = setTimeout(() => {
+    els.setdownHint.textContent = ACTS.setdown.hint;
+  }, 2600);
+}
+
 function finishSetdown() {
   haptic();
-  mascot("setdown")?.react("settle");
-  els.setdownTrack.hidden = true;
+  clearTimeout(setdownHintTimer);
+  const m = mascot("setdown");
+  m?.setOptions({ lookAt: undefined });
+  m?.react("settle");
+  const hadFocus = els.screens.setdown.contains(document.activeElement);
   els.setdownHint.hidden = true;
-  els.btnSetdownBack.hidden = true;
   els.setdownDone.hidden = false;
-  els.btnSetdownHome.hidden = false;
+  els.setdownControls.hidden = true;
+  els.setdownEnd.hidden = false;
+  if (hadFocus) els.btnSetdownHome.focus({ preventScroll: true });
 }
 
 function backToArrive() {
@@ -3108,8 +3159,10 @@ async function main() {
   els.btnScatterGo.addEventListener("click", () => scatterCtl?.letGo());
   els.btnScatterBack.addEventListener("click", backToArrive);
   els.btnScatterHome.addEventListener("click", () => show(els.screens.home));
+  els.btnScatterAgain.addEventListener("click", enterScatter);
   els.btnSetdownBack.addEventListener("click", backToArrive);
   els.btnSetdownHome.addEventListener("click", () => show(els.screens.home));
+  els.btnSetdownAgain.addEventListener("click", enterSetdown);
   $("#btn-alert-start").addEventListener("click", startAlertCountdown);
   $("#btn-alert-skip-kss").addEventListener("click", () => {
     alertKss = null;

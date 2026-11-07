@@ -495,7 +495,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   #screen-arrive .feeling-ring { height: 180px; }
   #screen-arrive .arrive-act { margin-top: 6px; padding: 10px 14px; }
   #screen-scatter #scatter-canvas { height: 200px; }
-  #screen-setdown .setdown-track { height: 150px; }
+  #screen-setdown .setdown-track { height: 176px; }
 }
 
 /* Scatter — the draw-and-release canvas */
@@ -512,18 +512,33 @@ h1[tabindex="-1"]:focus { outline: none; }
 }
 #scatter-canvas:focus-visible { outline: 2px solid var(--brume-focus, var(--accent)); outline-offset: 2px; }
 
-/* Set down — the weighted pull */
+#scatter-canvas.is-released { cursor: default; }
+
+/* The act's one line of copy swaps in place — hint, slip, closing — so
+   nothing below it jumps. */
+#screen-scatter .act-line,
+#screen-setdown .act-line {
+  margin: 12px 0;
+  min-height: 1.5em;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+/* Set it down — a weight that only travels slowly, and a ground to
+   receive it. JS writes --drop (0..1) and --travel (px). */
 .setdown-track {
+  --drop: 0;
+  --travel: 160px;
   position: relative;
   width: min(280px, 78%);
-  height: 190px;
+  height: 236px;
   margin: 10px auto 4px;
 }
 .setdown-line {
   position: absolute;
   left: 50%;
-  top: 8px;
-  bottom: 26px;
+  top: 29px;
+  bottom: 30px;
   width: 1px;
   transform: translateX(-50%);
   background: repeating-linear-gradient(
@@ -531,17 +546,66 @@ h1[tabindex="-1"]:focus { outline: none; }
     hsl(var(--brume-border)) 0 5px,
     transparent 5px 11px
   );
+  transition: opacity .9s ease;
 }
-.setdown-landing {
+.setdown-trail {
   position: absolute;
   left: 50%;
-  bottom: 8px;
-  width: 120px;
-  height: 14px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, hsl(var(--brume-muted) / .35), transparent 70%);
+  top: 29px;
+  width: 2px;
+  height: var(--travel);
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, transparent, hsl(var(--brume-primary) / .3));
+  transform-origin: top;
+  transform: scaleY(var(--drop));
+  transition: opacity .9s ease;
 }
+.setdown-ground {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 160px;
+  height: 44px;
+  margin-left: -80px;
+  pointer-events: none;
+}
+.setdown-shadow {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 10px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, hsl(var(--brume-primary) / .34), transparent);
+  opacity: calc(.16 + var(--drop) * .84);
+  transform: scaleX(calc(.5 + var(--drop) * .5));
+}
+.setdown-puff {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgb(var(--brume-mist-r) var(--brume-mist-g) var(--brume-mist-b) / .95),
+    hsl(var(--brume-muted) / .2) 58%,
+    transparent);
+  opacity: 0;
+  transform: scale(.5, .4);
+}
+.setdown-track.landed .setdown-puff {
+  animation: setdown-puff 1.8s cubic-bezier(.2, .7, .3, 1) forwards;
+}
+.setdown-track.landed .setdown-puff--b {
+  animation-delay: .14s;
+  animation-duration: 2.3s;
+}
+@keyframes setdown-puff {
+  0%   { opacity: 0;   transform: scale(.5, .4); }
+  22%  { opacity: .85; }
+  100% { opacity: 0;   transform: scale(1.55, 1.1) translateY(-7px); }
+}
+.setdown-track.landed .setdown-line,
+.setdown-track.landed .setdown-trail { opacity: 0; }
 .setdown-weight {
   position: absolute;
   top: 0;
@@ -556,12 +620,22 @@ h1[tabindex="-1"]:focus { outline: none; }
     rgb(var(--brume-mist-r, 233) var(--brume-mist-g, 224) var(--brume-mist-b, 184) / .55) 0%,
     hsl(var(--brume-primary)) 78%);
   box-shadow: 0 6px 18px hsl(var(--brume-primary) / .28);
-  transition: box-shadow .2s ease;
+  transition: box-shadow .2s ease, opacity 1.2s ease;
+  will-change: transform;
+  z-index: 1;
 }
 .setdown-weight.held { cursor: grabbing; box-shadow: 0 10px 26px hsl(var(--brume-primary) / .4); }
 .setdown-weight:focus-visible { outline: 2px solid var(--brume-focus, var(--accent)); outline-offset: 3px; }
+.setdown-track.landed .setdown-weight {
+  opacity: .72;
+  cursor: default;
+  box-shadow: 0 2px 8px hsl(var(--brume-primary) / .2);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .ring-word { animation: none; }
   .ring-word, .arrive-act { transition: opacity .2s ease; }
+  .setdown-trail { transform: none; opacity: var(--drop); }
+  .setdown-shadow { transform: none; }
+  .setdown-track.landed .setdown-puff { animation: none; opacity: .6; transition: opacity .5s ease; }
 }

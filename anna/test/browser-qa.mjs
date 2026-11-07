@@ -222,6 +222,94 @@ try {
     assert.equal(await ev('document.getElementById("arrive-act").hidden'), true);
     assert.equal(await ev('document.querySelectorAll(".ring-word").length'), 9);
   });
+  const openAct = async (feeling) => {
+    await fresh();
+    await ev('document.getElementById("btn-arrive").click()');
+    await sleep(300);
+    await ev(`document.querySelector('.ring-word[data-feeling="${feeling}"]').click()`);
+    await ev('document.getElementById("btn-arrive-go").click()');
+    await sleep(400);
+  };
+  const inkPixels = '(() => { const c = document.getElementById("scatter-canvas"); const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++; return n; })()';
+  const drawScribble = `(() => {
+    const c = document.getElementById("scatter-canvas"); const r = c.getBoundingClientRect();
+    const fire = (type, x, y) => c.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: "touch", isPrimary: true, clientX: r.left + x, clientY: r.top + y, bubbles: true, cancelable: true }));
+    const w = r.width, h = r.height;
+    fire("pointerdown", w * 0.12, h * 0.3);
+    for (let i = 1; i <= 120; i++) fire("pointermove", w * (0.12 + i * 0.0065), h * (0.3 + 0.18 * Math.sin(i / 7)) + i * 0.6);
+    fire("pointerup", w * 0.9, h * 0.6);
+    fire("pointerdown", w * 0.5, h * 0.15);
+    for (let i = 1; i <= 90; i++) { const a = i / 14; fire("pointermove", w * 0.5 + Math.cos(a) * i * 0.9, h * 0.5 + Math.sin(a) * i * 0.8); }
+    fire("pointerup", 0, 0);
+    return true; })()`;
+
+  await ok("scatter: ink enables Let it go, mist dissolves, page clears, Once more resets", async () => {
+    await openAct("wired");
+    assert.deepEqual(await ev(screens), ["screen-scatter"]);
+    assert.equal(await ev('document.getElementById("btn-scatter-go").disabled'), true);
+    await ev(drawScribble);
+    assert.equal(await ev('document.getElementById("btn-scatter-go").disabled'), false);
+    assert.ok((await ev(inkPixels)) > 500, "ink is on the page");
+    // Resizing must not lose the drawing.
+    await ev('window.dispatchEvent(new Event("resize"))');
+    assert.ok((await ev(inkPixels)) > 500, "ink survives a resize");
+    await cli("screenshot", "/tmp/brume-scatter-ink.png");
+    await ev('document.getElementById("btn-scatter-go").click()');
+    await sleep(1000);
+    await cli("screenshot", "/tmp/brume-scatter-mist.png");
+    assert.equal(await ev('document.getElementById("mascot-scatter").dataset.state'), "exhale");
+    await sleep(3600);
+    assert.equal(await ev('document.getElementById("scatter-done").hidden'), false);
+    assert.equal(await ev('document.getElementById("scatter-end").hidden'), false);
+    assert.equal(await ev('document.getElementById("scatter-controls").hidden'), true);
+    assert.equal(await ev(inkPixels), 0, "the page is clear");
+    await ev('document.getElementById("btn-scatter-again").click()');
+    await sleep(300);
+    assert.equal(await ev('document.getElementById("scatter-end").hidden'), true);
+    assert.equal(await ev('document.getElementById("btn-scatter-go").disabled'), true);
+    // Keyboard drawing: arrow keys leave ink, Enter lets it go.
+    await ev('(() => { const c = document.getElementById("scatter-canvas"); c.focus(); for (const k of ["ArrowRight","ArrowRight","ArrowRight","ArrowDown","ArrowDown","ArrowLeft"]) c.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })); return true; })()');
+    assert.equal(await ev('document.getElementById("btn-scatter-go").disabled'), false);
+    await ev('document.getElementById("scatter-canvas").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))');
+    await sleep(4300);
+    assert.equal(await ev('document.getElementById("scatter-done").hidden'), false);
+  });
+
+  const weightY = '(() => { const m = /translate3d\\(0(?:px)?, ([\\d.]+)px/.exec(document.getElementById("setdown-weight").style.transform); return m ? Number(m[1]) : 0; })()';
+  const grab = (pid) => `const w = document.getElementById("setdown-weight"); const r = w.getBoundingClientRect(); const x = r.left + r.width / 2, y0 = r.top + r.height / 2;
+    const f = (type, y) => w.dispatchEvent(new PointerEvent(type, { pointerId: ${pid}, pointerType: "touch", isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));`;
+
+  await ok("set down: a flick slips back, a slow pull lands softly, key hold works", async () => {
+    await openAct("heavy");
+    assert.deepEqual(await ev(screens), ["screen-setdown"]);
+    await ev(`(() => { ${grab(3)} f("pointerdown", y0); f("pointermove", y0 + 200); setTimeout(() => f("pointerup", y0 + 200), 120); return true; })()`);
+    await sleep(300);
+    assert.equal(await ev('document.getElementById("setdown-hint").textContent'), "Slower — let it take its time.");
+    assert.equal(await ev('document.getElementById("setdown-track").classList.contains("landed")'), false);
+    await sleep(1800);
+    assert.ok((await ev(weightY)) < 2, "the weight floats back after a slip");
+    await ev(`(() => { ${grab(4)} let i = 0; f("pointerdown", y0); const id = setInterval(() => { i++; f("pointermove", y0 + i * 1.8); if (i >= 120) { clearInterval(id); f("pointerup", y0 + 216); } }, 25); return true; })()`);
+    await sleep(1300);
+    const mid = await ev(weightY);
+    assert.ok(mid > 40 && mid < 140, `weight mid-pull at ${mid}px`);
+    await cli("screenshot", "/tmp/brume-setdown-pull.png");
+    await sleep(2600);
+    assert.equal(await ev('document.getElementById("setdown-track").classList.contains("landed")'), true);
+    assert.equal(await ev('document.getElementById("setdown-done").hidden'), false);
+    assert.equal(await ev('document.getElementById("setdown-end").hidden'), false);
+    await sleep(500);
+    await cli("screenshot", "/tmp/brume-setdown-landed.png");
+    await ev('document.getElementById("btn-setdown-again").click()');
+    await sleep(300);
+    assert.equal(await ev('document.getElementById("setdown-track").classList.contains("landed")'), false);
+    assert.ok((await ev(weightY)) < 1);
+    await ev('(() => { const w = document.getElementById("setdown-weight"); w.focus(); w.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true })); return true; })()');
+    await sleep(1000);
+    assert.equal(await ev('document.getElementById("setdown-track").classList.contains("landed")'), false, "a key hold is unhurried too");
+    await sleep(2800);
+    assert.equal(await ev('document.getElementById("setdown-track").classList.contains("landed")'), true);
+    await ev('document.getElementById("setdown-weight").dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowDown", bubbles: true }))');
+  });
 
   const READY_CP = (updatedAt) => ({ version: 1, id: "t-1", flow: "ready", screen: "plan", updatedAt,
     data: { prep: { input: { event: "stored event", goal: "g", keyPoint: "", kind: null },

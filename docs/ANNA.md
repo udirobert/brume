@@ -1217,3 +1217,58 @@ browser-qa suite green (30 cases), `validate --strict` clean.
 `apps publish --bump patch`, binaries deduped at 0.4.5/1012) and
 re-pinned via `apps submit-review` — the review pin is now v0.4.1,
 which carries the Set-it-down fix that v0.4.0 lacked.
+
+### 12.25 The two acts, rebuilt (2026-11-07, v0.4.2)
+
+A design review found that both acts were missing the thing they are named
+for. Scatter's "mist" snapped every stroke into about 24 coloured dots at
+half opacity, and they rose like confetti. Set it down asked for "slowly"
+but a flick finished it; the finishing animation sped up (a drop, not a
+setting-down); and its landing (`.setdown-landing`, `--drop`) was styled
+but never rendered. Both acts now follow the mascot's pattern: a pure core,
+tested in node, plus a thin DOM adapter.
+
+- **Scatter.** Single-colour ink in the room's primary that thins as the hand
+  speeds up. On release the page lightens, then an erosion front rises from
+  the bottom of the drawing with a smooth ragged edge. Each segment feathers
+  out just before its moment and becomes soft pre-tinted sprites that drift
+  up, swell, shift from ink toward the daypart mist colour, and thin out
+  before the canvas edge. The whole dissolve is under 3.7 s, and particles
+  are capped at 1,400 however much ink there is. Resizing no longer wipes
+  the drawing. Arrow keys draw and Enter lets go. Let it go stays disabled
+  until there is ink. The mascot watches the page, exhales while the mist
+  goes, then settles; the old `celebrate` after Anxious or Overwhelmed is
+  gone. Closing line: "The page is clear."
+- **Set it down.** The weight never travels faster than 85 px/s and chases
+  the finger with a lag. A finger that gets 68 px ahead has rushed it: the
+  grip slips, the weight floats back, and the hint reads "Slower — let it
+  take its time." Past 86 % of the track it lands on its own, keeping its
+  arriving speed and then only slowing. It lands onto a real ground: the
+  shadow grows as it nears, the trail and path fade, two mist puffs rise,
+  and there is a small squash. Holding ArrowDown, Space or Enter lowers it
+  at the same pace (no more one-press finish). The mascot's gaze follows the
+  weight down. Closing line: "Set down. It can stay there."
+- Both acts end with Back home plus a quiet "Once more", and the copy swaps
+  in place so nothing jumps.
+- Three fallback invitations had repeated the catalog word ("That wired
+  feeling", "Restless?", "the anxious part"), which is what `cleanInvite`
+  refuses from the model. They have been rewritten, and a test now holds
+  every fallback to the same rules.
+
+Verified: the anna suite (148 tests, 15 new for the acts); browser QA with
+two new cases (draw → mist → clear, resize keeps ink, keyboard draw; a flick
+slips, a slow pull lands, a key hold lands without hurrying). A browser
+probe showed the remaining ink's centre climbing 170 → 129 → 77 → 32 px and
+the mist rising and gone by about 3.05 s. With 4,480 ink points, frames
+stayed at 16.7 ms p50 and 16.8 ms p95 (desktop headless; not measured on a
+phone). The weight path was linear at the finger's pace, then
+142.7 → 158.2 → 161.4 → 162 px. At 320×568 everything fits with no overflow,
+and reduced motion uses opacity only (no transforms, no puff animation).
+
+**Published same-day as v0.4.2** (version_id=1994, `apps publish --bump
+patch`; bundled tool unchanged at 0.4.5/executa_version 1012, binaries
+deduped, reset-offer skill at 767) and re-pinned via `apps submit-review`
+— the review pin moved from v0.4.1 to v0.4.2. Store metadata unchanged
+(the listing's Scatter/Set it down copy still describes the acts). No
+tier-3 run before the re-pin; the change is bundle-only (no prompt, tool or
+manifest change).

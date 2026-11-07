@@ -8,8 +8,9 @@ preparation is the primary function; basic fallback breathing remains
 available. Anna determines whether a run qualifies for its program.
 Unfinished tasks checkpoint to user storage and resume on reopen.
 
-Current state (2026-11-07): **v0.4.1 cut and pending review**
-(version_id=1993, cut by `anna-app apps publish --bump patch`; tool
+Current state (2026-11-07): **v0.4.2 cut and pending review**
+(version_id=1994, cut by `anna-app apps publish --bump patch` and
+re-pinned with `apps submit-review`; tool
 frozen at 0.4.5/executa_version 1012, reset-offer skill at 767).
 This is the review-feedback release plus **Arrive** — the
 anti-chatbot surface: a feeling ring (nine closed-set words) proposes
@@ -17,7 +18,9 @@ exactly one small act — Scatter (draw → mist) or Set it down (pull
 the weight down) — with the model writing only the invitation line.
 Nothing persists. v0.4.1 adds the `mode:"arrive"` entry payload so
 Anna's model can offer acts by feeling, a Set-it-down navigation fix,
-mobile above-the-fold compaction, and act-completion haptics. Also in
+mobile above-the-fold compaction, and act-completion haptics. v0.4.2
+rebuilds both acts: Scatter erodes bottom-up into rising mist, Set it
+down only travels slowly and lands softly (`docs/ANNA.md` §12.25). Also in
 this line: prep cards export/print/copy,
 cross-flow memory lines, hold-to-talk voice check-in, and the
 ten-lesson mascot expressiveness pass. Bundled tool **0.4.5**

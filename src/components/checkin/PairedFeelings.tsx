@@ -106,6 +106,11 @@ const HOLD_TAP_MS = 350;
   // evaporates with it reads as nothing happening. Ours, so it stays.
   const [offer, setOffer] = useState<{ index: number; maybe: boolean } | null>(null);
   const offerRef = useRef<HTMLDivElement | null>(null);
+  // After the invitation is taken, the row stays a breath longer as a
+  // kept word — the "was that right?" answer, in the same seat so
+  // nothing jumps.
+  const [kept, setKept] = useState<number | null>(null);
+  const keptTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // The confirmation spin: when the heard word is ALREADY face-up (or
   // already chosen), there is no flip to play — so the chip acknowledges
   // with a spin instead. Delight is feedback too.
@@ -190,7 +195,15 @@ const HOLD_TAP_MS = 350;
         setHintOpen(true);
       }
       setAnnounce(`${FEELINGS[next.selected!].label} selected.`);
-      onChoose(next.selected!, button, wasOffered && next.selected === suggested);
+      const tookTheOffer = wasOffered && next.selected === suggested;
+      clearTimeout(keptTimer.current);
+      if (tookTheOffer) {
+        setKept(next.selected);
+        keptTimer.current = setTimeout(() => setKept(null), 2600);
+      } else {
+        setKept(null);
+      }
+      onChoose(next.selected!, button, tookTheOffer);
     },
     [faces, selectedIndex, onChoose, showHint, suggested],
   );
@@ -284,7 +297,7 @@ const HOLD_TAP_MS = 350;
       setConfirm({ pair: pi, n: ++confirmSerial.current });
     }
     setSuggested(offered);
-    setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}? Tap to choose.`);
+    setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}. Tap to keep it.`);
     // Their words pass through the mist; the invitation persists below.
     flashHeard(`heard “${snippet}”`);
     setOffer({ index: offered, maybe: index == null });
@@ -300,6 +313,7 @@ const HOLD_TAP_MS = 350;
     const mode = getMicMode();
     setHelp(null); // the moment they try again, the card has done its job
     setOffer(null);
+    setKept(null);
     if (!micUsed) {
       markMicUsed();
       setMicUsed(true);
@@ -321,21 +335,36 @@ const HOLD_TAP_MS = 350;
     beginListening();
   }, [micOn, beginListening, stopListening]);
 
+  const settleToTap = useCallback(() => {
+    // The finger is gone but the mic is still open: it now ends on
+    // silence or a second press — and the screen says so, because the
+    // timer that would have shown the hint is already cleared.
+    if (ctlRef.current) ctlRef.current.hold = false;
+    setHoldUI(false);
+    if (micOn) setHeard("listening — tap again when done");
+  }, [micOn]);
+
   const onMicPointerEnd = useCallback((release: boolean) => {
     if (!holdingRef.current) return;
     holdingRef.current = false;
     clearTimeout(holdTimerRef.current);
-    if (!release) return;
+    if (!release) {
+      // The release was stolen (the permission sheet on a first press, a
+      // system swipe). A hold with no finger behind it would stay open to
+      // the 20 s ceiling with nothing to say how it ends — settle it.
+      settleToTap();
+      return;
+    }
     if (getMicMode() === "tap") return; // hands-free: release changes nothing
     const held = Date.now() - pressStartRef.current >= HOLD_TAP_MS;
     if (!held && ctlRef.current) {
       // Even in hold mode a quick press is not a dead end: settle into
       // listen-until-silence so a nervous tap still gets heard.
-      ctlRef.current.hold = false;
+      settleToTap();
       return;
     }
     stopListening();
-  }, [stopListening]);
+  }, [stopListening, settleToTap]);
 
   const onMicKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
     // Keyboard push-to-talk: Space holds, Enter taps.
@@ -447,9 +476,11 @@ const HOLD_TAP_MS = 350;
           type="button"
           className={`brume-mic${micOn ? (heard === "hearing…" ? " is-hearing" : " is-listening") : ""}${holdUI ? " is-holding" : ""}`}
           aria-label={
-            getMicMode() === "hold"
-              ? "Say how you feel — hold to speak"
-              : "Say how you feel — tap to speak, tap again to stop"
+            micOn
+              ? "Listening — press to stop"
+              : getMicMode() === "hold"
+                ? "Say how you feel — hold to speak"
+                : "Say how you feel — tap to speak, tap again to stop"
           }
           aria-pressed={micOn}
           onPointerDown={onMicPointerDown}
@@ -475,7 +506,7 @@ const HOLD_TAP_MS = 350;
             <rect x="6" y="1.5" width="4" height="8" rx="2" />
             <path d="M 3 7.5 a 5 5 0 0 0 10 0 M 8 12.5 L 8 14.5" />
           </svg>
-          {micOn ? "" : "say it"}
+          {micOn ? (holdUI ? "" : "tap to stop") : "say it"}
         </button>
       )}
       {!micUsed && voiceOk && !micOn && (
@@ -513,7 +544,7 @@ const HOLD_TAP_MS = 350;
             }}
           >
             {offer.maybe ? "maybe " : ""}
-            <strong>{FEELINGS[offer.index].label}?</strong> tap to choose
+            <strong>{FEELINGS[offer.index].label}</strong> — tap to keep it
           </button>
           <button
             type="button"
@@ -528,12 +559,20 @@ const HOLD_TAP_MS = 350;
           </button>
         </div>
       )}
+      {kept != null && !offer && (
+        <div className="brume-voice-offer brume-voice-offer--kept" role="note">
+          <span className="brume-voice-offer__kept">
+            {FEELINGS[kept].label} — kept
+          </span>
+        </div>
+      )}
       {selectedIndex !== null && (
         <button
           type="button"
           className="brume-pairs__release"
           onClick={(e) => {
             setSuggested(null);
+            setKept(null);
             setAnnounce("Let it go.");
             onChoose(null, e.currentTarget);
           }}

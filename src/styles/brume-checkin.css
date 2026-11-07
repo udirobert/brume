@@ -458,6 +458,20 @@
   }
 }
 
+/* The taken invitation lingers a breath as the kept word — same seat,
+   same height, so the confirmation lands without anything jumping. */
+.brume-voice-offer--kept {
+  grid-template-columns: 1fr;
+  text-align: center;
+}
+.brume-voice-offer__kept {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+}
+
 /* Voice suggestion — the closest chip offers itself, face-up, breathing. */
 .brume-choice.is-suggested {
   animation: brumeSuggestGlow 2.6s ease-in-out infinite;
@@ -523,12 +537,16 @@
 }
 .brume-reasons--kept {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 0.2rem;
   min-height: 40px; /* the same beat as the chip row — nothing jumps */
   margin-top: 0.5rem;
 }
 .brume-reasons__kept {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.74rem;
   font-style: normal;
   opacity: 0.8;
@@ -538,6 +556,10 @@
   border-radius: 999px;
   padding: 0.35rem 0.95rem;
   animation: brumeReasonKept 0.2s ease;
+}
+.brume-reasons__kept-check {
+  margin-right: 0.3rem;
+  flex-shrink: 0;
 }
 @keyframes brumeReasonKept {
   from { opacity: 0; transform: scale(0.96); }

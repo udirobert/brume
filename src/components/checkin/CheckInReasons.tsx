@@ -4,7 +4,17 @@ import {
   attachReason,
   type CheckInReasonId,
 } from "@/lib/checkinLedger";
+import { feelingAt } from "@/lib/feelings";
+import { CheckIcon } from "@/components/icons/BrumeIcons";
 import { track } from "@/lib/events";
+
+// The kept sentence gets one quiet remark under it — closed table, one
+// per valence, same situation same line: for a heavy word the room holds
+// it too; for a light one the keeping is the point.
+const KEPT_ASIDE: Record<"positive" | "heavy", string> = {
+  positive: "worth keeping.",
+  heavy: "it can sit here.",
+};
 
 /**
  * One tap for what it is about — the reason row beside a check-in.
@@ -21,15 +31,20 @@ export function CheckInReasons({ feeling, onPick }: {
   const [kept, setKept] = useState<CheckInReasonId | null>(null);
 
   if (kept !== null) {
-    // The row transforms instead of vanishing: one confirmed pill, the
-    // same height as the row, so nothing below jumps. A choice made is
-    // still visible — that is the feedback.
+    // The row transforms instead of vanishing: one pill, the same height
+    // as the row, so nothing below jumps. What it says is their own
+    // sentence back — "Heavy, because money" — because the moment after a
+    // pick wants to know it was heard, not where it is stored. (The
+    // privacy hint already sits under the chips, before the choice.)
     const label = CHECKIN_REASONS.find((r) => r.id === kept)?.label ?? "";
+    const feel = feelingAt(feeling);
     return (
       <div className="brume-reasons brume-reasons--kept">
         <span className="brume-reasons__kept" role="status">
-          because {label} · kept on this device
+          <CheckIcon size={11} className="brume-reasons__kept-check" />
+          {feel ? `${feel.label}, ` : ""}because {label} — kept
         </span>
+        {feel && <span className="brume-reasons__hint">{KEPT_ASIDE[feel.valence]}</span>}
       </div>
     );
   }

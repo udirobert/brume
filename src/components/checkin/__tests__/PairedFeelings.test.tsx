@@ -291,7 +291,34 @@ describe("mic — hold to talk, tap to toggle", () => {
       pointer("pointerup", mic()); // under HOLD_TAP_MS
       expect(micMock.lastSignal!.aborted).toBe(false);
       expect(micMock.lastCtl!.hold).toBe(false);
+      // The settle says how it ends — the cleared timer never could.
+      expect(container.querySelector(".brume-voice-heard")!.textContent).toContain(
+        "tap again when done",
+      );
+      expect(mic().textContent).toContain("tap to stop");
       // Second press ends the tap-mode listen.
+      pointer("pointerdown", mic());
+      expect(micMock.lastSignal!.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a stolen release (pointercancel) settles the hold instead of stranding it", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      pointer("pointerdown", mic());
+      // The permission sheet swallows the release: pointercancel arrives.
+      pointer("pointercancel", mic());
+      // A hold with no finger behind it must not stay a hold.
+      expect(micMock.lastCtl!.hold).toBe(false);
+      expect(micMock.lastSignal!.aborted).toBe(false);
+      expect(container.querySelector(".brume-voice-heard")!.textContent).toContain(
+        "tap again when done",
+      );
+      expect(mic().textContent).toContain("tap to stop");
+      // And a press still ends it.
       pointer("pointerdown", mic());
       expect(micMock.lastSignal!.aborted).toBe(true);
     } finally {
@@ -433,7 +460,9 @@ describe("mic — hold to talk, tap to toggle", () => {
     pointer("pointerup", mic());
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
   };
-  const offer = () => container.querySelector<HTMLDivElement>(".brume-voice-offer");
+  const offer = () =>
+    container.querySelector<HTMLDivElement>(".brume-voice-offer:not(.brume-voice-offer--kept)");
+  const kept = () => container.querySelector<HTMLDivElement>(".brume-voice-offer--kept");
 
   it("a spoken match that already shows still leaves a standing invitation", async () => {
     // The exact reported case: "i am feeling drained" — Drained is the
@@ -443,7 +472,8 @@ describe("mic — hold to talk, tap to toggle", () => {
     vi.useFakeTimers();
     try {
       await speakMatch(8, "i am feeling drained");
-      expect(offer()?.textContent).toContain("Drained? tap to choose");
+      expect(offer()?.textContent).toContain("Drained");
+      expect(offer()?.textContent).toContain("tap to keep it");
       expect(container.querySelector(".is-suggested")).not.toBeNull();
     } finally {
       vi.useRealTimers();
@@ -458,7 +488,8 @@ describe("mic — hold to talk, tap to toggle", () => {
       // Drained is the energy pair's initial face: no flip possible, so
       // the chip spins and the invitation still stands.
       expect(buttons()[1].classList.contains("is-confirming")).toBe(true);
-      expect(offer()?.textContent).toContain("Drained? tap to choose");
+      expect(offer()?.textContent).toContain("Drained");
+      expect(offer()?.textContent).toContain("tap to keep it");
       // The spin retires itself just past its 0.9 s.
       await act(async () => { vi.advanceTimersByTime(1000); });
       expect(buttons()[1].classList.contains("is-confirming")).toBe(false);
@@ -499,11 +530,31 @@ describe("mic — hold to talk, tap to toggle", () => {
       await act(async () => { vi.advanceTimersByTime(7000); });
       expect(container.querySelector(".brume-voice-heard")).toBeNull();
       // …and the invitation is still standing.
-      expect(offer()?.textContent).toContain("Heavy? tap to choose");
+      expect(offer()?.textContent).toContain("Heavy");
+      expect(offer()?.textContent).toContain("tap to keep it");
       // Tapping the word commits it — and retires the invitation.
       click(0);
       expect(chosen.at(-1)).toBe(6);
       expect(offer()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("taking the invitation leaves a kept word, which retires itself", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(6, "heavy day");
+      await act(async () => {
+        offer()!.querySelector<HTMLButtonElement>(".brume-voice-offer__take")!.click();
+      });
+      expect(chosen.at(-1)).toBe(6);
+      expect(offer()).toBeNull();
+      // The seat answers "was that right?" — then lets go.
+      expect(kept()?.textContent).toContain("Heavy — kept");
+      await act(async () => { vi.advanceTimersByTime(3000); });
+      expect(kept()).toBeNull();
     } finally {
       vi.useRealTimers();
     }

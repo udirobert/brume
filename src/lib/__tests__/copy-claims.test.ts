@@ -118,7 +118,9 @@ describe("check-in copy", () => {
       "because",
       "What is it about?",
       "private · stays on this device",
-      "kept — just for you · stays on this device",
+      "Heavy, because money — kept",
+      "it can sit here.",
+      "worth keeping.",
       sessionGreeting(null),
       sessionGreeting(null, 6),
       sessionGreeting(null, 18),
@@ -158,7 +160,7 @@ describe("check-in copy", () => {
   });
 
   it("the spoken-match invitation suffixes are rhythm-only", () => {
-    for (const str of ["? tap to choose", "maybe ", "heard ", "okay"]) {
+    for (const str of ["— tap to keep it", "— kept", "maybe ", "heard ", "okay", "tap to stop", "listening — tap again when done"]) {
       expect(str, `"${str}"`).not.toMatch(BANNED);
     }
   });

@@ -140,7 +140,13 @@ read before adding anything to it):
   the finger is down, so a pause can never cut a sentence and the ending
   is always the user's; **tap** (one press starts, silence or a second
   press ends) is an opt-in pill in Home's Options, for hands that can't
-  sustain a press. It is what makes multilingual hearing safe: `LANG`
+  sustain a press. Any press that loses its finger without ending the
+  listen — a quick tap under the threshold, or a release the browser
+  steals (`pointercancel`, e.g. the first-press permission sheet) —
+  settles into that same tap contract: a hold never outlives the finger,
+  and an open mic always says how it ends ("tap again when done", the
+  button itself reading "tap to stop"). It is what makes multilingual
+  hearing safe: `LANG`
   catalogs (es/fr/de today) widen only the alias table, never the
   interpretation.
   And it is what makes refusal legible — a negated utterance reads
@@ -152,10 +158,12 @@ read before adding anything to it):
   are theirs, not to help, which is ours — and every card ends in the
   exit: "Or just tap a word." Symmetrically, a spoken *match* splits the
   same way: the transcript dissolves (theirs) while the invitation —
-  "Drained? tap to choose" — stands as a persistent pill until it or the
-  chip is tapped (either is the committing tap; the pill is the word, not
-  an "okay"), the mic is pressed again, or "Not this one" (×) retires it
-  and the glow together; it scrolls clear of the pinned Begin; and the
+  "Drained — tap to keep it" — stands as a persistent pill until it or
+  the chip is tapped (either is the committing tap; the pill is the word,
+  not an "okay"), the mic is pressed again, or "Not this one" (×) retires
+  it and the glow together; taking it leaves the seat a breath longer as
+  the kept word ("Drained — kept") so the confirm lands where the eye
+  already is; it scrolls clear of the pinned Begin; and the
   companion acknowledges the match with the suggested word's own
   reaction (acknowledgment only — no tint, no ledger, the tap still
   owns the commit). Any new voice surface
@@ -243,8 +251,13 @@ it, `position: sticky` pins it above the fixed tab bar on overflow
 reservation) — Begin is always in view. Only Begin pins; Options stays
 in flow, and the seat's fade is `pointer-events: none` so chips beneath
 it stay tappable. Reasons transform on pick into one confirmed pill
-(same height as the row — nothing jumps) and the companion settles once
-(`onPick`); `.brume-pairs.has-selection` dims the unchosen words. Home
+(same height as the row — nothing jumps) that reads their own sentence
+back — "Heavy, because money — kept", a drawn check its only mark;
+under it a closed-table aside, one per valence (heavy → "it can sit
+here.", positive → "worth keeping.") — the acknowledgment is the mirror,
+privacy stays under the chips where it belongs, and the companion
+settles once (`onPick`); `.brume-pairs.has-selection` dims the unchosen
+words. Home
 mascot anchor is 132px on `useIsMobile`, 156 otherwise.
 
 Session lifecycle: the session offers its own ending — past

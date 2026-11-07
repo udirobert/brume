@@ -316,6 +316,8 @@ const STREAM_PARAMS = new URLSearchParams({
   max_turn_silence: "1400",
 }).toString();
 const SILENCE_MS = 800;
+/** Nothing heard at all: the clip fallback's own exit, mirrored here. */
+const NO_SPEECH_MS = 2500;
 const MAX_LISTEN_MS = 6000;
 /** Held down, there is no silence rule — but a hot mic still has a ceiling. */
 const HOLD_MAX_MS = 20000;
@@ -523,6 +525,7 @@ async function viaStreaming(
   const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}&${STREAM_PARAMS}`);
   const t0 = Date.now();
   let silenceSince = t0;
+  let lastLoud = t0;
   let opened = false;
   let releasing = false;
 
@@ -591,9 +594,17 @@ async function viaStreaming(
       proc.onaudioprocess = (ev) => {
         if (settled) return;
         const { pcm, peak } = toPcm16(ev.inputBuffer.getChannelData(0), ctx.sampleRate);
-        if (peak > SPEECH_PEAK) spoke = true;
-        if (!ctl.hold && !releasing && joiner.hasText() && peak < SPEECH_PEAK && Date.now() - silenceSince > SILENCE_MS) {
-          return stop();
+        if (peak > SPEECH_PEAK) {
+          spoke = true;
+          lastLoud = Date.now();
+        }
+        if (!ctl.hold && !releasing && peak < SPEECH_PEAK) {
+          const quietFor = joiner.hasText()
+            ? Date.now() - silenceSince
+            : Date.now() - lastLoud;
+          // No transcript yet cannot strand the listen — a person who
+          // froze (or a socket that was slow) still gets an ending.
+          if (quietFor > (joiner.hasText() ? SILENCE_MS : NO_SPEECH_MS)) return stop();
         }
         if (opened && ws.readyState === WebSocket.OPEN) ws.send(pcm.buffer as ArrayBuffer);
         else if (!opened && pendingBytes < PENDING_MAX_BYTES) {

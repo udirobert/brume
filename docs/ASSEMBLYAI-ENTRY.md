@@ -111,16 +111,16 @@ committed Nov 2–5):
 
 ## Demo video
 
-**`SECOND_WIND_hackathon_v5.mp4`** — 2:46, 1920×1080, 30 fps, −16.0 LUFS. A three-act
+**`SECOND_WIND_hackathon_v6.mp4`** — 2:46, 1920×1080, 30 fps, −16.0 LUFS. A three-act
 spy-caper short that ends on a live capture of the product. Video files
 and renders stay out of git (`.gitignore`); the shot list and provenance
-live in `gen-logs/film_v5.json`.
+live in `gen-logs/film_v6.json`.
 
 The film argues the thesis in three refusals, then proves it:
 
-- **Act I (0:00–0:30) — the storm.** Badge-shuriken title → notification
-  rain → scroll river → chat fire → 2 a.m. bed. Everyone drowning in the
-  same private feed.
+- **Act I (0:00–0:30) — the storm.** The companion wakes on the pastel
+  wall → notification rain → scroll river → chat fire → 2 a.m. bed.
+  Everyone drowning in the same private feed.
 - **Act II (0:30–1:26) — the ritual.** The relic, then the real thing:
   the shipped mascot engine, the transcript dissolving, *A LOT* proposed
   and waiting for a tap, the settle, the koan in AssemblyAI's own voice.

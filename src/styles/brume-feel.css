@@ -42,3 +42,32 @@ html[data-feel] .brume-card {
   );
   transition: background-color 0.9s ease;
 }
+
+/* The carried word rests inside the orb for the first breaths, then
+   gives itself back to the mist — present, then gone, like the
+   transcripts. Opacity only, so reduced motion needs no special case
+   beyond a shorter hold. */
+.brume-session-word {
+  position: absolute;
+  bottom: 9%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: brumeSessionWordRest 6s ease-in-out forwards;
+}
+@keyframes brumeSessionWordRest {
+  0% { opacity: 0; }
+  18% { opacity: 0.34; }
+  68% { opacity: 0.34; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brume-session-word {
+    animation-duration: 4s;
+  }
+}

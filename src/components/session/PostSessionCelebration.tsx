@@ -10,6 +10,7 @@ import { getPattern } from "@/lib/breathingPatterns";
 import { formatPracticeDuration } from "@/lib/utils/practice-duration";
 import { AFTER_PRACTICE_CHOICES, type AfterPracticeChoiceId } from "@/lib/checkin";
 import { clearFeel, feelAt } from "@/lib/feelTheme";
+import { feelingAt } from "@/lib/feelings";
 import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import type { MascotReaction } from "@/components/BrumeMascot";
 import type { RoomDemeanor } from "@/lib/roomExperience";
@@ -196,7 +197,9 @@ export const PostSessionCelebration: React.FC<PostSessionCelebrationProps> = ({
         </div>
         <p className="text-sm text-muted-foreground">
           {after && feel
-            ? "The word you carried can rest here."
+            ? after === "lighter"
+              ? `came in ${feelingAt(checkInIndex)?.label}, leaving lighter — it can rest here.`
+              : `${feelingAt(checkInIndex)?.label} can rest here.`
             : "You can leave it here."}
         </p>
       </motion.div>

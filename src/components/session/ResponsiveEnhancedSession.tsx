@@ -25,6 +25,7 @@ import { breathAmount, type BreathPhase } from '../../lib/breathCurve';
 import { preloadCues, setCueStyle as setVoiceCueStyle, setVoiceEnabled, speakCue, speakLine, stopCues } from '../../lib/voiceCues';
 import { sessionGreeting } from '../../lib/spokenGreeting';
 import { applyFeel, feelAt } from '../../lib/feelTheme';
+import { feelingAt } from '../../lib/feelings';
 import { demeanorForFeel } from '../../lib/roomExperience';
 
 // The session keeps its own ending: past a quiet anchor it pauses itself
@@ -308,6 +309,12 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
   // Paused is a user-stop, and the way back is the orb itself: tapping
   // the mist resumes the breath (the icon button stays the keyboard path).
   const pausedResume = session.phase === 'paused';
+  // The carried word rests in the orb for the first breaths only —
+  // mounted once the breath has started, kept mounted after so the
+  // dissolve never replays on a pause/resume.
+  const beganRef = React.useRef(false);
+  if (sessionActive) beganRef.current = true;
+  const restWord = beganRef.current ? feelingAt(checkInIndex)?.label : null;
   const animationWithMascot = (
     <div
       onClick={pausedResume ? session.resume : undefined}
@@ -330,6 +337,11 @@ export const ResponsiveEnhancedSession: React.FC<ResponsiveEnhancedSessionProps>
           size={isMobile ? 140 : 176}
           className="absolute z-10"
         />
+        {restWord && (
+          <span className="brume-session-word" aria-hidden="true">
+            {restWord}
+          </span>
+        )}
       </BreathingAnimation>
     </div>
   );

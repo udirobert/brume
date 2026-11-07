@@ -52,6 +52,7 @@ export function CheckInReasons({ feeling, onPick }: {
   const pick = (id: CheckInReasonId) => {
     attachReason(id);
     track("checkin_reason", { feeling, reason: id });
+    try { navigator.vibrate?.(8); } catch { void 0; }
     setKept(id);
     onPick?.(id);
   };

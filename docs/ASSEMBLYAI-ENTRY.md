@@ -38,8 +38,8 @@ whisper so you can close your eyes.
 > Spanish, French and German ("estoy cansada" → Drained). Then the
 > transcript is matched to that closed catalog — whole words only, so
 > "hopeless" is never Hopeful — and the nearest word turns face-up with
-> an invitation: *Drained? tap to choose.* Voice proposes; only your tap
-> commits.
+> an invitation: *Drained — tap to keep it.* Voice proposes; only your
+> tap commits.
 >
 > **Refusal you can see.** Say "not good" and Brume doesn't flip it to a
 > sad word or a happy one — it says *I'll ask instead* and waits.
@@ -111,28 +111,39 @@ committed Nov 2–5):
 
 ## Demo video
 
-The film in production is the 59-second piece in
-`docs/BRUME_CHROMA_AD_PRODUCTION.md` (also aimed at the Chroma Awards).
-Video files and renders stay out of git (`.gitignore`). The beats below
-are the product moments its Act III screen capture should show — record
-them on the deployed URL, phone in hand, real audio.
+**`SECOND_WIND_hackathon_v2.mp4`** — 2:43, 1920×1080, 30 fps. A three-act
+spy-caper short that ends on a live capture of the product. Video files
+and renders stay out of git (`.gitignore`); the shot list and provenance
+live in `gen-logs/film_v1.json`.
 
-1. **(0–8 s) Hook.** Dark room, the app on a phone. Voice-over: "Every
-   voice app wants to understand you. This one refuses to guess."
-2. **(8–22 s) Say it.** Hold the mic: "Honestly, I'm pretty drained
-   today." Live words appear as you speak; let go → *Drained? tap to
-   choose*, the chip glows, the words dissolve.
-3. **(22–30 s) Another language.** Hold: "Estoy cansada." → Drained again.
-4. **(30–38 s) Refusal.** Hold: "Not good, to be honest." → *I'll ask
-   instead.* Nothing flips.
-5. **(38–52 s) Talk back.** Tap the invitation → Begin → the greeting
-   plays; close your eyes; the spoken cues ride the breath.
-6. **(52–65 s) Hear it.** After the session: Put it into words → Just for
-   me → **Hear it** — your sentence, said kindly.
-7. **(65–75 s) Pipeline card.** hold → `streaming.assemblyai.com`
-   (universal-3-6-pro · 4 languages · keyterms = the 14 words) →
-   closed-set match → offer → tap → transcript dropped. End line:
-   "Fourteen words, four languages, nothing kept."
+The film argues the thesis in three refusals, then proves it:
+
+- **Act I (0:00–0:30) — the storm.** Badge-shuriken title → notification
+  rain → scroll river → chat fire → 2 a.m. bed. Everyone drowning in the
+  same private feed.
+- **Act II (0:30–1:26) — the ritual.** The relic, then the real thing:
+  the shipped mascot engine, the transcript dissolving, *A LOT* proposed
+  and waiting for a tap, the settle, the koan in AssemblyAI's own voice.
+  Then the twenty-second bubble: the companion breathing while chaos
+  cards bounce off the edge.
+- **Act III (1:26–2:16) — the copycat fails.** Plaza overwhelm → the ninja
+  at the center of the storm → *drained* → the bubble scaled → a copycat
+  tries the technique on "I'm NOT stressed", gets *I'll ask instead*,
+  and walks away mid-proposal. The honest message card, then the secret
+  he never tells.
+- **Button (2:16–2:23).** End card: *hear one sentence. never keep it.*
+- **Proof (2:23–2:43).** A slate — *the real thing, a live check-in* —
+  cuts to a screen recording of the deployed app: Chromium's fake mic fed
+  a spoken "I've got a lot on my mind", the real `.brume-mic` held, the
+  live AssemblyAI streaming recognizer returning the transcript, the
+  proposal *A lot — tap to keep it*, the tap on camera, and the room
+  settling into the reason chips and *private · stays on this device*.
+  No mock and no staged UI: the product's actual voice pipeline, end to
+  end. The score ducks under it so the evidence is audible.
+
+The 59-second commercial in `docs/BRUME_CHROMA_AD_PRODUCTION.md` is a
+separate, unshot piece aimed at the Chroma Awards; it is not this entry's
+demo.
 
 ## Pre-submit checklist
 

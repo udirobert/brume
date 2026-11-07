@@ -334,13 +334,16 @@ describe("Home — the listening gaze", () => {
     expect(lastAnchor().lookAt).toBe(chip);
   });
 
-  it("choosing the word with the hand releases the gaze", async () => {
+  it("choosing the offered word glances at the kept seat before releasing", async () => {
     await mount();
     press(mic());
     release(mic());
     await resolveVoice({ transcript: "drained", index: null, suggest: 6, pattern: null, failure: null });
     clickEl(container.querySelector(".brume-choice.is-suggested")!);
-    expect(lastAnchor().lookAt ?? null).toBeNull();
+    // The gaze follows the word to where it landed — a beat, then it lets go.
+    expect(lastAnchor().lookAt).toBe(
+      container.querySelector(".brume-voice-offer--kept"),
+    );
   });
 
   it("a blocked mic sends the gaze to the help card", async () => {

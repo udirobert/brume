@@ -368,6 +368,22 @@ describe("PostSessionCelebration after choices", () => {
     expect((lastMascot().reaction as { name: string }).name).toBe("settle");
   });
 
+  it("names the word that rests — and the before/after when it lightened", async () => {
+    await mount({ checkInIndex: 6 });
+    click("A little lighter");
+    expect(container.textContent).toContain("came in Heavy, leaving lighter — it can rest here.");
+    await act(async () => {
+      root.render(
+        <PostSessionCelebration
+          metrics={{ patternName: "Box Breathing", duration: 60 }}
+          checkInIndex={6}
+        />,
+      );
+    });
+    click("About the same");
+    expect(container.textContent).toContain("Heavy can rest here.");
+  });
+
   it("Done works without an after choice", async () => {
     const onContinue = vi.fn();
     await mount({ onContinue });

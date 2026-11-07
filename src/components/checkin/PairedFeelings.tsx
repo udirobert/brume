@@ -23,6 +23,7 @@ import { track } from "@/lib/events";
 
 const HINT_KEY = "brume.feelingFlipHint.v1";
 const HOLD_HINT_KEY = "brume.voiceHoldHint.v1";
+const PEEK_KEY = "brume.flipPeek.v1";
 
 function holdHintSeen(): boolean {
   try { return window.localStorage.getItem(HOLD_HINT_KEY) === "1"; } catch { return false; }
@@ -157,6 +158,32 @@ const HOLD_TAP_MS = 350;
     offerRef.current?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
   }, [offer, reduced]);
 
+  // A first visit gets one quiet demonstration of the vocabulary it is
+  // not told about: the first chip turns to its other face and back, so
+  // the ten words are seen before the flip hint ever has to explain them.
+  // Any pick cancels whatever is left of the peek — their word wins.
+  useEffect(() => {
+    if (selectedIndex != null) return;
+    let seen = false;
+    try { seen = window.localStorage.getItem(PEEK_KEY) === "1"; } catch { void 0; }
+    if (seen) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const flipFirst = () => {
+      setFaces((prev) => {
+        const next = [...prev];
+        next[0] = oppositeFeel(next[0]) ?? next[0];
+        return next;
+      });
+      setFlips((f) => f.map((v, i) => (i === 0 ? v + 1 : v)));
+    };
+    t = setTimeout(() => {
+      try { window.localStorage.setItem(PEEK_KEY, "1"); } catch { void 0; }
+      flipFirst();
+      t = setTimeout(flipFirst, 1400);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [selectedIndex]);
+
   // The spin clears itself. onAnimationEnd is the fast path in a real
   // browser; this timeout is the guarantee (and the only path jsdom gets).
   useEffect(() => {
@@ -195,6 +222,9 @@ const HOLD_TAP_MS = 350;
         setHintOpen(true);
       }
       setAnnounce(`${FEELINGS[next.selected!].label} selected.`);
+      // A kept word lands in the hand too — one short tick where the
+      // device has one (a no-op where it does not).
+      try { navigator.vibrate?.(8); } catch { void 0; }
       const tookTheOffer = wasOffered && next.selected === suggested;
       clearTimeout(keptTimer.current);
       if (tookTheOffer) {
@@ -516,11 +546,14 @@ const HOLD_TAP_MS = 350;
             : "tap to speak — the browser asks for the mic the first time"}
         </span>
       )}
-      {heard && (
-        <span className={`brume-voice-heard${dissolve ? " is-dissolve" : ""}`} aria-hidden="true">
-          {heard}
-        </span>
-      )}
+      {/* The heard line's seat is always held — a transcript appearing
+          or dissolving must never move the chips or the invitation. */}
+      <span
+        className={`brume-voice-heard${dissolve ? " is-dissolve" : ""}${heard ? "" : " is-empty"}`}
+        aria-hidden="true"
+      >
+        {heard || " "}
+      </span>
       {help && (
         <div className="brume-voice-help" role="note">
           <p>{help}</p>

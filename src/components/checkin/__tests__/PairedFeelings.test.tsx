@@ -193,6 +193,40 @@ describe("PairedFeelings", () => {
     expect(chosen).toEqual([5]);
   });
 
+  it("a first visit peeks one chip's other face, then restores it — once ever", async () => {
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        root.render(<Harness />);
+      });
+      const face = () => buttons()[0].querySelector(".brume-choice__face")!.textContent;
+      expect(face()).toBe("Light");
+      await act(async () => { vi.advanceTimersByTime(4100); });
+      expect(face()).toBe("Heavy");
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(face()).toBe("Light");
+      expect(window.localStorage.getItem("brume.flipPeek.v1")).toBe("1");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the peek does not fire for a returning selection or a seen flag", async () => {
+    window.localStorage.setItem("brume.flipPeek.v1", "1");
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        root.render(<Harness />);
+      });
+      await act(async () => { vi.advanceTimersByTime(6000); });
+      expect(
+        buttons()[0].querySelector(".brume-choice__face")!.textContent,
+      ).toBe("Light");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reduced motion uses opacity only; fresh chips have no initial transform", async () => {
     reducedFlag = true;
     await act(async () => {
@@ -526,9 +560,11 @@ describe("mic — hold to talk, tap to toggle", () => {
       // The matched chip turns face-up and glows.
       expect(buttons()[0].textContent).toContain("Heavy");
       expect(buttons()[0].classList.contains("is-suggested")).toBe(true);
-      // Past the transcript's 6 s clear window the heard line is gone…
+      // Past the transcript's 6 s clear window the heard line is empty…
       await act(async () => { vi.advanceTimersByTime(7000); });
-      expect(container.querySelector(".brume-voice-heard")).toBeNull();
+      const heardSeat = container.querySelector(".brume-voice-heard")!;
+      expect(heardSeat.textContent!.trim()).toBe(""); // the seat stays — nothing may jump
+      expect(heardSeat.classList.contains("is-empty")).toBe(true);
       // …and the invitation is still standing.
       expect(offer()?.textContent).toContain("Heavy");
       expect(offer()?.textContent).toContain("tap to keep it");

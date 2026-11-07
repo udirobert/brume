@@ -125,6 +125,14 @@ main:has(> .brume-home--compact) {
   width: min(100%, 18rem);
   margin-top: 8px;
 }
+/* The word visibly shapes the practice — the matched rhythm named in a
+   whisper under the action it leads to. */
+.brume-home__rhythm-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--brume-ink-muted);
+  text-align: center;
+}
 .brume-home--compact .brume-home__primary .brume-btn {
   width: 100%;
 }

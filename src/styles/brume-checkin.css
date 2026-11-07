@@ -237,6 +237,8 @@
   }
 }
 .brume-voice-heard {
+  flex-basis: 100%;
+  text-align: center;
   font-size: 0.72rem;
   font-style: italic;
   opacity: 0.6;
@@ -250,9 +252,38 @@
   opacity: 1;
   transform: scale(1.06);
 }
+/* While the finger is down a ring sweeps once around the pill and stays:
+   "your press is the clock". The sweep rides a registered angle; where
+   @property is unknown the ring simply appears, still true. */
+@property --brume-hold-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 360deg;
+}
+.brume-mic.is-holding::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  padding: 1.5px;
+  background: conic-gradient(currentColor var(--brume-hold-sweep, 360deg), transparent 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: brumeHoldSweep 0.55s ease-out forwards;
+}
+@keyframes brumeHoldSweep {
+  from { --brume-hold-sweep: 0deg; }
+  to { --brume-hold-sweep: 360deg; }
+}
 @media (prefers-reduced-motion: reduce) {
   .brume-mic.is-holding {
     transform: none;
+  }
+  .brume-mic.is-holding::before {
+    animation: none;
   }
 }
 

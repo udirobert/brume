@@ -93,6 +93,17 @@ export default function Index() {
   useLayoutEffect(() => {
     setLookTarget(lookSelector ? document.querySelector<HTMLElement>(lookSelector) : null);
   }, [lookSelector]);
+  // A kept word gets a beat of the companion's gaze — "I saw that land" —
+  // then the gaze lets go. Only released if nothing newer asked for it.
+  const lookTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const glanceAt = (selector: string, ms = 1800) => {
+    clearTimeout(lookTimerRef.current);
+    setLookSelector(selector);
+    lookTimerRef.current = setTimeout(
+      () => setLookSelector((cur) => (cur === selector ? null : cur)),
+      ms,
+    );
+  };
   const [droplet, setDroplet] = useState<{
     key: number;
     from: { x: number; y: number };
@@ -134,6 +145,7 @@ export default function Index() {
     if (fromOffer) {
       setBeginNudge(true);
       window.setTimeout(() => setBeginNudge(false), 5000);
+      glanceAt(".brume-voice-offer--kept");
     }
     if (next?.reaction) {
       setMascotReaction({ name: next.reaction, key: `home-${++reactionSerial.current}` });
@@ -229,9 +241,10 @@ export default function Index() {
       {feelTap !== null && (
         <CheckInReasons
           feeling={feelTap}
-          onPick={() =>
-            setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` })
-          }
+          onPick={() => {
+            setMascotReaction({ name: "settle", key: `home-${++reactionSerial.current}` });
+            glanceAt(".brume-reasons__kept");
+          }}
         />
       )}
 
@@ -249,6 +262,14 @@ export default function Index() {
       <button type="button" className={`brume-home__primary brume-btn brume-btn--push${beginNudge ? " is-suggested" : ""}`} onClick={begin}>
         Begin
       </button>
+      {/* The word visibly shapes the practice: the rhythm it chose sits
+          under the action it leads to. */}
+      {selectedPattern && (
+        <p className="brume-home__rhythm-note">
+          {selectedPattern.name}
+          {patternOverride ? " · your choice" : feelTap !== null ? " · from how you feel" : ""}
+        </p>
+      )}
       </div>
 
       <details ref={optionsRef} className="brume-home-options" onKeyDown={(e) => {

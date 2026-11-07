@@ -145,7 +145,8 @@ read before adding anything to it):
   steals (`pointercancel`, e.g. the first-press permission sheet) —
   settles into that same tap contract: a hold never outlives the finger,
   and an open mic always says how it ends ("tap again when done", the
-  button itself reading "tap to stop"). It is what makes multilingual
+  button itself reading "tap to stop"; a ring sweeps the pill while the
+  finger is down — the press is the clock). It is what makes multilingual
   hearing safe: `LANG`
   catalogs (es/fr/de today) widen only the alias table, never the
   interpretation.
@@ -162,8 +163,11 @@ read before adding anything to it):
   the chip is tapped (either is the committing tap; the pill is the word,
   not an "okay"), the mic is pressed again, or "Not this one" (×) retires
   it and the glow together; taking it leaves the seat a breath longer as
-  the kept word ("Drained — kept") so the confirm lands where the eye
-  already is; it scrolls clear of the pinned Begin; and the
+  the kept word ("Drained — kept", the companion glancing at it once) so
+  the confirm lands where the eye already is; the heard line's seat is
+  always held (`.brume-voice-heard` renders even empty — transcripts may
+  dissolve but the layout must not); it scrolls clear of the pinned
+  Begin; and the
   companion acknowledges the match with the suggested word's own
   reaction (acknowledgment only — no tint, no ledger, the tap still
   owns the commit). Any new voice surface
@@ -257,16 +261,24 @@ under it a closed-table aside, one per valence (heavy → "it can sit
 here.", positive → "worth keeping.") — the acknowledgment is the mirror,
 privacy stays under the chips where it belongs, and the companion
 settles once (`onPick`); `.brume-pairs.has-selection` dims the unchosen
-words. Home
+words. Under Begin, the rhythm the word chose is named in a whisper
+("Reset · from how you feel"). A first visit peeks one chip's other
+face once ever (`brume.flipPeek.v1`) — the ten-word vocabulary is seen,
+not told. Home
 mascot anchor is 132px on `useIsMobile`, 156 otherwise.
 
 Session lifecycle: the session offers its own ending — past
 `LANDING_SECONDS` (90 s, matching `practiceProgress` fullness) in
 `ResponsiveEnhancedSession`, the next inhale boundary self-pauses into
 the landing ("the breath can rest here"); a tap resumes (offered once),
-~10 s idle completes through the same path as End. On post-session,
+~10 s idle completes through the same path as End. The carried word
+rests inside the orb for the first breaths only (`.brume-session-word`,
+mounted once `beganRef` latches, opacity-only dissolve ~6 s, never
+replays on resume). On post-session,
 answering "How is it now?" calls `clearFeel()` — the room releases the
-word's tint — and the heading takes focus on mount so the route change
+word's tint — and the landing mirrors the word back by name ("came in
+Heavy, leaving lighter — it can rest here." / "Heavy can rest here.");
+the heading takes focus on mount so the route change
 announces. `sessionStore` holds only the API callers use;
 `sessionSelectors.isActive` means `phase === 'active'` literally (not
 "session exists").

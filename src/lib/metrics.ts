@@ -21,8 +21,10 @@ type Fields = Partial<Record<Kind, readonly string[]>>;
  * The D7 read needs four things: who arrived for the first time, who came
  * back and after how many days, whether the breath was reached, and how the
  * room felt afterwards. The qualitative bar needs a fifth: whether anyone
- * wrote a sentence of their own. Nothing else is wired — in particular the
- * copy and share events, which belong to E2 and wait for its arm flag.
+ * wrote a sentence of their own. E4 step 1 needs a sixth: whether anyone
+ * draws in the room at all — counts and a material, never the drawing.
+ * Nothing else is wired — in particular the copy and share events, which
+ * belong to E2 and wait for its arm flag.
  */
 export type WiredEvent =
   | "visit"
@@ -31,7 +33,8 @@ export type WiredEvent =
   | "session_abandon"
   | "after_answer"
   | "words_card_shown"
-  | "words_written";
+  | "words_written"
+  | "room_touch";
 
 export const WIRE: Record<WiredEvent, Fields> = {
   visit: { num: ["days_since_first", "days_since_last"], id: ["arm"] },
@@ -41,6 +44,7 @@ export const WIRE: Record<WiredEvent, Fields> = {
   after_answer: { id: ["choice"], num: ["material_changes"] },
   words_card_shown: { id: ["surface", "arm"] },
   words_written: { id: ["surface", "arm"], bool: ["for_me"] },
+  room_touch: { num: ["strokes", "seconds"], id: ["material"] },
 };
 
 /** Catalog ids look like this; a sentence never does. */

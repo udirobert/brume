@@ -42,9 +42,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function fire(target: Element, type: string, x: number, y: number) {
+function fire(target: Element, type: string, x: number, y: number, pointerType = "mouse") {
   const e = new Event(type, { bubbles: true }) as Event & Record<string, unknown>;
-  Object.assign(e, { clientX: x, clientY: y, pointerId: 1, button: 0 });
+  Object.assign(e, { clientX: x, clientY: y, pointerId: 1, button: 0, pointerType });
   act(() => {
     target.dispatchEvent(e);
   });
@@ -94,6 +94,27 @@ describe("RoomTouch", () => {
     }
     act(() => root.unmount());
     expect(track).not.toHaveBeenCalled();
+    root = createRoot(container);
+  });
+
+  it("a finger draws only while Home fits; when Home scrolls, touch is a scroll", () => {
+    const track = vi.spyOn(analytics, "trackEvent").mockImplementation(() => {});
+    act(() => root.render(<RoomTouch />));
+    expect(document.documentElement.dataset.roomTouch).toBe("1");
+    fire(document.body, "pointerdown", 100, 100, "touch");
+    expect(document.documentElement.dataset.drawing).toBe("1");
+    fire(document.body, "pointerup", 100, 100, "touch");
+    // The page grew taller than the screen: scrolling wins.
+    delete document.documentElement.dataset.roomTouch;
+    fire(document.body, "pointerdown", 100, 100, "touch");
+    expect(document.documentElement.dataset.drawing).toBeUndefined();
+    fire(document.body, "pointercancel", 100, 100, "touch");
+    // Mouse and pen still draw on a scrolling page.
+    fire(document.body, "pointerdown", 100, 100, "pen");
+    expect(document.documentElement.dataset.drawing).toBe("1");
+    fire(document.body, "pointerup", 100, 100, "pen");
+    act(() => root.unmount());
+    expect((track.mock.calls[0][1] as { strokes: number }).strokes).toBe(2);
     root = createRoot(container);
   });
 

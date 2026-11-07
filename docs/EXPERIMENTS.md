@@ -163,7 +163,7 @@ Design guidance we take from the research without quoting it:
 | | State |
 | --- | --- |
 | Event taxonomy (`src/lib/events.ts`) | **wired + tested** |
-| E4 step 1 — room answers touch (Home) | **built**, desktop pixel-verified; phone touch/scroll unverified |
+| E4 step 1 — room answers touch (Home) | **built and wired 2026-11-07** — `room_touch` reaches the counter; desktop pixel-verified; phone checked in emulation only (see the E4 note); real-device check still open |
 | E1 — material variations | variations pending from owner; skins-only, in room settings |
 | E2 — Words Card arms | **not started**: needs the flag mechanism (`arm` is always `sentence`) |
 | E3 — landing | instrumented (`landing_*`); no analysis yet |
@@ -176,7 +176,7 @@ Design guidance we take from the research without quoting it:
 | E6 — the room remembers | **built 2026-11-06, arm-gated**: `arms.ts` assigns control / line / line_room once per device, `memoryLine.ts` composes the pattern line (≥7 entries, a feeling+daypart that recurred), `visit` carries the arm and the counter keeps `by_arm` histograms. Needs traffic to read |
 | Companion as a persistent surface (widget / host) | **not started**: research-backed, unbuilt; the `android/` shell is empty |
 | Home surface count | **too high** — cues, presence, room settings and rhythm picker all sit on the first screen; strip after the cohort reads |
-| Privacy copy for anonymous counts | **corrected 2026-11-04** — the page now separates the five events the counter receives from the counts that stay on the device; the check-in is counted as a position and never as a word, the mic is transient; any widening of `WIRE` updates this page in the same commit |
+| Privacy copy for anonymous counts | **corrected 2026-11-04** — the page now separates the events the counter receives (eight since 2026-11-07, when `room_touch` joined) from the counts that stay on the device; the check-in is counted as a position and never as a word, the mic is transient; any widening of `WIRE` updates this page in the same commit |
 | Sensing rule ("we do not sense you") | **rewritten 2026-11-04** — the mic is transient, opt-in, records nothing; `PrivacyPolicy.tsx` + `About.tsx` no longer claim it is never used |
 | OneSignal dashboard | **check**: no streak-framed journey may exist (see `docs/BRUME.md` tag table) |
 | Bar for going live (X%, N) | **set** — 25% / 50 / +8pt gap / 5 voices |
@@ -241,6 +241,25 @@ A ladder; stop climbing when demand stops showing up.
   share of Home visits with any touch; Begin rate for touchers vs not;
   repeat touching on later days.
 - **Kill step 2/3 if:** step 1 sees little use (permissions not worth it).
+- **Wired 2026-11-07.** `room_touch` now reaches the counter, which keeps a
+  daily `touch` block: `count` (Home visits that drew), `strokes` and `seconds`
+  in the visit buckets, and `material` by name. "Does anyone touch" reads as
+  `touch.count` against that day's `visit` total. Two of the step-1 signals
+  are **not** readable from daily aggregates yet: Begin rate for touchers vs
+  non-touchers, and repeat touching on later days. Each needs one more field
+  (a `touched` boolean on `session_start`, `days_since_first` on
+  `room_touch`), and each would be a separate widening of the wire.
+  `seconds` rounds, so a single short stroke reports `0`.
+  *Phone check (emulated, real CDP touch input — not a real device):* at
+  390×844, 393×852, 393×851 and 375×667, Home fits the screen, a finger drag
+  draws without scrolling the page, a touch on Begin still starts the
+  session, and the event arrives as Home unmounts. At 320×568 Home is taller
+  than the screen, so room touch is off by design. That check found a bug:
+  a finger still started a stroke there, so a scroll attempt would have left
+  a dab and counted as a touch. `RoomTouch` now ignores touch pointers
+  whenever the room hasn't claimed touch (a test pins it). Emulation did not
+  scroll the page in either case, so the scroll handoff itself still needs a
+  real phone.
 
 ### E5 — Return without nagging
 One opt-in daypart reminder (OneSignal is wired) vs none. Tests the
@@ -306,11 +325,12 @@ could be put into.
 
 **The wire is `src/lib/metrics.ts` (added 2026-11-04)** — a same-origin POST to
 `/api/metrics`, served by `netlify/functions/metrics.mjs` and stored in Netlify
-Blobs as one aggregate document per day. Only the seven events named in its
+Blobs as one aggregate document per day. Only the eight events named in its
 `WIRE` leave the device: `visit` (two day numbers), `session_start`,
-`session_complete`, `session_abandon`, `after_answer`, and the two sentence
+`session_complete`, `session_abandon`, `after_answer`, the two sentence
 acts (`words_card_shown`, `words_written`) that make the qualitative bar
-countable — see "Qualitative" below. A field the wire doesn't
+countable — see "Qualitative" below — and `room_touch` (added 2026-11-07),
+which answers E4 step 1's "does anyone touch the room at all". A field the wire doesn't
 name is dropped before the request; a string that isn't shaped like a catalog
 id is dropped too; the counter re-checks both and buckets every number, so the
 most anyone can read out of it is how many. `src/lib/__tests__/metrics.test.ts`
@@ -320,7 +340,7 @@ other fails the test.
 `trackEvent` in `src/lib/analytics.ts` still has **no provider**: no PostHog or
 Mixpanel script loads anywhere, so the console-in-dev path is the only other
 consumer. Everything else in the table below — check-ins, reasons, materials,
-cues, touches, Words Card copies — is counted locally and never sent. Wiring a
+cues, Words Card copies — is counted locally and never sent. Wiring a
 provider is not a config change: it is the moment `PrivacyPolicy.tsx` starts
 describing transmission that actually happens, so that page and its test change
 in the same commit.
@@ -359,7 +379,10 @@ every value sent is a number, a boolean or a short id.
 | `room_touch` | `strokes`, `seconds`, `material` | once per Home visit with ≥1 stroke |
 
 **Wired to the counter:** `visit`, `session_start`, `session_complete`,
-`session_abandon`, `after_answer`, `words_card_shown`, `words_written`.
+`session_abandon`, `after_answer`, `words_card_shown`, `words_written`,
+`room_touch`. The counter files touches under `touch`: a `count`, and
+`strokes` / `seconds` in the same small buckets as the visit histograms, plus
+`material` by name (a name off the closed list is tallied as `other`).
 Everything else in the table is counted on the device and stays there — the
 table describes the contract, and `WIRE` in `src/lib/metrics.ts` is the subset
 that travels. `PrivacyPolicy.test.tsx` reads the length of `WIRE`, so the page
@@ -379,7 +402,7 @@ for events is dev-only now.
 
 Each experiment still needs a flag so cohorts see different arms (todo; E2 `arm` is the first place it plugs in).
 Privacy copy must say these are aggregate and anonymous. — **done for the
-wired seven** (`PrivacyPolicy.tsx` splits what is sent from what stays on the
+wired eight** (`PrivacyPolicy.tsx` splits what is sent from what stays on the
 device); re-read it whenever `WIRE` widens.
 
 ## Bar for going live (written before looking at data)

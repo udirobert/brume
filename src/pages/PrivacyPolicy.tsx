@@ -15,7 +15,7 @@ const PrivacyPolicy = () => {
     <LegalPage
       title="Privacy Policy"
       lede="How Brume protects your privacy and handles your data"
-      updated="Last updated: November 4, 2026"
+      updated="Last updated: November 7, 2026"
       footer={
         <LegalFooter>
           <p>This privacy policy is effective as of November 4, 2026 and applies to all users of Brume.</p>
@@ -104,7 +104,7 @@ const PrivacyPolicy = () => {
       <LegalSection id="experiment-events" title="How we measure">
         <LegalCallout tone="note">
           <p className="text-muted-foreground mb-4">
-            Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed and no analytics company is involved: seven events are sent to Brume's own counter on this site, and that counter keeps <strong>daily totals only</strong> — no device id, no cookie, no profile, nothing that could single anyone out. What follows is exactly what may leave your device, and every field in it is a number, a boolean, or a member of a closed list. Nothing else is sent.
+            Brume keeps a small number of <strong>anonymous counts</strong> so we can learn what people do and improve it. No account is needed and no analytics company is involved: eight events are sent to Brume's own counter on this site, and that counter keeps <strong>daily totals only</strong> — no device id, no cookie, no profile, nothing that could single anyone out. What follows is exactly what may leave your device, and every field in it is a number, a boolean, or a member of a closed list. Nothing else is sent.
           </p>
           <h3 className="font-medium text-foreground mb-2">Sent to the counter</h3>
           <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
@@ -112,11 +112,11 @@ const PrivacyPolicy = () => {
             <li>Sessions — that one started, and that it finished or was left, with the pattern name, seconds and cycles</li>
             <li>How the room felt afterwards — one of three choices on a closed list, and how many times you changed the room before answering</li>
             <li>The sentence card — that you opened it, and that you changed the sentence we offered into your own. Which is the act of writing, not the words: your sentence is never part of this count</li>
+            <li>Drawing in the room — that you drew on the home screen, how many strokes and roughly how many seconds, and which room material was showing. Never the drawing itself: not its shape, not where on the screen</li>
           </ul>
           <h3 className="font-medium text-foreground mt-4 mb-2">Counted on your device, never sent</h3>
           <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm">
             <li>Which room material you pick, and whether you resume from the landing</li>
-            <li>That you drew in the room (strokes and seconds, never the drawing itself)</li>
             <li>That you copied or shared a Words Card, and whether the optional quiet-room link was on</li>
             <li>Which check-in word you confirmed and which reason you picked — positions in a closed list of fourteen and six, never the words themselves</li>
           </ul>
@@ -125,7 +125,7 @@ const PrivacyPolicy = () => {
             <li>Anything you typed — message text, the Words Card, a reason you chose to keep private</li>
             <li>Anything you said — the microphone returns a match, then drops the sentence; only the word you confirm is recorded, and as a number</li>
             <li>Your breath timing beyond duration and cycle count</li>
-            <li>Anything from the mist drawing</li>
+            <li>The mist drawing itself — its shape, where you drew, or what it looked like</li>
             <li>Audio recordings — nothing you say is stored</li>
           </ul>
           <h3 className="font-medium text-foreground mt-4 mb-2">The voice service</h3>

@@ -24,10 +24,14 @@ export const ALLOWED = {
   after_answer: { choice: "id", material_changes: "num" },
   words_card_shown: { surface: "id", arm: "id" },
   words_written: { surface: "id", arm: "id", for_me: "bool" },
+  room_touch: { strokes: "num", seconds: "num", material: "id" },
 };
 
 /** Mirrors E6_ARMS in src/lib/arms.ts; an arm not listed is not tallied. */
 const ARMS = ["control", "line", "line_room"];
+
+/** Mirrors Material in src/lib/events.ts; anything else is tallied as "other". */
+const MATERIALS = ["mist", "waves", "sand", "cells", "snow", "ink"];
 
 const ID_SHAPE = /^[a-z][a-z0-9_-]{0,23}$/;
 
@@ -58,6 +62,9 @@ export const empty = () => ({
   // shown: the sentence card opened. own: the composed sentence was changed,
   // so a person's words exist somewhere. kept: they wrote it for themselves.
   words: { shown: 0, own: 0, kept: 0 },
+  // E4 step 1: Home visits where the room was drawn on, how much, and on
+  // which material. Never where, never the shape.
+  touch: { count: 0, strokes: {}, seconds: {}, material: {} },
 });
 
 /**
@@ -103,6 +110,21 @@ export function add(day, name, props) {
       day.words.own += 1;
       if (props.for_me === true) day.words.kept += 1;
       return;
+    case "room_touch": {
+      const touch = (day.touch ??= { count: 0, strokes: {}, seconds: {}, material: {} });
+      touch.count += 1;
+      if (typeof props.strokes === "number") {
+        const key = bucket(props.strokes);
+        touch.strokes[key] = (touch.strokes[key] ?? 0) + 1;
+      }
+      if (typeof props.seconds === "number") {
+        const key = bucket(props.seconds);
+        touch.seconds[key] = (touch.seconds[key] ?? 0) + 1;
+      }
+      const material = MATERIALS.includes(props.material) ? props.material : "other";
+      touch.material[material] = (touch.material[material] ?? 0) + 1;
+      return;
+    }
   }
 }
 

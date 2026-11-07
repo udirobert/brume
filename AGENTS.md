@@ -186,9 +186,10 @@ booleans, closed sets; never words, messages or drawings), so add events
 there and in the doc first. **The wire is `src/lib/metrics.ts`** — a
 same-origin counter (`/api/metrics`,
 `netlify/functions/metrics.mjs`, stored as daily aggregates in Netlify
-Blobs) that sends only the seven events named in its `WIRE`: `visit`,
+Blobs) that sends only the eight events named in its `WIRE`: `visit`,
 `session_start`, `session_complete`, `session_abandon`, `after_answer`,
-`words_card_shown`, `words_written`. Day
+`words_card_shown`, `words_written`, `room_touch` (strokes, seconds and
+material — never the drawing; the counter keeps bucketed counts). Day
 numbers, seconds and closed-set ids, no device key, no person to
 reconstruct; a value that isn't a number, a boolean or an id-shaped string
 is dropped before the request goes out. `trackEvent` still has no provider —

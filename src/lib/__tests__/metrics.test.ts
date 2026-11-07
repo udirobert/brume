@@ -74,16 +74,34 @@ describe("what leaves the device", () => {
     sendMetrics("visit", { days_since_first: 0 });
     sendMetrics("session_start", { pattern: "reset", mode: "classic" });
     sendMetrics("after_answer", { choice: "lighter", material_changes: 2 });
+    sendMetrics("room_touch", { strokes: 2, seconds: 5, material: "mist" });
     expect(posted.map((p) => p.name)).toEqual([
       "visit",
       "session_start",
       "after_answer",
+      "room_touch",
+    ]);
+  });
+
+  it("sends that the room was drawn on, and never the drawing", () => {
+    track("room_touch", { strokes: 3, seconds: 12, material: "ink" });
+    sendMetrics("room_touch", {
+      strokes: 1,
+      seconds: 2,
+      material: "mist",
+      points: [[10, 20], [30, 40]],
+      x: 120,
+      image: "data:image/png;base64,AAAA",
+    } as Record<string, unknown>);
+    expect(posted.map((p) => p.props)).toEqual([
+      { strokes: 3, seconds: 12, material: "ink" },
+      { strokes: 1, seconds: 2, material: "mist" },
     ]);
   });
 
   it("sends nothing for an event that is not wired", () => {
     sendMetrics("checkin_word", { feeling: 3, surface: "home" });
-    sendMetrics("room_touch", { strokes: 2, seconds: 5, material: "mist" });
+    sendMetrics("material_changed", { to: "ink" });
     // E2's own events: they wait for the arm flag, so they stay local.
     sendMetrics("words_card_shared", { surface: "post_session" });
     sendMetrics("words_card_copied", { surface: "post_session", edited: true });
@@ -211,6 +229,41 @@ describe("the counter's arithmetic", () => {
       abandons: { paused: 1 },
       after: { lighter: 1 },
       words: { shown: 1, own: 2, kept: 1 },
+      touch: { count: 0, strokes: {}, seconds: {}, material: {} },
+    });
+  });
+
+  it("tallies room touches in buckets, and only known materials by name", () => {
+    const day = empty();
+    add(day, "room_touch", { strokes: 2, seconds: 5, material: "mist" });
+    add(day, "room_touch", { strokes: 40, seconds: 95, material: "ink" });
+    add(day, "room_touch", { strokes: 1, seconds: 0, material: "whatever_i_typed" });
+    expect(day.touch).toEqual({
+      count: 3,
+      strokes: { "2": 1, "31+": 1, "1": 1 },
+      seconds: { "5": 1, "31+": 1, "0": 1 },
+      material: { mist: 1, ink: 1, other: 1 },
+    });
+    expect(clean("room_touch", { strokes: 2, seconds: 5, material: "mist", points: [[1, 2]] })).toEqual({
+      strokes: 2,
+      seconds: 5,
+      material: "mist",
+    });
+  });
+
+  it("adds touches to a day written before touches were counted", async () => {
+    store.docs.clear();
+    const today = new Date().toISOString().slice(0, 10);
+    const old = empty() as Record<string, unknown>;
+    delete old.touch;
+    store.docs.set(today, Object.assign(old, { session_starts: 2 }));
+    const res = await handler(
+      request("POST", { body: { name: "room_touch", props: { strokes: 4, seconds: 9, material: "sand" } } }),
+    );
+    expect(res.status).toBe(202);
+    expect(store.docs.get(today)).toMatchObject({
+      session_starts: 2,
+      touch: { count: 1, strokes: { "4": 1 }, seconds: { "8-30": 1 }, material: { sand: 1 } },
     });
   });
 

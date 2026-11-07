@@ -32,7 +32,7 @@ describe("PrivacyPolicy camera copy", () => {
   });
 
   it("pins the last-updated date", () => {
-    expect(html).toContain("Last updated: November 4, 2026");
+    expect(html).toContain("Last updated: November 7, 2026");
   });
 });
 
@@ -106,6 +106,14 @@ describe("PrivacyPolicy counting copy", () => {
     const count = words[Object.keys(WIRE).length];
     expect(count, "wire too long for the number table").toBeDefined();
     expect(html.toLowerCase()).toContain(`${count} events are sent`);
+  });
+
+  it("counts that the room was drawn on, never the drawing", () => {
+    expect(html).toContain("Drawing in the room");
+    expect(html).toContain("Never the drawing itself");
+    expect(html).toContain("The mist drawing itself");
+    // Drawing is sent now, so the page must not still file it as local-only.
+    expect(html).not.toContain("That you drew in the room");
   });
 
   it("counts the act of writing a sentence, never the sentence", () => {

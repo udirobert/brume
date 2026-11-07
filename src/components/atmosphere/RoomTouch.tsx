@@ -153,6 +153,10 @@ export function RoomTouch() {
 
     const onDown = (e: PointerEvent) => {
       if (e.button > 0 || drawing) return;
+      // While Home scrolls, a finger is scrolling: the browser fires
+      // pointerdown before it claims the gesture, so without this every
+      // scroll would leave a dab and be counted as a room touch.
+      if (e.pointerType === "touch" && document.documentElement.dataset.roomTouch !== "1") return;
       const el = e.target as Element | null;
       if (el?.closest?.(IGNORE)) return;
       drawing = true;

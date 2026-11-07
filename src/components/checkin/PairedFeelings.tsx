@@ -253,12 +253,18 @@ const HOLD_TAP_MS = 350;
     onVoiceState?.("listening");
     abortRef.current = new AbortController();
     const ctl = ctlRef.current ?? { hold: false };
-    const { transcript, index, suggest, pattern, failure } = await listenOnce(
+    const { transcript, index, suggest, pattern, failure, confidence, hedged } = await listenOnce(
       setHeard,
       abortRef.current.signal,
       ctl,
     );
     const offered = index ?? suggest;
+    if (!micUsed) {
+      // The first press survived its whole arc — the browser asked once
+      // and the person now knows the gesture. The hint can retire.
+      markMicUsed();
+      setMicUsed(true);
+    }
     track("checkin_voice_used", { matched: index != null, offered });
     const wasTap = ctl.hold === false;
     setMicOn(false);
@@ -330,8 +336,16 @@ const HOLD_TAP_MS = 350;
     setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}. Tap to keep it.`);
     // Their words pass through the mist; the invitation persists below.
     flashHeard(`heard “${snippet}”`);
-    setOffer({ index: offered, maybe: index == null });
-  }, [faces, selectedIndex, onVoiceState, onPatternOffer]);
+    // "maybe" on a soft suggestion, on hedged speech, or when the turn
+    // was cut rather than finished — the offer knows how sure it is.
+    setOffer({
+      index: offered,
+      maybe:
+        index == null ||
+        hedged === true ||
+        (typeof confidence === "number" && confidence < 0.7),
+    });
+  }, [faces, selectedIndex, onVoiceState, onPatternOffer, micUsed]);
 
   const onMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault(); // no focus ring dance, no synthesized click after
@@ -344,10 +358,6 @@ const HOLD_TAP_MS = 350;
     setHelp(null); // the moment they try again, the card has done its job
     setOffer(null);
     setKept(null);
-    if (!micUsed) {
-      markMicUsed();
-      setMicUsed(true);
-    }
     holdingRef.current = true;
     pressStartRef.current = Date.now();
     // Hold (the default): open while the finger is down, release ends it.

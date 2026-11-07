@@ -131,11 +131,16 @@ read before adding anything to it):
   rule no user can hold.
 - **The pattern has a name — propose-never-commit voice**: token →
   realtime stream (the mic is tapped before the token arrives, so the
-  opening words are kept; turns joined — a pause mid-sentence must not
-  lose the feeling word; `keyterms_prompt` is the catalog itself) →
+  opening words are kept; capture is an AudioWorklet — `attachMicTap`,
+  ScriptProcessor fallback for engines without it; turns joined — a
+  pause mid-sentence must not lose the feeling word; `keyterms_prompt`
+  is the catalog itself) →
   closed-set match on **whole words** ("hopeless" must never reach Hopeful,
-  "cansada" must never reach "sad"; "calm down" is an ask, not a report) →
-  offer → tap → transcript dropped.
+  "cansada" must never reach "sad"; "calm down" is an ask, not a report;
+  equal scores resolve by recency — the feeling is named last; hedged
+  utterances — "I guess", "whatever", `HEDGES` — soften the offer to a
+  "maybe", as does a low `end_of_turn_confidence` < 0.7 from the stream)
+  → offer → tap → transcript dropped.
   The input itself defaults to **hold** — the mic is open exactly while
   the finger is down, so a pause can never cut a sentence and the ending
   is always the user's; **tap** (one press starts, silence or a second

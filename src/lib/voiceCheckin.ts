@@ -156,17 +156,48 @@ export function matchFeeling(transcript: string): number | null {
   const t = normSpeech(transcript);
   if (!t) return null;
   const words = new Set(t.split(" "));
-  let best: { index: number; score: number } | null = null;
+  let best: { index: number; score: number; pos: number } | null = null;
   for (let i = 0; i < FEELINGS.length; i++) {
     const f = FEELINGS[i];
     let score = 0;
+    let pos = -1;
+    const at = (term: string) => {
+      const p = t.indexOf(term);
+      if (p >= 0) pos = Math.max(pos, p);
+    };
     if (t === norm(f.label) || t === norm(f.longLabel)) score += 4;
     else if (hasTerm(t, norm(f.label)) || hasTerm(t, norm(f.phrase))) score += 3;
+    at(norm(f.label));
+    at(norm(f.phrase));
     for (const w of norm(f.phrase).split(" ")) if (w.length > 3 && words.has(w)) score += 1;
-    for (const w of synFor(i)) if (hasTerm(t, w)) score += 2;
-    if (score > 0 && (best === null || score > best.score)) best = { index: i, score };
+    for (const w of synFor(i)) if (hasTerm(t, w)) { score += 2; at(w); }
+    // Equal scores resolve by position: the feeling is usually named
+    // last ("tired of this, honestly I'm fine" — fine wins, not tired).
+    if (score > 0 && (best === null || score > best.score || (score === best.score && pos > best.pos))) {
+      best = { index: i, score, pos };
+    }
   }
   return best?.index ?? null;
+}
+
+// Hedged or ironic framing — "I guess I'm fine", "whatever, tired",
+// "kind of okay" — is not a report worth a direct offer. The match
+// still stands, but the invitation softens to a "maybe": tone is
+// unreachable in a closed set, so we mark the *textual* uncertainty
+// and let the person confirm.
+const HEDGES = [
+  "i guess",
+  "whatever",
+  "sort of",
+  "kind of",
+  "i suppose",
+  "meh",
+  "who knows",
+];
+
+export function hasHedge(transcript: string): boolean {
+  const t = normSpeech(transcript);
+  return HEDGES.some((h) => hasTerm(t, h));
 }
 
 const POS_WORDS = ["love", "amazing", "wonderful", "fantastic", "awesome", "yay", "brilliant", "lovely"];
@@ -260,6 +291,13 @@ export interface HeardResult {
   pattern: string | null;
   /** Set when listening itself failed (as opposed to hearing nothing). */
   failure: VoiceFailure | null;
+  /** The recognizer's end-of-turn confidence when it reported one —
+   *  null on the clip and Web Speech paths. Low means the utterance was
+   *  cut rather than finished, so a direct offer should soften. */
+  confidence: number | null;
+  /** The transcript carried hedging ("I guess", "whatever") — the match
+   *  still stands but the invitation should hedge too. */
+  hedged: boolean;
 }
 
 /**
@@ -355,6 +393,7 @@ export function toPcm16(input: Float32Array, inRate: number): { pcm: Int16Array;
 interface TurnMessage {
   transcript?: string;
   end_of_turn?: boolean;
+  end_of_turn_confidence?: number;
   turn_is_formatted?: boolean;
 }
 
@@ -469,6 +508,76 @@ function trace(stage: string, err: unknown): void {
 
 const offline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
+// ---- the mic tap -------------------------------------------------------------
+// AudioWorklet is the current capture API; it batches raw channel-0
+// samples to ~2048-frame chunks and hands them over its port. Engines
+// that never shipped it (old WebKit) fall back to ScriptProcessor —
+// same callback either way, so the listen below never learns which ran.
+const PCM_WORKLET = `
+class BrumePcm extends AudioWorkletProcessor {
+  constructor() { super(); this.buf = []; this.n = 0; }
+  process(inputs) {
+    const ch = inputs[0] && inputs[0][0];
+    if (ch && ch.length) {
+      for (let i = 0; i < ch.length; i++) this.buf.push(ch[i]);
+      this.n += ch.length;
+      if (this.n >= 2048) {
+        const out = new Float32Array(this.n);
+        for (let i = 0; i < this.n; i++) out[i] = this.buf[i];
+        this.port.postMessage(out, [out.buffer]);
+        this.buf = []; this.n = 0;
+      }
+    }
+    return true;
+  }
+}
+registerProcessor("brume-pcm", BrumePcm);
+`;
+
+async function attachMicTap(
+  stream: MediaStream,
+  ctx: AudioContext,
+  onChunk: (input: Float32Array) => void,
+): Promise<() => void> {
+  const src = ctx.createMediaStreamSource(stream);
+  const sink = ctx.createGain();
+  sink.gain.value = 0; // the tap runs; the mic is never played back
+  if (typeof ctx.audioWorklet?.addModule === "function") {
+    try {
+      const url = URL.createObjectURL(new Blob([PCM_WORKLET], { type: "text/javascript" }));
+      try {
+        await ctx.audioWorklet.addModule(url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      const node = new AudioWorkletNode(ctx, "brume-pcm");
+      node.port.onmessage = (e) => onChunk(e.data as Float32Array);
+      src.connect(node);
+      node.connect(sink);
+      sink.connect(ctx.destination);
+      return () => {
+        node.port.onmessage = null;
+        node.disconnect();
+        src.disconnect();
+        sink.disconnect();
+      };
+    } catch (err) {
+      trace("worklet", err); // fall through to the legacy node
+    }
+  }
+  const proc = ctx.createScriptProcessor(4096, 1, 1);
+  src.connect(proc);
+  proc.connect(sink);
+  sink.connect(ctx.destination);
+  proc.onaudioprocess = (ev) => onChunk(ev.inputBuffer.getChannelData(0));
+  return () => {
+    proc.onaudioprocess = null;
+    proc.disconnect();
+    src.disconnect();
+    sink.disconnect();
+  };
+}
+
 // ---- the three ways to hear -------------------------------------------------
 
 // Live path: stream PCM16 to AssemblyAI's realtime WS — transcripts
@@ -479,7 +588,7 @@ async function viaStreaming(
   ctl: ListenControl,
   onInterim?: (s: string) => void,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<{ text: string; eotConfidence: number | null }> {
   const joiner = createTurnJoiner();
   // People start talking as they press. The token round trip and the socket
   // opening both take a beat, so the microphone is tapped first and what is
@@ -489,27 +598,15 @@ async function viaStreaming(
   let pendingBytes = 0;
   let spoke = false;
 
-  const src = ctx.createMediaStreamSource(stream);
-  const proc = ctx.createScriptProcessor(4096, 1, 1);
-  const sink = ctx.createGain();
-  sink.gain.value = 0; // the processor runs; the mic is never played back
-  src.connect(proc);
-  proc.connect(sink);
-  sink.connect(ctx.destination);
-  proc.onaudioprocess = (ev) => {
-    const { pcm, peak } = toPcm16(ev.inputBuffer.getChannelData(0), ctx.sampleRate);
+  let handleChunk = (input: Float32Array) => {
+    const { pcm, peak } = toPcm16(input, ctx.sampleRate);
     if (peak > SPEECH_PEAK) spoke = true;
     if (pendingBytes < PENDING_MAX_BYTES) {
       pending.push(pcm.buffer as ArrayBuffer);
       pendingBytes += pcm.byteLength;
     }
   };
-  const unhook = () => {
-    proc.onaudioprocess = null;
-    proc.disconnect();
-    src.disconnect();
-    sink.disconnect();
-  };
+  const unhook = await attachMicTap(stream, ctx, (input) => handleChunk(input));
 
   let token: string | undefined;
   try {
@@ -528,9 +625,13 @@ async function viaStreaming(
   let lastLoud = t0;
   let opened = false;
   let releasing = false;
+  // The recognizer's own verdict on whether the turn ended cleanly —
+  // high means the sentence finished; absent or low means it was cut
+  // (cap, release, rambly) and the offer should soften to a "maybe".
+  let eotConfidence: number | null = null;
 
   try {
-    return await new Promise<string>((resolve, reject) => {
+    return await new Promise<{ text: string; eotConfidence: number | null }>((resolve, reject) => {
       let settled = false;
       let grace: ReturnType<typeof setTimeout> | undefined;
       const cap = setInterval(() => {
@@ -545,7 +646,7 @@ async function viaStreaming(
       const stop = () => {
         if (settled) return;
         close();
-        resolve(joiner.text());
+        resolve({ text: joiner.text(), eotConfidence });
       };
       const fail = (e: Error) => {
         if (settled) return;
@@ -584,6 +685,9 @@ async function viaStreaming(
         try { m = JSON.parse(e.data); } catch { return; }
         if (m.type === "Turn" && m.transcript) {
           joiner.add(m);
+          if (typeof m.end_of_turn_confidence === "number") {
+            eotConfidence = m.end_of_turn_confidence;
+          }
           silenceSince = Date.now();
           onInterim?.(joiner.text());
           // Held, a finished turn is only a pause; released or tapped, it is the end.
@@ -591,9 +695,9 @@ async function viaStreaming(
         } else if (m.type === "Termination") stop();
       };
 
-      proc.onaudioprocess = (ev) => {
+      handleChunk = (input) => {
         if (settled) return;
-        const { pcm, peak } = toPcm16(ev.inputBuffer.getChannelData(0), ctx.sampleRate);
+        const { pcm, peak } = toPcm16(input, ctx.sampleRate);
         if (peak > SPEECH_PEAK) {
           spoke = true;
           lastLoud = Date.now();
@@ -745,7 +849,7 @@ export async function listenOnce(
   signal?: AbortSignal,
   ctl: ListenControl = { hold: false },
 ): Promise<HeardResult> {
-  const result = (transcript: string, failure: VoiceFailure | null): HeardResult => {
+  const result = (transcript: string, failure: VoiceFailure | null, confidence: number | null = null): HeardResult => {
     const index = matchFeeling(transcript);
     const suggest = index == null ? suggestFeeling(transcript) : null;
     return {
@@ -754,6 +858,8 @@ export async function listenOnce(
       suggest,
       pattern: index == null && suggest == null ? matchPattern(transcript) : null,
       failure,
+      confidence,
+      hedged: index != null && hasHedge(transcript),
     };
   };
 
@@ -796,7 +902,8 @@ export async function listenOnce(
     if (stream && ctx) {
       try { await ctx.resume(); } catch (err) { trace("resume", err); }
       try {
-        return result(await viaStreaming(stream, ctx, ctl, onInterim, signal), null);
+        const { text, eotConfidence } = await viaStreaming(stream, ctx, ctl, onInterim, signal);
+        return result(text, null, eotConfidence);
       } catch (err) {
         trace("stream", err);
       }

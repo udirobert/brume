@@ -163,7 +163,10 @@ demo.
 - [ ] Real-device pass: hold-to-talk, greeting on Begin, cues, Hear it,
       fallback with network off
 - [ ] Finish the film (`docs/BRUME_CHROMA_AD_PRODUCTION.md`) with real
-      captures from the deployed URL
+      captures from the deployed URL — catch the transcript dissolve:
+      it is the only shot where the privacy claim is *visible*, so it
+      is the money shot; also catch "maybe" softening on a hedged line
+      ("I guess I'm fine") — end-of-turn confidence feeds the offer tier
 - [ ] Post on LinkedIn or X tagging AssemblyAI — link the deployed app
 - [ ] Optional: their agent builder; `ASSEMBLYAI_API_KEY` in Netlify env
       (keeps the Netlify TTS twin live as a fallback)

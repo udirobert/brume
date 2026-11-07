@@ -4,6 +4,7 @@ import {
   clipHeard,
   deviceKindFromUA,
   getMicMode,
+  hasHedge,
   hasNegation,
   matchFeeling,
   matchPattern,
@@ -267,5 +268,22 @@ describe("stuck-mic help", () => {
     expect(voiceHelpFor("mic_blocked", IPHONE)).toContain("aA");
     expect(voiceHelpFor("mic_blocked", ANDROID)).toContain("lock in the address bar");
     expect(voiceHelpFor("mic_blocked", INSTAGRAM)).toContain("another app");
+  });
+});
+
+describe("recency tie-break and hedging", () => {
+  it("equal scores resolve toward the word named last", () => {
+    // "tired" and "fine" are equal-weight synonyms — the feeling named
+    // last is the one they meant.
+    expect(matchFeeling("i am so tired of this, honestly i'm fine")).toBe(0);
+    expect(matchFeeling("i'm fine honestly, just tired")).toBe(8);
+  });
+
+  it("hedged speech is marked for a softer offer", () => {
+    expect(hasHedge("i guess i'm fine")).toBe(true);
+    expect(hasHedge("whatever, kind of tired")).toBe(true);
+    expect(hasHedge("i am tired")).toBe(false);
+    // A hedge never blocks the match itself — it only softens the offer.
+    expect(matchFeeling("i guess i'm feeling great")).toBe(5);
   });
 });

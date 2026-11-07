@@ -485,6 +485,18 @@ h1[tabindex="-1"]:focus { outline: none; }
   font-size: .95rem;
   min-height: 1.2em;
 }
+/* Short viewports (small phones, landscape): tighten the arrive stack so
+   the act card and its Begin button stay above the fold. Word positions
+   are percentages, so a shorter ring pulls the orbs toward center. */
+@media (max-height: 620px) {
+  #screen-arrive .mascot-slot,
+  #screen-scatter .mascot-slot,
+  #screen-setdown .mascot-slot { width: 64px; height: 64px; }
+  #screen-arrive .feeling-ring { height: 180px; }
+  #screen-arrive .arrive-act { margin-top: 6px; padding: 10px 14px; }
+  #screen-scatter #scatter-canvas { height: 200px; }
+  #screen-setdown .setdown-track { height: 150px; }
+}
 
 /* Scatter — the draw-and-release canvas */
 #scatter-canvas {

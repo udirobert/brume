@@ -100,6 +100,13 @@ try {
   assert.equal(await ev('document.getElementById("card-save-note").textContent'), "Saved.");
   await shot("card-desktop.png", "screen-prep-card", 1024, 800);
 
+  await fresh();
+  await ev('document.getElementById("btn-arrive").click();true');
+  await waitScreen("screen-arrive");
+  await ev('[...document.querySelectorAll(".ring-word")].find(w=>w.dataset.feeling==="overwhelmed").click();true');
+  await sleep(600);
+  await shot("arrive-mobile.png", "screen-arrive", 390, 844);
+
   for (const [name, width, height, text] of [
     ["cover.png", 1200, 630, true],
     ["logo.png", 512, 512, false],
@@ -123,7 +130,7 @@ try {
     })()`);
     await cli("screenshot", join(output, name));
   }
-  console.log("7 listing candidates captured from synthetic fixtures.");
+  console.log("8 listing candidates captured from synthetic fixtures.");
 } finally {
   if (browserStarted) {
     try { await cli("close"); } catch {}

@@ -70,7 +70,7 @@ export function buildInvitePrompt({ feeling, act }) {
   if (!a) {
     return [
       `The person answered "How are you arriving?" with: ${f.label}.`,
-      "Brume offers no exercise — they seem steady. Write the single short line Brume says back.",
+      "They seem steady — Brume offers no exercise. Write the single short line Brume says back: a calm send-off, not a question, nothing they must answer.",
       `At most ${INVITE_MAX_WORDS} words. Warm, observational, from Brume's side of the room.`,
       "No emoji, no health or outcome claims, never a catalog feeling word back at them.",
     ].join("\n");

@@ -174,6 +174,7 @@ const els = {
   btnScatterBack: $("#btn-scatter-back"),
   scatterDone: $("#scatter-done"),
   btnScatterHome: $("#btn-scatter-home"),
+  setdownTrack: $("#setdown-track"),
   setdownWeight: $("#setdown-weight"),
   setdownHint: $("#setdown-hint"),
   btnSetdownBack: $("#btn-setdown-back"),
@@ -765,6 +766,12 @@ function resetArrive() {
   }
 }
 
+function arriveFeelingFromPayload(v) {
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase();
+  return feelingById(s) || FEELINGS.find((f) => f.label.toLowerCase() === s) || null;
+}
+
 function pickFeeling(id) {
   const f = feelingById(id);
   if (!f || loadBlocked()) return;
@@ -803,6 +810,7 @@ function enterScatter() {
 }
 
 function finishScatter() {
+  haptic();
   mascot("scatter")?.react("celebrate");
   els.scatterCanvas.hidden = true;
   els.scatterHint.hidden = true;
@@ -828,6 +836,7 @@ function enterSetdown() {
 }
 
 function finishSetdown() {
+  haptic();
   mascot("setdown")?.react("settle");
   els.setdownTrack.hidden = true;
   els.setdownHint.hidden = true;
@@ -2389,13 +2398,13 @@ async function showLastPreparation() {
 // --- entry_payload ------------------------------------------------------------
 
 function applyEntryPayload(payload) {
-  if (!payload || typeof payload !== "object") return;
+  if (!payload || typeof payload !== "object") return false;
   const json = JSON.stringify(payload);
-  if (json === lastAppliedPayloadJson) return;
+  if (json === lastAppliedPayloadJson) return false;
   if (task || loadBlocked()) {
     pendingChoice = { payload };
     updateTaskBanner();
-    return;
+    return false;
   }
   lastAppliedPayloadJson = json;
   const ctx = typeof payload.context === "string" ? payload.context : "";
@@ -2422,7 +2431,7 @@ function applyEntryPayload(payload) {
       if (prep.error) showPrepStatus(els.screens.prepInput, { error: prep.error });
       snapshotReady("input");
     }
-    return;
+    return true;
   }
   if (mode === "alertness") {
     buildKssRow();
@@ -2431,12 +2440,21 @@ function applyEntryPayload(payload) {
     els.kssRow.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
     beginTask("alert", "setup", { kss: null });
     showAlertSetup();
-    return;
+    return true;
+  }
+  if (mode === "arrive") {
+    buildFeelingRing();
+    resetArrive();
+    const f = arriveFeelingFromPayload(payload.feeling);
+    if (f) pickFeeling(f.id);
+    show(els.screens.arrive);
+    return true;
   }
   if (ctx) els.contextInput.value = ctx.slice(0, 200);
   beginTask("reset", "planning", { context: els.contextInput.value });
   // Auto-run planning (never auto-start the session itself).
   startPlanning();
+  return true;
 }
 
 async function loadActiveTask({ apply = false } = {}) {
@@ -2777,12 +2795,13 @@ async function initializeHostInner(gen) {
   if (gen !== bootGeneration) return;
   bootState = "ready";
   els.startupPanel.hidden = true;
+  let payloadNavigated = false;
   if (queuedBootPayload) {
     const p = queuedBootPayload;
     queuedBootPayload = null;
-    applyEntryPayload(p);
+    payloadNavigated = applyEntryPayload(p);
   }
-  if (!task && !restored) show(els.screens.home);
+  if (!task && !restored && !payloadNavigated) show(els.screens.home);
   updateHomeNav();
   loadOptionalData(gen);
 }

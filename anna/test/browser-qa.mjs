@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// The 60s alertness case needs waits longer than the CLI's 25s default.
+process.env.AGENT_BROWSER_DEFAULT_TIMEOUT ||= "90000";
 const run = promisify(execFile);
 const BASE = "http://127.0.0.1:4618";
 const SESSION = process.env.AGENT_BROWSER_SESSION || "brume-preparation-qa";
@@ -193,6 +195,32 @@ try {
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal(await ev('document.getElementById("prep-event").value'), "Interview tomorrow");
     assert.equal(await ev('document.getElementById("prep-goal").value'), "Senior role");
+  });
+
+  await ok("arrive entry payload opens ring, preselects feeling", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "arrive", context: "wired before the call", feeling: "Wired" } });
+    await cli("open", BASE);
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-arrive"]);
+    assert.equal(await ev('document.querySelector(".ring-word.selected")?.dataset.feeling'), "wired");
+    assert.equal(await ev('document.getElementById("arrive-act-name").textContent'), "Scatter");
+    assert.equal(await ev('document.getElementById("arrive-act").hidden'), false);
+  });
+
+  await ok("arrive entry payload without feeling opens bare ring", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "arrive", feeling: "ecstatic" } });
+    await cli("open", BASE);
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-arrive"]);
+    assert.equal(await ev('document.querySelector(".ring-word.selected")'), null);
+    assert.equal(await ev('document.getElementById("arrive-act").hidden'), true);
+    assert.equal(await ev('document.querySelectorAll(".ring-word").length'), 9);
   });
 
   const READY_CP = (updatedAt) => ({ version: 1, id: "t-1", flow: "ready", screen: "plan", updatedAt,

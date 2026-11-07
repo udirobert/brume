@@ -33,7 +33,8 @@ and the full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
   mobile haptics, window set_title. Top-level `host_capabilities:
   ["llm.complete"]`. `system_prompt_addendum` tells Anna's model how to
   call the tools and `open_app_view` (app_id 582, payload
-  `{context, mode: reset|ready|alertness, key_point}`).
+  `{context, mode: reset|ready|alertness|arrive, key_point}`; arrive also
+  takes `feeling`).
 - `bundle/` — static SPA (no build step):
   - `app.js` screens and flows; `index.html`, `app.css`
   - `plan.js` pattern library, prompts, parsing/validation, health-claim
@@ -287,6 +288,11 @@ An entry payload with `mode: "ready"` may include `context`, `goal`,
 with `kind: "plan"`. A valid draft opens for review without another model
 call; an invalid draft leaves the input available for the user to prepare.
 Existing unfinished tasks still require an explicit keep/replace decision.
+
+An entry payload with `mode: "arrive"` opens the feeling ring; an optional
+`feeling` (id or label, closed set) pre-selects it and shows the matched
+act card. Anna's model is told it may offer this when a user names a
+feeling and wants a small physical act rather than conversation.
 
 Run `npm run test:browser` for fake-host regressions.
 `node test/capture-listing.mjs` generates candidate images using a separate

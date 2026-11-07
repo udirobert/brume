@@ -1174,3 +1174,43 @@ The 12.22 design landed same-day as **v0.4.0** (version_id=1990,
 
 Open: Name-it act and Set-down polish are fast follows; a future arm
 may write a closed-set `(feeling, act)` id if E6 measurement wants it.
+
+### 12.24 Pre-review polish pass — agent-offered acts (2026-11-07, local)
+
+Rejection-risk review before the v0.4.0 verdict: the two criteria that
+actually burned us before are "AI-Native Core" and "the agent can't do
+this". The highest-leverage fix was wiring Arrive into the chat→app
+handoff, plus small UX hardening found while checking mobile.
+
+- **`mode: "arrive"` entry payload.** `open_app_view` can now deep-link
+  the feeling ring with an optional `feeling` (id or label, closed set,
+  invalid values open the bare ring). `applyEntryPayload` returns
+  whether it navigated so the boot path's `show(home)` can't stomp a
+  taskless arrive screen (real bug caught by the new QA case).
+  `system_prompt_addendum` now tells Anna's model it may offer Arrive
+  when a user names a feeling and wants a small physical act rather
+  than conversation — the agent is the suggester, not just the ring.
+- **Mobile fit.** Ring verified at 320×568 and 390×700: orbs stay inside
+  the viewport, but the act card pushed Begin below the fold on the
+  smallest phones. A `max-height: 620px` media query shrinks the mascot
+  slot, ring height and act padding across all three arrive screens;
+  Begin now sits at ~527px on 568-tall viewports with zero scroll.
+- **Bug found and fixed:** `els.setdownTrack` was referenced by
+  enter/finishSetdown but missing from the element map — Set it down
+  threw before navigating. Restored; keyboard ArrowDown completion
+  re-verified.
+- **Haptics** on act completion (Scatter let-go, Set-down landing) via
+  the existing `mobile.haptics` grant.
+- **Invite prompt** for the no-act ("Okay") path rewritten as a calm
+  send-off, not a question — earlier wording produced odd lines.
+- **Privacy copy** (app.json): "what you type or tap" — feeling taps
+  are sent to Anna's model for the invite line.
+- **QA infra:** browser-qa sets `AGENT_BROWSER_DEFAULT_TIMEOUT=90s`
+  (the 60s alert case exceeded the CLI's 25s default — environmental,
+  not product); two new arrive payload cases; capture-listing gained
+  `arrive-mobile.png` (8 candidates total).
+
+Verified: 133 anna unit tests, arrive payload cases green, full
+browser-qa suite green (30 cases), `validate --strict` clean. NOT yet
+published — v0.4.0 remains the review pin; these changes need a
+v0.4.1 cut + `submit-review` re-pin to reach the reviewer.

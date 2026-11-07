@@ -111,10 +111,10 @@ committed Nov 2–5):
 
 ## Demo video
 
-**`SECOND_WIND_hackathon_v4.mp4`** — 2:46, 1920×1080, 30 fps, −15.4 LUFS. A three-act
+**`SECOND_WIND_hackathon_v5.mp4`** — 2:46, 1920×1080, 30 fps, −16.0 LUFS. A three-act
 spy-caper short that ends on a live capture of the product. Video files
 and renders stay out of git (`.gitignore`); the shot list and provenance
-live in `gen-logs/film_v4.json`.
+live in `gen-logs/film_v5.json`.
 
 The film argues the thesis in three refusals, then proves it:
 
@@ -127,11 +127,13 @@ The film argues the thesis in three refusals, then proves it:
   Then the twenty-second breath: the companion inside the mist orb on the
   real 4-in / 6-out reset, sand giving way to ink while the shipped
   breath cues are heard under the score and the chaos cards dissolve.
+  Act III returns to the same calm — an eight-second ink breath beat on
+  the same reset before the copycat's failure.
 - **Act III (1:26–2:16) — the copycat fails.** Plaza overwhelm → the ninja
-  at the center of the storm → *drained* → the bubble scaled → a copycat
-  tries the technique on "I'm NOT stressed", gets *I'll ask instead*,
-  and walks away mid-proposal. The honest message card, then the secret
-  he never tells.
+  at the center of the storm → *drained* → the breath again, shorter and
+  deeper in ink → a copycat tries the technique on "I'm NOT stressed",
+  gets *I'll ask instead*, and walks away mid-proposal. The honest message
+  card, then the secret he never tells.
 - **Button (2:16–2:21).** End card: *hear one sentence. never keep it.*
 - **Proof (2:21–2:46).** A slate — *the real thing, a live check-in* —
   cuts to a screen recording of the deployed app: Chromium's fake mic fed

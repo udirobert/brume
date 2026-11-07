@@ -135,3 +135,11 @@ anna/.anna/
 # Generated MCP worker widget bundle (built via `npm run build:worker` in mcp/)
 mcp/widget-bundle.js
 mcp/.wrangler/
+
+# Video files and renders never go in git (films are produced outside the repo)
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.m4v
+*.avi

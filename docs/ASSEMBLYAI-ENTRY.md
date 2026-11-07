@@ -109,9 +109,13 @@ committed Nov 2–5):
 >
 > Try the room: https://brumeapp.netlify.app
 
-## Demo video (~75 s) — shot list
+## Demo video
 
-Record on the deployed URL, phone in hand, real audio.
+The film in production is the 59-second piece in
+`docs/BRUME_CHROMA_AD_PRODUCTION.md` (also aimed at the Chroma Awards).
+Video files and renders stay out of git (`.gitignore`). The beats below
+are the product moments its Act III screen capture should show — record
+them on the deployed URL, phone in hand, real audio.
 
 1. **(0–8 s) Hook.** Dark room, the app on a phone. Voice-over: "Every
    voice app wants to understand you. This one refuses to guess."
@@ -143,10 +147,12 @@ Record on the deployed URL, phone in hand, real audio.
 - [x] End-to-end drive with real AssemblyAI streaming (Chrome fake mic
       fed with TTS sentences, Nov 6): drained / Spanish / negated /
       pause-joined / hopeless all behave as described above
-- [ ] Push the Nov 6 voice fixes and let Netlify deploy before recording
+- [x] Nov 6 voice fixes pushed to `main` (Netlify deploys on push) —
+      reload the live app once before recording
 - [ ] Real-device pass: hold-to-talk, greeting on Begin, cues, Hear it,
       fallback with network off
-- [ ] Record the video above on the deployed URL
+- [ ] Finish the film (`docs/BRUME_CHROMA_AD_PRODUCTION.md`) with real
+      captures from the deployed URL
 - [ ] Post on LinkedIn or X tagging AssemblyAI — link the deployed app
 - [ ] Optional: their agent builder; `ASSEMBLYAI_API_KEY` in Netlify env
       (keeps the Netlify TTS twin live as a fallback)

@@ -1211,6 +1211,9 @@ handoff, plus small UX hardening found while checking mobile.
   `arrive-mobile.png` (8 candidates total).
 
 Verified: 133 anna unit tests, arrive payload cases green, full
-browser-qa suite green (30 cases), `validate --strict` clean. NOT yet
-published — v0.4.0 remains the review pin; these changes need a
-v0.4.1 cut + `submit-review` re-pin to reach the reviewer.
+browser-qa suite green (30 cases), `validate --strict` clean.
+
+**Published same-day as v0.4.1** (version_id=1993,
+`apps publish --bump patch`, binaries deduped at 0.4.5/1012) and
+re-pinned via `apps submit-review` — the review pin is now v0.4.1,
+which carries the Set-it-down fix that v0.4.0 lacked.

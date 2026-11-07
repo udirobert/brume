@@ -111,10 +111,10 @@ committed Nov 2–5):
 
 ## Demo video
 
-**`SECOND_WIND_hackathon_v3.mp4`** — 2:46, 1920×1080, 30 fps, −15.3 LUFS. A three-act
+**`SECOND_WIND_hackathon_v4.mp4`** — 2:46, 1920×1080, 30 fps, −15.4 LUFS. A three-act
 spy-caper short that ends on a live capture of the product. Video files
 and renders stay out of git (`.gitignore`); the shot list and provenance
-live in `gen-logs/film_v3.json`.
+live in `gen-logs/film_v4.json`.
 
 The film argues the thesis in three refusals, then proves it:
 
@@ -124,8 +124,9 @@ The film argues the thesis in three refusals, then proves it:
 - **Act II (0:30–1:26) — the ritual.** The relic, then the real thing:
   the shipped mascot engine, the transcript dissolving, *A LOT* proposed
   and waiting for a tap, the settle, the koan in AssemblyAI's own voice.
-  Then the twenty-second bubble: the companion breathing while chaos
-  cards bounce off the edge.
+  Then the twenty-second breath: the companion inside the mist orb on the
+  real 4-in / 6-out reset, sand giving way to ink while the shipped
+  breath cues are heard under the score and the chaos cards dissolve.
 - **Act III (1:26–2:16) — the copycat fails.** Plaza overwhelm → the ninja
   at the center of the storm → *drained* → the bubble scaled → a copycat
   tries the technique on "I'm NOT stressed", gets *I'll ask instead*,

@@ -130,8 +130,12 @@ read before adding anything to it):
   prompt deck — a rule that depends on the input channel or an RNG is a
   rule no user can hold.
 - **The pattern has a name — propose-never-commit voice**: token →
-  realtime stream (turns joined — a pause mid-sentence must not lose the
-  feeling word) → closed-set match → offer → tap → transcript dropped.
+  realtime stream (the mic is tapped before the token arrives, so the
+  opening words are kept; turns joined — a pause mid-sentence must not
+  lose the feeling word; `keyterms_prompt` is the catalog itself) →
+  closed-set match on **whole words** ("hopeless" must never reach Hopeful,
+  "cansada" must never reach "sad"; "calm down" is an ask, not a report) →
+  offer → tap → transcript dropped.
   The input itself defaults to **hold** — the mic is open exactly while
   the finger is down, so a pause can never cut a sentence and the ending
   is always the user's; **tap** (one press starts, silence or a second
@@ -148,8 +152,10 @@ read before adding anything to it):
   are theirs, not to help, which is ours — and every card ends in the
   exit: "Or just tap a word." Symmetrically, a spoken *match* splits the
   same way: the transcript dissolves (theirs) while the invitation —
-  "Drained? tap to choose" — stands as a persistent pill until a chip is
-  tapped, the mic is pressed again, or it is dismissed; and the
+  "Drained? tap to choose" — stands as a persistent pill until it or the
+  chip is tapped (either is the committing tap; the pill is the word, not
+  an "okay"), the mic is pressed again, or "Not this one" (×) retires it
+  and the glow together; it scrolls clear of the pinned Begin; and the
   companion acknowledges the match with the suggested word's own
   reaction (acknowledgment only — no tint, no ledger, the tap still
   owns the commit). Any new voice surface

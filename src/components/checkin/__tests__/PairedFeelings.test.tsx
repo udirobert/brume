@@ -509,7 +509,22 @@ describe("mic — hold to talk, tap to toggle", () => {
     }
   });
 
-  it("the invitation retires on the next press and on okay", async () => {
+  it("tapping the invitation chooses its word, exactly like the chip", async () => {
+    await mountPlain();
+    vi.useFakeTimers();
+    try {
+      await speakMatch(6, "heavy day");
+      await act(async () => {
+        offer()!.querySelector<HTMLButtonElement>(".brume-voice-offer__take")!.click();
+      });
+      expect(chosen.at(-1)).toBe(6);
+      expect(offer()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the invitation retires on the next press and on 'not this one'", async () => {
     await mountPlain();
     vi.useFakeTimers();
     try {
@@ -526,9 +541,11 @@ describe("mic — hold to talk, tap to toggle", () => {
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
       expect(offer()).not.toBeNull();
       await act(async () => {
-        offer()!.querySelector("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        offer()!.querySelector<HTMLButtonElement>('[aria-label="Not this one"]')!.click();
       });
       expect(offer()).toBeNull();
+      expect(container.querySelector(".is-suggested")).toBeNull(); // the glow retires with it
+      expect(chosen).not.toContain(6); // dismissing never chooses
     } finally {
       vi.useRealTimers();
     }

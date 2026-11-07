@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import {
+  clipHeard,
   deviceKindFromUA,
   getMicMode,
   hasNegation,
@@ -37,6 +38,57 @@ describe("matchFeeling", () => {
   it("is case and punctuation tolerant", () => {
     expect(matchFeeling("Drained.")).toBe(8);
     expect(matchFeeling("REALLY GOOD!")).toBe(5);
+  });
+});
+
+describe("matchFeeling — words, not letters inside words", () => {
+  const label = (t: string) => {
+    const i = matchFeeling(t) ?? suggestFeeling(t);
+    return i;
+  };
+  it("never reads a feeling out of a longer word", () => {
+    expect(label("I feel hopeless")).toBeNull(); // not Hopeful
+    expect(label("I'm heartbroken")).toBeNull(); // "ok" inside "broken"
+    expect(label("I have a flight later")).toBeNull(); // "light" inside "flight"
+    expect(label("I'm so slow today")).toBeNull(); // "low" inside "slow"
+    expect(label("whatever")).toBeNull(); // "hate" inside "whatever"
+    expect(label("I thought it through")).toBeNull(); // "ugh" inside "through"
+  });
+  it("a Spanish word is not read through an English one inside it", () => {
+    expect(matchFeeling("estoy cansada")).toBe(8); // "sad" inside "cansada"
+    expect(matchFeeling("basically tired")).toBe(8); // French "bas" inside "basically"
+  });
+  it("'calm down' and 'slow down' are asks, not reports", () => {
+    expect(label("I need to calm down")).toBeNull();
+    expect(label("I just want to slow down")).toBeNull();
+    expect(matchFeeling("I feel down")).toBe(6);
+  });
+  it("'nah' and 'nope' are refusals", () => {
+    expect(hasNegation("nah I'm fine")).toBe(true);
+    expect(label("nope, good")).toBeNull();
+  });
+  it("still hears the catalog and its phrases as whole words", () => {
+    expect(matchFeeling("I feel restless")).toBe(10);
+    expect(matchFeeling("feeling a bit left out")).toBe(12);
+    expect(matchFeeling("je suis fatiguée")).toBe(8);
+    expect(matchFeeling("ich bin müde")).toBe(8);
+    expect(matchFeeling("a bit tense about a big call")).toBe(1);
+  });
+});
+
+describe("clipHeard", () => {
+  it("keeps short lines whole and shortens long ones at a word", () => {
+    expect(clipHeard("I'm drained")).toBe("I'm drained");
+    expect(clipHeard("Honestly, I'm feeling pretty drained today.")).toBe("Honestly, I'm feeling pretty…");
+  });
+  it("keeps the word a feeling was heard in", () => {
+    const s = clipHeard("Honestly, I'm feeling pretty drained today.", 8);
+    expect(s).toContain("drained");
+    expect(s.startsWith("…")).toBe(true);
+    expect(s.length).toBeLessThanOrEqual(36);
+    expect(clipHeard("So after the whole week I am just exhausted", 8)).toContain("exhausted");
+    expect(clipHeard("tired, honestly, after the whole long week", 8)).toMatch(/^tired/);
+    expect(clipHeard("a".repeat(50))).toBe(`${"a".repeat(34)}…`); // no space to cut at
   });
 });
 

@@ -12,7 +12,7 @@
  * sentence became the person's own.
  */
 import { track } from "@/lib/events";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   composeCheckInMessage,
@@ -21,7 +21,7 @@ import {
 } from "@/lib/checkin";
 import { appendRoomLink } from "@/lib/invitation";
 import { copyText, shareMessageCard } from "@/lib/shareMessageCard";
-import { previewLine } from "@/lib/voiceCues";
+import { onSpeaking, previewLine, stopCues } from "@/lib/voiceCues";
 
 interface PostSessionWordsProps {
   /** Word chosen on the check-in path, if any — seeds the sentence. */
@@ -33,6 +33,51 @@ interface PostSessionWordsProps {
   /** Registry id of the pattern — used when opting in to include a room link. */
   patternId?: string;
   onBack: () => void;
+}
+
+/**
+ * "Hear it" follows the voice: while the line is on its way or playing the
+ * button says Stop, so a tap is never answered by nothing.
+ */
+function HearItButton({ message, edited }: { message: string; edited: boolean }) {
+  const [mine, setMine] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const active = mine && speaking;
+  const activeRef = useRef(false);
+  useEffect(
+    () =>
+      onSpeaking((s) => {
+        setSpeaking(s);
+        if (!s) setMine(false);
+      }),
+    [],
+  );
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+  // Leaving the card ends the line it started.
+  useEffect(() => () => {
+    if (activeRef.current) stopCues();
+  }, []);
+  return (
+    <button
+      type="button"
+      className={`brume-btn brume-btn--soft${active ? " is-speaking" : ""}`}
+      title="Read aloud by our voice service"
+      aria-pressed={active}
+      onClick={() => {
+        if (active) {
+          stopCues();
+          return;
+        }
+        track("words_card_heard", { surface: "post_session", edited });
+        setMine(true);
+        previewLine(message);
+      }}
+    >
+      {active ? "Stop" : "Hear it"}
+    </button>
+  );
 }
 
 export function PostSessionWords({
@@ -156,9 +201,14 @@ export function PostSessionWords({
         />
 
         {forMe ? (
-          <p className="dc-field-note" aria-live="polite">
-            Kept here. Nothing to send.
-          </p>
+          <>
+            <p className="dc-field-note" aria-live="polite">
+              Kept here. Nothing to send.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <HearItButton message={message} edited={edited} />
+            </div>
+          </>
         ) : (
           <>
             <button
@@ -180,17 +230,7 @@ export function PostSessionWords({
               >
                 Copy message
               </button>
-              <button
-                type="button"
-                className="brume-btn brume-btn--soft"
-                title="Read aloud by our voice service"
-                onClick={() => {
-                  track("words_card_heard", { surface: "post_session", edited });
-                  previewLine(message);
-                }}
-              >
-                Hear it
-              </button>
+              <HearItButton message={message} edited={edited} />
               <button
                 type="button"
                 className="brume-btn brume-btn--soft"

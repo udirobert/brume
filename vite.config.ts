@@ -54,6 +54,35 @@ const devTts = (env: Record<string, string>): Plugin => ({
         res.end(JSON.stringify({ error: "upstream_unreachable" }));
       }
     });
+    // Dev twin of /api/stt-token — without it the dev check-in never
+    // streams and silently takes the clip fallback, unlike production.
+    server.middlewares.use("/api/stt-token", async (req, res) => {
+      if (req.method !== "POST") {
+        res.statusCode = 405;
+        return res.end(JSON.stringify({ error: "method_not_allowed" }));
+      }
+      const apiKey = env.ASSEMBLYAI_API_KEY;
+      if (!apiKey) {
+        res.statusCode = 503;
+        return res.end(JSON.stringify({ error: "voice_unavailable" }));
+      }
+      try {
+        const r = await fetch("https://streaming.assemblyai.com/v3/token?expires_in_seconds=300", {
+          headers: { Authorization: apiKey },
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!r.ok) {
+          res.statusCode = 502;
+          return res.end(JSON.stringify({ error: "token_error" }));
+        }
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json");
+        res.end(await r.text());
+      } catch {
+        res.statusCode = 502;
+        res.end(JSON.stringify({ error: "upstream_unreachable" }));
+      }
+    });
     // Dev twin of /api/stt — clip in, {text} out, same env vars.
     server.middlewares.use("/api/stt", async (req, res) => {
       if (req.method !== "POST") {

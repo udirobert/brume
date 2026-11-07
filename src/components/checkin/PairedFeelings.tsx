@@ -10,6 +10,7 @@ import {
   selectPairedFeel,
 } from "@/lib/feelings";
 import {
+  clipHeard,
   getMicMode,
   hasNegation,
   listenOnce,
@@ -103,7 +104,8 @@ const HOLD_TAP_MS = 350;
   // The invitation ("Drained? tap to choose"). The transcript dissolves —
   // that is the privacy story, made visible — but a suggestion that
   // evaporates with it reads as nothing happening. Ours, so it stays.
-  const [offer, setOffer] = useState<string | null>(null);
+  const [offer, setOffer] = useState<{ index: number; maybe: boolean } | null>(null);
+  const offerRef = useRef<HTMLDivElement | null>(null);
   // The confirmation spin: when the heard word is ALREADY face-up (or
   // already chosen), there is no flip to play — so the chip acknowledges
   // with a spin instead. Delight is feedback too.
@@ -142,6 +144,13 @@ const HOLD_TAP_MS = 350;
   useEffect(() => {
     if (selectedIndex != null) setOffer(null);
   }, [selectedIndex]);
+
+  // On a short phone the invitation lands under the pinned Begin; bring it
+  // up into view (its scroll-margin clears the Begin seat).
+  useEffect(() => {
+    if (!offer) return;
+    offerRef.current?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+  }, [offer, reduced]);
 
   // The spin clears itself. onAnimationEnd is the fast path in a real
   // browser; this timeout is the guarantee (and the only path jsdom gets).
@@ -231,7 +240,7 @@ const HOLD_TAP_MS = 350;
       return;
     }
     onVoiceState?.(offered != null || pattern != null ? "matched" : "missed", offered ?? undefined);
-    const snippet = transcript.trim().slice(0, 28);
+    const snippet = clipHeard(transcript, offered);
     const pair = offered == null ? null : pairForFeel(offered);
     if (offered == null || !pair) {
       if (pattern) {
@@ -278,7 +287,7 @@ const HOLD_TAP_MS = 350;
     setAnnounce(`Heard ${transcript} — ${FEELINGS[offered].label}? Tap to choose.`);
     // Their words pass through the mist; the invitation persists below.
     flashHeard(`heard “${snippet}”`);
-    setOffer(`${index == null ? "maybe " : ""}${FEELINGS[offered].label}? tap to choose`);
+    setOffer({ index: offered, maybe: index == null });
   }, [faces, selectedIndex, onVoiceState, onPatternOffer]);
 
   const onMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
@@ -490,10 +499,32 @@ const HOLD_TAP_MS = 350;
         </div>
       )}
       {offer && (
-        <div className="brume-voice-offer" role="note">
-          <p>{offer}</p>
-          <button type="button" onClick={() => setOffer(null)}>
-            okay
+        <div className="brume-voice-offer" role="note" ref={offerRef}>
+          {/* The invitation is itself the word: tapping it is the same
+              commit as tapping the chip, so voice still only proposes. */}
+          <button
+            type="button"
+            className="brume-voice-offer__take"
+            onClick={() => {
+              const pair = pairForFeel(offer.index);
+              const pi = pair ? FEELING_PAIRS.indexOf(pair) : -1;
+              const chip = chipRefs.current[pi];
+              if (pi >= 0 && chip) handlePick(pi, chip);
+            }}
+          >
+            {offer.maybe ? "maybe " : ""}
+            <strong>{FEELINGS[offer.index].label}?</strong> tap to choose
+          </button>
+          <button
+            type="button"
+            className="brume-voice-offer__dismiss"
+            aria-label="Not this one"
+            onClick={() => {
+              setOffer(null);
+              setSuggested(null);
+            }}
+          >
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       )}

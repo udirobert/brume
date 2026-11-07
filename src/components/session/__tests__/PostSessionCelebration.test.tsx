@@ -234,6 +234,26 @@ describe("PostSessionCelebration morph region", () => {
     expect(textarea.value).toBe("My own words.");
   });
 
+  it("'Hear it' is there for a sentence kept to yourself, and turns into Stop while it speaks", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {}))); // the line stays in flight
+    const created = URL.createObjectURL;
+    URL.createObjectURL = (() => "blob:x") as typeof URL.createObjectURL;
+    try {
+      await mount({ checkInIndex: 0 });
+      click("Put it into words");
+      click("Just for me");
+      expect(text()).toContain("Kept here. Nothing to send.");
+      expect(button("Hear it")).toBeTruthy();
+      click("Hear it");
+      expect(button("Stop")).toBeTruthy();
+      click("Stop");
+      expect(button("Hear it")).toBeTruthy();
+    } finally {
+      URL.createObjectURL = created;
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("Back returns to the main view unchanged", async () => {
     await mount();
     click("Put it into words");

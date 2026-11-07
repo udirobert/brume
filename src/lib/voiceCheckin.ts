@@ -84,7 +84,7 @@ const LANG: Record<string, Record<number, string[]>> = {
     8: ["mude", "erschopft"],
     9: ["ruhig", "gelassen"],
     10: ["nervos", "angstlich", "unruhig"],
-    11: ["geliebt", "geborgen", "nah"],
+    11: ["geliebt", "geborgen"],
     12: ["allein", "einsam"],
     13: ["hoffnungsvoll", "optimistisch"],
   },
@@ -95,6 +95,11 @@ const synFor = (i: number): string[] => [
   ...Object.values(LANG).flatMap((l) => l[i] ?? []),
 ];
 
+// "calm down" and "slow down" are asks, not reports — neither the calm nor
+// the down is how the person is. Both words go before anything is matched.
+const CALMING_PHRASAL =
+  /\b(?:calm|calming|slow|slowing|wind|winding|settle|settling|sit|sitting|lie|lying|cool|cooling|quiet|quieten|quieting)\s+down\b/g;
+
 const norm = (s: string) =>
   s.toLowerCase()
     .normalize("NFD")
@@ -103,13 +108,19 @@ const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const normSpeech = (s: string) => norm(s).replace(CALMING_PHRASAL, " ").replace(/\s+/g, " ").trim();
+
+// Whole words only: as substrings, "hopeless" held "hope", "cansada" held
+// "sad" and "heartbroken" held "ok" — each a confident wrong proposal.
+const hasTerm = (t: string, term: string) => term !== "" && ` ${t} `.includes(` ${term} `);
+
 // "not good" is not Light. `norm` destroys the evidence — it turns
 // "don't" into "do t" and the word-length gates below drop "not" — so
 // negation is checked on the raw transcript first. Any negation returns
 // no reading at all and the UI asks instead of declaring: guessing at a
 // feeling is the one error this product cannot afford.
 const NEGATION =
-  /\b(not|no|none|nothing|never|nobody|hardly|barely|without|nor|don'?t|didn'?t|doesn'?t|wasn'?t|isn'?t|aren'?t|weren'?t|can'?t|couldn'?t|shouldn'?t|wouldn'?t|hasn'?t|haven'?t|won'?t|ain'?t)\b/;
+  /\b(not|no|nah|nope|none|nothing|never|nobody|hardly|barely|without|nor|don'?t|didn'?t|doesn'?t|wasn'?t|isn'?t|aren'?t|weren'?t|can'?t|couldn'?t|shouldn'?t|wouldn'?t|hasn'?t|haven'?t|won'?t|ain'?t)\b/;
 
 export function hasNegation(transcript: string): boolean {
   return NEGATION.test(transcript.toLowerCase());
@@ -142,7 +153,7 @@ export function matchPattern(transcript: string): string | null {
 /** transcript → feeling index, or null when nothing matches. */
 export function matchFeeling(transcript: string): number | null {
   if (hasNegation(transcript)) return null;
-  const t = norm(transcript);
+  const t = normSpeech(transcript);
   if (!t) return null;
   const words = new Set(t.split(" "));
   let best: { index: number; score: number } | null = null;
@@ -150,9 +161,9 @@ export function matchFeeling(transcript: string): number | null {
     const f = FEELINGS[i];
     let score = 0;
     if (t === norm(f.label) || t === norm(f.longLabel)) score += 4;
-    else if (t.includes(norm(f.label)) || t.includes(norm(f.phrase))) score += 3;
+    else if (hasTerm(t, norm(f.label)) || hasTerm(t, norm(f.phrase))) score += 3;
     for (const w of norm(f.phrase).split(" ")) if (w.length > 3 && words.has(w)) score += 1;
-    for (const w of synFor(i)) if (t.includes(w)) score += 2;
+    for (const w of synFor(i)) if (hasTerm(t, w)) score += 2;
     if (score > 0 && (best === null || score > best.score)) best = { index: i, score };
   }
   return best?.index ?? null;
@@ -164,7 +175,7 @@ const NEG_WORDS = ["hate", "awful", "terrible", "horrible", "meh", "ugh", "rough
 /** Softer second tier for near-misses: prefix overlap or valence. */
 export function suggestFeeling(transcript: string): number | null {
   if (hasNegation(transcript)) return null;
-  const t = norm(transcript);
+  const t = normSpeech(transcript);
   if (!t) return null;
   const words = t.split(" ").filter((w) => w.length >= 4);
   let best: { index: number; hits: number } | null = null;
@@ -176,14 +187,51 @@ export function suggestFeeling(transcript: string): number | null {
     ];
     let hits = 0;
     for (const w of words)
-      for (const c of cands)
+      for (const c of cands) {
+        // "-less" is the absence of the stem: hopeless is not near Hopeful.
+        if (w.endsWith("less") !== c.endsWith("less")) continue;
         if (w.startsWith(c.slice(0, 4)) || c.startsWith(w.slice(0, 4))) hits++;
+      }
     if (hits > 0 && (best === null || hits > best.hits)) best = { index: i, hits };
   }
   if (best) return best.index;
-  if (POS_WORDS.some((p) => t.includes(p))) return 5;
-  if (NEG_WORDS.some((p) => t.includes(p))) return 6;
+  if (POS_WORDS.some((p) => hasTerm(t, p))) return 5;
+  if (NEG_WORDS.some((p) => hasTerm(t, p))) return 6;
   return null;
+}
+
+/**
+ * The heard line, shortened at word edges — never "drained tod". When a
+ * feeling was proposed, the window keeps the word it was heard in, since
+ * people often name the feeling last ("Honestly, I'm feeling pretty drained").
+ */
+export function clipHeard(transcript: string, focus: number | null = null, max = 34): string {
+  const t = transcript.trim().replace(/\s+/g, " ");
+  if (t.length <= max) return t;
+  let start = 0;
+  if (focus != null && FEELINGS[focus]) {
+    const lower = t.toLowerCase();
+    const terms = [FEELINGS[focus].label, FEELINGS[focus].phrase, ...synFor(focus)].map((s) => s.toLowerCase());
+    let at = -1;
+    let len = 0;
+    for (const term of terms) {
+      const m = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).exec(lower);
+      if (m && (at < 0 || m.index < at)) { at = m.index; len = term.length; }
+    }
+    if (at >= 0 && at + len > max) {
+      start = Math.min(at - Math.floor((max - len) / 2), t.length - max);
+      const sp = t.indexOf(" ", start);
+      start = sp >= 0 && sp < at ? sp + 1 : at;
+    }
+  }
+  const end = Math.min(t.length, start + max);
+  let body = t.slice(start, end);
+  if (end < t.length) {
+    const sp = body.lastIndexOf(" ");
+    if (sp > max * 0.5) body = body.slice(0, sp);
+  }
+  body = body.replace(/[\s,;:—-]+$/, "");
+  return `${start > 0 ? "…" : ""}${body}${start + body.length < t.length ? "…" : ""}`;
 }
 
 export function voiceCheckinSupported(): boolean {
@@ -253,6 +301,20 @@ export function setMicMode(mode: MicMode): void {
 const TOKEN_ENDPOINT = STT_ENDPOINT + "-token";
 const WS_URL = "wss://streaming.assemblyai.com/v3/ws";
 const TARGET_RATE = 16000;
+// The recognizer is primed with exactly the grammar it may propose from:
+// the fourteen feeling words plus the rhythm names.
+const KEYTERMS = [...FEELINGS.map((f) => f.label), "box breathing", "4-7-8"];
+const STREAM_PARAMS = new URLSearchParams({
+  sample_rate: String(TARGET_RATE),
+  format_turns: "true",
+  language_detection: "true",
+  speech_model: "universal-3-6-pro",
+  language_codes: JSON.stringify(["en", "es", "fr", "de"]),
+  keyterms_prompt: JSON.stringify(KEYTERMS),
+  // Tuned after a demo shoot clipped sentences mid-pause.
+  min_end_of_turn_silence_when_confident: "600",
+  max_turn_silence: "1400",
+}).toString();
 const SILENCE_MS = 800;
 const MAX_LISTEN_MS = 6000;
 /** Held down, there is no silence rule — but a hot mic still has a ceiling. */
@@ -416,17 +478,14 @@ async function viaStreaming(
   onInterim?: (s: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const tok = await fetch(TOKEN_ENDPOINT, { method: "POST", headers: voiceHeaders() });
-  if (!tok.ok) throw new Error(`token_${tok.status}`);
-  const { token } = (await tok.json()) as { token?: string };
-  if (!token) throw new Error("token_empty");
-
   const joiner = createTurnJoiner();
-  // The microphone starts feeding the moment the token is in hand, and the
-  // socket takes a beat to open — what is said in that beat is kept and sent
-  // on open, so the first word of a held press is not the one that is lost.
+  // People start talking as they press. The token round trip and the socket
+  // opening both take a beat, so the microphone is tapped first and what is
+  // said meanwhile is kept and sent on open — otherwise the opening words
+  // ("Honestly, I'm…") are the ones that are lost.
   const pending: ArrayBuffer[] = [];
   let pendingBytes = 0;
+  let spoke = false;
 
   const src = ctx.createMediaStreamSource(stream);
   const proc = ctx.createScriptProcessor(4096, 1, 1);
@@ -435,13 +494,37 @@ async function viaStreaming(
   src.connect(proc);
   proc.connect(sink);
   sink.connect(ctx.destination);
+  proc.onaudioprocess = (ev) => {
+    const { pcm, peak } = toPcm16(ev.inputBuffer.getChannelData(0), ctx.sampleRate);
+    if (peak > SPEECH_PEAK) spoke = true;
+    if (pendingBytes < PENDING_MAX_BYTES) {
+      pending.push(pcm.buffer as ArrayBuffer);
+      pendingBytes += pcm.byteLength;
+    }
+  };
+  const unhook = () => {
+    proc.onaudioprocess = null;
+    proc.disconnect();
+    src.disconnect();
+    sink.disconnect();
+  };
 
-  const ws = new WebSocket(`${WS_URL}?token=${token}&sample_rate=${TARGET_RATE}&format_turns=true&language_detection=true&speech_model=universal-3-6-pro&language_codes=["en","es","fr","de"]&keyterms_prompt=["Tense","Overwhelmed","Drained","Settled","Light","box breathing","4-7-8"]&min_end_of_turn_silence_when_confident=600&max_turn_silence=1400`);
+  let token: string | undefined;
+  try {
+    const tok = await fetch(TOKEN_ENDPOINT, { method: "POST", headers: voiceHeaders() });
+    if (!tok.ok) throw new Error(`token_${tok.status}`);
+    ({ token } = (await tok.json()) as { token?: string });
+    if (!token) throw new Error("token_empty");
+  } catch (err) {
+    unhook();
+    throw err;
+  }
+
+  const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}&${STREAM_PARAMS}`);
   const t0 = Date.now();
   let silenceSince = t0;
   let opened = false;
   let releasing = false;
-  let spoke = false;
 
   try {
     return await new Promise<string>((resolve, reject) => {
@@ -526,10 +609,7 @@ async function viaStreaming(
       else signal?.addEventListener("abort", onAbort);
     });
   } finally {
-    proc.onaudioprocess = null;
-    proc.disconnect();
-    src.disconnect();
-    sink.disconnect();
+    unhook();
   }
 }
 

@@ -143,3 +143,6 @@ mcp/.wrangler/
 *.mkv
 *.m4v
 *.avi
+
+# Local agent/tooling state
+.perch/

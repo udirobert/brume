@@ -18,42 +18,15 @@
 
 ## 1. AssemblyAI Voice Hackathon Submission (Due Nov 7, 11:00 AM PT)
 
+**The submission lives in `docs/ASSEMBLYAI-ENTRY.md`** — title, one-liner,
+paste-ready description, disclosure, social post, video shot list and the
+pre-submit checklist. The earlier "Brume Speaks — whisper, not narration"
+draft that sat here was TTS-only; it is folded into that file's
+description, which leads with the bounded voice check-in.
+
 **Form:** `https://forms.gle/XCW2RdZGbarVLnKEA`
 
-### Project Title
-**Brume Speaks — Whisper, Not Narration: Eyes-Closed Breathing Cues**
-
-### Tagline (One Sentence)
-A quiet breathing companion that speaks only the phase words you need so you can close your eyes for 90 seconds—no accounts, no streaks, no scores, and no chatty AI narration.
-
-### Problem & Solution (Submission Description)
-Most voice AI products compete on how much they talk to you (conversational coaches, 20-minute guided meditations, or therapeutic chatbots). When you are overwhelmed between meetings or stretched thin after work, explaining yourself to a conversational AI is the last thing you want to do—and staring at a screen timer keeps your eyes open.
-
-**Brume** takes the opposite approach: **whisper, not narration.**
-
-1. **Tap how the moment feels** (using our paired-feeling chips like *Light / Heavy*, *Settled / Restless*, *Energised / Drained*), and the WebGL room and mist-sprite mascot immediately shift colour, density, and demeanour to hold that weight with you.
-2. **Close your eyes:** With **Brume Speaks** (`spoken` cue mode), high-clarity spoken phase cues synthesized with **AssemblyAI Text-to-Speech** (`scripts/generate-voice.mjs` → `public/voice/*.wav`, with Web Speech API fallback) guide each inhale, hold, and exhale so you never have to look at the screen.
-3. **Put it into words:** After 90 seconds, Brume helps you compose one honest, low-pressure sentence to copy or send to someone close or a teammate (*"Heads up: I'm carrying a lot today. Listening would help; I don't need it solved."*)—optionally attaching a zero-tracking quiet room link (`?via=invite`) so they can take two minutes too.
-
-**Disclosure of pre-existing codebase:** Brume's core breathing clock and UI existed prior to the hackathon; built specifically during the hackathon window were the **AssemblyAI TTS voice generation pipeline** (`scripts/generate-voice.mjs`), the in-session spoken audio engine (`src/lib/spokenCues.ts`), the `spoken / breath / off` audio selector on Home, and the eyes-closed accessibility flow.
-
-### Social Post (LinkedIn / X — Extra Judging Points)
-> Every voice AI wants to have a conversation with you.
->
-> When you're overwhelmed between meetings, explaining yourself to a chatbot is the last thing you want. You just want to close your eyes for 90 seconds.
->
-> For the @AssemblyAI Voice Hackathon, we built "Brume Speaks" — whisper, not narration.
->
-> - Tap how you feel (the WebGL mist room + sprite shift to match)
-> - Close your eyes while AssemblyAI TTS guides each breath phase
-> - Leave with one honest sentence to send to your team or partner
->
-> No camera. No streaks. No scores. Nothing to prove.
->
-> Try the room: https://brumeapp.netlify.app
-
 ---
-
 ## 2. MCP Server — Cloudflare Worker Deploy & Directory Submission
 
 ### Deploy to Cloudflare Workers (Free Tier)

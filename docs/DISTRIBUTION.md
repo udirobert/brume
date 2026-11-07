@@ -50,10 +50,12 @@ For competitive research on companion apps (Shmoody, Finch, Voidpet), see
   Oct 15–23 paused for a TTS update; corrected dates Oct 27 – Nov 7.
 - Submission: Google Form (forms.gle/XCW2RdZGbarVLnKEA). Extra points for
   using their agent builder and posting on LinkedIn/X tagging AssemblyAI.
-- Our entry: **"Brume speaks"** — a voice layer so a reset works with
-  eyes closed (their stated themes: in-app assistants that talk back,
+- Our entry: **"Brume — a voice that can't misread you"** — a bounded
+  voice check-in (streaming STT primed with the 14-word catalog, closed-set
+  proposal, visible refusal) plus TTS that talks back so a reset works with
+  eyes closed (their themes: in-app assistants that talk back,
   accessibility). Declare the pre-existing codebase honestly.
-  Submission draft + video script: `docs/ASSEMBLYAI-ENTRY.md`.
+  The submission (one source): `docs/ASSEMBLYAI-ENTRY.md`.
 - Architecture (two tiers, 2026-11-04):
   1. **Fixed cues** — pre-rendered WAVs via their TTS
      (`scripts/generate-voice.mjs` → `public/voice/`), spoken or

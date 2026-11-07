@@ -111,10 +111,10 @@ committed Nov 2–5):
 
 ## Demo video
 
-**`SECOND_WIND_hackathon_v2.mp4`** — 2:43, 1920×1080, 30 fps. A three-act
+**`SECOND_WIND_hackathon_v3.mp4`** — 2:46, 1920×1080, 30 fps, −15.3 LUFS. A three-act
 spy-caper short that ends on a live capture of the product. Video files
 and renders stay out of git (`.gitignore`); the shot list and provenance
-live in `gen-logs/film_v1.json`.
+live in `gen-logs/film_v3.json`.
 
 The film argues the thesis in three refusals, then proves it:
 
@@ -131,8 +131,8 @@ The film argues the thesis in three refusals, then proves it:
   tries the technique on "I'm NOT stressed", gets *I'll ask instead*,
   and walks away mid-proposal. The honest message card, then the secret
   he never tells.
-- **Button (2:16–2:23).** End card: *hear one sentence. never keep it.*
-- **Proof (2:23–2:43).** A slate — *the real thing, a live check-in* —
+- **Button (2:16–2:21).** End card: *hear one sentence. never keep it.*
+- **Proof (2:21–2:46).** A slate — *the real thing, a live check-in* —
   cuts to a screen recording of the deployed app: Chromium's fake mic fed
   a spoken "I've got a lot on my mind", the real `.brume-mic` held, the
   live AssemblyAI streaming recognizer returning the transcript, the

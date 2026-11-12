@@ -6,11 +6,12 @@ metadata: {"matrix":{"emoji":"🌫️","execution_mode":"prompt","category_name"
 
 # Brume Reset — proactive offer
 
-Brume is a quiet ~90-second guided breathing break, delivered inline in
-chat by the `brume_reset` / `brume_complete` tools. This skill teaches
-you **when offering it is appropriate and how to offer it without
-nagging**. It is suggestion-only: Brume works fully if the user never
-accepts a single offer.
+Brume's primary function is the preparation workspace: a model-drafted,
+user-edited card for one conversation. This skill is not that function.
+It covers only an optional ~90-second breathing break, delivered inline
+in chat by the `brume_reset` / `brume_complete` tools, and only when the
+cues below are present. Suggestion-only: the preparation works fully if
+the user never accepts a break.
 
 ## When to offer
 

@@ -62,8 +62,12 @@ try {
   await sleep(1200);
 
   await ok("boots to home", async () => {
-    assert.deepEqual(await ev(screens), ["screen-home"]);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal(await ev('document.getElementById("screen-prep-input").querySelector("h1").textContent'), "Prepare a conversation");
+    assert.equal(await ev('document.getElementById("breathing-details").hidden'), true);
     assert.ok(await ev('document.body.scrollWidth <= document.documentElement.clientWidth + 1'));
+    assert.equal(await ev('document.getElementById("btn-alertness").closest("details")?.id'), "settle-details");
+    assert.equal(await ev('document.getElementById("btn-arrive").closest("details")?.id'), "settle-details");
   });
 
   await ok("prep full flow + reload identical + no extra LLM", async () => {
@@ -89,9 +93,60 @@ try {
     assert.deepEqual(await ev(screens), ["screen-prep-card"]);
     assert.equal(await ev('document.getElementById("card-opening").textContent'), "EDITED OP");
     assert.equal(await ev('document.getElementById("card-response").textContent'), "USER FINAL");
+    assert.equal(await ev('document.getElementById("card-source").hidden'), false);
+    assert.ok((await ev('document.getElementById("card-source").textContent')).includes("Anna drafted"));
     assert.equal((await post("/__dump")).llmCalls.length, before);
     const dump = await post("/__dump");
     assert.ok(Object.keys(dump.kv).some((k) => k.startsWith("ready/sessions/")));
+  });
+
+  await ok("reviewer case keeps three and drops four, Friday, and a clock time", async () => {
+    await fresh();
+    await cli("fill", "#prep-event", "I manage 3 projects and I added one deadline in the same week.");
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(400);
+    assert.deepEqual(await ev(screens), ["screen-prep-clarify"]);
+    assert.ok((await ev('document.getElementById("prep-question").textContent')).includes("Which day"));
+    assert.equal((await post("/__dump")).llmCalls.length, 0);
+    const poisoned = JSON.stringify({
+      kind: "plan",
+      opening: "I want to talk about the four projects on my plate.",
+      keyPoint: "I manage 3 projects and one new deadline.",
+      approach: "Start from the week as it is.",
+      objection: "What makes this hard?",
+      response: "I can move the one deadline I added.",
+      nextStep: "Can we meet Friday at 3pm?",
+    });
+    await post("/__script", { responses: [{ text: poisoned }, { text: poisoned }] });
+    await ev('document.getElementById("btn-prep-skip-clarify").click()');
+    await sleep(900);
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    assert.equal(await ev('document.getElementById("prep-opening").value'), "");
+    assert.equal(await ev('document.getElementById("prep-nextstep").value'), "");
+    const key = await ev('document.getElementById("prep-keypoint-edit").value');
+    assert.ok(key.includes("3"));
+    assert.equal(key.includes("Friday"), false);
+    assert.equal(key.includes("4"), false);
+    assert.ok((await ev('document.getElementById("ground-keyPoint").textContent')).includes("3"));
+    assert.equal(await ev('document.activeElement.id'), "prep-opening");
+    await ev('document.getElementById("prep-opening").value="I manage 3 projects.";document.getElementById("prep-opening").dispatchEvent(new Event("input"))');
+    await ev('document.getElementById("prep-nextstep").value="Ask which part of the week can move.";document.getElementById("prep-nextstep").dispatchEvent(new Event("input"))');
+    await ev('document.getElementById("btn-prep-practice").click()');
+    await cli("fill", "#prep-reply", "I can shift the one deadline.");
+    await post("/__script", { responses: [{ text: JSON.stringify({
+      adjustment: "Be specific about the deadline.",
+      response: "I can shift the one deadline if the week stays.",
+      nextStep: "Ask which part of the week can move.",
+    }) }] });
+    await ev('document.getElementById("btn-prep-adjust").click()');
+    await sleep(900);
+    assert.ok((await ev('document.getElementById("prep-adjustment").textContent')).includes("didn't use your words"));
+    await ev('document.getElementById("btn-prep-card").click()');
+    await sleep(700);
+    const sayable = await ev('document.getElementById("card-sayable").textContent');
+    assert.ok(sayable.includes("3 projects"));
+    assert.equal(sayable.includes("Friday"), false);
+    assert.equal(/\\b4\\b|four/.test(sayable), false);
   });
 
   await ok("reset session reload restores paused, no closed accrual", async () => {
@@ -592,7 +647,7 @@ try {
     await sleep(600);
     assert.equal(await ev('!document.getElementById("startup-panel").hidden'), true);
     await sleep(4000);
-    assert.deepEqual(await ev(screens), ["screen-home"]);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     await post("/__startup", { fail: true, delayMs: 0 });
     await cli("open", BASE);
     await sleep(10500);
@@ -600,7 +655,7 @@ try {
     await post("/__startup", { fail: false });
     await ev('document.getElementById("btn-startup-retry").click()');
     await sleep(1500);
-    assert.deepEqual(await ev(screens), ["screen-home"]);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
   });
 
   await ok("wording preference explicit save/forget persists", async () => {
@@ -704,7 +759,7 @@ try {
     await sleep(5000); // watchdog short-circuit not needed; fix lands well under this
     const r = await ev('JSON.stringify({panel:!document.getElementById("startup-panel").hidden,screen:[...document.querySelectorAll(".screen")].filter(s=>!s.hidden).map(s=>s.id),banner:document.getElementById("task-banner-text").textContent})');
     assert.equal(r.panel, false, "startup panel must not stay up");
-    assert.equal(r.screen[0], "screen-home");
+    assert.equal(r.screen[0], "screen-prep-input");
     assert.ok(r.banner.includes("can't restore"), r.banner);
   });
 

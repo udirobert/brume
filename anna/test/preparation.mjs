@@ -9,6 +9,19 @@ const {
   parseRehearsal,
   requestPreparation,
   requestRehearsal,
+  faithfulnessIssues,
+  withholdUngrounded,
+  preparationSource,
+  rehearsalSource,
+  PLAN_FACT_FIELDS,
+  REHEARSAL_FACT_FIELDS,
+  NEUTRAL_OBJECTION,
+  faithfulnessMessage,
+  groundedSpans,
+  scheduleQuestion,
+  SCHEDULE_QUESTION,
+  quotesReply,
+  sayableParagraph,
 } = await import(join(here, "..", "bundle", "preparation.js"));
 
 const PLAN = {
@@ -187,6 +200,80 @@ test("requestRehearsal payload includes edited plan and reply", async () => {
   assert.equal(payload.plan.approach, "EDITED approach");
   assert.equal(payload.reply, "MY REPLY to the pushback");
   assert.equal(payload.clarification.answer, "Finance");
+});
+
+const REVIEW_SOURCE = "I manage 3 projects and I added one deadline in the same week.";
+
+test("reviewer case: 4 projects and a Friday time are not in the input", () => {
+  const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
+  const plan = {
+    opening: "I want to talk about the four projects on my plate.",
+    keyPoint: "I manage 3 projects and one new deadline.",
+    approach: "Start from the week as it is.",
+    objection: "Can you take 4?",
+    response: "I can move the one deadline I added.",
+    nextStep: "Can we meet Friday at 3pm?",
+  };
+  const issues = faithfulnessIssues(plan, source, PLAN_FACT_FIELDS);
+  const fields = Object.fromEntries(issues.map((issue) => [issue.field, issue.spans]));
+  assert.ok(fields.opening.includes("four"));
+  assert.equal(fields.keyPoint, undefined);
+  assert.deepEqual(fields.objection, ["4"]);
+  assert.ok(fields.nextStep.includes("friday"));
+  assert.ok(fields.nextStep.some((span) => span.includes("3")));
+  const kept = withholdUngrounded(plan, issues);
+  assert.equal(kept.opening, "");
+  assert.equal(kept.keyPoint, plan.keyPoint);
+  assert.equal(kept.objection, NEUTRAL_OBJECTION);
+  assert.equal(kept.nextStep, "");
+  const message = faithfulnessMessage(issues);
+  assert.match(message, /Opening added a count/);
+  assert.match(message, /Next step added a weekday and a time/);
+  assert.deepEqual(groundedSpans(plan.keyPoint, source), ["one", "3"]);
+  assert.equal(scheduleQuestion(source), SCHEDULE_QUESTION);
+  assert.equal(scheduleQuestion("Deadline ask\nTwo more weeks"), null);
+  assert.equal(scheduleQuestion(`${REVIEW_SOURCE}\nFriday`), null);
+});
+
+test("three matches a digit 3, and one-on-one is not a count", () => {
+  const source = "I manage 3 projects.";
+  assert.deepEqual(faithfulnessIssues({ opening: "I manage three projects." }, source, ["opening"]), []);
+  assert.deepEqual(faithfulnessIssues({ opening: "Let's have a one-on-one." }, source, ["opening"]), []);
+});
+
+test("rehearsal checks the reply, not the earlier draft", () => {
+  const input = {
+    event: REVIEW_SOURCE,
+    reply: "I can shift the one deadline.",
+    plan: { opening: "Friday at 3pm", keyPoint: "4 projects" },
+  };
+  const source = rehearsalSource(input);
+  assert.equal(source.includes("Friday"), false);
+  assert.equal(source.includes("4 projects"), false);
+  const issues = faithfulnessIssues(
+    { adjustment: "You still have 4 projects.", response: "Let's talk Friday at 3pm.", nextStep: "Move the one deadline." },
+    source,
+    REHEARSAL_FACT_FIELDS,
+  );
+  const fields = new Set(issues.map((issue) => issue.field));
+  assert.equal(fields.has("adjustment"), true);
+  assert.equal(fields.has("response"), true);
+  assert.equal(fields.has("nextStep"), false);
+});
+
+test("a rehearsal note has to quote the reply", () => {
+  const reply = "I can shift the one deadline.";
+  assert.equal(quotesReply("Keep saying I can shift the one deadline.", reply), true);
+  assert.equal(quotesReply("Be specific about the deadline.", reply), false);
+  assert.equal(quotesReply("ok sure", "ok sure"), true);
+  assert.equal(
+    sayableParagraph({
+      opening: "I manage 3 projects.",
+      keyPoint: "One deadline landed in the same week.",
+      nextStep: "",
+    }),
+    "I manage 3 projects.\n\nOne deadline landed in the same week.",
+  );
 });
 
 test("requestRehearsal timeout surfaces", async () => {

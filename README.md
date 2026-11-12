@@ -9,7 +9,7 @@
 Brume is a mist sprite who breathes with you. Two faces, one character:
 
 - **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided breathing patterns, a two-minute Decompress check-in, and session history — no camera, no account needed.
-- **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent: AI-planned resets, a 3-minute get-ready before calls and interviews, and a 1-minute alertness check. No camera, no account.
+- **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent. The result is a preparation card for one conversation: the model drafts the words, the person keeps them, and the card may not add a count, a day, or a time they did not write. A breathing break, Arrive, and a one-minute alertness check stay optional. No camera, no account.
 
 **Core Philosophy:** Progress over perfection, consistency over intensity, mindful awareness over mechanical practice.
 

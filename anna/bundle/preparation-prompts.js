@@ -20,8 +20,10 @@ export function buildPreparationMessages({
   kind = "",
   clarification = null,
   clarificationUsed = false,
+  droppedFacts = null,
+  scheduleUnspecified = false,
 } = {}) {
-  const instruction = `${POLICY}
+  let instruction = `${POLICY}
 Create a short, useful preparation for this particular conversation.
 The event describes the situation; goal is the outcome they want; keyPoint is what they want the other person to remember.
 preserve is a boundary or relationship quality the person explicitly wants to protect. Treat it as a constraint on the approach, not as evidence about the other person.
@@ -37,8 +39,15 @@ keyPoint: their central point or request, sharpened without changing its meaning
 approach: a concrete conversational move that handles the stated constraints; not generic encouragement or hidden reasoning.
 objection: one plausible difficult question or pushback for practice, written as a hypothetical counterpart's line. The app labels it as a possibility.
 response: suggested wording that addresses that pushback and advances the goal without fabricating supporting facts.
-nextStep: a specific closing question or next action they can propose, not a claim that anyone has agreed.
+nextStep: a closing question or next action they can propose, not a claim that anyone has agreed. Do not name a weekday or a clock time, and do not change a count, unless that weekday, time, or count appears in the user JSON.
+Every count, weekday, and clock time in opening, keyPoint, approach, objection, response, and nextStep must already appear in the user JSON. Do not turn "3" into "4", and do not add a meeting time to make a field sound finished. Where a time or count was not given, leave it out.
 Keep every field nonempty. Different goals for the same event must change the substance of the preparation.`;
+  if (scheduleUnspecified) {
+    instruction += "\nThe person was asked which day to name and did not name one. Keep the next step unscheduled: a question or action with no weekday and no clock time.";
+  }
+  if (Array.isArray(droppedFacts) && droppedFacts.length) {
+    instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, or clock times.`;
+  }
   return [
     { role: "system", content: { type: "text", text: instruction } },
     {
@@ -60,17 +69,22 @@ export function buildRehearsalMessages({
   clarification = null,
   plan,
   reply = "",
+  droppedFacts = null,
 } = {}) {
-  const instruction = `${POLICY}
+  let instruction = `${POLICY}
 The person has practised one response to the possible pushback in plan.objection.
 Respond to the actual reply they wrote, considering their goal and their edited preparation. Do not merely repeat the initial suggested response.
 Respect preserve as the person's stated boundary and wordingStyle as their explicit preference (natural, concise or direct), without sacrificing their intent or inventing facts. Direct wording is not aggressive wording. Do not infer a personality profile from their reply.
 Return:
 {"adjustment":"at most 300 characters","response":"at most 360 characters","nextStep":"at most 220 characters"}
-adjustment: identify one specific useful adjustment to their wording, or explain a concrete strength worth keeping if no change is needed. Refer to the substance of their response, without a score or generic praise.
+adjustment: one specific change, and it must repeat a short run of their reply in their words (three words in a row when the reply is that long). If you cannot quote them, still return the other fields and make adjustment restate their reply rather than a new fact.
 response: a revised version they can choose to use, preserving their intent and voice while addressing the difficult question. Treat new factual statements in their reply as their statements, not independently verified facts.
 nextStep: a closing question or action consistent with their goal and response. Do not invent agreements or commitments.
+The plan may be wrong. Do not repeat a count, weekday, or clock time from the plan unless it also appears in event, goal, keyPoint, preserve, clarification, or reply.
 Keep every field nonempty. Do not ask another practice question; this is one bounded rehearsal turn.`;
+  if (Array.isArray(droppedFacts) && droppedFacts.length) {
+    instruction += `\nA previous note added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain.`;
+  }
   return [
     { role: "system", content: { type: "text", text: instruction } },
     {

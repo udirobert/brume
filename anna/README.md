@@ -1,31 +1,31 @@
 # Brume — Anna App
 
-Brume is a calm companion on Anna: a mist-sprite mascot that prepares you
-for the conversation ahead (editable talking points plus one optional
-practice turn), plans a short breathing break for the moment you're in,
-and runs a 1-minute alertness check against your own usual. AI
-preparation is the primary function; basic fallback breathing remains
-available. Anna determines whether a run qualifies for its program.
-Unfinished tasks checkpoint to user storage and resume on reopen.
+Brume's declared primary function on Anna is conversation preparation.
+The meaningful result is a saved card: Anna's model drafts the opening,
+key point, approach, one hypothetical pushback, response, and next step;
+the user edits them and may rehearse once. Breathing, Arrive, and the
+one-minute alertness check stay in the app, behind a quiet control or an
+explicit request. They are not the result a review or a qualified run
+should treat as the product. A basic breathing plan remains available
+when the model is down. Unfinished tasks checkpoint to user storage and
+resume on reopen.
 
-Current state (2026-11-07): **v0.4.2 cut and pending review**
-(version_id=1994, cut by `anna-app apps publish --bump patch` and
-re-pinned with `apps submit-review`; tool
-frozen at 0.4.5/executa_version 1012, reset-offer skill at 767).
-This is the review-feedback release plus **Arrive** — the
-anti-chatbot surface: a feeling ring (nine closed-set words) proposes
-exactly one small act — Scatter (draw → mist) or Set it down (pull
-the weight down) — with the model writing only the invitation line.
-Nothing persists. v0.4.1 adds the `mode:"arrive"` entry payload so
-Anna's model can offer acts by feeling, a Set-it-down navigation fix,
-mobile above-the-fold compaction, and act-completion haptics. v0.4.2
-rebuilds both acts: Scatter erodes bottom-up into rising mist, Set it
-down only travels slowly and lands softly (`docs/ANNA.md` §12.25). Also in
-this line: prep cards export/print/copy,
-cross-flow memory lines, hold-to-talk voice check-in, and the
-ten-lesson mascot expressiveness pass. Bundled tool **0.4.5**
-(binaries in GitHub release `brume-executa-v0.4.5`; the darwin-arm64
-matrix leg moved to macos-15 after GitHub retired macos-14). App id
+Published review pin (2026-11-07): **v0.4.2** (version_id=1994, cut by
+`anna-app apps publish --bump patch` and re-pinned with
+`apps submit-review`; tool frozen at 0.4.5/executa_version 1012,
+reset-offer skill at 767). That pin is the review-feedback release plus
+**Arrive**: a feeling ring proposes exactly one small act — Scatter or
+Set it down — and the model writes only the invitation line. v0.4.2
+rebuilds both acts (`docs/ANNA.md` §12.25).
+
+Local source (2026-11-12), **not published**: the preparation card is
+the primary result, and a draft may not add a count, a weekday, or a
+clock time the person did not write (`docs/ANNA.md` §12.26). Source tool
+version is **0.4.6**. The published binaries are still **0.4.5**
+(GitHub release `brume-executa-v0.4.5`; the darwin-arm64 matrix leg
+moved to macos-15 after GitHub retired macos-14). Run the Brume Executa
+Binaries workflow, download the four archives, and pass the
+three-projects Cloud Agent case before the next `apps publish`. App id
 582, slug `brume`, tool id `tool-papa-brume-htcxvfcr`. Product context
 and the full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
@@ -100,31 +100,43 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
   `--brume-mascot-*` tokens in `brand.css` so the sprite follows daypart
   retunes.
 
-## The three flows
+## The flows
 
-1. **Breathing break** — Home → Planning (`llm.complete` plans pattern +
-   length + title/opening/cues/why, personalized by past check-ins) → Plan
-   (override pattern/length/sound) → Session (mascot breathes, phase word,
-   cues, Slower/Faster, Pause/End) → Check-in (Calmer / Same / Still wired)
-   → Result (AI reflection + next step). Sessions snap to whole cycles.
-   Patterns: cyclic sigh 2/1/6, long exhale 4/6, box 4-4-4-4, steady
-   5.5/5.5; lengths 60/90/120/180 s.
-2. **Prepare a conversation** — event + goal + key point + kind → AI
-   drafts opening/keyPoint/approach/objection/response/nextStep (one
-   clarify question max) → editable wording and hypothetical pushback → optional one-turn
-   rehearsal ("Get one adjustment") → saved card (`ready/sessions/<ts>`,
-   `ready/last`). Optional guided pause reuses the timed steps
+1. **Prepare a conversation (primary)** — a fresh open lands here. Event +
+   goal + key point + kind. If a deadline is in the same week and no day
+   or clock time was given, one question asks which day to name; skip
+   leaves the next step unscheduled, and that question uses the only
+   clarify slot. The model then drafts
+   opening/keyPoint/approach/objection/response/nextStep. Counts, weekdays,
+   and clock times must already be in the person's text: a failing line is
+   blanked (the pushback becomes "What makes this hard?"), the message
+   names the field, and the sprite looks at it. A kept fact is marked
+   "From what you wrote." Optional one-turn rehearsal ("Get one
+   adjustment") is shown only when the note quotes the reply. The saved
+   card (`ready/sessions/<ts>`, `ready/last`) leads with one sayable
+   paragraph — opening, key point, next step — and says it was drafted
+   for this conversation. Optional guided pause reuses the timed steps
    (breathe → open up → hum → rehearse) and returns to the plan.
-3. **Alertness check** — sleepiness 1–9 (Karolinska) → 60 s
-   reaction-time test (ISI 1.5–4 s, false start <100 ms, lapse ≥500 ms) →
-   median, lapses, band vs own baseline (needs 3 checks, same input type)
-   → AI note with a fitting next step. "Not a medical test."
+2. **Breathing break (optional)** — behind "Or take a breathing break" on
+   Home → Planning (`llm.complete` plans pattern + length + title/opening/cues/why,
+   personalized by past check-ins) → Plan (override pattern/length/sound) →
+   Session → Check-in → Result. Sessions snap to whole cycles. Patterns:
+   cyclic sigh 2/1/6, long exhale 4/6, box 4-4-4-4, steady 5.5/5.5; lengths
+   60/90/120/180 s. Quick reset skips planning and is labelled as such.
+3. **Arrive and alertness (optional)** — both live under "Something other
+   than the conversation". Arrive maps one closed-set feeling to Scatter
+   or Set it down; the model writes only the invitation, and nothing is
+   saved. Alertness is a 1–9 sleepiness rating plus a 60 s reaction-time
+   check against the person's own baseline. The home control does not
+   chart those times. The check screen says it is not a medical test.
 
-Chat (`#brume …`): `brume_reset`, `brume_complete`, `brume_get_ready`.
-**Anna's own model writes the plan, reflection and get-ready text as tool
-arguments**; the tool validates and filters them, renders verbatim
-`_display` blocks, and writes records. The tool has no sampling
-capability on purpose (see "Platform gotchas").
+Chat (`#brume …`): `brume_prepare` is the card. `brume_reset` and
+`brume_complete` are the optional breathing break. `brume_get_ready` is
+the older timed script. **Anna's own model writes the card, the plan,
+the reflection, and the get-ready text as tool arguments**; the tool
+validates them, refuses a card that adds a count, weekday, or clock
+time, renders verbatim `_display` blocks, and writes records. The tool
+has no sampling capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
 `reset/summary`, `ready/sessions/<ts>`, `ready/last`, `alert/checks/<ts>`,
@@ -192,15 +204,21 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
 
 1. Developer Console → Install vX; wait for "Deploying bundled tools…" to
    finish, then confirm the tool is callable (chat shows
-   `tool_papa_brume_htcxvfcr__brume_reset`, not `exec_run`).
-2. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
+   `tool_papa_brume_htcxvfcr__brume_prepare`, not `exec_run`).
+2. Fresh install, one new chat, this sentence and nothing else:
+   "I manage 3 projects and I added one deadline in the same week."
+   Open the preparation workspace. The card must still say three, and must
+   not say 4, four, Friday, or a clock time. If no day was given, the next
+   step stays unscheduled. This is the reviewer's case — it has to pass
+   before any other chat.
+3. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
    posture-only.
-3. `done, feeling calmer` → `reflectionSource: "agent"`, record written.
-4. `#brume get me ready: <event>. The one thing: <point>` → opener and key
+4. `done, feeling calmer` → `reflectionSource: "agent"`, record written.
+5. `#brume get me ready: <event>. The one thing: <point>` → opener and key
    point present in the Rehearse block.
-5. Ask to open the get-ready in the app → no permission gate, event and
+6. Ask to open the get-ready in the app → no permission gate, event and
    key point prefilled.
-6. One window alertness check → AI note (not the fallback line).
+7. One window alertness check → AI note (not the fallback line).
 
 Consider BYOK in Anna for test traffic so it doesn't burn credits.
 

@@ -57,6 +57,17 @@ import {
 import {
   requestPreparation,
   requestRehearsal,
+  faithfulnessIssues,
+  withholdUngrounded,
+  faithfulnessMessage,
+  preparationSource,
+  rehearsalSource,
+  PLAN_FACT_FIELDS,
+  REHEARSAL_FACT_FIELDS,
+  groundedSpans,
+  scheduleQuestion,
+  quotesReply,
+  sayableParagraph,
 } from "./preparation.js";
 import { createCheckpointStore } from "./recovery.js";
 import { MOMENTS, normaliseWordingStyle, parseReadyHandoff } from "./experience.js";
@@ -154,6 +165,8 @@ const els = {
   cardResponse: $("#card-response"),
   cardNextstep: $("#card-nextstep"),
   cardAdjustment: $("#card-adjustment"),
+  cardSayable: $("#card-sayable"),
+  cardSource: $("#card-source"),
   cardSaveNote: $("#card-save-note"),
   btnCardSaveRetry: $("#btn-card-save-retry"),
   btnCardDone: $("#btn-card-done"),
@@ -677,9 +690,13 @@ async function refreshHomeMeta() {
       const v = storageValue(
         await anna.storage.get({ key: "ready/last", scope: "user" }),
       );
+      const breath = document.getElementById("breathing-details");
       if (v && v.completedAt) {
         els.lastPrepSub.textContent = `${v.event ? v.event.slice(0, 60) : "Saved card"} · ${new Date(v.completedAt).toLocaleDateString()}`;
         els.btnLastPrep.hidden = false;
+        if (breath) breath.hidden = false;
+      } else if (breath) {
+        breath.hidden = true;
       }
       // Memory as reflection (no scores, no streaks, no typed text): names a
       // kind of preparation that recurred, from the closed `kind` field only,
@@ -1491,27 +1508,10 @@ async function alertChecks() {
 }
 
 async function refreshAlertLine() {
-  const checks = await alertChecks();
-  if (!checks.length) return;
-  const last = checks[0];
-  els.alertLine.textContent = `Alertness: ${last.medianMs} ms${last.band ? ` · ${last.band}` : ""}`;
-  els.alertLine.hidden = false;
-  const recent = checks.slice(0, 7).reverse();
-  if (recent.length >= 2 && els.alertSpark) {
-    const c = els.alertSpark.getContext("2d");
-    const max = Math.max(...recent.map((x) => x.medianMs));
-    const min = Math.min(...recent.map((x) => x.medianMs));
-    const range = Math.max(1, max - min);
-    c.clearRect(0, 0, 140, 24);
-    c.strokeStyle = "#5b8a72"; c.lineWidth = 1.5; c.beginPath();
-    recent.forEach((x, i) => {
-      const px = (i / (recent.length - 1)) * 130 + 5;
-      const py = 20 - ((x.medianMs - min) / range) * 16;
-      i ? c.lineTo(px, py) : c.moveTo(px, py);
-    });
-    c.stroke();
-    els.alertSpark.hidden = false;
-  }
+  // The home control does not show a reaction-time chart or a millisecond
+  // figure. Those numbers stay on the check's own result screen.
+  if (els.alertLine) els.alertLine.hidden = true;
+  if (els.alertSpark) els.alertSpark.hidden = true;
 }
 
 function stopAlertRun() {
@@ -1921,7 +1921,69 @@ function newPrepState() {
     error: "",
     completedAt: null,
     saved: false,
+    faithfulnessRetried: false,
+    rehearsalRetried: false,
+    scheduleAsked: false,
+    quoteNote: "",
   };
+}
+
+const BLANK_FIELD = {
+  opening: "prep-opening",
+  keyPoint: "prep-keypoint-edit",
+  approach: "prep-approach",
+  response: "prep-response",
+  nextStep: "prep-nextstep",
+  adjustment: "prep-adjustment",
+};
+
+function noteFaithfulness(issues, screenName) {
+  prep.faithfulnessNote = faithfulnessMessage(issues);
+  prep.error = prep.faithfulnessNote;
+  const sprite = screenName ? mascot(screenName) : null;
+  sprite?.setState("watching");
+  const first = issues.find((issue) => BLANK_FIELD[issue.field]);
+  const el = first && document.getElementById(BLANK_FIELD[first.field]);
+  if (el) {
+    sprite?.setOptions({ lookAt: el });
+    el.focus();
+  }
+}
+
+async function faithfulPlan(payload) {
+  prep.faithfulnessNote = "";
+  if (!payload.clarificationUsed && !prep.scheduleAsked) {
+    const question = scheduleQuestion(preparationSource(payload));
+    if (question) {
+      prep.scheduleAsked = true;
+      return { value: { kind: "clarify", question }, model: null, issues: [] };
+    }
+  }
+  let { value, model } = await requestPreparation(anna, payload);
+  if (value.kind !== "plan") return { value, model };
+  const source = preparationSource(payload);
+  let issues = faithfulnessIssues(value, source, PLAN_FACT_FIELDS);
+  if (issues.length && !prep.faithfulnessRetried) {
+    prep.faithfulnessRetried = true;
+    try {
+      const again = await requestPreparation(anna, {
+        ...payload,
+        droppedFacts: [...new Set(issues.flatMap((issue) => issue.spans))],
+      });
+      if (again.value.kind === "plan") {
+        value = again.value;
+        model = again.model;
+        issues = faithfulnessIssues(value, source, PLAN_FACT_FIELDS);
+      }
+    } catch { /* keep the first draft and blank the ungrounded fields */ }
+  }
+  if (issues.length) {
+    value = { ...withholdUngrounded(value, issues), kind: "plan" };
+    prep.faithfulnessNote = faithfulnessMessage(issues);
+  } else {
+    prep.faithfulnessNote = "";
+  }
+  return { value, model, issues };
 }
 
 let prep = newPrepState();
@@ -1975,6 +2037,28 @@ function readyPauseData(screen = task?.screen) {
 function snapshotReady(screen) {
   if (!task || task.flow !== "ready") return;
   return saveTask(screen, { prep, pause: readyPauseData(screen) });
+}
+
+function openConversation() {
+  prep = newPrepState();
+  prep.wordingStyle = currentWordingPreference;
+  show(els.screens.prepInput);
+  syncPrepInputs();
+  prepKindChips();
+}
+
+function ensurePrepTask() {
+  if (task?.flow === "ready") return;
+  const event = els.prepEvent.value;
+  const goal = els.prepGoal.value;
+  const keyPoint = els.prepKeypoint.value;
+  const preserve = els.prepPreserve ? els.prepPreserve.value : "";
+  startPreparation();
+  prep.input.event = event.trim().slice(0, 600);
+  prep.input.goal = goal.trim().slice(0, 300);
+  prep.input.keyPoint = keyPoint.trim().slice(0, 220);
+  prep.input.preserve = preserve.trim().slice(0, 220);
+  syncPrepInputs();
 }
 
 function startPreparation({ moment } = {}) {
@@ -2053,6 +2137,7 @@ function prepRequestPayload() {
       ? { question: prep.question, answer: prep.clarification || null }
       : null,
     clarificationUsed: prep.clarificationUsed,
+    scheduleUnspecified: Boolean(prep.scheduleAsked && prep.clarificationUsed && !prep.clarification),
   };
 }
 
@@ -2079,8 +2164,9 @@ async function runPreparationRequest() {
       throw new Error("Couldn't save your input — keep this window open and retry.");
     }
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
-    const { value, model } = await requestPreparation(anna, prepRequestPayload());
+    const drafted = await faithfulPlan(prepRequestPayload());
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
+    const { value, model } = drafted;
     prep.busy = null;
     prep.error = "";
     if (value.kind === "clarify") {
@@ -2098,9 +2184,11 @@ async function runPreparationRequest() {
       prep.planModel = model;
       prep.planSource = "ai";
       prep.stage = "plan";
+      if (drafted.issues?.length) prep.error = prep.faithfulnessNote;
     }
     hidePrepStatus();
     renderPrepStage();
+    if (prep.faithfulnessNote && prep.stage === "plan") noteFaithfulness(drafted.issues, "prep-plan");
   } catch (e) {
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
     prep.busy = null;
@@ -2131,7 +2219,7 @@ async function runRehearsalRequest() {
       throw new Error("Couldn't save your answer — keep this window open and retry.");
     }
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
-    const { value, model } = await requestRehearsal(anna, {
+    const rehearsalInput = {
       event: prep.input.event,
       goal: prep.input.goal,
       keyPoint: prep.input.keyPoint,
@@ -2142,10 +2230,33 @@ async function runRehearsalRequest() {
         : null,
       plan: prep.plan,
       reply: prep.reply,
-    });
+    };
+    let { value, model } = await requestRehearsal(anna, rehearsalInput);
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
+    const source = rehearsalSource(rehearsalInput);
+    let issues = faithfulnessIssues(value, source, REHEARSAL_FACT_FIELDS);
+    if (issues.length && !prep.rehearsalRetried) {
+      prep.rehearsalRetried = true;
+      try {
+        const again = await requestRehearsal(anna, {
+          ...rehearsalInput,
+          droppedFacts: [...new Set(issues.flatMap((issue) => issue.spans))],
+        });
+        if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
+        value = again.value;
+        model = again.model;
+        issues = faithfulnessIssues(value, source, REHEARSAL_FACT_FIELDS);
+      } catch { /* blank the ungrounded note from the first reply */ }
+    }
+    if (issues.length) value = withholdUngrounded(value, issues);
+    prep.quoteNote = "";
+    if (value.adjustment && !quotesReply(value.adjustment, prep.reply)) {
+      value = { ...value, adjustment: "" };
+      prep.quoteNote = "The note didn't use your words, so it isn't shown.";
+    }
     prep.busy = null;
-    prep.error = "";
+    prep.error = issues.length ? faithfulnessMessage(issues) : "";
+    prep.faithfulnessNote = prep.error;
     prep.feedback = {
       adjustment: value.adjustment,
       response: value.response,
@@ -2155,6 +2266,11 @@ async function runRehearsalRequest() {
     prep.stage = "feedback";
     hidePrepStatus();
     renderPrepStage();
+    if (issues.length) noteFaithfulness(issues, "prep-feedback");
+    else if (prep.quoteNote) {
+      mascot("prep-feedback")?.setState("watching");
+      mascot("prep-feedback")?.setOptions({ lookAt: document.getElementById("prep-adjustment") });
+    }
   } catch (e) {
     if (gen !== prepGen || !ownsTask(taskId, taskGen)) return;
     prep.busy = null;
@@ -2190,7 +2306,7 @@ function prepCardComplete() {
   if (!prep.plan) return false;
   const { response, nextStep } = prepFinalValues();
   return ["opening", "keyPoint", "approach", "objection"].every((k) => prep.plan[k].trim())
-    && Boolean(response.trim()) && Boolean(nextStep.trim());
+    && Boolean(response.trim());
 }
 
 function renderPrepStage() {
@@ -2209,11 +2325,12 @@ function renderPrepStage() {
     els.prepHandoffLabel.hidden = prep.planSource !== "anna-handoff";
     for (const [key, el] of PLAN_FIELDS) el.value = prep.plan?.[key] ?? "";
     els.prepObjection.textContent = prep.plan?.objection ?? "";
+    renderGrounding();
   } else if (prep.stage === "practice") {
     els.prepPracticeObjection.textContent = prep.plan?.objection ?? "";
     els.prepReply.value = prep.reply;
   } else if (prep.stage === "feedback") {
-    els.prepAdjustment.textContent = prep.feedback?.adjustment ?? "";
+    els.prepAdjustment.textContent = prep.feedback?.adjustment || prep.quoteNote || "";
     els.prepFinalResponse.value = prepFinalValues().response;
     els.prepFinalNextstep.value = prepFinalValues().nextStep;
   } else if (prep.stage === "card") {
@@ -2227,8 +2344,40 @@ function renderPrepStage() {
   snapshotReady(prep.stage);
 }
 
+function currentSayable() {
+  const p = prep.plan || {};
+  return sayableParagraph({
+    opening: p.opening,
+    keyPoint: p.keyPoint,
+    nextStep: prepFinalValues().nextStep,
+  });
+}
+
+function renderGrounding() {
+  const source = preparationSource({
+    ...prep.input,
+    clarification: prep.clarificationUsed
+      ? { question: prep.question, answer: prep.clarification }
+      : null,
+  });
+  for (const [key] of PLAN_FIELDS) {
+    const hint = document.getElementById(`ground-${key}`);
+    if (!hint) continue;
+    const spans = groundedSpans(prep.plan?.[key] || "", source);
+    hint.hidden = spans.length === 0;
+    hint.textContent = spans.length ? `From what you wrote: ${spans.join(", ")}` : "";
+  }
+}
+
 function prepCardText() {
   const lines = [];
+  const sayable = (els.cardSayable?.textContent || "").trim();
+  if (sayable) {
+    lines.push(sayable);
+    lines.push("");
+    lines.push("—");
+    lines.push("");
+  }
   lines.push("Brume preparation card");
   lines.push("");
   const goal = (els.cardGoal.textContent || "").trim();
@@ -2290,15 +2439,22 @@ function renderPrepCard() {
   const p = prep.plan || {};
   const { response, nextStep } = prepFinalValues();
   els.cardGoal.textContent = prep.input.goal || prep.input.event || "—";
+  els.cardSayable.textContent = currentSayable();
+  els.cardSayable.hidden = !els.cardSayable.textContent.trim();
   els.cardOpening.textContent = p.opening ?? "";
   els.cardKeypoint.textContent = p.keyPoint ?? "";
   els.cardApproach.textContent = p.approach ?? "";
   els.cardObjection.textContent = p.objection ?? "";
   els.cardResponse.textContent = response;
   els.cardNextstep.textContent = nextStep;
-  els.cardAdjustment.hidden = !prep.feedback;
-  els.cardAdjustment.textContent = prep.feedback
+  els.cardAdjustment.hidden = !prep.feedback?.adjustment;
+  els.cardAdjustment.textContent = prep.feedback?.adjustment
     ? `Rehearsal note: ${prep.feedback.adjustment}`
+    : "";
+  const drafted = prep.planSource === "ai" || prep.planSource === "anna-handoff";
+  els.cardSource.hidden = !drafted;
+  els.cardSource.textContent = drafted
+    ? "Anna drafted this card for this conversation. The words here are the ones you kept."
     : "";
   els.prepCardTitle.textContent = prep.feedback
     ? "Your preparation card"
@@ -2325,6 +2481,7 @@ function prepCardRecord() {
     objection: p.objection ?? "",
     response,
     nextStep,
+    sayable: currentSayable(),
     rehearsed: Boolean(prep.feedback),
     adjustment: prep.feedback?.adjustment ?? null,
     reply: prep.reply || null,
@@ -2427,6 +2584,9 @@ async function showLastPreparation() {
   }
   cardViewOnly = true;
   els.cardGoal.textContent = record.goal || record.event || "—";
+  els.cardSayable.textContent = record.sayable
+    || sayableParagraph({ opening: record.opening, keyPoint: record.preparedKeyPoint, nextStep: record.nextStep });
+  els.cardSayable.hidden = !els.cardSayable.textContent.trim();
   els.cardOpening.textContent = record.opening ?? "";
   els.cardKeypoint.textContent = record.preparedKeyPoint ?? "";
   els.cardApproach.textContent = record.approach ?? "";
@@ -2466,9 +2626,12 @@ function applyEntryPayload(payload) {
     prep.input = { ...prep.input, ...handoff.input };
     prep.planSource = handoff.source;
     if (handoff.plan) {
-      prep.plan = handoff.plan;
+      const source = preparationSource(prep.input);
+      const issues = faithfulnessIssues(handoff.plan, source, PLAN_FACT_FIELDS);
+      prep.plan = issues.length ? withholdUngrounded(handoff.plan, issues) : handoff.plan;
       prep.stage = "plan";
       prep.wordingStyle = currentWordingPreference;
+      if (issues.length) prep.error = faithfulnessMessage(issues);
     } else if (handoff.invalidDraft) {
       prep.error = "Anna's draft could not be used. Your context is here; prepare a new draft when you're ready.";
     }
@@ -2477,6 +2640,7 @@ function applyEntryPayload(payload) {
     if (handoff.plan) {
       prep.stage = "plan";
       renderPrepStage();
+      if (prep.error) mascot("prep-plan")?.setState("watching");
     } else {
       renderPrepStage();
       if (prep.error) showPrepStatus(els.screens.prepInput, { error: prep.error });
@@ -2852,7 +3016,7 @@ async function initializeHostInner(gen) {
     queuedBootPayload = null;
     payloadNavigated = applyEntryPayload(p);
   }
-  if (!task && !restored && !payloadNavigated) show(els.screens.home);
+  if (!task && !restored && !payloadNavigated) openConversation();
   updateHomeNav();
   loadOptionalData(gen);
 }
@@ -3217,6 +3381,7 @@ async function main() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#btn-prep-go").click(); }
   });
   $("#btn-prep-go").addEventListener("click", () => {
+    ensurePrepTask();
     snapshotReady("input");
     runPreparationRequest();
   });
@@ -3234,6 +3399,7 @@ async function main() {
     el.addEventListener("input", () => {
       if (!prep.plan) return;
       prep.plan[key] = el.value;
+      renderGrounding();
       schedulePrepEdit();
     });
   }

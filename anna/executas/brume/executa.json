@@ -1,9 +1,9 @@
 {
   "slug": "brume",
   "name": "brume",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "executa_type": "tool",
-  "description": "Guided ~90s breathing reset, delivered inline in chat.",
+  "description": "Conversation preparation card, plus an optional breathing break.",
   "tool_id": "tool-papa-brume-htcxvfcr",
   "type": "python",
   "distribution": {

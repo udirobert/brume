@@ -1272,3 +1272,56 @@ deduped, reset-offer skill at 767) and re-pinned via `apps submit-review`
 (the listing's Scatter/Set it down copy still describes the acts). No
 tier-3 run before the re-pin; the change is bundle-only (no prompt, tool or
 manifest change).
+
+### 12.26 The card stays faithful (2026-11-12, local, unpublished)
+
+Review rejected the pin again on two points. The test sentence was "I
+manage 3 projects and I added one deadline in the same week." The card
+said 4 projects, the practice note repeated it, and a Friday clock time
+appeared that the person never wrote. The second point was that the model
+felt bolted onto a breathing app.
+
+The answer is one loop. A fresh open lands on the conversation form.
+Breathing, Arrive, and alertness stay behind "Something other than the
+conversation," and the home breathing break stays hidden until a card
+exists. The listing, the system prompt, and the tool catalogue lead with
+the preparation card. `brume_prepare` is the chat-path result;
+`brume_get_ready` is the older timed script.
+
+Faithfulness is a check after parse, in the workspace and in the plugin:
+
+- Counts (digits and number words; "3" matches "three"), weekdays, and
+  clock times in a model field must already be in the person's own text.
+  Hyphenated compounds are scrubbed first, so "one" inside "one-on-one"
+  is not a count. A failing objection becomes "What makes this hard?";
+  every other failing field is blanked for the person to write. The
+  workspace retries the model once and names the dropped spans. The
+  plugin refuses the whole card and writes nothing.
+- A kept fact is marked under that line ("From what you wrote: 3"). A
+  blanked line names the field and the kind of fact, focuses that field,
+  and the sprite looks at it.
+- If the person mentions a deadline in the same week and names no day
+  and no clock time, one question is asked before any draft: which day
+  the card should name, if any. Skip leaves the next step unscheduled.
+  That question uses the only clarify slot.
+- A rehearsal note is shown only when it repeats the practice reply
+  (three words in a row, or the whole reply when it is shorter). The
+  rehearsal check reads the person's words, not the earlier draft, so a
+  bad plan cannot launder a fact.
+- The saved record, the copy, the download, and the chat display lead
+  with one sayable paragraph: opening, key point, and next step.
+
+Source tool version is 0.4.6. The published review pin is still v0.4.2
+(version_id 1994) and the GitHub binaries are still
+`brume-executa-v0.4.5`. Do not `apps publish` until the binaries workflow
+has produced the four archives and a fresh-install Cloud Agent chat has
+passed the three-projects sentence. That sentence is tier-3 step 2 in
+`anna/README.md`, and `anna/test/browser-qa.mjs` runs it against the fake
+host.
+
+Verified locally: `npm test` in `anna/` (211 smoke checks, 152 unit
+tests), `python3 -m unittest test_plan` (21), and the reviewer browser
+case (`CASE="reviewer case"`). The full browser suite was not re-run.
+The gate covers counts, weekdays, and clock times. It does not catch
+every invented proper noun. On the chat path, `event` and `goal` are
+treated as the person's words.

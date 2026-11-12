@@ -399,9 +399,14 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
 
 ### Release candidate notes (local, unpublished)
 
-- Conversation preparation replaced the old get-ready script:
-  `bundle/preparation.js` + `bundle/preparation-prompts.js` (prompt text is
-  maintained outside this change), strict JSON validation, one clarify + one rehearsal max.
+- Conversation preparation is the primary result. `bundle/preparation.js`
+  blanks a count, weekday, or clock time that is not in the person's text,
+  asks once when a deadline is in the same week and no day was named, and
+  hides a rehearsal note that does not quote the reply. The saved card
+  leads with one sayable paragraph. `brume_prepare` (source tool 0.4.6)
+  refuses the same invented facts and writes nothing. Published binaries
+  are still 0.4.5; do not publish until they exist and the three-projects
+  Cloud Agent case passes (`docs/ANNA.md` §12.26).
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always

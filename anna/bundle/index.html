@@ -33,7 +33,7 @@
         <div class="mascot-slot mascot-xl" id="mascot-home" data-mascot aria-hidden="true"></div>
         <h1 class="home-headline">Get ready for what comes next.</h1>
         <p class="mascot-voice" id="home-voice">Find your words for the conversation ahead.</p>
-        <p class="process hint">Describe the moment · Try one response · Keep your card</p>
+        <p class="process hint">Anna drafts the words · You try one pushback · You leave with the card</p>
         <div class="moment-list" role="group" aria-label="Moments">
           <button type="button" data-moment="deadline">Push back on a deadline</button>
           <button type="button" data-moment="support">Ask for support</button>
@@ -41,7 +41,7 @@
           <button type="button" data-moment="interview">Prepare for an interview</button>
         </div>
         <button id="btn-ready" type="button">Something else</button>
-        <details class="quiet-details" id="breathing-details">
+        <details class="quiet-details" id="breathing-details" hidden>
           <summary>Or take a breathing break</summary>
           <input
             id="context-input"
@@ -78,19 +78,19 @@
         <div class="home-cards">
           <button id="btn-last-prep" class="card" type="button" hidden>
             <span class="card-title">Last preparation</span>
-            <span class="card-sub" id="last-prep-sub">Review your saved card</span>
-          </button>
-          <button id="btn-alertness" class="card" type="button">
-            <span class="card-title">Alertness check</span>
-            <span class="card-sub">How awake are you right now?</span>
-            <span class="card-line muted" id="alert-line" hidden></span>
-            <canvas id="alert-spark" width="140" height="24" hidden></canvas>
-          </button>
-          <button id="btn-arrive" class="card" type="button">
-            <span class="card-title">How are you arriving?</span>
-            <span class="card-sub">A word for right now — Brume has a small act for it</span>
+            <span class="card-sub" id="last-prep-sub">The card you kept</span>
           </button>
         </div>
+        <details class="quiet-details" id="settle-details">
+          <summary>Something other than the conversation</summary>
+          <p class="hint">Optional. Neither of these drafts or saves a card.</p>
+          <div class="settle-links">
+            <button id="btn-arrive" class="textlink" type="button">How are you arriving?</button>
+            <button id="btn-alertness" class="textlink" type="button">One-minute alertness check</button>
+          </div>
+          <p class="hint" id="alert-line" hidden></p>
+          <canvas id="alert-spark" width="140" height="24" hidden></canvas>
+        </details>
         <p class="muted" data-last-session hidden></p>
         <p class="muted" id="memory-line" hidden></p>
         <p class="muted" data-worked hidden></p>
@@ -314,16 +314,21 @@
         <p class="hint">Edit anything — the card you save is the version you approve.</p>
         <label class="field-label" for="prep-opening">Opening</label>
         <textarea id="prep-opening" rows="2" maxlength="1000"></textarea>
+        <p id="ground-opening" class="hint" hidden></p>
         <label class="field-label" for="prep-keypoint-edit">Key point</label>
         <textarea id="prep-keypoint-edit" rows="2" maxlength="1000"></textarea>
+        <p id="ground-keyPoint" class="hint" hidden></p>
         <label class="field-label" for="prep-approach">Approach</label>
         <textarea id="prep-approach" rows="2" maxlength="1000"></textarea>
+        <p id="ground-approach" class="hint" hidden></p>
         <p class="field-label">Possible pushback <span class="muted">— for practice, not a prediction</span></p>
         <blockquote id="prep-objection"></blockquote>
         <label class="field-label" for="prep-response">Suggested response</label>
         <textarea id="prep-response" rows="2" maxlength="1000"></textarea>
+        <p id="ground-response" class="hint" hidden></p>
         <label class="field-label" for="prep-nextstep">Next step</label>
         <textarea id="prep-nextstep" rows="2" maxlength="1000"></textarea>
+        <p id="ground-nextStep" class="hint" hidden></p>
         <div class="btn-row">
           <button id="btn-prep-practice" class="primary" type="button">Practice the pushback</button>
           <button id="btn-prep-finish" type="button">Finish without practice</button>
@@ -362,6 +367,8 @@
       <section id="screen-prep-card" class="screen" hidden>
         <div class="mascot-slot mascot-lg" id="mascot-prep-card" aria-hidden="true"></div>
         <h1 id="prep-card-title">Your preparation card</h1>
+        <p id="card-source" class="hint" hidden></p>
+        <p id="card-sayable" class="sayable" hidden></p>
         <dl class="facts prep-card-facts">
           <div><dt>Goal</dt><dd id="card-goal"></dd></div>
           <div><dt>Opening</dt><dd id="card-opening"></dd></div>

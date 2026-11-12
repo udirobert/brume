@@ -56,6 +56,7 @@ h1 {
 
 .pattern-name { color: var(--muted); font-size: 0.95rem; margin: 0 0 8px; }
 .hint { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.sayable { font-size: 1.05rem; line-height: 1.45; white-space: pre-wrap; }
 .muted { color: var(--muted); }
 .last-session { color: var(--muted); font-size: 0.8rem; }
 .offline-note { font-size: 0.78rem; margin: -4px 0 10px; font-style: italic; }
@@ -274,10 +275,9 @@ blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--acc
 .chips.compact { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .chips.compact .chip { flex: 0 1 auto; padding: 6px 12px; font-size: .85rem; min-height: 36px; }
 .home-cards { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-@media (min-width: 360px) {
-  .home-cards { flex-direction: row; }
-  .home-cards .card { flex: 1; }
-}
+.home-cards:not(:has(button:not([hidden]))) { display: none; }
+.settle-links { display: flex; flex-direction: column; align-items: flex-start; }
+.settle-links .textlink { text-align: left; }
 .home-meta { margin-top: 12px; font-size: .82rem; }
 .home-meta p { margin: 2px 0; }
 .alert-bar { height: 4px; background: #dde5df; border-radius: 2px; overflow: hidden; margin: 6px 0; }

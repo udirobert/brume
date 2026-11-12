@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Brume Reset — Anna App (bundle-only). Isolated from the root app toolchain.",
+  "description": "Brume — Anna App. Primary function is conversation preparation. Isolated from the root app toolchain.",
   "scripts": {
     "test": "node test/smoke.mjs && node --test test/preparation.mjs test/recovery.mjs test/session-storage.mjs test/experience.mjs test/mascot.mjs test/arrive.mjs",
     "test:browser": "node test/browser-qa.mjs"

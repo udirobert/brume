@@ -44,10 +44,12 @@ ChatGPT / MCP host
 - **`brume_complete`** — `felt` + `reflection`, returns a cleaned
   reflection. No server-side persistence in v1 (nothing to delete, nothing
   to leak — a Responsible-AI point).
-- **`brume_get_ready` / `brume_prepare`** — retired in Anna tool 0.4.7.
-  A chat tool cannot save a faithful card (every argument is
-  model-written, no transcript exists to check it against), so the card
-  lives in the app window only.
+- **`brume_get_ready`** — retired in Anna tool 0.4.7. **`brume_prepare`**
+  returned in 0.4.8 with a different contract: it saves no card — it
+  detects a dayless same-week deadline (`needs_input`) or returns the
+  `open_app_view` payload (`open_window`). A chat tool cannot save a
+  faithful card (every argument is model-written, no transcript exists
+  to check it against), so the card lives in the app window only.
 
 ## Hard constraints (shared with the whole product)
 

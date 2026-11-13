@@ -85,7 +85,7 @@ def main() -> None:
         if result.get("version") != expected:
             fail(f"describe: version {result.get('version')!r} != {expected!r}")
         tools = {t.get("name"): t for t in (result.get("tools") or []) if isinstance(t, dict)}
-        for name in ("brume_reset", "brume_complete"):
+        for name in ("brume_prepare", "brume_reset", "brume_complete"):
             if name not in tools:
                 fail(f"describe: missing tool {name!r} (got {sorted(tools)})")
             if not isinstance(tools[name].get("parameters"), list):
@@ -121,6 +121,33 @@ def main() -> None:
         if data.get("planSource") != "agent":
             fail(f"invoke brume_reset: unexpected planSource {data.get('planSource')!r}")
         print(f"  (brume_reset took {elapsed:.1f}s)")
+
+        # invoke brume_prepare — the reviewer sentence must trigger the
+        # deadline-day question; a second call with the answer must hand
+        # back the open_window payload.
+        r = request(proc, 4, "invoke", {
+            "tool": "brume_prepare",
+            "arguments": {
+                "situation": "I manage 3 projects and I added one deadline in the same week.",
+            },
+        })
+        result = r.get("result")
+        if not isinstance(result, dict) or (result.get("data") or {}).get("status") != "needs_input":
+            fail(f"invoke brume_prepare (dayless deadline): expected needs_input, got {result!r}")
+        r = request(proc, 45, "invoke", {
+            "tool": "brume_prepare",
+            "arguments": {
+                "situation": "I manage 3 projects and I added one deadline in the same week.",
+                "deadline_day": "Thursday",
+            },
+        })
+        result = r.get("result")
+        if not isinstance(result, dict) or (result.get("data") or {}).get("status") != "open_window":
+            fail(f"invoke brume_prepare (with day): expected open_window, got {result!r}")
+        ctx = ((result.get("data") or {}).get("open_app_view") or {}).get("context") or ""
+        if "Thursday" not in ctx:
+            fail(f"invoke brume_prepare: context missing the answered day, got {ctx!r}")
+        print("  (brume_prepare asked for the day, then handed off the payload)")
 
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()

@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 """Brume Reset — Anna Executa plugin (stdio JSON-RPC 2.0, stdlib only).
 
-Chat-native guided breathing break for `#brume reset`. This is Brume's
-optional break, not its result: the preparation card lives in the app
+Chat-side surface for Brume. The preparation card lives in the app
 window, where the person reads the source and the draft and saves it
 themselves. A chat tool cannot save the card faithfully — every
 argument it receives is model-written, and this protocol offers no
 transcript to check them against — so no card-saving tool exists.
+What the chat tool CAN do faithfully is run the preparation's
+deterministic front end: detect the dayless-deadline ambiguity and
+hand the window a prefill payload.
 
+  brume_prepare   Starts a preparation. Takes `situation` — the model's
+                  relay of what the user said — plus optional `goal`,
+                  `key_point`, `preserve`. If the situation names a
+                  deadline in the same week but no day or time, returns
+                  needs_input with the question to ask; the model calls
+                  again with `deadline_day` (or `schedule_unspecified`
+                  when the user chooses none). Otherwise returns
+                  open_window with the open_app_view payload: the person
+                  confirms or corrects the situation in the window, and
+                  the card is written there from what they submit. This
+                  tool saves nothing and writes no card fields.
   brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
                   fields (pattern, seconds, title, opening, cues, why,
@@ -53,7 +66,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.7"
+VERSION = "0.4.8"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -139,17 +152,47 @@ MANIFEST: dict[str, Any] = {
     "display_name": "Brume",
     "version": VERSION,
     "description": (
-        "Brume's optional breathing break. brume_reset starts a short "
-        "guided break; brume_complete saves the session record and your "
-        "reflection when the user says done. Brume's result — the "
-        "conversation-preparation card — lives in the app window, where "
-        "the person reads and saves it themselves."
+        "Conversation preparation and an optional breathing break. "
+        "brume_prepare starts a preparation — it asks when the deadline "
+        "has no day, then hands the app window the situation as a "
+        "prefill; the person confirms it there and the card is written "
+        "from what they submit. brume_reset starts a short guided "
+        "break; brume_complete saves its record when the user says done."
     ),
     "author": "Brume",
     "category": "productivity",
     "license": "MIT",
     "host_capabilities": ["aps.kv", "aps.scope.user.read", "aps.scope.user.write"],
     "tools": [
+        {
+            "name": "brume_prepare",
+            "description": (
+                "Start a conversation preparation — Brume's primary result. Pass the user's "
+                "situation in `situation` exactly as they stated it: their words, never additions "
+                "you invented. If the situation names a deadline in the same week but no day or "
+                "time, this returns needs_input with the question — ask the user, then call again "
+                "with `deadline_day` from their answer (or `schedule_unspecified` if they choose to "
+                "leave it unscheduled). Otherwise it returns open_window with an open_app_view "
+                "payload: call open_app_view with it. The person reads the situation in the window, "
+                "confirms or corrects it, and the card is written there from what they submit — "
+                "this tool saves nothing, so never write card fields in chat."
+            ),
+            "timeout": 10,
+            "parameters": [
+                {"name": "situation", "type": "string", "required": True,
+                 "description": "Your faithful relay of what the user said about the upcoming conversation — their words, not additions."},
+                {"name": "goal", "type": "string", "required": False,
+                 "description": "The outcome they said they want, if they said one."},
+                {"name": "key_point", "type": "string", "required": False,
+                 "description": "Their main point, if they stated one."},
+                {"name": "preserve", "type": "string", "required": False,
+                 "description": "A boundary or relationship quality they explicitly want to protect, if stated."},
+                {"name": "deadline_day", "type": "string", "required": False,
+                 "description": "The day the user named for the deadline after you asked (e.g. 'Thursday'). Set only from their answer."},
+                {"name": "schedule_unspecified", "type": "boolean", "required": False,
+                 "description": "True only if, after you asked which day, the user chose to leave it unscheduled."},
+            ],
+        },
         {
             "name": "brume_reset",
             "description": (
@@ -674,6 +717,125 @@ def validate_agent_plan(args: dict) -> dict | None:
     }
 
 
+# --- Preparation interview -------------------------------------------------
+# Deterministic front end for the workspace: the dayless-deadline check is
+# a 1:1 port of scheduleQuestion/hasDayOrTime in bundle/preparation.js —
+# keep them in sync via the "deadline_day" section of plan-cases.json.
+
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday",
+             "saturday", "sunday")
+_MONTHS = (
+    "january", "february", "march", "april", "may", "june", "july",
+    "august", "september", "october", "november", "december",
+    "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept",
+    "oct", "nov", "dec",
+)
+_HOUR_WORDS = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve"
+_DEADLINE_WEEK_RE = re.compile(r"\bdeadline\b", re.I)
+_SAME_WEEK_RE = re.compile(r"\b(?:same|this|the)\s+week\b", re.I)
+_DAYISH_RE = re.compile(
+    r"\b(?:" + "|".join(_WEEKDAYS) + r")\b"
+    r"|\b(?:today|tomorrow|tonight|yesterday|noon|midday|midnight)\b"
+    r"|\b(?:" + "|".join(_MONTHS) + r")\b"
+    r"|\b(?:this|next|last)\s+(?:morning|afternoon|evening|night)\b"
+    r"|\bin\s+the\s+(?:morning|afternoon|evening)\b",
+    re.I,
+)
+_ORDINAL_RE = re.compile(r"\b\d{1,2}(?:st|nd|rd|th)\b", re.I)
+_OCLOCK_RE = re.compile(r"\b(?:\d{1,2}|" + _HOUR_WORDS + r")\s*o'?clock\b", re.I)
+_TIME_RES = [
+    re.compile(r"\b\d{1,2}(?::[0-5]\d)?\s*[ap]\.?m\.?\b"),
+    re.compile(r"\b(?:[01]?\d|2[0-3]):[0-5]\d\b"),
+    re.compile(r"\bat\s+(?:\d{1,2}|" + _HOUR_WORDS + r")\b"),
+]
+
+SCHEDULE_QUESTION = (
+    "You mentioned a deadline in the same week. "
+    "Which day should the card name, if any?"
+)
+
+
+def _has_day_or_time(text: str) -> bool:
+    """True when the text names a specific day or time (not just a span
+    like 'this week'). Mirror of hasDayOrTime in bundle/preparation.js."""
+    t = str(text or "")
+    if _DAYISH_RE.search(t):
+        return True
+    if _ORDINAL_RE.search(t) or _OCLOCK_RE.search(t):
+        return True
+    for i, rx in enumerate(_TIME_RES):
+        for m in rx.finditer(t.lower()):
+            # "at 3 o'clock" belongs to the o'clock phrase, not "at 3".
+            if i == 2 and re.match(r"^\s*o'?clock\b",
+                                   t.lower()[m.end():]):
+                continue
+            return True
+    return False
+
+
+def _schedule_question(source: str) -> str | None:
+    text = str(source or "")
+    mentions = bool(_DEADLINE_WEEK_RE.search(text)
+                    and _SAME_WEEK_RE.search(text))
+    return SCHEDULE_QUESTION if mentions and not _has_day_or_time(text) else None
+
+
+def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    """The preparation's deterministic front end. Saves nothing: it
+    detects the dayless-deadline ambiguity (needs_input) or hands the
+    window a prefill payload (open_window)."""
+    situation = _clean_text(args.get("situation"), 600)
+    if not situation:
+        raise LookupError("brume_prepare: 'situation' is required")
+    goal = _clean_text(args.get("goal"), 300)
+    key_point = _clean_text(args.get("key_point"), 220)
+    preserve = _clean_text(args.get("preserve"), 220)
+    deadline_day = _clean_text(args.get("deadline_day"), 60)
+    schedule_unspecified = args.get("schedule_unspecified") is True
+
+    source = "\n".join(p for p in (situation, goal, key_point, preserve) if p)
+    question = _schedule_question(source)
+    if question and not deadline_day and not schedule_unspecified:
+        return {
+            "success": True,
+            "data": {
+                "status": "needs_input",
+                "missing": "deadline_day",
+                "question": question,
+                "note": (
+                    "Ask the user this question, then call brume_prepare "
+                    "again with their answer in deadline_day — or "
+                    "schedule_unspecified true if they choose to leave it "
+                    "unscheduled."
+                ),
+            },
+        }
+
+    context_text = situation
+    if deadline_day:
+        context_text = f"{situation}\nDeadline day: {deadline_day}"
+    payload = {"context": context_text}
+    if goal:
+        payload["goal"] = goal
+    if key_point:
+        payload["key_point"] = key_point
+    if preserve:
+        payload["preserve"] = preserve
+    return {
+        "success": True,
+        "data": {
+            "status": "open_window",
+            "open_app_view": payload,
+            "note": (
+                "Call open_app_view with this payload. It only prefills "
+                "the situation: the person reads it, confirms or "
+                "corrects it, and the card is written inside the window "
+                "from what they submit. Never write the card in chat."
+            ),
+        },
+    }
+
+
 # --- Tools ---------------------------------------------------------------
 
 
@@ -926,6 +1088,8 @@ def invoke_complete(args: dict[str, Any], context: dict[str, Any]) -> dict[str, 
 
 
 def invoke(tool: str, args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if tool == "brume_prepare":
+        return invoke_prepare(args, context)
     if tool == "brume_reset":
         return invoke_reset(args, context)
     if tool == "brume_complete":

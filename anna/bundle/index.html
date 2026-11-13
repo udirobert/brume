@@ -292,6 +292,10 @@
           <button type="button" data-moment="feedback">Feedback</button>
           <button type="button" data-moment="interview">Interview</button>
         </div>
+        <div id="prep-source-note" class="source-note" hidden>
+          <p class="hint">Anna wrote this from your message — check it is what you actually said, then confirm or fix it.</p>
+          <button id="btn-prep-source-ok" type="button">This is what I said</button>
+        </div>
         <button id="btn-prep-go" class="primary" type="button">Prepare my talking points</button>
       </section>
 
@@ -367,6 +371,7 @@
         <div class="mascot-slot mascot-lg" id="mascot-prep-card" aria-hidden="true"></div>
         <h1 id="prep-card-title">Your preparation card</h1>
         <p id="card-source" class="hint" hidden></p>
+        <blockquote id="card-source-text" class="hint" hidden></blockquote>
         <p id="card-sayable" class="sayable" hidden></p>
         <dl class="facts prep-card-facts">
           <div><dt>Goal</dt><dd id="card-goal"></dd></div>

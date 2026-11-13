@@ -94,7 +94,8 @@ try {
     assert.equal(await ev('document.getElementById("card-opening").textContent'), "EDITED OP");
     assert.equal(await ev('document.getElementById("card-response").textContent'), "USER FINAL");
     assert.equal(await ev('document.getElementById("card-source").hidden'), false);
-    assert.ok((await ev('document.getElementById("card-source").textContent')).includes("Anna drafted"));
+    assert.ok((await ev('document.getElementById("card-source").textContent')).includes("your words"));
+    assert.ok((await ev('document.getElementById("card-source-text").textContent')).includes("Deadline ask"));
     assert.equal((await post("/__dump")).llmCalls.length, before);
     const dump = await post("/__dump");
     assert.ok(Object.keys(dump.kv).some((k) => k.startsWith("ready/sessions/")));
@@ -250,6 +251,9 @@ try {
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal(await ev('document.getElementById("prep-event").value'), "Interview tomorrow");
     assert.equal(await ev('document.getElementById("prep-goal").value'), "Senior role");
+    // Anna wrote these fields — the person must confirm or fix them.
+    assert.equal(await ev('document.getElementById("prep-source-note").hidden'), false);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
   });
 
   await ok("arrive entry payload opens ring, preselects feeling", async () => {
@@ -639,6 +643,28 @@ try {
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
+  await ok("prefilled source gates Prepare until confirmed or corrected", async () => {
+    // A model-written situation cannot become the card's source on its
+    // own: Prepare stays off until the person engages it.
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "ready",
+      context: "I manage 4 projects and my deadline is Friday at 3." } });
+    await cli("open", BASE);
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(400);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal((await post("/__dump")).llmCalls.length, 0);
+    // Correcting Anna's words makes them the person's own — gate lifts.
+    await cli("fill", "#prep-event", "I manage 3 projects and I added one deadline, due Friday.");
+    await sleep(300);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
+  });
+
   await ok("dayless deadline: prefill, ask, then draft in-window", async () => {
     await cli("open", "about:blank");
     await sleep(400);
@@ -655,6 +681,10 @@ try {
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal(await ev('document.getElementById("prep-event").value'),
       "I manage 3 projects and I added one deadline in the same week.");
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
+    await ev('document.getElementById("btn-prep-source-ok").click()');
+    await sleep(300);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
     await ev('document.getElementById("btn-prep-go").click()');
     await sleep(800);
     // The person's deadline names no day — the question is asked before any draft.

@@ -1,8 +1,8 @@
 {
   "name": "tool-papa-brume-htcxvfcr",
   "display_name": "Brume",
-  "version": "0.4.7",
-  "description": "Brume's optional breathing break. brume_reset starts a short guided break; brume_complete saves the session record and your reflection when the user says done. Brume's result \u2014 the conversation-preparation card \u2014 lives in the app window, where the person reads and saves it themselves.",
+  "version": "0.4.8",
+  "description": "Conversation preparation and an optional breathing break. brume_prepare starts a preparation \u2014 it asks when the deadline has no day, then hands the app window the situation as a prefill; the person confirms it there and the card is written from what they submit. brume_reset starts a short guided break; brume_complete saves its record when the user says done.",
   "author": "Brume",
   "category": "productivity",
   "license": "MIT",
@@ -12,6 +12,49 @@
     "aps.scope.user.write"
   ],
   "tools": [
+    {
+      "name": "brume_prepare",
+      "description": "Start a conversation preparation \u2014 Brume's primary result. Pass the user's situation in `situation` exactly as they stated it: their words, never additions you invented. If the situation names a deadline in the same week but no day or time, this returns needs_input with the question \u2014 ask the user, then call again with `deadline_day` from their answer (or `schedule_unspecified` if they choose to leave it unscheduled). Otherwise it returns open_window with an open_app_view payload: call open_app_view with it. The person reads the situation in the window, confirms or corrects it, and the card is written there from what they submit \u2014 this tool saves nothing, so never write card fields in chat.",
+      "timeout": 10,
+      "parameters": [
+        {
+          "name": "situation",
+          "type": "string",
+          "required": true,
+          "description": "Your faithful relay of what the user said about the upcoming conversation \u2014 their words, not additions."
+        },
+        {
+          "name": "goal",
+          "type": "string",
+          "required": false,
+          "description": "The outcome they said they want, if they said one."
+        },
+        {
+          "name": "key_point",
+          "type": "string",
+          "required": false,
+          "description": "Their main point, if they stated one."
+        },
+        {
+          "name": "preserve",
+          "type": "string",
+          "required": false,
+          "description": "A boundary or relationship quality they explicitly want to protect, if stated."
+        },
+        {
+          "name": "deadline_day",
+          "type": "string",
+          "required": false,
+          "description": "The day the user named for the deadline after you asked (e.g. 'Thursday'). Set only from their answer."
+        },
+        {
+          "name": "schedule_unspecified",
+          "type": "boolean",
+          "required": false,
+          "description": "True only if, after you asked which day, the user chose to leave it unscheduled."
+        }
+      ]
+    },
     {
       "name": "brume_reset",
       "description": "Optional breathing break, not Brume's result. Start (or continue) a short guided break, rendered verbatim to the user. Before calling, plan it yourself from what the user said: choose `pattern` (cyclic-sigh: 2s in, 1s top-up, 6s out \u2014 right before something tense or when keyed up; long-exhale: 4s in, 6s out \u2014 a gentle reset between tasks; box: 4s in, 4s hold, 4s out, 4s hold \u2014 getting ready for focused work; steady: 5.5s in, 5.5s out \u2014 winding down) and `seconds` (60, 90, 120 or 180; 60 if they have little time), and write `title`, `opening`, `cues` and `why`. Describe only the rhythm and how it fits their moment \u2014 never effects on the body, brain, stress, sleep or health. The returned script is shown verbatim; do not restate it. If the user asks to change pace mid-break, call again with `pace` and `remaining_seconds` (the plan is kept). When the user says they are done, call brume_complete.",

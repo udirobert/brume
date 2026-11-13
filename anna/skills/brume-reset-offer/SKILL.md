@@ -33,10 +33,12 @@ prepared conversation, and the offer should name one.
 
 - One short invitation, in your own voice, e.g.
   *"Want to prepare what you'll say? Brume can draft a card for it."*
-- If the user says **yes**, call `open_app_view` with `app_id` 582 and
-  payload `{"context":"<their situation>","mode":"ready","goal":"<their
-  desired outcome, if stated>"}`. Pass only what they told you — never
-  invent facts, dates, counts, or goals to fill the payload.
+- If the user says **yes**, call `brume_prepare` with `situation` =
+  their words about the conversation, plus `goal`/`key_point`/`preserve`
+  only when they stated them — never invent facts, dates, counts, or
+  goals. Follow what it returns: ask the `needs_input` question and call
+  again with the answer, or `open_app_view` with the `open_window`
+  payload.
 - If the user says **"not now"**, declines, or simply moves on: accept
   it completely. Do not re-offer in the same session, do not follow up,
   do not keep score.

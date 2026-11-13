@@ -218,6 +218,69 @@ class InvokeContract(unittest.TestCase):
 
 
 
+REVIEWER_SENTENCE = "I manage 3 projects and I added one deadline in the same week."
+
+
+class PrepareInterview(unittest.TestCase):
+    """brume_prepare is the deterministic front end: it asks for the
+    missing day or hands the window a prefill payload. It saves nothing
+    and returns no card fields."""
+    @classmethod
+    def setUpClass(cls):
+        with open(FIXTURE, encoding="utf-8") as f:
+            cls.cases = json.load(f)
+
+    def test_deadline_day_fixture_parity(self):
+        # Same cases the node smoke test runs against scheduleQuestion.
+        for tc in self.cases["deadline_day"]:
+            with self.subTest(tc["name"]):
+                got = bp._schedule_question(tc["source"])
+                self.assertEqual(got is not None, tc["expect"])
+
+    def test_reviewer_sentence_asks_for_day(self):
+        out = bp.invoke_prepare({"situation": REVIEWER_SENTENCE}, {})
+        self.assertTrue(out["success"])
+        self.assertEqual(out["data"]["status"], "needs_input")
+        self.assertEqual(out["data"]["missing"], "deadline_day")
+        self.assertIn("which day", out["data"]["question"].lower())
+
+    def test_answered_day_opens_window_with_context(self):
+        out = bp.invoke_prepare(
+            {"situation": REVIEWER_SENTENCE, "deadline_day": "Thursday"}, {})
+        self.assertTrue(out["success"])
+        self.assertEqual(out["data"]["status"], "open_window")
+        ctx = out["data"]["open_app_view"]["context"]
+        self.assertIn("3 projects", ctx)
+        self.assertIn("Thursday", ctx)
+
+    def test_no_deadline_opens_window_directly(self):
+        out = bp.invoke_prepare(
+            {"situation": "A one-on-one about next quarter's workload",
+             "goal": "Agree on a realistic timeline",
+             "key_point": "The deadline needs two more people"}, {})
+        self.assertEqual(out["data"]["status"], "open_window")
+        payload = out["data"]["open_app_view"]
+        self.assertEqual(payload["goal"], "Agree on a realistic timeline")
+        self.assertEqual(payload["key_point"], "The deadline needs two more people")
+
+    def test_schedule_unspecified_opens_window(self):
+        out = bp.invoke_prepare(
+            {"situation": REVIEWER_SENTENCE, "schedule_unspecified": True}, {})
+        self.assertEqual(out["data"]["status"], "open_window")
+        self.assertNotIn("Deadline day", out["data"]["open_app_view"]["context"])
+
+    def test_situation_required(self):
+        with self.assertRaises(LookupError):
+            bp.invoke_prepare({}, {})
+
+    def test_returns_no_card_fields(self):
+        out = bp.invoke_prepare(
+            {"situation": "A one-on-one about workload"}, {})
+        for banned in ("opening", "approach", "objection", "response",
+                       "nextStep", "card"):
+            self.assertNotIn(banned, out["data"])
+
+
 class ProtocolManifest(unittest.TestCase):
     def test_manifest_json_matches_describe(self):
         here = os.path.dirname(os.path.abspath(__file__))

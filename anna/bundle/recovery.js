@@ -43,6 +43,8 @@ function validPrep(p) {
   if (p.wordingStyle !== undefined && !["natural", "concise", "direct"].includes(p.wordingStyle)) return false;
   if (p.planSource !== undefined && p.planSource !== null
     && !["ai", "anna-handoff"].includes(p.planSource)) return false;
+  if (p.sourceProvenance !== undefined
+    && !["typed", "handoff", "confirmed", "edited"].includes(p.sourceProvenance)) return false;
   if (typeof p.clarificationUsed !== "boolean") return false;
   if (!str(p.question, 180)) return false;
   if (!str(p.clarification, 600)) return false;

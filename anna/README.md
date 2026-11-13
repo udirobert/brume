@@ -130,14 +130,19 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
    check against the person's own baseline. The home control does not
    chart those times. The check screen says it is not a medical test.
 
-Chat (`#brume …`): `brume_reset` and `brume_complete` are the optional
-breathing break — the only tools, and not the product's result. The
-preparation card lives in the window: the person reads the source and
-the draft and saves it themselves. No card is saved from chat, on
-purpose — every tool argument is model-written and the protocol offers
-no transcript to check it against, so a chat-saved card could never be
-faithful. **Anna's own model writes the plan and the reflection as tool
-arguments**; the tool validates and filters them, renders verbatim
+Chat (`#brume …`): `brume_prepare` is the preparation's deterministic
+front end — it detects a dayless same-week deadline (`needs_input`, so
+the model asks the person) and otherwise returns an `open_app_view`
+prefill payload; it saves nothing and writes no card fields.
+`brume_reset` and `brume_complete` are the optional breathing break.
+The preparation card lives in the window: prefilled fields are marked
+as Anna's words and gate Prepare until the person confirms or edits
+them, and the saved card quotes the source it was drafted from. No card
+is saved from chat, on purpose — every tool argument is model-written
+and the protocol offers no transcript to check it against, so a
+chat-saved card could never be faithful. **Anna's own model writes the
+plan and the reflection as tool arguments**; the tool validates and
+filters them, renders verbatim
 `_display` blocks, and writes records. The tool has no sampling
 capability on purpose (see "Platform gotchas").
 
@@ -210,10 +215,13 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
    `tool_papa_brume_htcxvfcr__brume_reset`, not `exec_run`).
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
-   Open the preparation workspace. The workspace must ask which day the
-   card should name before showing a draft; nothing may say 4, four,
-   Friday, or a clock time. This is the reviewer's case — it has to pass
-   before any other chat.
+   `brume_prepare` must return `needs_input` — the model asks which day
+   in chat before any window or draft. Answer with a day; the tool
+   returns `open_window`, the window opens prefilled and marked as
+   Anna's words, and Prepare stays off until the person confirms or
+   corrects it. The card must quote the situation it was drafted from;
+   nothing may say 4, four, Friday, or a clock time. This is the
+   reviewer's case — it has to pass before any other chat.
 3. Same scenario, asked in chat instead ("put the card in chat"): the
    model must open the workspace — no chat tool saves a card — and the
    ask-then-draft flow still runs.

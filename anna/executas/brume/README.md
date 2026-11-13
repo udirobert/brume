@@ -16,6 +16,14 @@ Cloud Agent, 2026-10-19). `host_capabilities` = `aps.kv`,
 manifest's `storage` block, or publish fails with "storage declaration
 drift").
 
+- `brume_prepare` — the preparation's deterministic front end.
+  `situation` (required: the model's relay of the user's words) plus
+  optional `goal`, `key_point`, `preserve`. A dayless same-week deadline
+  returns `needs_input` (`missing: "deadline_day"`, the question to
+  ask); retry with `deadline_day` from the answer or
+  `schedule_unspecified: true`. Otherwise returns `open_window` with the
+  `open_app_view` payload — the person confirms or corrects the
+  situation in the window and the card is written there. Saves nothing.
 - `brume_reset` — plan args from the model: `context`, `pattern`
   (`cyclic-sigh` | `long-exhale` | `box` | `steady`), `seconds`
   (60/90/120/180), `title`, `opening`, `cues` (posture/attention only),
@@ -33,8 +41,9 @@ drift").
 There is deliberately no card-saving tool: every tool argument is
 model-written and the protocol offers the plugin no transcript, so a
 card saved from chat could never be checked against what the user
-actually said. The preparation card lives in the app window, where the
-person reads the source and the draft and saves it themselves.
+actually said. `brume_prepare` therefore returns routing, not cards —
+the card lives in the app window, where the person confirms the source
+and saves it themselves.
 
 `manifest.json` here is the exported `describe` output; `anna-app apps
 publish` syncs it as the protocol manifest (`test_plan.py` asserts it

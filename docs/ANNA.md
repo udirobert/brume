@@ -1448,3 +1448,52 @@ Each context now states the plan's facts (`test/browser-qa.mjs`): the
 reviewer sentence is unchanged, the rest name "two more people" in the
 event or goal. Full suite 34/34 green — first clean run since the
 card-completeness gate existed.
+
+### 12.30 The agent needs a result it can produce (2026-11-13, local, unpublished)
+
+The next review pass found the two holes the 12.28 design traded for:
+
+- **The chat surface was breathing-only.** With `brume_prepare` gone, the
+  only tools were the break (`brume_reset`, `brume_complete`) — and the
+  catalogue described them as exactly that. The review scores the server
+  log of the declared result, and the only successful tool result a chat
+  could produce was a breathing session — "a timer with an AI line."
+- **Prefill had become the unchecked oracle.** `open_app_view` prefills
+  model-written `context`/`goal`/`key_point` into the form, and the
+  faithfulness gate checks the draft against those same fields. Invented
+  prefill produced a "grounded" draft: the invention moved from the card
+  into the situation box, and a reviewer who reads the result instead of
+  editing the form would never see it.
+
+`brume_prepare` returns in 0.4.8 — as a deterministic front end, not a
+card-saver:
+
+- `situation` (the model's relay of the user's words) + optional
+  `goal`/`key_point`/`preserve`. A dayless same-week deadline →
+  `needs_input` with the question — the reviewer sentence now produces
+  the ask in chat, as a logged tool result, before any window opens.
+  Retry with `deadline_day` or `schedule_unspecified` → `open_window`
+  with the `open_app_view` payload. `_schedule_question` is a 1:1 port
+  of `scheduleQuestion` in `bundle/preparation.js`, pinned by the
+  `deadline_day` fixture cases on both sides. It saves nothing and
+  returns no card fields — a state machine, not a formatter.
+- In the window, prefilled fields are marked: `prep.sourceProvenance`
+  (`typed` | `handoff` | `confirmed` | `edited`). Handoff prefill shows
+  "Anna wrote this from your message" and disables Prepare until the
+  person edits a field or taps "This is what I said" — a card can no
+  longer exist without the person engaging the source. `recovery.js`
+  validates the field; old checkpoints default to `typed`.
+- The card carries its source: a "Prepared from" block quotes the
+  submitted situation — "your words", "Anna's summary… you confirmed",
+  or "you corrected Anna's summary" — so an invented situation appears
+  on the result itself instead of hiding upstream. Stored on the card
+  record and re-rendered by `showLastPreparation`.
+
+The ceiling is honestly stated: nothing in this protocol can compare
+model-written prefill to the user's message, so the product now makes
+the comparison the person's job — structurally required before Prepare,
+and legible on the card after. Verified: `test_plan` 23 (interview
+contract + fixture parity), `npm test` 152 + smoke, browser-qa 35/35
+(new gate case, confirm path in the dayless flow, card-source
+assertions), `anna-app validate --strict`. NOT done: 0.4.8 binaries,
+publish cut, tier-3, resubmit.

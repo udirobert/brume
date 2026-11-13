@@ -53,9 +53,13 @@ Rules:
   change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
   owns the second contract — the faithfulness spans and the deadline-day
   question — covered by the `faithfulness` and `deadline_day` sections of
-  the same fixture. The plugin deliberately has no card tool: every tool
-  argument is model-written and there is no transcript to check it
-  against, so cards are saved only in the window.
+  the same fixture; the plugin's `_schedule_question` ports the question.
+  `brume_prepare` is a deterministic front end, not a card tool: every
+  tool argument is model-written and there is no transcript to check it
+  against, so it only detects the dayless-deadline ambiguity and hands
+  back an `open_app_view` payload — cards are saved only in the window,
+  where prefilled text gates Prepare until the person confirms or edits
+  (`sourceProvenance` in `bundle/app.js`) and the card quotes its source.
 - After changing the plugin's `describe`, regenerate
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the

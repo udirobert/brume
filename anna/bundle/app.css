@@ -379,6 +379,10 @@ textarea:disabled, input:disabled { opacity: 0.55; }
 .moment-list button { min-height: 44px; text-align: left; padding: 10px 14px; border-radius: var(--brume-radius); border: 1px solid hsl(var(--brume-border)); background: hsl(var(--brume-surface) / 0.9); cursor: pointer; font: inherit; }
 .moment-list.compact { flex-direction: row; flex-wrap: wrap; }
 .moment-list.compact button { min-height: 44px; padding: 6px 12px; font-size: 0.85rem; }
+.source-note { margin: 10px 0; padding: 10px 14px; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface) / 0.7); }
+.source-note .hint { margin: 0 0 8px; }
+.source-note button { min-height: 44px; padding: 8px 14px; font: inherit; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface)); cursor: pointer; }
+#card-source-text { margin: 4px 0 10px; font-style: normal; }
 .quiet-details { margin: 14px 0; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); padding: 10px 14px; background: hsl(var(--brume-surface) / 0.7); }
 .quiet-details summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; }
 .quiet-details select, .quiet-details input { min-height: 44px; margin: 8px 0; padding: 6px 10px; font: inherit; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface)); }

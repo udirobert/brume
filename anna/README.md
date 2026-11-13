@@ -10,28 +10,27 @@ should treat as the product. A basic breathing plan remains available
 when the model is down. Unfinished tasks checkpoint to user storage and
 resume on reopen.
 
-Published review pin (2026-11-07): **v0.4.2** (version_id=1994, cut by
-`anna-app apps publish --bump patch` and re-pinned with
+Review pin (still v0.4.2 until resubmit): **v0.4.2** (version_id=1994, cut
+by `anna-app apps publish --bump patch` and re-pinned with
 `apps submit-review`; tool frozen at 0.4.5/executa_version 1012,
 reset-offer skill at 767). That pin is the review-feedback release plus
 **Arrive**: a feeling ring proposes exactly one small act — Scatter or
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Local source (2026-11-13), **not published**: the preparation card is
-the primary result, and it is produced in chat as well as in the window.
-The chat tool asks the person for every fact a draft would state — the
-value is masked in the question — and saves the card from their answers,
-so no model-written prose is ever the card's oracle (`docs/ANNA.md`
-§12.31). A draft may not add a count, a weekday, or a clock time the
-person did not write (§12.26). Source tool version is **0.4.9**, app
-**0.4.7**. The published binaries are still **0.4.5**
-(GitHub release `brume-executa-v0.4.5`; the darwin-arm64 matrix leg
-moved to macos-15 after GitHub retired macos-14). Run the Brume Executa
-Binaries workflow, download the four archives, and pass the
-three-projects Cloud Agent case before the next `apps publish`. App id
-582, slug `brume`, tool id `tool-papa-brume-htcxvfcr`. Product context
-and the full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
+Latest cut (2026-11-13): **app v0.4.7** (version_id=2272) with tool
+**0.4.9** frozen at executa_version 1103 and the reset-offer skill at
+1098. The preparation card is the primary result, produced in chat as
+well as in the window: the chat tool asks the person for every fact a
+draft would state — the value is masked in the question — and saves the
+card from their answers, so no model-written prose is ever the card's
+oracle (`docs/ANNA.md` §12.31). A draft may not add a count, a weekday,
+or a clock time the person did not write (§12.26). Binaries **0.4.9**
+are published (GitHub release `brume-executa-v0.4.9`, all four
+platforms). Outstanding before resubmit: the tier-3 fresh-install Cloud
+Agent run, then `anna-app apps submit-review brume`. App id 582, slug
+`brume`, tool id `tool-papa-brume-htcxvfcr`. Product context and the
+full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
 ## Layout
 

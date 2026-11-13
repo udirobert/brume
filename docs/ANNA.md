@@ -167,9 +167,10 @@ Checked against https://anna.partners/developers (all pages are Markdown):
   UX but a fallback-only run will likely not count toward MAU.
 - **Grant economics (official rules, confirmed).** Tiers: 200 MAU $80
   launch/$50 monthly ... 20,000+ $6,000/$5,000; highest tier only.
-  Qualification window Sep 1-Nov 30 2026; since Oct 2026 grants computed
-  per-builder-portfolio (one grant/builder/month, users deduped across a
-  builder's apps). Revenue share separate: 70% of eligible usage profit,
+  Since Oct 2026 grants are computed per-builder-portfolio (one
+  grant/builder/month, users deduped across a builder's apps). The
+  qualification window was Sep 1–Nov 30 2026 and is now **March 31, 2027**
+  (§12.32). Revenue share separate: 70% of eligible usage profit,
   $50 minimum.
 - **Store landscape confirmed:** 35 apps total, install counts single
   digits to ~48. Zero breathwork/meditation/calm/sleep apps. Store browse
@@ -391,10 +392,11 @@ not invented metric goals.
   views, failed or cancelled runs, bots, and developer/team/QA accounts
   don't count. BYOK, free credits and paid credits all count.
 - Tiers: E 200+ MAU $50/mo · D 500+ $100 · C 1,000+ $200 · B 4,000+ $1,000
-  · A 10,000+ $2,500 · S 20,000+ $5,000. Qualification window ends
-  **2026-11-30**; since October grants are per builder portfolio (users
-  deduped across a builder's apps). One meaningful improvement per month
-  is required to keep receiving a grant.
+  · A 10,000+ $2,500 · S 20,000+ $5,000. Since October grants are per
+  builder portfolio (users deduped across a builder's apps). One
+  meaningful improvement per month is required to keep receiving a grant.
+  The window that ended **2026-11-30** was extended to **2027-03-31**
+  (§12.32): each calendar month is still its own measurement cycle.
 - September: only two builders qualified (both Tier D, 500+).
 - Review criteria include an **"AI-Native Core: primary value must depend
   on AI reasoning or workflows. Superficial chatbot add-ons do not
@@ -584,8 +586,9 @@ published or tier-3 tested.
 8. ~~Submit 0.3.x for review~~ — **0.3.2 (tool 0.4.4) submitted
    2026-10-19, rejected.** The local candidate in §12.6 is the resubmission
    path: publish → tier-3 Cloud Agent run → submit. Next after that:
-   distribution — store browse alone won't reach 200 MAU before
-   2026-11-30.
+   distribution — store browse alone won't reach 200 MAU. The Nov 30
+   cutoff this note was written against was later extended to 2027-03-31
+   (§12.32).
 
 ### 2026-11-02 — web app alignment
 
@@ -1583,3 +1586,46 @@ is not installed in this environment — and the binaries, the publish,
 the tier-3 fresh install and the resubmit. The three-projects sentence
 must now be answered by the *person* in chat, and the saved card must
 show their values.
+
+### 12.32 Qualification window extended to 31 March 2027 (2026-11-13)
+
+Community announcement on the Founding Builder thread
+([topic 205](https://forum.anna.partners/t/turn-your-ai-agents-apps-into-recurring-monthly-grants-join-the-anna-ai-os-founding-builder-program-up-to-80k-month-pool/205)):
+
+- New deadline: **March 31, 2027**. A builder can qualify in any calendar
+  month before that date. Each month stays an independent measurement
+  cycle.
+- Portfolio calculation rules are unchanged, and the marketing-support
+  initiatives stay in effect. Outstanding apps still get dedicated
+  marketing and featured promotion from the Anna team.
+
+The extension moves the MAU clock. It does not change review, the
+qualified-run definition, or the AI-native rule in §12.1.
+
+### 12.33 The cut is published — app v0.4.7, tool 0.4.9 (2026-11-13)
+
+The 12.31 change shipped the same day it was written. Commit `812c7d5`
+(24 files) went to `main`; the **Brume Executa Binaries** workflow
+(run 43497302363) built and smoked all four platforms and published
+GitHub release `brume-executa-v0.4.9`; the four archives were pulled
+into `executas/brume/dist/` and every `.sha256` verified. `anna-app
+apps publish` (no bump — `app.json` already declared 0.4.7) registered
+the bundled executa unchanged at v0.4.9, synced the protocol manifest,
+uploaded the four binary artifacts (`executa_version=1103`), froze the
+reset-offer skill at 1098 (v1.0.1), and cut **app v0.4.7**
+(`version_id=2272`) — now the server's `latest`. App status stays
+`rejected`; the review pin is still v0.4.2 until `submit-review`.
+
+Verified this round that §12.31 could not: `npm run test:browser`
+passed **35/35** on the fake host, including the reviewer-case test —
+"I manage 3 projects and I added one deadline in the same week" keeps
+three, drops four/Friday/a clock time, and Anna's chat reading gates
+Prepare until the person writes the situation.
+
+Still outstanding, in order: the tier-3 fresh-install Cloud Agent
+checklist (`anna/README.md`, each step a new chat — install v0.4.7,
+confirm `brume_prepare` is callable, run the three-projects sentence,
+the chat-card variant, reset/reflect/arrive/alertness), then
+`anna-app apps submit-review brume` to re-pin the review to v0.4.7 /
+tool 0.4.9. `apps release` is refused while status is rejected — the
+console path is submit-review → approval → release.

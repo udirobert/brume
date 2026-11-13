@@ -1,8 +1,10 @@
 # Distribution opportunities (2026-11-02)
 
-Context: Anna Founding Builder Program needs ~200 MAU by 2026-11-30; store
-browse alone won't get there. Meanwhile the web app and the Anna toolset are
-the same product — "agent-friendly, not agentic" (see `docs/AGENTIC.md`).
+Context: Anna Founding Builder Program needs ~200 MAU in a calendar month
+before 2027-03-31 (the Nov 30 2026 cutoff was extended; see `docs/ANNA.md`
+§12.32). Store browse alone won't get there. Meanwhile the web app and the
+Anna toolset are the same product — "agent-friendly, not agentic" (see
+`docs/AGENTIC.md`).
 For competitive research on companion apps (Shmoody, Finch, Voidpet), see
 `docs/MASCOT-RESEARCH.md`.
 
@@ -29,7 +31,7 @@ For competitive research on companion apps (Shmoody, Finch, Voidpet), see
 - The story "we removed the camera, the streaks and the claims from our
   own wellness app" is publishable as-is and drives qualified traffic.
 
-### 4. Product Hunt — for the Nov 30 MAU push
+### 4. Product Hunt — for a monthly MAU push
 - "A little room to breathe" + honest positioning is PH-friendly; a
   middling launch still sends a few hundred users.
 - Time it late November; seed with a DEV post first.
@@ -87,6 +89,7 @@ For competitive research on companion apps (Shmoody, Finch, Voidpet), see
 2. **Next:** DEV post telling the honest-repositioning story ("we removed
    the camera, the streaks and the claims from our own wellness app") —
    free, and seeds the Product Hunt launch.
-3. **Near Nov 30:** Product Hunt launch for the MAU push.
+3. **Before a measurement month:** Product Hunt launch for the MAU push.
+   The old Nov 30 2026 deadline no longer binds it.
 4. **Later:** Chrome new-tab extension (one-time $5 store fee — owner's
    call); Capacitor stores are paid too, so they wait.

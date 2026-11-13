@@ -420,9 +420,11 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. Published binaries
-  are still 0.4.5; do not publish until the 0.4.7 binaries exist and the
-  three-projects Cloud Agent case passes (`docs/ANNA.md` §12.26–12.28).
+  one sayable paragraph. Binaries **0.4.9** are published
+  (`brume-executa-v0.4.9`) and app **v0.4.7** is cut (version_id=2272,
+  tool frozen at executa_version 1103) — the remaining gate is the
+  three-projects Cloud Agent case, then `apps submit-review`
+  (`docs/ANNA.md` §12.31, §12.33).
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -431,6 +433,8 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   storage call sites `await` the SDK promise; `saveCompletionRecord`
   dedupes summary folds by `completedAt`.
 - Tests: `npm test` = smoke + `node --test test/preparation.mjs
-  test/recovery.mjs`. Browser QA via `test/fake-host-server.mjs`
-  (scripted llm, persistent KV) + agent-browser. Verified locally only —
-  not published, no tier-3 run.
+  test/recovery.mjs test/session-storage.mjs test/experience.mjs
+  test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
+  (fake host :4618 + agent-browser, session `brume-preparation-qa`) —
+  35/35 on the 0.4.9 cut. Published as app v0.4.7 / tool 0.4.9;
+  tier-3 fresh-install run and resubmit still outstanding.

@@ -254,7 +254,9 @@ try {
     assert.equal(await ev('document.getElementById("prep-event").value'), "");
     assert.equal(await ev('document.getElementById("prep-goal").value'), "");
     assert.equal(await ev('document.getElementById("prep-source-note").hidden'), false);
-    assert.ok((await ev('document.getElementById("prep-source-quote").textContent')).includes("Interview tomorrow"));
+    const q7 = await ev('document.getElementById("prep-source-quote").textContent');
+    assert.ok(q7.includes("Interview"), q7);
+    assert.equal(q7.includes("tomorrow"), false, "relay fact shown unmasked");
     assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
     // Writing it unlocks Prepare — the person, not Anna, is the source.
     await ev(`(() => { const el = document.getElementById("prep-event");
@@ -636,7 +638,9 @@ try {
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal(await ev('document.getElementById("prep-event").value'), "");
     assert.equal(await ev('document.getElementById("prep-goal").value'), "");
-    assert.ok((await ev('document.getElementById("prep-source-quote").textContent')).includes("Interview next week"));
+    const q22 = await ev('document.getElementById("prep-source-quote").textContent');
+    assert.ok(q22.includes("Interview"), q22);
+    assert.equal(q22.includes("next week"), false, "relay span shown unmasked");
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
@@ -712,102 +716,86 @@ try {
     assert.equal((await post("/__dump")).llmCalls.length, 2);
   });
 
-  await ok("brume_prepare interview: person writes every field, draft stays masked reference", async () => {
-    // The tool's draft crosses as data, never as fact: the window shows
-    // each field with its facts masked and the person writes the card.
+  await ok("brume_prepare handoff: masked suggestion, person writes, model drafts the card", async () => {
+    // The tool relays the situation; the window shows it masked as a
+    // suggestion, the person writes their own words, and the card is
+    // drafted from those words by the window's model call — the same
+    // pipeline as the in-app Prepare button.
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
     await post("/__entry", { payload: { mode: "ready",
-      context: "I manage 3 projects and I added one deadline in the same week.",
+      context: "Tell Priya you manage 3 projects and a new deadline in the same week.",
       goal: "Get the deadline moved",
-      interview: { fields: {
-        opening: "Tell Priya you manage four projects and a new deadline in the same week.",
-        keyPoint: "Protect the relationship with the team.",
-        approach: "Open with the week as it is.",
-        objection: "We cannot take that on right now.",
-        response: "Then agree what slips and by when.",
-        nextStep: "Name the day you will flag the new deadline.",
-      } } } });
+      key_point: "Friday at 3pm",
+      preserve: "Keep it calm." } });
     await cli("open", BASE);
     await sleep(1200);
-    assert.deepEqual(await ev(screens), ["screen-prep-interview"]);
-    // Anna's reading is a suggestion only; the draft is masked reference.
-    assert.equal(await ev('document.getElementById("prep-interview-source").hidden'), false);
-    const fields = await ev('JSON.stringify([...document.querySelectorAll("#prep-interview-list textarea")].map(t => t.dataset.field))');
-    assert.deepEqual(fields, ["opening", "keyPoint", "approach", "objection", "response", "nextStep"]);
-    const draftText = await ev('[...document.querySelectorAll("#prep-interview-list .hint")].map(p => p.textContent).join("\\n")');
-    for (const leaked of ["four", "Friday", "Priya"]) {
-      // "Priya" is a name, not a scanned fact — it stays in the masked
-      // draft as reference but can never reach the card.
-      if (leaked !== "Priya") assert.equal(draftText.includes(leaked), false, leaked);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    // The reading is on screen only masked — no fact value, no name.
+    assert.equal(await ev('document.getElementById("prep-source-note").hidden'), false);
+    const quote = await ev('document.getElementById("prep-source-quote").textContent');
+    for (const leaked of ["Priya", "3 projects", "Friday", "3pm"]) {
+      assert.equal(quote.includes(leaked), false, leaked);
     }
-    assert.ok(draftText.includes("…"));
-    // The person writes every part — none of the model's sentences.
-    await ev(`(() => {
-      const set = (f, v) => { const i = document.querySelector('#prep-interview-list textarea[data-field="' + f + '"]'); i.value = v; i.dispatchEvent(new Event("input", {bubbles:true})); };
-      set("opening", "I wanted to talk through the timeline together.");
-      set("keyPoint", "The deadline is the thing to protect.");
-      set("approach", "Lead with what changed this week.");
-      set("objection", "We are already stretched.");
-      set("response", "Then we pick what slips together.");
-      set("nextStep", "I will flag it on Thursday.");
-      return true; })()`);
+    assert.ok(quote.includes("…"));
+    // Prepare stays off until the person writes their own situation.
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
+    await ev('document.getElementById("prep-event").value = "I need to push back on the timeline this week — we need two more people."');
+    await ev('document.getElementById("prep-event").dispatchEvent(new Event("input", {bubbles:true}))');
     await sleep(300);
-    await ev('document.getElementById("btn-prep-interview-go").click()');
-    await sleep(600);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
+    const before = (await post("/__dump")).llmCalls.length;
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(1500);
+    // The window's model drafted the card — an llm.complete ran on this
+    // path, and the faithfulness gate withheld what the source lacks.
     assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
-    // No model call happened — the card is entirely the person's typing.
-    assert.equal((await post("/__dump")).llmCalls.length, 0);
+    assert.ok((await post("/__dump")).llmCalls.length > before, "no model call on the chat path");
     await ev('document.getElementById("btn-prep-finish").click()');
     await sleep(1200);
     assert.deepEqual(await ev(screens), ["screen-prep-card"]);
     const rec = (await post("/__dump")).kv["ready/last"];
     assert.ok(rec, "ready/last missing");
-    assert.ok(rec.opening.includes("timeline together"), rec.opening);
-    for (const banned of ["four", "Priya", "Friday"]) {
-      assert.equal(JSON.stringify(rec.interview?.written || {}).includes(banned), false, banned);
-      assert.equal((rec.opening + rec.preparedKeyPoint + rec.approach + rec.objection + rec.response + rec.nextStep).includes(banned), false, banned);
+    assert.equal(rec.planSource, "ai");
+    assert.ok(rec.planModel, "card has no model provenance");
+    assert.equal(rec.event, "I need to push back on the timeline this week — we need two more people.");
+    assert.equal(rec.sourceProvenance !== "handoff", true);
+    // None of the relay's inventions reached the card.
+    const cardText = [rec.opening, rec.preparedKeyPoint, rec.approach, rec.objection, rec.response, rec.nextStep].join(" ");
+    for (const banned of ["Priya", "Friday", "3pm"]) {
+      assert.equal(cardText.includes(banned), false, banned);
     }
-    assert.equal(rec.sourceProvenance, "answered");
-    assert.equal(rec.interview.deadlineDay, null);
-    assert.ok(rec.interview, "interview audit missing");
-    assert.ok(rec.interview.draft.opening.includes("four projects"), "audit keeps the draft for comparison");
-    assert.ok(rec.interview.written.opening.includes("timeline together"));
   });
 
-  await ok("interview: fact-free draft still requires the person's own words", async () => {
-    // No scanned fact means no masked values — but the draft is still
-    // model prose, so the person still writes every part.
+  await ok("brume_prepare handoff: fact-free relay still needs the person's own words", async () => {
+    // A relay with no scanned fact is no different: Prepare stays off
+    // until the person writes, then the model drafts as usual.
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
     await post("/__entry", { payload: { mode: "ready",
-      context: "Prep for a panel.",
-      interview: { fields: {
-        opening: "Tell Priya the panel wants the roadmap story.",
-        keyPoint: "Answer the first question fully.",
-      } } } });
+      context: "Prep for a panel with Priya.",
+      key_point: "Answer the first question fully." } });
     await cli("open", BASE);
     await sleep(1200);
-    assert.deepEqual(await ev(screens), ["screen-prep-interview"]);
-    // Continue with nothing written is refused — model prose can't pass.
-    await ev('document.getElementById("btn-prep-interview-go").click()');
-    await sleep(400);
-    assert.deepEqual(await ev(screens), ["screen-prep-interview"]);
-    await ev(`(() => {
-      const set = (f, v) => { const i = document.querySelector('#prep-interview-list textarea[data-field="' + f + '"]'); i.value = v; i.dispatchEvent(new Event("input", {bubbles:true})); };
-      set("opening", "The panel asked about the roadmap.");
-      set("keyPoint", "Give the full answer first.");
-      return true; })()`);
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
+    const quote = await ev('document.getElementById("prep-source-quote").textContent');
+    assert.equal(quote.includes("Priya"), false, "name leaked into the masked reading");
+    await ev('document.getElementById("prep-event").value = "The panel asked about the roadmap this week — we need two more people."');
+    await ev('document.getElementById("prep-event").dispatchEvent(new Event("input", {bubbles:true}))');
     await sleep(300);
-    await ev('document.getElementById("btn-prep-interview-go").click()');
-    await sleep(600);
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(1500);
     assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
-    assert.equal(await ev('document.getElementById("prep-opening").value'), "The panel asked about the roadmap.");
-    assert.equal(await ev('document.getElementById("prep-keypoint-edit").value'), "Give the full answer first.");
-    // The model's name never reached the plan.
-    assert.equal((await ev('document.getElementById("prep-opening").value')).includes("Priya"), false);
+    await ev('document.getElementById("btn-prep-finish").click()');
+    await sleep(1200);
+    const rec = (await post("/__dump")).kv["ready/last"];
+    assert.ok(rec, "ready/last missing");
+    assert.equal(rec.planSource, "ai");
+    const cardText = [rec.opening, rec.preparedKeyPoint, rec.approach, rec.objection, rec.response, rec.nextStep].join(" ");
+    assert.equal(cardText.includes("Priya"), false, "relay name reached the card");
   });
 
   await ok("startup visible while connect hangs; failure retries once", async () => {

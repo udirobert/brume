@@ -8,14 +8,14 @@ const MAX_ID_LEN = 128;
 const MAX_DATA_BYTES = 120_000;
 const MAX_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
 
-const READY_STAGES = ["input", "clarify", "interview", "plan", "practice", "feedback", "card"];
+const READY_STAGES = ["input", "clarify", "plan", "practice", "feedback", "card"];
 const READY_KINDS = ["interview", "presentation", "hard-conversation", "meeting"];
 const PREP_BUSY = ["preparing", "rehearsing"];
 const INPUT_TYPES = ["touch", "mouse", "keyboard"];
 
 const SCREENS = {
   reset: ["input", "planning", "plan", "session", "checkin", "result"],
-  ready: ["input", "clarify", "interview", "plan", "practice", "feedback", "card", "pause"],
+  ready: ["input", "clarify", "plan", "practice", "feedback", "card", "pause"],
   alert: ["setup", "countdown", "test", "result"],
 };
 
@@ -67,26 +67,6 @@ function validPrep(p) {
     if (!["adjustment", "response", "nextStep"].every((k) => str(p.feedback[k], 1000))) return false;
   }
   if (p.stage === "feedback" && !p.feedback) return false;
-  if (p.stage === "interview" && !isObj(p.interview)) return false;
-  if (p.interview !== undefined && p.interview !== null) {
-    if (!isObj(p.interview)) return false;
-    if (!isObj(p.interview.draft)) return false;
-    if (!isObj(p.interview.written)) return false;
-    for (const bag of [p.interview.draft, p.interview.written]) {
-      for (const v of Object.values(bag)) {
-        if (!str(v, 1000)) return false;
-      }
-    }
-    if (p.interview.day !== undefined && !str(p.interview.day, 200)) return false;
-    if (p.interview.schedule !== undefined && !str(p.interview.schedule, 400)) return false;
-  }
-  if (p.interviewAudit !== undefined && p.interviewAudit !== null) {
-    if (!isObj(p.interviewAudit)) return false;
-    if (!isObj(p.interviewAudit.draft) || !isObj(p.interviewAudit.written)) return false;
-    if (p.interviewAudit.deadlineDay !== undefined
-      && p.interviewAudit.deadlineDay !== null
-      && !str(p.interviewAudit.deadlineDay, 200)) return false;
-  }
   if (p.finalResponse !== null && !str(p.finalResponse, 1000)) return false;
   if (p.finalNextStep !== null && !str(p.finalNextStep, 1000)) return false;
   return true;

@@ -221,45 +221,13 @@ class InvokeContract(unittest.TestCase):
 REVIEWER_SENTENCE = "I manage 3 projects and I added one deadline in the same week."
 
 
-class FactScanner(unittest.TestCase):
-    """The scanner is a 1:1 port of scanFacts in bundle/preparation.js —
-    the same fixture the node smoke test runs against the JS side."""
-
-    @classmethod
-    def setUpClass(cls):
-        with open(FIXTURE, encoding="utf-8") as f:
-            cls.cases = json.load(f)
-
-    def test_fact_scan_fixture_parity(self):
-        for tc in self.cases["fact_scan"]:
-            with self.subTest(tc["name"]):
-                got = [
-                    {"kind": f["kind"], "token": f["token"], "value": f["value"]}
-                    for f in bp.scan_facts(tc["text"])
-                ]
-                self.assertEqual(got, tc["expect"])
-
-    def test_ungrounded_spans_match_the_window(self):
-        # The same rule the window applies to a draft: a fact the source
-        # does not contain is ungrounded.
-        self.assertEqual(
-            bp.ungrounded_spans("I want to talk about the four projects on my plate.",
-                                REVIEWER_SENTENCE),
-            ["four"],
-        )
-        self.assertEqual(
-            bp.ungrounded_spans("Can we meet Friday at 3pm?", REVIEWER_SENTENCE),
-            ["friday", "3pm"],
-        )
-        self.assertEqual(bp.ungrounded_spans("A one-on-one.", "A one-on-one."), [])
-
-
 class PrepareCard(unittest.TestCase):
-    """brume_prepare drafts the card and opens the window. The draft is
-    model-written, so it crosses as masked reference only — the person
-    writes every part of the card in the window. The tool accepts no
-    answers and asks no questions: substituting a value into a model
-    sentence would still leave the model's sentence."""
+    """brume_prepare relays the situation and opens the window. Every
+    argument is model-written and the protocol offers no transcript, so
+    the payload is a masked suggestion only: the person writes the
+    situation in the window and the card is drafted from their words by
+    the window's own model call. The tool carries no card content and
+    accepts no answers."""
 
     def setUp(self):
         bp._STDIN_EOF = True
@@ -267,15 +235,11 @@ class PrepareCard(unittest.TestCase):
     def tearDown(self):
         bp._STDIN_EOF = False
 
-    def _draft(self, **over):
+    def _args(self, **over):
         args = {
             "situation": REVIEWER_SENTENCE,
-            "draft_opening": "Tell Priya you manage four projects and a new deadline in the same week.",
-            "draft_key_point": "The new deadline needs two more people.",
-            "draft_approach": "Open with what the deadline changed for your team.",
-            "draft_objection": "We cannot take on another project right now.",
-            "draft_response": "Then agree what slips and by when.",
-            "draft_next_step": "Name the day you will flag the new deadline.",
+            "goal": "Get the deadline moved",
+            "key_point": "Protect the relationship",
         }
         args.update(over)
         return args
@@ -283,51 +247,36 @@ class PrepareCard(unittest.TestCase):
     def _payload(self, out):
         return out["data"]["open_app_view"]
 
-    def test_one_call_opens_the_window_with_the_draft(self):
-        out = bp.invoke_prepare(self._draft(), {})
+    def test_one_call_opens_the_window_with_the_relay(self):
+        out = bp.invoke_prepare(self._args(), {})
         self.assertTrue(out["success"])
         data = out["data"]
         self.assertEqual(data["status"], "open_window")
         payload = self._payload(out)
         self.assertEqual(payload["mode"], "ready")
         self.assertEqual(payload["context"], REVIEWER_SENTENCE)
-        iv = payload["interview"]
-        # every drafted field crosses, including the key point — the
-        # window masks their facts and the person rewrites them
-        self.assertIn("four projects", iv["fields"]["opening"])
-        self.assertIn("two more people", iv["fields"]["keyPoint"])
-        self.assertNotIn("questions", iv)
-        # no card is saved and no answers are accepted — the window does both
-        for banned in ("card", "record_key", "answers", "request_id"):
-            self.assertNotIn(banned, data)
+        self.assertEqual(payload["goal"], "Get the deadline moved")
+        self.assertEqual(payload["key_point"], "Protect the relationship")
+        # The payload carries no card content at all — no draft fields,
+        # no interview, nothing the window could mistake for the card.
+        for banned in ("interview", "card", "record_key", "answers",
+                       "request_id", "draft_opening", "draft_key_point"):
+            self.assertNotIn(banned, payload)
+        self.assertNotIn("answers", data)
 
-    def test_the_model_cannot_supply_answers_or_the_day(self):
-        # There is no answers/request_id/deadline_day parameter: the card's
-        # content can only arrive as text the person types into the window.
+    def test_the_tool_accepts_no_card_content_parameters(self):
         names = {p["name"] for t in bp.MANIFEST["tools"]
                  if t["name"] == "brume_prepare" for p in t["parameters"]}
-        for banned in ("answers", "request_id", "deadline_day",
-                       "schedule_unspecified"):
-            self.assertNotIn(banned, names)
+        self.assertEqual(names, {"situation", "goal", "key_point", "preserve"})
 
-    def test_a_fact_free_draft_still_opens_the_window(self):
-        # A draft with no scanned fact is no different: the person still
-        # writes every part — model prose never reaches the card unasked.
-        out = bp.invoke_prepare({
-            "situation": "I have a one-on-one with my manager.",
-            "draft_opening": "Tell Priya it is a calm chat about the roadmap.",
-            "draft_key_point": "Listen first.",
-        }, {})
-        iv = self._payload(out)["interview"]
-        self.assertIn("Priya", iv["fields"]["opening"])
-        self.assertNotIn("questions", iv)
+    def test_optional_fields_are_omitted_when_absent(self):
+        out = bp.invoke_prepare({"situation": "A hard conversation."}, {})
+        payload = self._payload(out)
+        self.assertEqual(payload, {"mode": "ready", "context": "A hard conversation."})
 
-    def test_situation_and_a_draft_field_are_required(self):
+    def test_situation_is_required(self):
         with self.assertRaises(LookupError):
             bp.invoke_prepare({}, {})
-        with self.assertRaises(LookupError):
-            bp.invoke_prepare({"situation": "x"}, {})
-
 
 
 class ProtocolManifest(unittest.TestCase):

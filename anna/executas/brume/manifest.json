@@ -1,7 +1,7 @@
 {
   "name": "tool-papa-brume-htcxvfcr",
   "display_name": "Brume",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "Conversation preparation — Brume's primary result is a saved card. brume_prepare drafts the card from what the user said and opens the window, where the person writes every part of it and the card is saved from their own words. brume_reset starts a short guided break; brume_complete saves its record when the user says done.",
   "author": "Brume",
   "category": "productivity",
@@ -14,7 +14,7 @@
   "tools": [
     {
       "name": "brume_prepare",
-      "description": "Prepare the conversation — Brume's primary result is the saved card. Pass `situation` (your faithful relay of what the user said — their words, never additions you invented), the `goal`, `key_point` and `preserve` they stated if they stated them, and your own draft of the card in `draft_opening`, `draft_key_point`, `draft_approach`, `draft_objection`, `draft_response` and `draft_next_step`. The tool returns open_window with an open_app_view payload: call open_app_view with it. The window shows your draft with its facts masked and asks the person to write every part of the card in their own words; the card is saved there from what they typed, never from your prose. There is no way to supply the card's content here: never write the card's facts yourself.",
+      "description": "Prepare the conversation — Brume's primary result is the saved card. Pass `situation` (your faithful relay of what the user said — their words, never additions you invented), the `goal`, `key_point` and `preserve` they stated if they stated them. The tool returns open_window with an open_app_view payload: call open_app_view with it. The window shows your reading as a masked suggestion; the person writes the situation in their own words and the card is drafted from their words and saved there. You supply no card content — never write the card's facts yourself.",
       "timeout": 10,
       "parameters": [
         {
@@ -40,42 +40,6 @@
           "type": "string",
           "required": false,
           "description": "A boundary or relationship quality they explicitly want to protect, if stated."
-        },
-        {
-          "name": "draft_opening",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of the card's opening line — one or two calm sentences."
-        },
-        {
-          "name": "draft_key_point",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of the card's key point — the one thing they want remembered."
-        },
-        {
-          "name": "draft_approach",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of the card's approach — how they open the conversation."
-        },
-        {
-          "name": "draft_objection",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of one hypothetical pushback, for practice."
-        },
-        {
-          "name": "draft_response",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of how they would answer that pushback."
-        },
-        {
-          "name": "draft_next_step",
-          "type": "string",
-          "required": false,
-          "description": "Your draft of the card's next step."
         }
       ]
     },

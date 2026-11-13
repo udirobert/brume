@@ -1779,3 +1779,48 @@ open "Write your card", write every field, verify `ready/last` and the
 `interview` audit; then the chat variant, reset/reflect/arrive/
 alertness), then `anna-app apps submit-review brume` to re-pin the
 review to v0.4.9 / tool 0.4.11.
+
+### 12.37 The chat path produces a real AI card — tool 0.4.12, app 0.4.10 (candidate)
+
+§12.36's person-writes-every-field interview was rejected on the deepest
+ground yet: **the chat path no longer produces the result at all**. The
+tool's draft was masked reference and thrown away; the window asked the
+person to write six fields; the saved card was a storage write of typed
+text with no `llm.complete` on that path — and staff had already said a
+storage write alone is not a qualified run, because the primary value
+has to depend on the model's reasoning. The masked reference also still
+showed every invention the fact scanner does not know: "Tell Priya you
+manage four projects on Friday" displayed as "Tell Priya you manage …"
+— the name sat on the review screen above the empty boxes.
+
+The fix is subtraction. `brume_prepare` (tool **0.4.12**) is now a pure
+relay: `situation` plus stated `goal`/`key_point`/`preserve` — the six
+`draft_*` parameters are gone from the manifest, along with the
+`interview` payload, `maskFacts`/`scheduleDay`/`CARD_FACT_FIELDS`, the
+window's interview stage, and the plugin's entire fact scanner
+(`scan_facts`/`ungrounded_spans`, ~200 lines — the window owns the
+faithfulness gate now). What remains is exactly the pipeline the
+reviewer already accepted in the window: `open_app_view` opens the
+ordinary preparation form with Anna's reading as a suggestion, the
+person writes the situation in their own words, Prepare stays off
+until they do, `faithfulPlan` makes the `llm.complete` call, the
+faithfulness gate withholds ungrounded spans, and the card saves
+quoting the typed source with `planSource: "ai"` and `planModel` set.
+
+The display hole closes with `maskReference` (preparation.js): the
+suggestion quote now masks scanned facts AND every capitalised token
+that does not open a sentence — names like "Priya" are not facts the
+scanner knows, but they are still the model's words, so they mask too
+("Tell … you manage … projects …."), while sentence-initial capitals
+and first-person pronouns survive. Model prose is never shown raw.
+
+Versions: tool **0.4.12** (`executa.json`, `pyproject.toml`, plugin
+`VERSION`, regenerated `manifest.json`), app **0.4.10** (`app.json`).
+Local gates: `npm test` 152 green, `test_plan` 20 green,
+`anna-app validate --strict` clean, browser QA **37/37** — the two
+handoff cases now assert the masked suggestion hides names and facts,
+Prepare gates on typed words, an `llm.complete` runs on the chat path,
+and `ready/last` carries `planSource: "ai"` with no relay invention.
+Remaining, in order: commit, the 0.4.12 binaries workflow, download +
+checksum, `apps publish`, the tier-3 fresh-install Cloud Agent
+checklist, then `apps submit-review`.

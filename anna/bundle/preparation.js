@@ -343,20 +343,18 @@ export function scheduleQuestion(source) {
   return null;
 }
 
-// --- The brume_prepare interview -----------------------------------------
-// brume_prepare drafts the card in chat, but every argument it receives
-// is model-written and the protocol offers no transcript — so the draft
-// is never the oracle, and no substitution into it can make it theirs.
-// The window shows each drafted field with its facts masked and the
-// person writes every part themselves; the card is saved from what they
-// typed. scanFacts stays the shared fact vocabulary (the faithfulness
-// gate uses it); there is deliberately no applyAnswers — replacing a
-// token inside a model sentence still leaves the model's sentence.
+// --- Masked reference ------------------------------------------------------
+// Everything the model writes — the brume_prepare relay, the draft it
+// used to send, Anna's reading on screen — is model prose: every
+// argument is model-written and the protocol offers no transcript to
+// check it against. Model text is therefore never the card's source and
+// is never shown raw: on screen it appears only through maskReference,
+// which hides every scanned fact AND every capitalised token that is not
+// a sentence start (names like "Priya" are not facts the scanner knows,
+// but they are still the model's words). scanFacts stays the shared
+// fact vocabulary (the faithfulness gate uses it).
 
-export const CARD_FACT_FIELDS = ["opening", "keyPoint", "approach", "objection", "response", "nextStep"];
-
-// The draft text with every asserted fact masked — shown to the person
-// as reference so the model's values are never presented as fact.
+// The text with every asserted fact masked.
 export function maskFacts(text) {
   const body = String(text || "");
   const facts = scanFacts(body).sort((a, b) => b.start - a.start);
@@ -367,15 +365,21 @@ export function maskFacts(text) {
   return out.replace(/\s+/g, " ").trim();
 }
 
-// The day a schedule answer names, for the card's deadlineDay — a
-// weekday, month, relative day or ordinal in the person's own words.
-export function scheduleDay(answer) {
-  const text = String(answer || "");
-  const facts = scanFacts(text).filter((f) =>
-    ["weekday", "month", "relative", "ordinal"].includes(f.kind));
-  if (facts.length) return text.slice(facts[0].start, facts[0].end);
-  if (/\b(?:no|none|not|nothing|unspecified)\b/i.test(text)) return "";
-  return "";
+const REFERENCE_KEEP = new Set(["I", "I'm", "I'll", "I've", "I'd"]);
+
+// Model prose safe to show as reference: facts masked, and capitalised
+// words masked too unless they open a sentence — the remaining capitals
+// mid-sentence are names or inventions the fact scanner cannot know.
+// Only real sentence boundaries keep a capital: a quote or bracket does
+// not, so '(Priya' and '"Priya' mask like any other name.
+export function maskReference(text) {
+  const body = maskFacts(text);
+  return body.replace(/[A-Za-z][A-Za-z'’-]*/g, (word, offset) => {
+    if (!/^[A-Z]/.test(word) || word.length < 2 || REFERENCE_KEEP.has(word)) return word;
+    const before = body.slice(0, offset);
+    if (!before.trim() || /[.!?…,;:]\s*$/.test(before)) return word;
+    return "…";
+  });
 }
 
 export function quotesReply(adjustment, reply) {

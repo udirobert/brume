@@ -45,16 +45,17 @@ ChatGPT / MCP host
   reflection. No server-side persistence in v1 (nothing to delete, nothing
   to leak — a Responsible-AI point).
 - **`brume_get_ready`** — retired in Anna tool 0.4.7. **`brume_prepare`**
-  returned in 0.4.8; as of 0.4.11 it drafts the card and returns
-  `open_window` with an `open_app_view` payload. The window shows each
-  drafted field with its facts masked and asks the person to write
-  every part of the card in their own words; the card is saved in the
-  window from what they typed. A chat tool cannot check model prose
-  against the user's message — no transcript exists — and it cannot
-  carry the person's words back either, so the tool accepts no
-  `answers` parameter and asks no questions: substituting a value into
-  a model sentence would still leave the model's sentence. The card's
-  content is the person's own typing, never the model's.
+  returned in 0.4.8; as of 0.4.12 it is a pure relay — `situation` plus
+  stated `goal`/`key_point`/`preserve`, no draft or answers parameters —
+  returning `open_window` with an `open_app_view` payload. The window
+  shows the relay masked as a suggestion, the person writes the
+  situation in their own words, and the card is drafted from their
+  words by the window's own model call under the faithfulness gate —
+  the same pipeline as the in-app Prepare button. A chat tool cannot
+  check model prose against the user's message — no transcript exists —
+  so it carries no card content at all; the card's facts are grounded
+  in what the person typed and its prose is model-composed in the
+  window, never a storage write of typed text.
 
 ## Hard constraints (shared with the whole product)
 

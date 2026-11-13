@@ -66,9 +66,7 @@ import {
   REHEARSAL_FACT_FIELDS,
   groundedSpans,
   scheduleQuestion,
-  scheduleDay,
-  maskFacts,
-  CARD_FACT_FIELDS,
+  maskReference,
   quotesReply,
   sayableParagraph,
 } from "./preparation.js";
@@ -172,11 +170,6 @@ const els = {
   cardSourceText: $("#card-source-text"),
   prepSourceNote: $("#prep-source-note"),
   prepSourceQuote: $("#prep-source-quote"),
-  prepInterviewSource: $("#prep-interview-source"),
-  prepInterviewQuote: $("#prep-interview-quote"),
-  prepInterviewList: $("#prep-interview-list"),
-  btnPrepInterviewGo: $("#btn-prep-interview-go"),
-  btnPrepInterviewManual: $("#btn-prep-interview-manual"),
   btnPrepGo: $("#btn-prep-go"),
   cardSaveNote: $("#card-save-note"),
   btnCardSaveRetry: $("#btn-card-save-retry"),
@@ -239,7 +232,6 @@ const els = {
     alertResult: $("#screen-alert-result"),
     prepInput: $("#screen-prep-input"),
     prepClarify: $("#screen-prep-clarify"),
-    prepInterview: $("#screen-prep-interview"),
     prepPlan: $("#screen-prep-plan"),
     prepPractice: $("#screen-prep-practice"),
     prepFeedback: $("#screen-prep-feedback"),
@@ -1939,20 +1931,11 @@ function newPrepState() {
     quoteNote: "",
     // Where the situation text came from: "typed" (the person wrote it),
     // "handoff" (Anna's reading is on screen — Prepare stays off until
-    // the person writes their own), "answered" (the person wrote every
-    // card field in the interview and the card was made from those
-    // words), "confirmed" (older checkpoints), "edited" (they
-    // corrected it).
+    // the person writes their own), "edited" (they corrected it) or
+    // "confirmed" (older checkpoints).
     sourceProvenance: "typed",
     // Anna's reading of a chat message — a suggestion, never the source.
     suggestion: null,
-    // A brume_prepare draft waiting on the person's own writing:
-    // { draft, written, day, schedule } — the draft is masked reference
-    // only; only what the person types can reach the card.
-    interview: null,
-    // The audit the card records: the model's draft beside what the
-    // person actually wrote, field by field, plus the day they named.
-    interviewAudit: null,
   };
 }
 
@@ -2022,7 +2005,6 @@ let cardViewOnly = false;
 const PREP_SCREENS = {
   input: () => els.screens.prepInput,
   clarify: () => els.screens.prepClarify,
-  interview: () => els.screens.prepInterview,
   plan: () => els.screens.prepPlan,
   practice: () => els.screens.prepPractice,
   feedback: () => els.screens.prepFeedback,
@@ -2136,11 +2118,13 @@ function renderPrepSuggestion() {
     els.prepSourceQuote.textContent = "";
     return;
   }
+  // The reading is model-written: show it only masked, so a name or a
+  // fact the model invented cannot sit on the review screen unmarked.
   const parts = [];
-  if (s.event) parts.push(s.event);
-  if (s.goal) parts.push(`What needs to change: ${s.goal}`);
-  if (s.keyPoint) parts.push(`The one thing to remember: ${s.keyPoint}`);
-  if (s.preserve) parts.push(`What to preserve: ${s.preserve}`);
+  if (s.event) parts.push(maskReference(s.event));
+  if (s.goal) parts.push(`What needs to change: ${maskReference(s.goal)}`);
+  if (s.keyPoint) parts.push(`The one thing to remember: ${maskReference(s.keyPoint)}`);
+  if (s.preserve) parts.push(`What to preserve: ${maskReference(s.preserve)}`);
   els.prepSourceQuote.textContent = parts.join("\n");
 }
 
@@ -2149,128 +2133,6 @@ function markSourceEngaged() {
     prep.sourceProvenance = "edited";
   }
   updatePrepSourceGate();
-}
-
-// --- The brume_prepare interview -----------------------------------------
-// The tool drafts the card but every argument it receives is model-written,
-// so the draft is never the oracle — and substituting a token inside a
-// model sentence still leaves the model's sentence. The window shows each
-// drafted field with its facts masked and the person writes every part
-// themselves; only typed text can reach the card.
-
-const INTERVIEW_FIELD_LABELS = {
-  opening: "Opening",
-  keyPoint: "Key point",
-  approach: "Approach",
-  objection: "If they push back — what they might say",
-  response: "Your response",
-  nextStep: "Next step",
-};
-
-function renderPrepInterview() {
-  const iv = prep.interview;
-  if (!iv) return;
-  const s = prep.suggestion;
-  const quote = s
-    ? [s.event, s.goal, s.keyPoint, s.preserve]
-        .filter(Boolean)
-        .map((part) => maskFacts(part))
-        .join("\n")
-    : "";
-  if (els.prepInterviewQuote) els.prepInterviewQuote.textContent = quote;
-  if (els.prepInterviewSource) els.prepInterviewSource.hidden = !quote;
-  els.prepInterviewList.textContent = "";
-  for (const field of CARD_FACT_FIELDS) {
-    const draft = iv.draft?.[field] || "";
-    if (!draft) continue;
-    const block = document.createElement("div");
-    block.className = "interview-q";
-    const label = document.createElement("p");
-    label.className = "field-label";
-    label.textContent = INTERVIEW_FIELD_LABELS[field] || field;
-    const hint = document.createElement("p");
-    hint.className = "hint";
-    hint.textContent = `Anna's draft — for reference, not the card: “${maskFacts(draft)}”`;
-    const input = document.createElement("textarea");
-    input.rows = 2;
-    input.maxLength = 1000;
-    input.dataset.field = field;
-    input.value = iv.written[field] || "";
-    input.placeholder = "Write it in your own words — or leave blank to drop it";
-    input.addEventListener("input", () => {
-      iv.written[field] = input.value;
-      if (task?.flow === "ready") snapshotReady("interview");
-    });
-    block.append(label, hint, input);
-    els.prepInterviewList.appendChild(block);
-  }
-  if (iv.schedule) {
-    const block = document.createElement("div");
-    block.className = "interview-q";
-    const text = document.createElement("p");
-    text.className = "hint";
-    text.textContent = iv.schedule;
-    const input = document.createElement("input");
-    input.type = "text";
-    input.maxLength = 60;
-    input.dataset.schedule = "1";
-    input.value = iv.day || "";
-    input.placeholder = "e.g. Thursday — or leave blank";
-    input.addEventListener("input", () => {
-      iv.day = input.value;
-      if (task?.flow === "ready") snapshotReady("interview");
-    });
-    block.append(text, input);
-    els.prepInterviewList.appendChild(block);
-  }
-}
-
-function submitInterview() {
-  const iv = prep.interview;
-  if (!iv) return;
-  const written = {};
-  for (const field of CARD_FACT_FIELDS) {
-    const v = String(iv.written?.[field] || "").trim().slice(0, 1000);
-    if (v) written[field] = v;
-  }
-  if (!Object.keys(written).length) {
-    toast("Write at least one part in your own words — or choose “Write it myself instead”.");
-    return;
-  }
-  const deadlineDay = iv.schedule ? scheduleDay(iv.day || "") : "";
-  // The person's typed fields are the only source the card may claim —
-  // every fact in them is theirs by construction.
-  const sourceText = [...Object.values(written), deadlineDay]
-    .filter(Boolean).join(" · ");
-  const fields = Object.fromEntries(CARD_FACT_FIELDS.map((f) => [f, written[f] || ""]));
-  const issues = faithfulnessIssues(fields, sourceText, PLAN_FACT_FIELDS);
-  const finalFields = issues.length ? withholdUngrounded(fields, issues) : fields;
-  prep.interviewAudit = {
-    draft: iv.draft || {},
-    written,
-    deadlineDay: deadlineDay || null,
-  };
-  prep.plan = {
-    opening: finalFields.opening ?? "",
-    keyPoint: finalFields.keyPoint ?? "",
-    approach: finalFields.approach ?? "",
-    objection: finalFields.objection ?? "",
-    response: finalFields.response ?? "",
-    nextStep: finalFields.nextStep ?? "",
-  };
-  prep.planModel = null;
-  prep.planSource = null;
-  prep.input.event = sourceText;
-  prep.sourceProvenance = "answered";
-  prep.interview = null;
-  prep.stage = "plan";
-  renderPrepStage();
-}
-
-function abandonInterview() {
-  prep.interview = null;
-  prep.stage = "input";
-  renderPrepStage();
 }
 
 function updateWordingBadge() {
@@ -2508,8 +2370,6 @@ function renderPrepStage() {
   } else if (prep.stage === "clarify") {
     els.prepQuestion.textContent = prep.question;
     els.prepClarification.value = prep.clarification;
-  } else if (prep.stage === "interview") {
-    renderPrepInterview();
   } else if (prep.stage === "plan") {
     for (const [key, el] of PLAN_FIELDS) el.value = prep.plan?.[key] ?? "";
     els.prepObjection.textContent = prep.plan?.objection ?? "";
@@ -2620,13 +2480,9 @@ function printPrepCard() {
   setTimeout(() => document.body.classList.remove("printing-card"), 300);
 }
 
-// Where a card's source came from. "answered" is a card the person
-// wrote in the interview: every field is text they typed, so the card
-// quotes those words. "typed"/"edited" is the window form.
-function prepSourceLabel(provenance) {
-  if (provenance === "answered") return "Prepared from what you wrote:";
-  return "Prepared from your words:";
-}
+// Where a card's source came from: the person wrote the situation, and
+// the card quotes those words.
+const PREP_SOURCE_LABEL = "Prepared from your words:";
 
 function renderPrepCard() {
   if (!cardViewOnly && els.prefDetails && els.cardPrefSlot) {
@@ -2654,7 +2510,7 @@ function renderPrepCard() {
   const prov = prep.sourceProvenance;
   if (src) {
     els.cardSource.hidden = false;
-    els.cardSource.textContent = prepSourceLabel(prov);
+    els.cardSource.textContent = PREP_SOURCE_LABEL;
     els.cardSourceText.hidden = false;
     els.cardSourceText.textContent = `“${src}”`;
   } else {
@@ -2695,10 +2551,6 @@ function prepCardRecord() {
     sourceProvenance: prep.sourceProvenance,
     feedbackModel: prep.feedbackModel ?? null,
     source: "app",
-    // The interview audit: the model's draft beside what the person
-    // actually wrote, field by field, plus the day they named. A
-    // reviewer can compare the card against the typed text directly.
-    ...(prep.interviewAudit ? { interview: prep.interviewAudit } : {}),
   };
 }
 
@@ -2808,7 +2660,7 @@ async function showLastPreparation() {
   const recSrc = (record.sourceText || record.event || "").trim();
   if (recSrc) {
     els.cardSource.hidden = false;
-    els.cardSource.textContent = prepSourceLabel(record.sourceProvenance);
+    els.cardSource.textContent = PREP_SOURCE_LABEL;
     els.cardSourceText.hidden = false;
     els.cardSourceText.textContent = `“${recSrc}”`;
   } else {
@@ -2850,24 +2702,6 @@ function applyEntryPayload(payload) {
     if (s.event || s.goal || s.keyPoint || s.preserve) {
       prep.suggestion = s;
       prep.sourceProvenance = "handoff";
-    }
-    if (handoff.interview) {
-      // brume_prepare drafted the card in chat; the window shows each
-      // drafted field masked and the person writes every part here.
-      // The draft is model-written, so nothing in it reaches the card —
-      // only what the person types does.
-      // The deadline-day prompt keys on the suggestion — the relay of
-      // the person's own words — never on the model's draft, which could
-      // invent a deadline the person never mentioned.
-      const suggestionText = [s.event, s.goal, s.keyPoint, s.preserve]
-        .filter(Boolean).join("\n");
-      prep.interview = {
-        draft: handoff.interview.fields,
-        written: {},
-        day: "",
-        schedule: scheduleQuestion(suggestionText) || "",
-      };
-      prep.stage = "interview";
     }
     prepKindChips();
     syncPrepInputs();
@@ -3625,8 +3459,6 @@ async function main() {
     prep.clarificationUsed = true;
     runPreparationRequest();
   });
-  els.btnPrepInterviewGo.addEventListener("click", submitInterview);
-  els.btnPrepInterviewManual.addEventListener("click", abandonInterview);
   for (const [key, el] of PLAN_FIELDS) {
     el.addEventListener("input", () => {
       if (!prep.plan) return;

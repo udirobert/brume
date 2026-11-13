@@ -18,20 +18,23 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut: **app v0.4.9** with tool **0.4.11**, published
-(`docs/ANNA.md` §12.36). The preparation card is the primary result,
-and its content is the person's own typing: `brume_prepare` takes the
-model's draft, returns `open_window` with an `open_app_view` payload,
-and the window's "Write your card" screen shows each drafted field
-with its facts masked while the person writes every part themselves —
-the draft is reference only, so no model-written prose is ever the
-card. Both earlier designs were rejected: the two-step chat flow's
-`answers` parameter was model-written, and masked-fact substitution
-still left the model's sentences in the card. Binaries **0.4.11** are
-published (GitHub release `brume-executa-v0.4.11`, all four platforms,
-checksums verified; app v0.4.9 cut, `version_id=2274`,
-`executa_version=1105`). The tier-3 fresh-install Cloud Agent run and
-resubmit are outstanding. App id 582, slug `brume`, tool id
+Latest cut (in progress): **app v0.4.10** with tool **0.4.12**. The
+preparation card is the primary result, and on the chat path it is now
+made by the same pipeline as the in-app button: `brume_prepare` only
+relays the situation (`situation` + stated `goal`/`key_point`/
+`preserve` — no draft parameters at all) and returns `open_window` with
+an `open_app_view` payload; the window shows the relay masked as a
+suggestion (`maskReference` — facts *and* names hidden), the person
+writes the situation in their own words, and the window's own model
+call drafts the card from it under the faithfulness gate. Three designs
+were rejected getting here: the two-step chat flow's `answers`
+parameter was model-written; masked-fact substitution still left the
+model's sentences in the card; and person-typed card fields were a
+storage write with no `llm.complete` — not a qualified run
+(`docs/ANNA.md` §12.37). Binaries **0.4.11** are published (app v0.4.9
+cut, `version_id=2274`, `executa_version=1105`); **0.4.12** binaries,
+republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
+outstanding. App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
@@ -138,33 +141,30 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
 
 Chat (`#brume …`): `brume_prepare` is Brume's primary result. It is
 called once with `situation` (the model's relay of what the user said)
-plus optional `goal`, `key_point`, `preserve`, and the model's own draft
-of the card (`draft_opening`, `draft_key_point`, `draft_approach`,
-`draft_objection`, `draft_response`, `draft_next_step`). It returns
-`open_window` with an `open_app_view` payload; the model calls
-`open_app_view` with it, and the window opens on a "Write your card"
-screen: each drafted field is shown with its facts masked, and the
-person writes every part of the card in their own words — the draft is
-reference only, and anything left blank is dropped. The card is saved
-there (`ready/sessions/<ts>`, `ready/last`) with an audit keeping the
-draft beside what they typed. **No tool argument is ever the oracle for
-a card's content**: the protocol offers no transcript to check model
-prose against, the tool accepts no `answers`, and substituting a typed
-value into a model sentence would still leave the model's sentence —
-which is why both earlier designs (chat answers, masked-fact
-substitution) were dropped. `brume_reset` and `brume_complete` are the
-optional breathing break.
+plus optional `goal`, `key_point`, `preserve` — it carries no card
+content at all. It returns `open_window` with an `open_app_view`
+payload; the model calls `open_app_view` with it, and the window opens
+on the ordinary preparation form with Anna's reading shown as a masked
+suggestion (`maskReference` hides facts and names). The person writes
+the situation in their own words, Prepare stays off until they do, and
+the card is drafted from their words by the window's own model call
+under the faithfulness gate — the same pipeline as the in-app button,
+so the saved card (`ready/sessions/<ts>`, `ready/last`) is model-
+composed, not a storage write of typed text. **No tool argument is
+ever the oracle for a card's content**: the protocol offers no
+transcript to check model prose against, which is why the tool takes
+no draft, no `answers`, and no questions. `brume_reset` and
+`brume_complete` are the optional breathing break.
 
-In the window, Anna's reading of a chat message is shown as a
+In the window, Anna's reading of a chat message is shown as a masked
 *suggestion*, never as the source: the person writes the situation
 themselves, so the card's facts are grounded in their words, and the card
-always quotes the situation it was prepared from. The window's draft is
-checked against the submitted source; the chat path's card is the
-person's own typed fields, checked the same way. **Anna's own model
-writes the plan, the
-draft and the reflection as tool arguments**; the tool validates and
-filters them, renders verbatim
-`_display` blocks, and writes records. The tool has no sampling
+always quotes the situation it was prepared from. The model's draft is
+checked against the submitted source whether the task started in the
+window or from chat. **Anna's own model writes the plan, the
+draft and the reflection** — in the window via `llm.complete`, in chat
+via tool arguments the tool validates and filters, rendering verbatim
+`_display` blocks and writing records. The tool has no sampling
 capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
@@ -238,16 +238,15 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
    `brume_prepare` must return `open_window`; `open_app_view` opens the
-   "Write your card" screen, which shows the draft with its facts
-   masked and asks the person to write every part themselves. The card
-   is saved there from what they typed — it must contain nothing the
-   person did not write (no 4, four, Friday, Priya, or a clock time),
-   and the saved card must appear under `ready/last` with the
-   `interview` audit. This is the reviewer's case — it has to pass
-   before any other chat.
+   preparation form with Anna's reading masked as a suggestion. Write
+   the situation in your own words, Prepare, and the card must be
+   drafted by the window's model call — the saved card under
+   `ready/last` must contain nothing you did not write (no 4, four,
+   Friday, Priya, or a clock time) and must quote your typed words.
+   This is the reviewer's case — it has to pass before any other chat.
 3. Same scenario, asked in chat instead ("put the card in chat"): the
    model calls `brume_prepare` + `open_app_view`, the window opens on
-   the interview, and the card is saved there.
+   the same form, and the card is saved there the same way.
 4. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
    posture-only.
 5. `done, feeling calmer` → `reflectionSource: "agent"`, record written.

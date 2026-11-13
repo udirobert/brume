@@ -81,37 +81,6 @@ test("ready pause data valid", () => {
   assert.ok(validateCheckpoint(cp({ screen: "pause", data: { prep: PREP, pause: { step: 2, elapsedMs: 5000, return: "plan" } } })));
 });
 
-test("interview stage checkpoint valid, mid-answer state survives", () => {
-  const interview = {
-    draft: { opening: "Tell Priya you manage … projects.", keyPoint: "x" },
-    written: { opening: "I manage three projects." },
-    day: "",
-    schedule: "",
-  };
-  const prep = {
-    ...PREP, stage: "interview", plan: null,
-    interview, interviewAudit: null, sourceProvenance: "handoff",
-  };
-  const v = validateCheckpoint(cp({ screen: "interview", data: { prep, pause: null } }));
-  assert.ok(v);
-  assert.deepEqual(v.data.prep.interview.written, { opening: "I manage three projects." });
-});
-
-test("interview stage rejects malformed interview state", () => {
-  for (const interview of [
-    "nope",
-    { draft: "x", written: {} },
-    { draft: {}, written: "x" },
-    { draft: { opening: 4 }, written: {} },
-  ]) {
-    const prep = { ...PREP, stage: "interview", plan: null, interview };
-    assert.equal(
-      validateCheckpoint(cp({ screen: "interview", data: { prep, pause: null } })),
-      null,
-    );
-  }
-});
-
 for (const [name, screen, data] of [
   ["bad pattern", "plan", { plan: { ...PLAN, pattern: "nope" } }],
   ["bad seconds", "plan", { plan: { ...PLAN, seconds: 45 } }],

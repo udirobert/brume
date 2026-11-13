@@ -123,34 +123,31 @@ def main() -> None:
         print(f"  (brume_reset took {elapsed:.1f}s)")
 
         # invoke brume_prepare — the reviewer sentence must return
-        # open_window with an open_app_view payload carrying the draft
-        # fields. The window asks the person to write every part, so
-        # there is no second call, no answers parameter, no questions.
+        # open_window with an open_app_view payload carrying the relay
+        # as a masked suggestion. The window asks the person to write
+        # the situation and drafts the card from their words, so there
+        # is no second call, no answers parameter, no card content.
         r = request(proc, 4, "invoke", {
             "tool": "brume_prepare",
             "arguments": {
                 "situation": "I manage 3 projects and I added one deadline in the same week.",
-                "draft_opening": "Tell Priya you manage four projects and a new deadline in the same week.",
-                "draft_key_point": "The new deadline needs two more people.",
-                "draft_next_step": "Name the day you will flag the new deadline.",
+                "goal": "Get the deadline moved",
+                "key_point": "Protect the relationship",
             },
         })
         result = r.get("result")
         data = (result or {}).get("data") or {}
         if not isinstance(result, dict) or data.get("status") != "open_window":
             fail(f"invoke brume_prepare: expected open_window, got {result!r}")
-        if data.get("request_id") or "answers" in ((result.get("data") or {}).keys()):
-            fail("invoke brume_prepare: unexpected request_id/answers in result")
         view = data.get("open_app_view") or {}
         if view.get("mode") != "ready":
             fail(f"invoke brume_prepare: expected open_app_view mode ready, got {view!r}")
-        interview = view.get("interview") or {}
-        fields = interview.get("fields") or {}
-        if not fields.get("opening") or not fields.get("keyPoint"):
-            fail(f"invoke brume_prepare: interview fields missing draft text: {interview!r}")
-        if "questions" in interview:
-            fail("invoke brume_prepare: unexpected questions in interview payload")
-        print("  (brume_prepare returned open_window with the masked-reference draft)")
+        if "3 projects" not in (view.get("context") or ""):
+            fail(f"invoke brume_prepare: context lost the relay: {view!r}")
+        for banned in ("interview", "card", "draft_opening", "answers", "request_id"):
+            if banned in view:
+                fail(f"invoke brume_prepare: unexpected {banned} in open_app_view")
+        print("  (brume_prepare returned open_window with the masked-suggestion relay)")
 
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()

@@ -330,16 +330,16 @@ for (const tc of planCases.deadline_day ?? []) {
   ok(`deadline day "${tc.name}"`, (prep.scheduleQuestion(tc.source) !== null) === tc.expect);
 }
 for (const tc of planCases.fact_scan ?? []) {
-  // The scanner is the shared contract with the Python plugin: the chat
-  // path asks the person for every fact it finds, so both must agree.
+  // The scanner is the fact vocabulary the faithfulness gate and the
+  // masked-reference display share.
   const got = prep.scanFacts(tc.text).map((f) => ({ kind: f.kind, token: f.token, value: f.value }));
   ok(`fact scan "${tc.name}"`, JSON.stringify(got) === JSON.stringify(tc.expect));
 }
-for (const tc of planCases.interview ?? []) {
-  // maskFacts is the shared display contract: the draft the window shows
-  // as reference never asserts a value the model wrote.
-  ok(`interview mask "${tc.name}"`,
-    prep.maskFacts(tc.text) === tc.expect);
+for (const tc of planCases.mask_reference ?? []) {
+  // maskReference is the display contract: model prose on screen never
+  // asserts a scanned fact or a name the scanner cannot know.
+  ok(`mask reference "${tc.name}"`,
+    prep.maskReference(tc.text) === tc.expect);
 }
 
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------

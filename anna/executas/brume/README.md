@@ -16,22 +16,22 @@ Cloud Agent, 2026-10-19). `host_capabilities` = `aps.kv`,
 manifest's `storage` block, or publish fails with "storage declaration
 drift").
 
-- `brume_prepare` — Brume's primary result: it drafts the
-  conversation's card and opens the window where the person writes it.
-  One call.
+- `brume_prepare` — Brume's primary result: it relays the situation
+  and opens the window where the card is made. One call.
   - `situation` (required: the model's relay of the user's words),
-    optional `goal`, `key_point`, `preserve`, and the model's own
-    draft in `draft_opening`, `draft_key_point`, `draft_approach`,
-    `draft_objection`, `draft_response`, `draft_next_step`. Returns
-    `open_window` with an `open_app_view` payload carrying the draft
-    fields — reference only.
-  - The window shows each drafted field with its facts masked and asks
-    the person to write every part of the card in their own words; the
-    card is saved to `ready/sessions/<iso>` and `ready/last` from what
-    they typed, with an audit keeping the draft beside their text.
-    This tool accepts no `answers` and asks no questions: substituting
-    a value into a model sentence would still leave the model's
-    sentence.
+    optional `goal`, `key_point`, `preserve` — nothing else. There are
+    deliberately no draft parameters: every argument is model-written
+    and the protocol offers no transcript, so the tool cannot carry
+    card content. Returns `open_window` with an `open_app_view`
+    payload (`mode: "ready"`, `context`, optional `goal`/`key_point`/
+    `preserve`).
+  - The window shows the relay as a masked suggestion
+    (`maskReference` — facts and names hidden), the person writes the
+    situation in their own words, and the card is drafted from that
+    text by the window's own model call under the faithfulness gate,
+    then saved to `ready/sessions/<iso>` and `ready/last`. The card's
+    content is model-composed in the window from the person's words —
+    an `llm.complete` run, not a storage write of typed text.
 - `brume_reset` — plan args from the model: `context`, `pattern`
   (`cyclic-sigh` | `long-exhale` | `box` | `steady`), `seconds`
   (60/90/120/180), `title`, `opening`, `cues` (posture/attention only),
@@ -47,25 +47,24 @@ drift").
   (`calmer`|`same`|`wired`). Writes `reset/sessions/<iso>`, `reset/last`
   and `reset/summary` (`scope: "user"`, shared with the window).
 
-**Why the card is written in the window.** Every tool argument is
+**Why the card is made in the window.** Every tool argument is
 written by the calling model, and the protocol offers the plugin no
-transcript, so model prose can never be checked against what the user
-actually said — and no parameter can carry the person's words back
-either: an `answers` argument would be model-written too, which is
-exactly what the earlier two-step design got wrong (the model could
-answer its own masked questions), and substituting a typed value into a
-draft sentence still leaves the model's sentence ("Tell Priya you
-manage …" + "three" keeps Priya). So the tool only drafts and opens the
-window; the person writes every part there, the only surface where
-text is verifiably theirs, and the card is saved from what they typed.
-The draft and their text are both recorded with the card. The window's
-own form path is the same rule — the person types the situation, and
-the draft is checked against their words.
+transcript, so nothing the tool receives can be the card's source —
+not the relay, not a draft, not an `answers` parameter (the earlier
+two-step design let the model answer its own questions, and masked-
+fact substitution still left the model's sentences: "Tell Priya you
+manage …" + "three" keeps Priya). And a card the window saves from
+typed text alone is a storage write, not a qualified run — the
+primary value has to come from the model's reasoning. So the tool only
+relays and opens the window; there the person writes the situation in
+their own words and the window's own `llm.complete` drafts the card
+from it under the faithfulness gate — the same pipeline as the in-app
+Prepare button. The relay is shown only masked (`maskReference`), so
+invented facts and names cannot sit on the review screen.
 
-The fact scanner (`scan_facts` / `ungrounded_spans`) is a 1:1 port of
-`anna/bundle/preparation.js`; both are tested against the `fact_scan`
-and `faithfulness` sections of `anna/test/plan-cases.json`. The window
-also masks the draft for display (`maskFacts`, same `scanFacts`).
+The window's fact scanner (`scanFacts` / `ungroundedSpans` /
+`faithfulnessIssues`) is the contract that gates the model's draft
+against the person's typed source; the plugin no longer ports it.
 
 `manifest.json` here is the exported `describe` output; `anna-app apps
 publish` syncs it as the protocol manifest (`test_plan.py` asserts it

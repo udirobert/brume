@@ -18,7 +18,8 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut (in progress): **app v0.4.10** with tool **0.4.12**. The
+Latest cut: **app v0.4.10** with tool **0.4.12**, published
+(`docs/ANNA.md` §12.37). The
 preparation card is the primary result, and on the chat path it is now
 made by the same pipeline as the in-app button: `brume_prepare` only
 relays the situation (`situation` + stated `goal`/`key_point`/
@@ -31,10 +32,11 @@ were rejected getting here: the two-step chat flow's `answers`
 parameter was model-written; masked-fact substitution still left the
 model's sentences in the card; and person-typed card fields were a
 storage write with no `llm.complete` — not a qualified run
-(`docs/ANNA.md` §12.37). Binaries **0.4.11** are published (app v0.4.9
-cut, `version_id=2274`, `executa_version=1105`); **0.4.12** binaries,
-republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
-outstanding. App id 582, slug `brume`, tool id
+(`docs/ANNA.md` §12.37). Binaries **0.4.12** are published (GitHub
+release `brume-executa-v0.4.12`, all four platforms, checksums
+verified; app v0.4.10 cut, `version_id=2275`,
+`executa_version=1106`). The tier-3 fresh-install Cloud Agent run and
+resubmit are outstanding. App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 

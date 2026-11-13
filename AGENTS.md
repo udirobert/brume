@@ -427,18 +427,18 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. **App v0.4.10 / tool 0.4.12 are the current
-  candidate, uncommitted:** v0.4.9/0.4.11 (published: version_id=2274,
-  executa 1105, binaries `brume-executa-v0.4.11`) was rejected — the
-  chat path produced no AI card at all: person-typed fields were a
-  storage write with no `llm.complete`, and masked reference still
-  showed names like "Priya". Now `brume_prepare` is a pure relay (no
-  draft parameters), the window shows the relay masked via
-  `maskReference`, the person writes the situation, and the window's
-  own model call drafts the card — identical to the in-app Prepare
-  pipeline. Remaining: commit, 0.4.12 binaries workflow, publish,
-  tier-3 fresh-install run, `apps submit-review`
-  (`docs/ANNA.md` §12.37).
+  one sayable paragraph. **App v0.4.10 / tool 0.4.12 are published**
+  (commit `b330b19`, binaries `brume-executa-v0.4.12` all four
+  platforms checksum-verified, app cut version_id=2275,
+  executa_version=1106 — `docs/ANNA.md` §12.37): v0.4.9/0.4.11 was
+  rejected — the chat path produced no AI card at all: person-typed
+  fields were a storage write with no `llm.complete`, and masked
+  reference still showed names like "Priya". Now `brume_prepare` is a
+  pure relay (no draft parameters), the window shows the relay masked
+  via `maskReference`, the person writes the situation, and the
+  window's own model call drafts the card — identical to the in-app
+  Prepare pipeline. Remaining: tier-3 fresh-install Cloud Agent run,
+  then `apps submit-review`.
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -451,6 +451,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
-  Published as app v0.4.9 / tool 0.4.11 (binaries
-  `brume-executa-v0.4.11`); the 0.4.12/0.4.10 relay-only redesign is
-  uncommitted — binaries, republish, tier-3 and resubmit outstanding.
+  Published as app v0.4.10 / tool 0.4.12 (binaries
+  `brume-executa-v0.4.12`); tier-3 fresh-install run and resubmit
+  outstanding.

@@ -1821,6 +1821,23 @@ Local gates: `npm test` 152 green, `test_plan` 20 green,
 handoff cases now assert the masked suggestion hides names and facts,
 Prepare gates on typed words, an `llm.complete` runs on the chat path,
 and `ready/last` carries `planSource: "ai"` with no relay invention.
-Remaining, in order: commit, the 0.4.12 binaries workflow, download +
-checksum, `apps publish`, the tier-3 fresh-install Cloud Agent
-checklist, then `apps submit-review`.
+
+Shipped the same day: commit `b330b19` to `main`; the **Brume Executa
+Binaries** workflow (run 43518994954) built and smoked all four
+platforms and published GitHub release `brume-executa-v0.4.12`; the
+four archives were pulled into `executas/brume/dist/` and every
+`.sha256` verified, and `smoke_binary.py` passed against the local
+darwin-arm64 build. `anna-app apps publish` registered the bundled
+executa unchanged at v0.4.12, synced the protocol manifest, uploaded
+the four binary artifacts (`executa_version=1106`), froze the
+reset-offer skill at 1098 (v1.0.1), and cut **app v0.4.10**
+(`version_id=2275`) — now the server's `latest`. App status stays
+`rejected`; the review pin moves only on `submit-review`.
+
+Still outstanding, in order: the tier-3 fresh-install Cloud Agent
+checklist (`anna/README.md` — install v0.4.10, confirm `brume_prepare`
+is callable, run the three-projects sentence, write your own words in
+the window, verify the model-drafted card under `ready/last`; then the
+chat variant, reset/reflect/arrive/alertness), then
+`anna-app apps submit-review brume` to re-pin the review to v0.4.10 /
+tool 0.4.12.

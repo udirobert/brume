@@ -1495,5 +1495,13 @@ the comparison the person's job — structurally required before Prepare,
 and legible on the card after. Verified: `test_plan` 23 (interview
 contract + fixture parity), `npm test` 152 + smoke, browser-qa 35/35
 (new gate case, confirm path in the dayless flow, card-source
-assertions), `anna-app validate --strict`. NOT done: 0.4.8 binaries,
-publish cut, tier-3, resubmit.
+assertions), `anna-app validate --strict`.
+
+Release so far: `brume-executa-v0.4.8` binaries (all four, smoke incl.
+the interviewer contract) and app cuts 0.4.5/0.4.6. The proactive
+skill turned out to still be the Oct-17 breathing-break offer — the
+imported `skill-u3f06a4c-…` is owned by another identity, so
+`executa publish` minted our own `skill-papa-brume-reset-offer-w4p5ngnh`
+(v1.0.1, preparation-offer content) and `optional_executas` now
+references it; 0.4.6 (id 2220) freezes it. NOT done: tier-3 fresh
+install + resubmit.

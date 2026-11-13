@@ -427,16 +427,17 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. **Tool 0.4.11 / app 0.4.9 are the current
-  candidate, uncommitted:** the 0.4.10/0.4.8 cut (published:
-  version_id=2273, executa 1104, binaries `brume-executa-v0.4.10`)
+  one sayable paragraph. **App v0.4.9 / tool 0.4.11 are published**
+  (commit `d82c2f3`, binaries `brume-executa-v0.4.11` all four
+  platforms checksum-verified, app cut version_id=2274,
+  executa_version=1105 — `docs/ANNA.md` §12.36): the 0.4.10/0.4.8 cut
   was rejected again — a fact-free draft skipped questioning entirely,
   and token substitution still left model sentences ("Tell Priya you
   manage three") in the card. Now the window's "Write your card" stage
   shows each drafted field masked (`maskFacts`) and the person writes
   every part; the card saves only typed text with an `interview`
-  audit. Remaining: commit, 0.4.11 binaries workflow, publish, tier-3
-  fresh-install run, `apps submit-review` (`docs/ANNA.md` §12.36).
+  audit. Remaining: tier-3 fresh-install Cloud Agent run, then
+  `apps submit-review`.
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -449,7 +450,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
-  Published as app v0.4.8 / tool 0.4.10 (binaries
-  `brume-executa-v0.4.10`); the 0.4.11/0.4.9 person-writes-the-card
-  redesign is uncommitted — binaries, republish, tier-3 and resubmit
+  Published as app v0.4.9 / tool 0.4.11 (binaries
+  `brume-executa-v0.4.11`); tier-3 fresh-install run and resubmit
   outstanding.

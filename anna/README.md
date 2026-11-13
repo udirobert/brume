@@ -18,20 +18,20 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut (in progress): **app v0.4.9** with tool **0.4.11**. The
-preparation card is the primary result, and its content is the person's
-own typing: `brume_prepare` takes the model's draft, returns
-`open_window` with an `open_app_view` payload, and the window's "Write
-your card" screen shows each drafted field with its facts masked while
-the person writes every part themselves — the draft is reference only,
-so no model-written prose is ever the card (`docs/ANNA.md` §12.36).
-Both earlier designs were rejected: the two-step chat flow's `answers`
-parameter was model-written, and masked-fact substitution still left
-the model's sentences in the card. Binaries **0.4.10** are published
-(GitHub release `brume-executa-v0.4.10`, all four platforms, checksums
-verified; app v0.4.8 cut, `executa_version=1104`); **0.4.11** binaries,
-republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
-outstanding. App id 582, slug `brume`, tool id
+Latest cut: **app v0.4.9** with tool **0.4.11**, published
+(`docs/ANNA.md` §12.36). The preparation card is the primary result,
+and its content is the person's own typing: `brume_prepare` takes the
+model's draft, returns `open_window` with an `open_app_view` payload,
+and the window's "Write your card" screen shows each drafted field
+with its facts masked while the person writes every part themselves —
+the draft is reference only, so no model-written prose is ever the
+card. Both earlier designs were rejected: the two-step chat flow's
+`answers` parameter was model-written, and masked-fact substitution
+still left the model's sentences in the card. Binaries **0.4.11** are
+published (GitHub release `brume-executa-v0.4.11`, all four platforms,
+checksums verified; app v0.4.9 cut, `version_id=2274`,
+`executa_version=1105`). The tier-3 fresh-install Cloud Agent run and
+resubmit are outstanding. App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 

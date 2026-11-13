@@ -1758,6 +1758,24 @@ Local gates: `npm test` 154 green, `test_plan` 22 green,
 `anna-app validate --strict` clean, browser QA **37/37** — the two
 interview cases now write all six fields and assert no draft value
 reaches `ready/last`, plus the fact-free-draft case proves an empty
-interview cannot save. Remaining, in order: commit, the 0.4.11
-binaries workflow, download + checksum, `apps publish`, the tier-3
-fresh-install Cloud Agent checklist, then `apps submit-review`.
+interview cannot save.
+
+Shipped the same day: commit `d82c2f3` to `main`; the **Brume Executa
+Binaries** workflow (run 43512290546) built and smoked all four
+platforms and published GitHub release `brume-executa-v0.4.11`; the
+four archives were pulled into `executas/brume/dist/` and every
+`.sha256` verified, and `smoke_binary.py` passed against the local
+darwin-arm64 build. `anna-app apps publish` registered the bundled
+executa unchanged at v0.4.11, synced the protocol manifest, uploaded
+the four binary artifacts (`executa_version=1105`), froze the
+reset-offer skill at 1098 (v1.0.1), and cut **app v0.4.9**
+(`version_id=2274`) — now the server's `latest`. App status stays
+`rejected`; the review pin moves only on `submit-review`.
+
+Still outstanding, in order: the tier-3 fresh-install Cloud Agent
+checklist (`anna/README.md` — install v0.4.9, confirm `brume_prepare`
+is callable, run the three-projects sentence and watch `open_app_view`
+open "Write your card", write every field, verify `ready/last` and the
+`interview` audit; then the chat variant, reset/reflect/arrive/
+alertness), then `anna-app apps submit-review brume` to re-pin the
+review to v0.4.9 / tool 0.4.11.

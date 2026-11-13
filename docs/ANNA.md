@@ -1286,7 +1286,7 @@ Breathing, Arrive, and alertness stay behind "Something other than the
 conversation," and the home breathing break stays hidden until a card
 exists. The listing, the system prompt, and the tool catalogue lead with
 the preparation card. `brume_prepare` is the chat-path result;
-`brume_get_ready` is the older timed script.
+`brume_get_ready` (the older timed script) was removed in 0.4.7.
 
 Faithfulness is a check after parse, in the workspace and in the plugin:
 
@@ -1325,3 +1325,126 @@ case (`CASE="reviewer case"`). The full browser suite was not re-run.
 The gate covers counts, weekdays, and clock times. It does not catch
 every invented proper noun. On the chat path, `event` and `goal` are
 treated as the person's words.
+
+### 12.27 The oracle becomes the user's own words (2026-11-13, local, unpublished)
+
+The 12.26 gate still trusted model-written text: `brume_prepare` checked
+fields against `event` + `goal`, which the same model writes — a fact
+invented into `event` grounded itself. The workspace handoff had the same
+hole, a missing `mode` fell through to a breathing plan, and a complete
+handoff draft skipped the deadline question entirely. The check itself
+missed ordinals, month names, `tomorrow`, `noon`, `a couple`, and
+`o'clock`.
+
+The contract now takes `user_words` (required, ≤1500 chars): everything
+the user actually said, copied verbatim, including answers to follow-up
+questions. `event`, `goal`, and all six fields are checked against it —
+nothing the model writes can ground itself. It is a strong heuristic, not
+a proof: a model that misquotes `user_words` still defeats it, so the
+workspace (human-typed source, human-edited draft) remains the default
+path and `brume_prepare` is for explicit in-chat requests only.
+
+Changes (tool 0.4.7, app 0.4.3):
+
+- Plugin: `user_words` oracle; deadline-without-day returns
+  `needs_input: "deadline_day"` instead of refusing — the model asks once
+  and retries with the day inside `user_words`, or sets
+  `schedule_unspecified: true` when the user chose no day (the stateless
+  equivalent of the workspace skip). `brume_get_ready` removed from the
+  manifest, dispatch, and implementation — three tools remain.
+- Widened fact vocabulary in both implementations, kept in parity through
+  the new `faithfulness` and `deadline_day` sections of
+  `test/plan-cases.json`: ordinals (`the 14th`, `fourth`), month names,
+  `today/tomorrow/tonight/yesterday`, `noon/midday/midnight`, `weekend`,
+  vague counts (`a couple`, `a few`, `a dozen`, `several`), relative
+  spans (`next week`, `in the morning`, `end of the week`), and
+  `o'clock`. `at 3 o'clock` yields one `3 o'clock` phrase, not a stray
+  `at 3` token.
+- Workspace: missing `payload.mode` now defaults to `ready`, not `reset`.
+  A complete handoff draft goes through the same deadline question as the
+  typed path (`pendingHandoffPlan`, snapshotted at `clarify` so it
+  survives a window close); the answer joins the source and the draft is
+  re-checked before the card renders.
+- System prompt addendum: workspace is the default, `brume_prepare` only
+  on explicit in-chat asks, `user_words` rules spelled out,
+  `needs_input` → ask once then retry, breathing explicitly requested
+  only.
+- `brume-reset-offer` skill repointed from a 90-second break to a
+  preparation offer (named upcoming conversation, high-stakes send, or a
+  dreaded one; never generic stress, never auto-opens).
+- `app.json` listing compressed: Arrive and the alertness check are one
+  line each; version bumped to 0.4.3 for the next `apps publish`.
+
+Verified locally: `python3 -m unittest test_plan` (30), `npm test` in
+`anna/` (smoke covers every fixture case against `preparation.js`), and
+the manifest regenerated from `describe` (3 tools, `user_words` +
+`schedule_unspecified` params). NOT yet done — the four binaries are not
+built, nothing is published, and no fresh-install Cloud Agent chat has
+run the three-projects sentence. The publish order stays: binaries
+workflow → `anna-app validate --strict` → `apps publish` → tier-3 →
+Developer Console resubmit.
+
+### 12.28 The card leaves chat entirely (2026-11-13, local, unpublished)
+
+12.27's `user_words` oracle was still model-written — a model that quotes
+its own invention verbatim defeats it, and the `preparation` handoff had
+the same shape (a draft checked against model-written context). The
+schema survey settled it: `agent.session.*` is run history, not the chat
+transcript, and the plugin's reverse-RPC surface is only `storage/*` plus
+`sampling/createMessage`. There is no capability that could ever hand
+the tool the user's message, so no chat-saved card can be checked
+against it.
+
+The answer is to remove the path, not patch it (tool 0.4.7):
+
+- `brume_prepare` removed from the plugin — manifest, dispatch, and all
+  the faithfulness machinery that served it. Two tools remain,
+  `brume_reset` and `brume_complete`, described as what they are: the
+  optional breathing break. The manifest description says the card lives
+  in the window.
+- `open_app_view` payloads are prefill-only. `parseReadyHandoff` ignores
+  `preparation` entirely — a model-written draft can no longer reach the
+  card, labelled or not. Every ready payload lands on the input screen;
+  the person reads (and can edit) the situation, presses Prepare, answers
+  the clarify question if it fires, and the draft is written in-window
+  from what they submit. `pendingHandoffPlan`/`resolveHandoffClarify`
+  and the handoff label are gone.
+- The system prompt drops the `preparation` block and all `brume_prepare`
+  instructions (addendum 3996 → 2843 chars): "If the user asks to prepare
+  in chat rather than the window, explain that the card is prepared in
+  the window where they can see and keep every word, and open it the same
+  way."
+- `phraseTokens` canonicalises `the same X` → `this X` (week, weekend,
+  month, day): restating the person's own span is not a new fact, and the
+  reviewer sentence's "in the same week" was otherwise a false positive
+  on a faithful draft.
+- `app.json`: the breathing break is now one line beside Arrive and the
+  alertness check.
+
+The oracle story is now true end to end: every saved card passed through
+text the person saw on screen (prefilled or typed), a draft they could
+edit, and their own save tap. The faithfulness gate still checks the
+in-window draft against the submitted source — model drafts can still
+invent, and the check still withholds those spans — but no model-written
+string is ever the oracle.
+
+Verified locally: `python3 -m unittest test_plan` (16), `npm test` in
+`anna/` (152 unit + 238 smoke, incl. new `same week` fixture cases),
+`anna-app validate --strict`, and browser-qa cases: reviewer case,
+prefill-only handoff, malformed draft ignored, and the dayless-deadline
+prefill → ask → in-window draft flow. NOT yet done — binaries, publish,
+fresh-install Cloud Agent run, resubmit.
+
+### 12.29 The gate catches the fixtures too (2026-11-13, local, unpublished)
+
+Four browser-QA cases (reset-session reload, failed card save, mobile
+320, saved-wording/preserve) had been red since the faithfulness gate
+landed in 12.26 — typed contexts like `"x"` never grounded the fake
+host's `DEFAULT_PLAN`, so `keyPoint`'s "two more people" was correctly
+withheld, `prepCardComplete` stayed false, and every flow wedged at
+`screen-prep-plan`. The suite was never re-run after the gate, so the
+breakage read as new. The gate was right; the fixtures were the bug.
+Each context now states the plan's facts (`test/browser-qa.mjs`): the
+reviewer sentence is unchanged, the rest name "two more people" in the
+event or goal. Full suite 34/34 green — first clean run since the
+card-completeness gate existed.

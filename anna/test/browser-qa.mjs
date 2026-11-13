@@ -152,7 +152,7 @@ try {
   await ok("reset session reload restores paused, no closed accrual", async () => {
     await fresh();
     await ev('document.getElementById("btn-ready").click()');
-    await cli("fill", "#prep-event", "x");
+    await cli("fill", "#prep-event", "Ask for two more weeks on the launch.");
     await ev('document.getElementById("btn-prep-go").click()');
     await sleep(900);
     await ev('document.getElementById("btn-prep-finish").click()');
@@ -537,7 +537,7 @@ try {
   await ok("failed card save survives reload and retries without another model call", async () => {
     await fresh();
     await ev('document.getElementById("btn-ready").click()');
-    await cli("fill", "#prep-event", "Prepare a budget request");
+    await cli("fill", "#prep-event", "Prepare a budget request for two more people.");
     await ev('document.getElementById("btn-prep-go").click()');
     await sleep(1000);
     await post("/__fault", { op: "set", key: "ready/last", times: 1 });
@@ -587,7 +587,7 @@ try {
     await cli("set", "viewport", "320", "740");
     await sleep(300);
     await ev('document.getElementById("btn-ready").click()');
-    await cli("fill", "#prep-event", "Discuss the deadline with my manager");
+    await cli("fill", "#prep-event", "Discuss the deadline with my manager — we need two more people.");
     await ev('document.getElementById("btn-prep-go").click()');
     await sleep(1000);
     assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
@@ -611,7 +611,9 @@ try {
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
-  await ok("valid Anna draft handoff: editable plan, zero model", async () => {
+  await ok("draft in handoff payload is ignored — prefill only", async () => {
+    // A model-written draft can no longer reach the card: the payload
+    // only fills the form, and the person drives the draft themselves.
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -619,13 +621,13 @@ try {
       preparation: { kind: "plan", opening: "Thanks for having me.", keyPoint: "I ship programs.", approach: "Lead with outcomes.", objection: "Domain depth?", response: "I ramped X in 6 weeks.", nextStep: "Happy to share a plan." } } });
     await cli("open", BASE);
     await sleep(1500);
-    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
-    assert.equal(await ev('!document.getElementById("prep-handoff-label").hidden'), true);
-    assert.equal(await ev('document.getElementById("prep-opening").value'), "Thanks for having me.");
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal(await ev('document.getElementById("prep-event").value'), "Interview next week");
+    assert.equal(await ev('document.getElementById("prep-goal").value'), "Senior PM");
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
-  await ok("invalid draft keeps context, honest error, no call", async () => {
+  await ok("malformed draft in payload is ignored too", async () => {
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -634,8 +636,40 @@ try {
     await sleep(1500);
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal(await ev('document.getElementById("prep-event").value'), "Team conflict");
-    assert.ok((await ev('document.getElementById("prep-status-text").textContent')).includes("could not be used"));
     assert.equal((await post("/__dump")).llmCalls.length, 0);
+  });
+
+  await ok("dayless deadline: prefill, ask, then draft in-window", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "ready",
+      context: "I manage 3 projects and I added one deadline in the same week.",
+      preparation: { kind: "plan", opening: "I want to talk about my four projects.",
+        keyPoint: "3 projects, one deadline.", approach: "Start from the week as it is.",
+        objection: "Can you take 4?", response: "I can move the one deadline.",
+        nextStep: "Can we meet Friday at 3pm?" } } });
+    await cli("open", BASE);
+    await sleep(1500);
+    // The handoff draft (four/4/3pm invented) never renders — input first.
+    assert.deepEqual(await ev(screens), ["screen-prep-input"]);
+    assert.equal(await ev('document.getElementById("prep-event").value'),
+      "I manage 3 projects and I added one deadline in the same week.");
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(800);
+    // The person's deadline names no day — the question is asked before any draft.
+    assert.deepEqual(await ev(screens), ["screen-prep-clarify"]);
+    assert.ok((await ev('document.getElementById("prep-question").textContent')).includes("Which day"));
+    await ev('document.getElementById("prep-clarification").value = "It is due Friday."');
+    await ev('document.getElementById("btn-prep-answer").click()');
+    await sleep(1500);
+    // The in-window model drafts from the confirmed source; its invented
+    // "two" is withheld, the grounded "this week" stays.
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    assert.equal(await ev('document.getElementById("prep-opening").value'), "I wanted to talk through the timeline together.");
+    assert.equal(await ev('document.getElementById("prep-keypoint-edit").value'), "");
+    assert.equal(await ev('document.getElementById("prep-nextstep").value'), "Can we look at staffing this week?");
+    assert.equal((await post("/__dump")).llmCalls.length, 2);
   });
 
   await ok("startup visible while connect hangs; failure retries once", async () => {
@@ -692,6 +726,7 @@ try {
     await ev('document.getElementById("pref-details").open=true;document.getElementById("wording-select").value="concise";document.getElementById("btn-pref-save").click()');
     await sleep(500);
     await ev('document.querySelector("[data-moment=deadline]").click()');
+    await cli("fill", "#prep-goal", "Two more people on the team.");
     await cli("fill", "#prep-preserve", "Trust without promising Friday.");
     await ev('document.getElementById("btn-prep-go").click()');
     await sleep(1000);

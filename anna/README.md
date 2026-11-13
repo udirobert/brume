@@ -130,13 +130,16 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
    check against the person's own baseline. The home control does not
    chart those times. The check screen says it is not a medical test.
 
-Chat (`#brume …`): `brume_prepare` is the card. `brume_reset` and
-`brume_complete` are the optional breathing break. `brume_get_ready` is
-the older timed script. **Anna's own model writes the card, the plan,
-the reflection, and the get-ready text as tool arguments**; the tool
-validates them, refuses a card that adds a count, weekday, or clock
-time, renders verbatim `_display` blocks, and writes records. The tool
-has no sampling capability on purpose (see "Platform gotchas").
+Chat (`#brume …`): `brume_reset` and `brume_complete` are the optional
+breathing break — the only tools, and not the product's result. The
+preparation card lives in the window: the person reads the source and
+the draft and saves it themselves. No card is saved from chat, on
+purpose — every tool argument is model-written and the protocol offers
+no transcript to check it against, so a chat-saved card could never be
+faithful. **Anna's own model writes the plan and the reflection as tool
+arguments**; the tool validates and filters them, renders verbatim
+`_display` blocks, and writes records. The tool has no sampling
+capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
 `reset/summary`, `ready/sessions/<ts>`, `ready/last`, `alert/checks/<ts>`,
@@ -177,7 +180,7 @@ cd executas/brume && uv venv /tmp/brume-venv && uv pip install --python /tmp/bru
 python3 scripts/smoke_binary.py dist/brume <version>
 ```
 
-(get_ready/complete wait ~20 s in the smoke because nothing answers the
+(complete waits ~20 s in the smoke because nothing answers the
 storage reverse-RPC; a fake-host harness that answers it is a TODO.)
 
 **Tier 2 — cheap, only when a prompt changes**
@@ -204,19 +207,20 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
 
 1. Developer Console → Install vX; wait for "Deploying bundled tools…" to
    finish, then confirm the tool is callable (chat shows
-   `tool_papa_brume_htcxvfcr__brume_prepare`, not `exec_run`).
+   `tool_papa_brume_htcxvfcr__brume_reset`, not `exec_run`).
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
-   Open the preparation workspace. The card must still say three, and must
-   not say 4, four, Friday, or a clock time. If no day was given, the next
-   step stays unscheduled. This is the reviewer's case — it has to pass
+   Open the preparation workspace. The workspace must ask which day the
+   card should name before showing a draft; nothing may say 4, four,
+   Friday, or a clock time. This is the reviewer's case — it has to pass
    before any other chat.
-3. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
+3. Same scenario, asked in chat instead ("put the card in chat"): the
+   model must open the workspace — no chat tool saves a card — and the
+   ask-then-draft flow still runs.
+4. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
    posture-only.
-4. `done, feeling calmer` → `reflectionSource: "agent"`, record written.
-5. `#brume get me ready: <event>. The one thing: <point>` → opener and key
-   point present in the Rehearse block.
-6. Ask to open the get-ready in the app → no permission gate, event and
+5. `done, feeling calmer` → `reflectionSource: "agent"`, record written.
+6. Ask to open the preparation in the app → no permission gate, event and
    key point prefilled.
 7. One window alertness check → AI note (not the fallback line).
 
@@ -258,7 +262,7 @@ Consider BYOK in Anna for test traffic so it doesn't burn credits.
   grantable in the permissions UI until an agent backfills them.
 - After installing a new version, the tool can be missing from the agent
   for minutes (seen with 0.3.1 — still unexplained); the model then
-  improvises (`exec_run brume_get_ready …`). Check before testing.
+  improvises (`exec_run brume_reset …`). Check before testing.
 - `version` lives in `app.json`, not `manifest.json` (schema rejects it);
   `--bump` doesn't write it back.
 - `anna-app dev` denies `audio.*`/`mobile.*` locally; voice and haptics

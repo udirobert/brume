@@ -22,6 +22,7 @@ const timing = await import(join(root, "bundle", "timing.js"));
 const plan = await import(join(root, "bundle", "plan.js"));
 const alert = await import(join(root, "bundle", "alertness.js"));
 const session = await import(join(root, "bundle", "session.js"));
+const prep = await import(join(root, "bundle", "preparation.js"));
 
 let passed = 0;
 function ok(name, cond) {
@@ -320,6 +321,13 @@ ok("memory line never carries typed text", !String(plan.preparationMemoryLine([
 for (const tc of planCases.reflection_outputs ?? []) {
   const want = tc.expect === "FALLBACK" ? plan.FALLBACK_REFLECTION : tc.expect;
   ok(`reflection "${tc.name}"`, plan.cleanReflection(tc.raw) === want);
+}
+for (const tc of planCases.faithfulness ?? []) {
+  ok(`faithfulness "${tc.name}"`,
+    JSON.stringify(prep.ungroundedSpans(tc.candidate, tc.source)) === JSON.stringify(tc.expect));
+}
+for (const tc of planCases.deadline_day ?? []) {
+  ok(`deadline day "${tc.name}"`, (prep.scheduleQuestion(tc.source) !== null) === tc.expect);
 }
 
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------

@@ -611,5 +611,197 @@
       ],
       "expect": null
     }
+  ],
+  "faithfulness": [
+    {
+      "name": "reviewer: four projects invented",
+      "source": "I manage 3 projects and I added one deadline in the same week.",
+      "candidate": "I want to talk about the four projects on my plate.",
+      "expect": [
+        "four"
+      ]
+    },
+    {
+      "name": "reviewer: friday and time invented",
+      "source": "I manage 3 projects and I added one deadline in the same week.",
+      "candidate": "Can we meet Friday at 3pm?",
+      "expect": [
+        "friday",
+        "3pm"
+      ]
+    },
+    {
+      "name": "relative day",
+      "source": "I have a review coming up.",
+      "candidate": "Let's talk tomorrow.",
+      "expect": [
+        "tomorrow"
+      ]
+    },
+    {
+      "name": "ordinal date",
+      "source": "I have a review coming up.",
+      "candidate": "It's on the 14th.",
+      "expect": [
+        "14th"
+      ]
+    },
+    {
+      "name": "vague count",
+      "source": "I have a review coming up.",
+      "candidate": "A couple of items.",
+      "expect": [
+        "a couple"
+      ]
+    },
+    {
+      "name": "ordinal word",
+      "source": "I have a review coming up.",
+      "candidate": "My fourth review.",
+      "expect": [
+        "fourth"
+      ]
+    },
+    {
+      "name": "month name",
+      "source": "I have a review coming up.",
+      "candidate": "See you in march.",
+      "expect": [
+        "march"
+      ]
+    },
+    {
+      "name": "noon",
+      "source": "I have a review coming up.",
+      "candidate": "Meet at noon.",
+      "expect": [
+        "noon"
+      ]
+    },
+    {
+      "name": "o'clock",
+      "source": "I have a review coming up.",
+      "candidate": "At 3 o'clock.",
+      "expect": [
+        "3",
+        "3 o'clock"
+      ]
+    },
+    {
+      "name": "weekend",
+      "source": "I have a review coming up.",
+      "candidate": "Before the weekend.",
+      "expect": [
+        "weekend"
+      ]
+    },
+    {
+      "name": "next week span",
+      "source": "I have a review coming up.",
+      "candidate": "Push it to next week.",
+      "expect": [
+        "next week"
+      ]
+    },
+    {
+      "name": "in the morning",
+      "source": "I have a review coming up.",
+      "candidate": "We could do it in the morning.",
+      "expect": [
+        "in the morning"
+      ]
+    },
+    {
+      "name": "several",
+      "source": "I have a review coming up.",
+      "candidate": "Several things to cover.",
+      "expect": [
+        "several"
+      ]
+    },
+    {
+      "name": "end of week",
+      "source": "I have a review coming up.",
+      "candidate": "By end of week.",
+      "expect": [
+        "end of week"
+      ]
+    },
+    {
+      "name": "grounded reuse",
+      "source": "Due tomorrow at noon on the 14th \u2014 a couple of items, my fourth review.",
+      "candidate": "Talk about tomorrow, the 14th, a couple of items, your fourth review.",
+      "expect": []
+    },
+    {
+      "name": "friday grounded when stated",
+      "source": "I manage 3 projects and one deadline, due Friday.",
+      "candidate": "Can we meet Friday?",
+      "expect": []
+    },
+    {
+      "name": "number word equals digit",
+      "source": "I manage 3 projects.",
+      "candidate": "I manage three projects.",
+      "expect": []
+    },
+    {
+      "name": "one-on-one is not a count",
+      "source": "I manage 3 projects.",
+      "candidate": "Let's have a one-on-one.",
+      "expect": []
+    },
+    {
+      "name": "bare 14 grounds a stated 14th",
+      "source": "It's on the 14th.",
+      "candidate": "Due on 14.",
+      "expect": []
+    },
+    {
+      "name": "same week grounds this week",
+      "source": "I added one deadline in the same week.",
+      "candidate": "Can we look at it this week?",
+      "expect": []
+    },
+    {
+      "name": "the same week ungrounded",
+      "source": "I have a review coming up.",
+      "candidate": "It is due the same week.",
+      "expect": [
+        "this week"
+      ]
+    }
+  ],
+  "deadline_day": [
+    {
+      "name": "reviewer sentence",
+      "source": "I manage 3 projects and I added one deadline in the same week.",
+      "expect": true
+    },
+    {
+      "name": "no deadline mention",
+      "source": "Deadline ask\nTwo more weeks",
+      "expect": false
+    },
+    {
+      "name": "weekday named",
+      "source": "I manage 3 projects and I added one deadline in the same week.\nFriday",
+      "expect": false
+    },
+    {
+      "name": "relative day named",
+      "source": "I added one deadline in the same week, due tomorrow.",
+      "expect": false
+    },
+    {
+      "name": "clock time named",
+      "source": "I added one deadline in the same week, due at 3pm.",
+      "expect": false
+    },
+    {
+      "name": "date named",
+      "source": "I added one deadline in the same week, due the 14th.",
+      "expect": false
+    }
   ]
 }

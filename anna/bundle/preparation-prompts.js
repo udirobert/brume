@@ -39,14 +39,14 @@ keyPoint: their central point or request, sharpened without changing its meaning
 approach: a concrete conversational move that handles the stated constraints; not generic encouragement or hidden reasoning.
 objection: one plausible difficult question or pushback for practice, written as a hypothetical counterpart's line. The app labels it as a possibility.
 response: suggested wording that addresses that pushback and advances the goal without fabricating supporting facts.
-nextStep: a closing question or next action they can propose, not a claim that anyone has agreed. Do not name a weekday or a clock time, and do not change a count, unless that weekday, time, or count appears in the user JSON.
-Every count, weekday, and clock time in opening, keyPoint, approach, objection, response, and nextStep must already appear in the user JSON. Do not turn "3" into "4", and do not add a meeting time to make a field sound finished. Where a time or count was not given, leave it out.
+nextStep: a closing question or next action they can propose, not a claim that anyone has agreed. Do not name a weekday, date, or clock time, and do not change a count, unless that weekday, date, time, or count appears in the user JSON.
+Every count, weekday, date, and clock time in opening, keyPoint, approach, objection, response, and nextStep must already appear in the user JSON. Do not turn "3" into "4", and do not add a meeting time or date to make a field sound finished. Where a time, date, or count was not given, leave it out.
 Keep every field nonempty. Different goals for the same event must change the substance of the preparation.`;
   if (scheduleUnspecified) {
-    instruction += "\nThe person was asked which day to name and did not name one. Keep the next step unscheduled: a question or action with no weekday and no clock time.";
+    instruction += "\nThe person was asked which day to name and did not name one. Keep the next step unscheduled: a question or action with no weekday, no date, and no clock time.";
   }
   if (Array.isArray(droppedFacts) && droppedFacts.length) {
-    instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, or clock times.`;
+    instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, or clock times.`;
   }
   return [
     { role: "system", content: { type: "text", text: instruction } },
@@ -80,7 +80,7 @@ Return:
 adjustment: one specific change, and it must repeat a short run of their reply in their words (three words in a row when the reply is that long). If you cannot quote them, still return the other fields and make adjustment restate their reply rather than a new fact.
 response: a revised version they can choose to use, preserving their intent and voice while addressing the difficult question. Treat new factual statements in their reply as their statements, not independently verified facts.
 nextStep: a closing question or action consistent with their goal and response. Do not invent agreements or commitments.
-The plan may be wrong. Do not repeat a count, weekday, or clock time from the plan unless it also appears in event, goal, keyPoint, preserve, clarification, or reply.
+The plan may be wrong. Do not repeat a count, weekday, date, or clock time from the plan unless it also appears in event, goal, keyPoint, preserve, clarification, or reply.
 Keep every field nonempty. Do not ask another practice question; this is one bounded rehearsal turn.`;
   if (Array.isArray(droppedFacts) && droppedFacts.length) {
     instruction += `\nA previous note added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain.`;

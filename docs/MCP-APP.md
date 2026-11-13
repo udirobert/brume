@@ -44,8 +44,10 @@ ChatGPT / MCP host
 - **`brume_complete`** — `felt` + `reflection`, returns a cleaned
   reflection. No server-side persistence in v1 (nothing to delete, nothing
   to leak — a Responsible-AI point).
-- **`brume_get_ready`** — left out of v1; it's an Anna-specific flow. Add
-  only if the demo story wants it.
+- **`brume_get_ready` / `brume_prepare`** — retired in Anna tool 0.4.7.
+  A chat tool cannot save a faithful card (every argument is
+  model-written, no transcript exists to check it against), so the card
+  lives in the app window only.
 
 ## Hard constraints (shared with the whole product)
 

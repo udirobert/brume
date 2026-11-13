@@ -1,9 +1,9 @@
 {
   "slug": "brume",
   "name": "brume",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "executa_type": "tool",
-  "description": "Conversation preparation card, plus an optional breathing break.",
+  "description": "Brume's optional breathing break. The conversation-preparation card lives in the app window.",
   "tool_id": "tool-papa-brume-htcxvfcr",
   "type": "python",
   "distribution": {

@@ -138,7 +138,6 @@ const els = {
   prefDetails: $("#pref-details"),
   cardPrefSlot: $("#card-pref-slot"),
   homeScreen: $("#screen-home"),
-  prepHandoffLabel: $("#prep-handoff-label"),
   prepEvent: $("#prep-event"),
   prepGoal: $("#prep-goal"),
   prepKeypoint: $("#prep-keypoint"),
@@ -2066,7 +2065,6 @@ function startPreparation({ moment } = {}) {
   cardViewOnly = false;
   els.btnCardDone.hidden = false;
   els.btnCardHome.hidden = true;
-  els.prepHandoffLabel.hidden = true;
   els.prepEvent.placeholder = "A one-on-one with my manager about next quarter's workload";
   beginTask("ready", "input", { prep: newPrepState(), pause: null });
   prep = task.data.prep;
@@ -2322,7 +2320,6 @@ function renderPrepStage() {
     els.prepQuestion.textContent = prep.question;
     els.prepClarification.value = prep.clarification;
   } else if (prep.stage === "plan") {
-    els.prepHandoffLabel.hidden = prep.planSource !== "anna-handoff";
     for (const [key, el] of PLAN_FIELDS) el.value = prep.plan?.[key] ?? "";
     els.prepObjection.textContent = prep.plan?.objection ?? "";
     renderGrounding();
@@ -2451,7 +2448,7 @@ function renderPrepCard() {
   els.cardAdjustment.textContent = prep.feedback?.adjustment
     ? `Rehearsal note: ${prep.feedback.adjustment}`
     : "";
-  const drafted = prep.planSource === "ai" || prep.planSource === "anna-handoff";
+  const drafted = prep.planSource === "ai";
   els.cardSource.hidden = !drafted;
   els.cardSource.textContent = drafted
     ? "Anna drafted this card for this conversation. The words here are the ones you kept."
@@ -2619,33 +2616,17 @@ function applyEntryPayload(payload) {
   }
   lastAppliedPayloadJson = json;
   const ctx = typeof payload.context === "string" ? payload.context : "";
-  const mode = payload.mode || "reset";
+  const mode = payload.mode || "ready";
   if (mode === "ready") {
+    // Prefill only — Anna hands the situation over, the person reads it,
+    // and the card is drafted inside the window from what they submit.
     const handoff = parseReadyHandoff(payload);
     startPreparation();
     prep.input = { ...prep.input, ...handoff.input };
-    prep.planSource = handoff.source;
-    if (handoff.plan) {
-      const source = preparationSource(prep.input);
-      const issues = faithfulnessIssues(handoff.plan, source, PLAN_FACT_FIELDS);
-      prep.plan = issues.length ? withholdUngrounded(handoff.plan, issues) : handoff.plan;
-      prep.stage = "plan";
-      prep.wordingStyle = currentWordingPreference;
-      if (issues.length) prep.error = faithfulnessMessage(issues);
-    } else if (handoff.invalidDraft) {
-      prep.error = "Anna's draft could not be used. Your context is here; prepare a new draft when you're ready.";
-    }
     prepKindChips();
     syncPrepInputs();
-    if (handoff.plan) {
-      prep.stage = "plan";
-      renderPrepStage();
-      if (prep.error) mascot("prep-plan")?.setState("watching");
-    } else {
-      renderPrepStage();
-      if (prep.error) showPrepStatus(els.screens.prepInput, { error: prep.error });
-      snapshotReady("input");
-    }
+    renderPrepStage();
+    snapshotReady("input");
     return true;
   }
   if (mode === "alertness") {

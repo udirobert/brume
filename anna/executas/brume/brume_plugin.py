@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Brume Reset — Anna Executa plugin (stdio JSON-RPC 2.0, stdlib only).
 
-Chat-native guided breathing break for `#brume reset`.
+Chat-native guided breathing break for `#brume reset`. This is Brume's
+optional break, not its result: the preparation card lives in the app
+window, where the person reads the source and the draft and saves it
+themselves. A chat tool cannot save the card faithfully — every
+argument it receives is model-written, and this protocol offers no
+transcript to check them against — so no card-saving tool exists.
 
   brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
@@ -48,7 +53,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.6"
+VERSION = "0.4.7"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -134,48 +139,17 @@ MANIFEST: dict[str, Any] = {
     "display_name": "Brume",
     "version": VERSION,
     "description": (
-        "Brume's primary function is a conversation-preparation card. "
-        "brume_prepare validates the six fields you wrote for this "
-        "conversation and saves that card. brume_reset and brume_complete "
-        "are an optional breathing break. brume_get_ready is the older "
-        "timed chat script and does not save the card."
+        "Brume's optional breathing break. brume_reset starts a short "
+        "guided break; brume_complete saves the session record and your "
+        "reflection when the user says done. Brume's result — the "
+        "conversation-preparation card — lives in the app window, where "
+        "the person reads and saves it themselves."
     ),
     "author": "Brume",
     "category": "productivity",
     "license": "MIT",
     "host_capabilities": ["aps.kv", "aps.scope.user.read", "aps.scope.user.write"],
     "tools": [
-        {
-            "name": "brume_prepare",
-            "description": (
-                "Save Brume's preparation card, the app's result. Write every field yourself "
-                "from what the user said about this conversation. opening, key_point, approach, "
-                "objection, response and next_step must all be nonempty and within their caps. "
-                "The objection is hypothetical practice, not a prediction. Do not invent facts, "
-                "motives, agreements, or outcomes. The tool rejects a health claim or an over-cap "
-                "field, or a count, weekday, or clock time that is not in event or goal. On success the card is shown verbatim and saved "
-                "to the user's storage; do not restate it."
-            ),
-            "timeout": 30,
-            "parameters": [
-                {"name": "event", "type": "string", "required": True,
-                 "description": "The conversation, as the user described it. Max 600 characters."},
-                {"name": "goal", "type": "string", "required": False,
-                 "description": "What they want from the conversation, if they said. Max 300 characters."},
-                {"name": "opening", "type": "string", "required": True,
-                 "description": "One or two sentences they can say first. Max 300 characters."},
-                {"name": "key_point", "type": "string", "required": True,
-                 "description": "The point they want remembered, sharpened without changing its meaning. Max 220 characters."},
-                {"name": "approach", "type": "string", "required": True,
-                 "description": "One concrete conversational move. Max 300 characters."},
-                {"name": "objection", "type": "string", "required": True,
-                 "description": "One hypothetical pushback to practise, not a prediction. Max 240 characters."},
-                {"name": "response", "type": "string", "required": True,
-                 "description": "Wording that answers that pushback and advances their goal. Max 360 characters."},
-                {"name": "next_step", "type": "string", "required": True,
-                 "description": "A closing question or action they can propose. Max 220 characters. Not a claim that anyone agreed."},
-            ],
-        },
         {
             "name": "brume_reset",
             "description": (
@@ -235,33 +209,6 @@ MANIFEST: dict[str, Any] = {
                  "description": "Only if the user said how they feel."},
                 {"name": "reflection", "type": "string", "required": False,
                  "description": "Your closing note, written as described above."},
-            ],
-        },
-        {
-            "name": "brume_get_ready",
-            "description": (
-                "Legacy timed chat script, not the preparation card. Use brume_prepare for the card. "
-                "Guide the user through a 3-minute get-ready routine before an interview, presentation, "
-                "hard conversation or important meeting: about a minute of cyclic-sigh breathing, 30 "
-                "seconds of opening up their posture, 30 seconds of humming as a voice warm-up, then "
-                "rehearsing an opening line and key point. Write `opener`, `key_point` and `reminder` "
-                "yourself from what they told you (ask what is coming up first if it is unclear; never "
-                "invent facts about them). Everything is rendered verbatim; do not restate it. Make no "
-                "claims about hormones, confidence effects or health."
-            ),
-            "timeout": 30,
-            "parameters": [
-                {"name": "event", "type": "string", "required": True,
-                 "description": "What is coming up, as a short phrase."},
-                {"name": "kind", "type": "string",
-                 "enum": ["interview", "presentation", "hard-conversation", "meeting"],
-                 "required": False, "description": "Kind of moment."},
-                {"name": "opener", "type": "string", "required": False,
-                 "description": "One natural opening sentence in the user's own voice, max 30 words."},
-                {"name": "key_point", "type": "string", "required": False,
-                 "description": "The one point they want remembered, clear and memorable, max 20 words."},
-                {"name": "reminder", "type": "string", "required": False,
-                 "description": "One short practical reminder for the moment itself, max 14 words (for example about pausing or listening)."},
             ],
         },
     ],
@@ -727,275 +674,6 @@ def validate_agent_plan(args: dict) -> dict | None:
     }
 
 
-READY_KINDS = {"interview", "presentation", "hard-conversation", "meeting"}
-
-
-def _ready_blocks(event: str, kind: str | None, opener: str, key_point: str,
-                  reminder: str) -> list[dict]:
-    pat = PATTERNS["cyclic-sigh"]
-    cycle_line = f"in · {int(pat['inhale'])} · 1 — top up · {int(pat['topup'])} — out · 6 · 5 · 4 · 3 · 2 · 1"
-    cycle_lines = "\n".join(f"**{i}** — {cycle_line}" for i in range(1, 8))
-    blocks = [
-        {"type": "markdown", "text": (
-            "**Breathe** — Two short sips of air through the nose, then one long, "
-            "slow breath out. About a minute.\n\n" + cycle_lines)},
-        {"type": "markdown", "text": (
-            "**Open up** — Sit or stand tall and roll your shoulders back. If you "
-            "have room, raise your arms overhead in a wide V and hold for a few "
-            "breaths, then let them float down.")},
-        {"type": "markdown", "text": (
-            "**Warm up your voice** — With your lips closed, hum gently on a "
-            "comfortable note. Then glide the hum up and down like a slow siren, "
-            "a few times.")},
-    ]
-    rehearse = "**Rehearse** — Say your opening line out loud, twice, at an easy pace:"
-    if opener:
-        rehearse += f"\n\n> {opener}"
-    if key_point:
-        rehearse += f"\n\n**The one thing to land:** {key_point}"
-    if reminder:
-        rehearse += f"\n\n_{reminder}_"
-    blocks.append({"type": "markdown", "text": rehearse})
-    blocks.append({"type": "markdown", "text": "You're ready. Go well."})
-    return blocks
-
-
-_NUMBER_WORDS = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
-    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
-    "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
-    "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40,
-    "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
-}
-_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
-_HOUR_WORDS = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve"
-_TIME_RES = (
-    re.compile(r"\b(\d{1,2})(?::([0-5]\d))?\s*([ap])\.?m\.?\b", re.IGNORECASE),
-    re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b"),
-    re.compile(rf"\bat\s+(\d{{1,2}}|{_HOUR_WORDS})\b", re.IGNORECASE),
-)
-
-
-def _scrub_compounds(text: str) -> str:
-    return re.sub(r"\b[\w]+(?:-[\w]+)+\b", " ", text or "")
-
-
-def _time_tokens(text: str) -> list[str]:
-    found = []
-    for pattern in _TIME_RES:
-        for match in pattern.finditer(text or ""):
-            found.append(re.sub(r"\s+", " ", match.group(0)).strip().lower())
-    return found
-
-
-def _ungrounded_spans(candidate: str, source: str) -> list[str]:
-    """Counts, weekdays, and clock times in candidate that source does not contain."""
-    src_nums: set[int] = set()
-    scrubbed_src = _scrub_compounds(source).lower()
-    for word, number in _NUMBER_WORDS.items():
-        if re.search(rf"\b{word}\b", scrubbed_src):
-            src_nums.add(number)
-    for match in re.finditer(r"\b\d+\b", source or ""):
-        src_nums.add(int(match.group(0)))
-    src_days = {day for day in _WEEKDAYS if re.search(rf"\b{day}\b", source or "", re.IGNORECASE)}
-    src_times = set(_time_tokens(source))
-    found: list[str] = []
-    scrubbed = _scrub_compounds(candidate).lower()
-    for word, number in _NUMBER_WORDS.items():
-        if re.search(rf"\b{word}\b", scrubbed) and number not in src_nums:
-            found.append(word)
-    for match in re.finditer(r"\b\d+\b", candidate or ""):
-        if int(match.group(0)) not in src_nums:
-            found.append(match.group(0))
-    lower = (candidate or "").lower()
-    for day in _WEEKDAYS:
-        if re.search(rf"\b{day}\b", lower) and day not in src_days:
-            found.append(day)
-    for token in _time_tokens(candidate):
-        if token not in src_times:
-            found.append(token)
-    return list(dict.fromkeys(found))
-
-
-PREP_CAPS = {
-    "opening": 300,
-    "key_point": 220,
-    "approach": 300,
-    "objection": 240,
-    "response": 360,
-    "next_step": 220,
-}
-_PREP_ALIASES = {"key_point": "keyPoint", "next_step": "nextStep"}
-
-
-def _prep_field(value: Any, cap: int) -> str | None:
-    """Match the workspace: over-cap and health claims are rejected, not shortened into a card."""
-    if not isinstance(value, str):
-        return None
-    if len(value.strip()) > cap:
-        return None
-    text = _clean_text(value, cap)
-    if not text or HEALTH_CLAIM_RE.search(text):
-        return None
-    return text
-
-
-def _prep_arg(args: dict, name: str) -> Any:
-    if args.get(name) not in (None, ""):
-        return args.get(name)
-    alias = _PREP_ALIASES.get(name)
-    if alias and args.get(alias) not in (None, ""):
-        return args.get(alias)
-    return None
-
-
-def invoke_prepare(args: dict, context: dict) -> dict:
-    """Validate a model-written preparation card and save it. No canned substitute."""
-    invoke_id = context.get("invoke_id")
-    event = _prep_field(args.get("event"), 600)
-    goal = _prep_field(args.get("goal"), 300) if args.get("goal") not in (None, "") else ""
-    rejected: list[str] = []
-    if not event:
-        rejected.append("event")
-    if args.get("goal") not in (None, "") and goal is None:
-        rejected.append("goal")
-    fields: dict[str, str] = {}
-    for name, cap in PREP_CAPS.items():
-        value = _prep_field(_prep_arg(args, name), cap)
-        if not value:
-            rejected.append(name)
-        else:
-            fields[name] = value
-    if rejected:
-        return {
-            "success": False,
-            "data": {
-                "error": (
-                    "Card not saved. Rewrite the rejected fields within their caps, "
-                    "with no health or medical claims: " + ", ".join(rejected)
-                ),
-                "rejected": rejected,
-            },
-        }
-    source = "\n".join(part for part in (event, goal or "") if part)
-    invented = {
-        name: _ungrounded_spans(text, source)
-        for name, text in fields.items()
-        if _ungrounded_spans(text, source)
-    }
-    if invented:
-        return {
-            "success": False,
-            "data": {
-                "error": (
-                    "Card not saved. These fields add a count, weekday, or time "
-                    "that is not in event or goal: " + ", ".join(invented)
-                ),
-                "rejected": list(invented),
-                "invented": invented,
-            },
-        }
-    record = {
-        "completedAt": _utc_now_iso(),
-        "event": event,
-        "goal": goal or "",
-        "opening": fields["opening"],
-        "preparedKeyPoint": fields["key_point"],
-        "approach": fields["approach"],
-        "objection": fields["objection"],
-        "response": fields["response"],
-        "nextStep": fields["next_step"],
-        "rehearsed": False,
-        "planSource": "agent",
-        "source": "executa.chat",
-        "sayable": "\n\n".join(
-            part for part in (fields["opening"], fields["key_point"], fields["next_step"]) if part
-        ),
-    }
-    key, err = None, None
-    try:
-        k = f"ready/sessions/{record['completedAt']}"
-        _storage_set(k, record, invoke_id)
-        _storage_set("ready/last", record, invoke_id)
-        key = k
-    except Exception as exc:  # noqa: BLE001
-        err = str(exc)
-    card = "\n".join([
-        record["sayable"],
-        "",
-        "—",
-        "",
-        "**Preparation card**",
-        "",
-        f"Situation: {event}",
-        *( [f"Goal: {goal}"] if goal else [] ),
-        f"Opening: {fields['opening']}",
-        f"Key point: {fields['key_point']}",
-        f"Approach: {fields['approach']}",
-        f"Possible pushback: {fields['objection']}",
-        f"Response: {fields['response']}",
-        f"Next step: {fields['next_step']}",
-        "",
-        "Not a script. Take what helps.",
-    ])
-    return {
-        "success": True,
-        "data": {
-            "planSource": "agent",
-            "record_written": key is not None,
-            "record_scope": "user",
-            "record_key": key,
-            "storage_error": err,
-            "record": record,
-            "note": "The preparation card was rendered verbatim — do not restate it.",
-            "_display": {"blocks": [{"type": "markdown", "text": card}]},
-        },
-    }
-
-
-def invoke_get_ready(args: dict, context: dict) -> dict:
-    invoke_id = context.get("invoke_id")
-    event = clean_context(args.get("event"))
-    if not event:
-        return {"success": False, "data": {"error": "event is required — ask what is coming up first"}}
-    kind = args.get("kind")
-    kind = kind if kind in READY_KINDS else None
-    opener = _clean_text(args.get("opener"), 220)
-    key_point = _clean_text(args.get("key_point"), 160)
-    reminder = _clean_text(args.get("reminder"), 110)
-    if HEALTH_CLAIM_RE.search(opener):
-        opener = ""
-    if HEALTH_CLAIM_RE.search(key_point):
-        key_point = ""
-    if HEALTH_CLAIM_RE.search(reminder):
-        reminder = "Pause before you answer."
-    if not reminder:
-        reminder = "Pause before you answer."
-    record = {
-        "completedAt": _utc_now_iso(),
-        "event": event, "kind": kind,
-        "opener": opener, "key_point": key_point, "reminder": reminder,
-        "source": "executa.chat",
-    }
-    key, err = None, None
-    try:
-        k = f"ready/sessions/{record['completedAt']}"
-        _storage_set(k, record, invoke_id)
-        key = k
-    except Exception as exc:  # noqa: BLE001
-        err = str(exc)
-    return {
-        "success": True,
-        "data": {
-            "event": event, "kind": kind,
-            "opener": opener, "key_point": key_point, "reminder": reminder,
-            "record_written": key is not None, "storage_error": err,
-            "record": record,
-            "_display": {"blocks": _ready_blocks(event, kind, opener, key_point, reminder)},
-        },
-    }
-
-
 # --- Tools ---------------------------------------------------------------
 
 
@@ -1252,10 +930,6 @@ def invoke(tool: str, args: dict[str, Any], context: dict[str, Any]) -> dict[str
         return invoke_reset(args, context)
     if tool == "brume_complete":
         return invoke_complete(args, context)
-    if tool == "brume_get_ready":
-        return invoke_get_ready(args, context)
-    if tool == "brume_prepare":
-        return invoke_prepare(args, context)
     raise LookupError(f"unknown tool: {tool}")
 
 

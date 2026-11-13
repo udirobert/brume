@@ -50,7 +50,12 @@ release checklist, one new chat per step.
 
 Rules:
 - `bundle/plan.js` and `executas/brume/brume_plugin.py` share one contract;
-  change both and cover it in `test/plan-cases.json`.
+  change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
+  owns the second contract — the faithfulness spans and the deadline-day
+  question — covered by the `faithfulness` and `deadline_day` sections of
+  the same fixture. The plugin deliberately has no card tool: every tool
+  argument is model-written and there is no transcript to check it
+  against, so cards are saved only in the window.
 - After changing the plugin's `describe`, regenerate
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the
@@ -400,13 +405,14 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
 ### Release candidate notes (local, unpublished)
 
 - Conversation preparation is the primary result. `bundle/preparation.js`
-  blanks a count, weekday, or clock time that is not in the person's text,
-  asks once when a deadline is in the same week and no day was named, and
-  hides a rehearsal note that does not quote the reply. The saved card
-  leads with one sayable paragraph. `brume_prepare` (source tool 0.4.6)
-  refuses the same invented facts and writes nothing. Published binaries
-  are still 0.4.5; do not publish until they exist and the three-projects
-  Cloud Agent case passes (`docs/ANNA.md` §12.26).
+  blanks a factual span — counts and vague counts, ordinals, weekdays,
+  month names, relative days and spans, clock phrases — that is not in the
+  person's text ("the same week" normalises to "this week"), asks once
+  when a deadline is in the same week and no day was named, and hides a
+  rehearsal note that does not quote the reply. The saved card leads with
+  one sayable paragraph. Published binaries
+  are still 0.4.5; do not publish until the 0.4.7 binaries exist and the
+  three-projects Cloud Agent case passes (`docs/ANNA.md` §12.26–12.28).
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always

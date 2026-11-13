@@ -3,7 +3,7 @@
 
 Usage: smoke_binary.py <path-to-binary> <expected-version>
 
-Sends `describe`, `health`, and `invoke calls (reset, get_ready, complete) on ONE process
+Sends `describe`, `health`, and `invoke calls (reset, complete) on ONE process
 (proving it keeps reading after each response), then closes stdin and
 asserts a clean exit 0. Any stderr output is ignored. Exits non-zero on
 the first failed assertion.
@@ -122,27 +122,6 @@ def main() -> None:
             fail(f"invoke brume_reset: unexpected planSource {data.get('planSource')!r}")
         print(f"  (brume_reset took {elapsed:.1f}s)")
 
-        # invoke brume_get_ready — expect 5 verbatim display blocks.
-        started = time.monotonic()
-        r = request(proc, 4, "invoke", {
-            "tool": "brume_get_ready",
-            "arguments": {
-                "event": "job interview at 3pm",
-                "kind": "interview",
-                "opener": "Hi, great to meet you.",
-                "key_point": "I turn messy research into clear decisions.",
-                "reminder": "Pause before you answer.",
-            },
-        })
-        elapsed = time.monotonic() - started
-        result = r.get("result")
-        if not isinstance(result, dict) or result.get("success") is not True:
-            fail(f"invoke brume_get_ready: expected success true, got {result!r}")
-        blocks = (result.get("data") or {}).get("_display", {}).get("blocks", [])
-        if len(blocks) != 5:
-            fail(f"invoke brume_get_ready: expected 5 display blocks, got {len(blocks)}")
-        print(f"  (brume_get_ready took {elapsed:.1f}s)")
-
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()
         r = request(proc, 5, "invoke", {
@@ -160,33 +139,6 @@ def main() -> None:
         if data.get("closing_source") != "agent":
             fail(f"invoke brume_complete: expected closing_source agent, got {data.get('closing_source')!r}")
         print(f"  (brume_complete took {elapsed:.1f}s)")
-
-        # invoke brume_prepare — the card is the primary result.
-        started = time.monotonic()
-        r = request(proc, 6, "invoke", {
-            "tool": "brume_prepare",
-            "arguments": {
-                "event": "Ask my manager for two more weeks on the launch.",
-                "goal": "Keep the date honest.",
-                "opening": "I want to look at the launch date with you.",
-                "key_point": "The date holds only if we cut a feature.",
-                "approach": "Name the feature before I ask for time.",
-                "objection": "Why can't the current team absorb it?",
-                "response": "If the date stays, the migration moves out.",
-                "next_step": "Can we pick that feature this week?",
-            },
-        })
-        elapsed = time.monotonic() - started
-        result = r.get("result")
-        if not isinstance(result, dict) or result.get("success") is not True:
-            fail(f"invoke brume_prepare: expected success true, got {result!r}")
-        data = result.get("data") or {}
-        if data.get("planSource") != "agent":
-            fail(f"invoke brume_prepare: unexpected planSource {data.get('planSource')!r}")
-        blocks = (data.get("_display") or {}).get("blocks") or []
-        if len(blocks) != 1 or "Preparation card" not in blocks[0].get("text", ""):
-            fail(f"invoke brume_prepare: expected the card display, got {blocks!r}")
-        print(f"  (brume_prepare took {elapsed:.1f}s)")
 
         # close stdin -> process must exit 0
         proc.stdin.close()

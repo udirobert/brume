@@ -4,10 +4,8 @@ Chat-native Brume tools for the Brume Anna App. A
 stdio JSON-RPC 2.0 Executa plugin, stdlib-only Python (3.10+), no
 dependencies.
 
-**The calling model writes the AI text.** The primary tool is
-`brume_prepare`: the model writes the six card fields and the plugin
-validates and saves them. Anna's own model also plans the optional break
-and writes the reflection and get-ready copy, passing them as tool
+**The calling model writes the AI text.** Anna's own model plans
+the optional break and writes the reflection, passing them as tool
 arguments; the plugin validates and filters them (same caps,
 `HEALTH_CLAIM_RE` and `CUE_FORBIDDEN_RE` as the bundle) and renders verbatim
 `_display` blocks. The plugin makes **no** `sampling/createMessage` calls
@@ -32,17 +30,11 @@ drift").
   filtered, fallback line if missing/blocked) and optional `felt`
   (`calmer`|`same`|`wired`). Writes `reset/sessions/<iso>`, `reset/last`
   and `reset/summary` (`scope: "user"`, shared with the window).
-- `brume_prepare` — the result. `event` plus `opening`, `key_point`,
-  `approach`, `objection`, `response`, `next_step` (camelCase aliases
-  accepted). Over-cap fields, health claims, and any count, weekday, or
-  clock time that is not in `event` or `goal` are rejected, and nothing
-  is saved. On success the record includes `sayable` (opening, key point,
-  next step) and the display leads with that paragraph. Writes
-  `ready/sessions/<iso>` and `ready/last`.
-- `brume_get_ready` — legacy timed script, not the card. `event` (required), `kind`, `opener`, `key_point`,
-  `reminder`. Renders Breathe (7 cyclic-sigh lines) → Open up → Warm up
-  your voice → Rehearse (opener, key point, reminder) → "You're ready. Go
-  well." Writes `ready/sessions/<iso>`.
+There is deliberately no card-saving tool: every tool argument is
+model-written and the protocol offers the plugin no transcript, so a
+card saved from chat could never be checked against what the user
+actually said. The preparation card lives in the app window, where the
+person reads the source and the draft and saves it themselves.
 
 `manifest.json` here is the exported `describe` output; `anna-app apps
 publish` syncs it as the protocol manifest (`test_plan.py` asserts it
@@ -91,7 +83,7 @@ release assets into `anna/executas/brume/dist/` (gitignored), then
 # from anna/
 anna-app dev --no-llm                      # auto-discovers executas/brume
 anna-app executa dev --dir executas/brume --describe
-python3 executas/brume/scripts/smoke_binary.py <binary> <version>  # describe, health, reset, get_ready, complete, prepare
+python3 executas/brume/scripts/smoke_binary.py <binary> <version>  # describe, health, reset, complete, prepare
 
 # raw protocol:
 echo '{"jsonrpc":"2.0","method":"describe","id":1}' \

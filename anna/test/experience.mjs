@@ -10,22 +10,21 @@ const { validateCheckpoint, createCheckpointStore } = await import(join(here, ".
 
 const PLAN = { kind: "plan", opening: "o", keyPoint: "k", approach: "a", objection: "ob", response: "r", nextStep: "n" };
 
-test("valid handoff yields editable plan, no model", () => {
+test("handoff is prefill only — a draft key is ignored", () => {
+  // A model-written draft cannot reach the card: the payload may only
+  // fill the input the person reads before preparing.
   const r = parseReadyHandoff({ mode: "ready", context: "Interview", goal: "g", preparation: PLAN });
-  assert.equal(r.source, "anna-handoff");
-  assert.equal(r.plan.opening, "o");
   assert.equal(r.input.event, "Interview");
   assert.equal(r.input.goal, "g");
-  assert.equal(r.invalidDraft, false);
+  assert.equal("plan" in r, false);
 });
 
-test("invalid draft keeps input, flags invalid", () => {
+test("malformed draft is ignored the same way", () => {
   for (const bad of [{ kind: "clarify", question: "q?" }, { kind: "plan", opening: "o" }, "junk", [PLAN],
-    { ...PLAN, opening: "x".repeat(1200) }, { ...PLAN, response: "it will cure your anxiety" }]) {
+    { ...PLAN, response: "it will cure your anxiety" }]) {
     const r = parseReadyHandoff({ context: "ctx", preparation: bad });
-    assert.equal(r.plan, null);
-    assert.equal(r.invalidDraft, true);
     assert.equal(r.input.event, "ctx");
+    assert.equal("plan" in r, false);
   }
 });
 
@@ -34,9 +33,7 @@ test("caps and empty context", () => {
   assert.equal(r.input.event.length, 600);
   assert.equal(r.input.goal.length, 300);
   assert.equal(r.input.preserve.length, 220);
-  assert.equal(parseReadyHandoff({ preparation: PLAN }).plan, null);
-  assert.equal(parseReadyHandoff({ preparation: PLAN }).invalidDraft, false);
-  assert.equal(parseReadyHandoff(null).plan, null);
+  assert.equal(parseReadyHandoff(null).input.event, "");
 });
 
 test("wording style normalisation", () => {

@@ -66,8 +66,39 @@ const NUMBER_WORDS = {
   sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
   thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
 };
+// "first"/"second" are excluded: they are too common as discourse markers
+// (and "second" is a time unit) to flag safely. Hyphenated ordinals like
+// "twenty-first" are scrubbed with the other compounds.
+const ORDINAL_WORDS = {
+  third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9,
+  tenth: 10, eleventh: 11, twelfth: 12, thirteenth: 13, fourteenth: 14,
+  fifteenth: 15, sixteenth: 16, seventeenth: 17, eighteenth: 18,
+  nineteenth: 19, twentieth: 20, thirtieth: 30,
+};
 const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june", "july", "august",
+  "september", "october", "november", "december",
+  "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec",
+];
+const REL_DAY_WORDS = ["today", "tomorrow", "tonight", "yesterday", "noon", "midday", "midnight", "weekend"];
 const HOUR_WORDS = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve";
+const ORDINAL_RE = /\b(\d{1,2})(st|nd|rd|th)\b/gi;
+const OCLOCK_RE = new RegExp(`\\b(\\d{1,2}|${HOUR_WORDS})\\s*o'?clock\\b`, "gi");
+const VAGUE_COUNT_RES = [
+  /\ba\s+couple\b/gi,
+  /\ba\s+few\b/gi,
+  /\ba\s+dozen\b/gi,
+  /\bseveral\b/gi,
+];
+const REL_SPAN_RES = [
+  /\bthis\s+(?:morning|afternoon|evening|week|month|weekend)\b/gi,
+  /\bnext\s+(?:week|month|year|weekend)\b/gi,
+  /\blast\s+(?:week|month|year|night|weekend)\b/gi,
+  /\b(?:the\s+)?same\s+(?:week|weekend|month|day)\b/gi,
+  /\bin\s+the\s+(?:morning|afternoon|evening)\b/gi,
+  /\bend\s+of\s+(?:the\s+)?(?:day|week|month)\b/gi,
+];
 
 export const PLAN_FACT_FIELDS = ["opening", "keyPoint", "approach", "objection", "response", "nextStep"];
 export const REHEARSAL_FACT_FIELDS = ["adjustment", "response", "nextStep"];
@@ -85,44 +116,87 @@ function timeTokens(text) {
     /\b([01]?\d|2[0-3]):([0-5]\d)\b/g,
     new RegExp(`\\bat\\s+(\\d{1,2}|${HOUR_WORDS})\\b`, "g"),
   ];
-  for (const re of patterns) {
-    for (const match of lower.matchAll(re)) found.push(match[0].replace(/\s+/g, " ").trim());
+  for (let i = 0; i < patterns.length; i += 1) {
+    for (const match of lower.matchAll(patterns[i])) {
+      // "at 3 o'clock" belongs to the o'clock phrase, not "at 3".
+      if (i === 2 && /^\s*o'?clock\b/.test(lower.slice(match.index + match[0].length))) continue;
+      found.push(match[0].replace(/\s+/g, " ").trim());
+    }
   }
   return found;
 }
 
-/** Counts, weekdays, and clock times. Number words inside hyphenated compounds (one-on-one) are ignored. */
-export function ungroundedSpans(candidate, source) {
-  const srcNums = new Set();
-  const srcDays = new Set();
-  const addNums = (text, into) => {
-    const scrubbed = scrubCompounds(text).toLowerCase();
-    for (const [word, n] of Object.entries(NUMBER_WORDS)) {
-      if (new RegExp(`\\b${word}\\b`).test(scrubbed)) into.add(n);
+function phraseTokens(text) {
+  const scrubbed = scrubCompounds(text).toLowerCase();
+  const found = [];
+  for (const re of [...VAGUE_COUNT_RES, ...REL_SPAN_RES, OCLOCK_RE]) {
+    for (const match of scrubbed.matchAll(re)) {
+      const token = match[0].replace(/\s+/g, " ").trim();
+      // "the same week" and "this week" are one span — restating it is
+      // not a new fact, so both surfaces fold to a single token.
+      found.push(token.replace(/^(?:the\s+)?same\s+(week|weekend|month|day)$/i, "this $1"));
     }
-    for (const match of String(text || "").matchAll(/\b\d+\b/g)) into.add(Number(match[0]));
-  };
-  const src = String(source || "");
-  addNums(src, srcNums);
-  for (const day of WEEKDAYS) {
-    if (new RegExp(`\\b${day}\\b`, "i").test(src)) srcDays.add(day);
   }
-  const srcTimes = new Set(timeTokens(src));
+  return found;
+}
+
+function sourceFacts(text) {
+  // Every fact token a candidate may reuse: numbers, ordinals, weekdays,
+  // clock times, months, relative day words and schedule/count phrases.
+  const src = String(text || "");
+  const scrubbed = scrubCompounds(src).toLowerCase();
+  const nums = new Set();
+  for (const [word, n] of Object.entries(NUMBER_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed)) nums.add(n);
+  }
+  for (const match of src.matchAll(/\b\d+\b/g)) nums.add(Number(match[0]));
+  const ords = new Set([...src.matchAll(ORDINAL_RE)].map((m) => Number(m[1])));
+  for (const [word, n] of Object.entries(ORDINAL_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed)) ords.add(n);
+  }
+  for (const n of ords) nums.add(n);
+  const days = new Set(WEEKDAYS.filter((day) => new RegExp(`\\b${day}\\b`).test(scrubbed)));
+  const rel = new Set([...REL_DAY_WORDS, ...MONTHS].filter((word) => new RegExp(`\\b${word}\\b`).test(scrubbed)));
+  return {
+    nums,
+    ords,
+    days,
+    times: new Set(timeTokens(src)),
+    rel,
+    phrases: new Set(phraseTokens(src)),
+  };
+}
+
+/** Counts, weekdays, dates, and clock times. Number words inside hyphenated compounds (one-on-one) are ignored. */
+export function ungroundedSpans(candidate, source) {
+  const src = sourceFacts(source);
   const found = [];
   const cand = String(candidate || "");
   const scrubbed = scrubCompounds(cand).toLowerCase();
   for (const [word, n] of Object.entries(NUMBER_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !srcNums.has(n)) found.push(word);
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.nums.has(n)) found.push(word);
   }
   for (const match of cand.matchAll(/\b\d+\b/g)) {
-    if (!srcNums.has(Number(match[0]))) found.push(match[0]);
+    if (!src.nums.has(Number(match[0]))) found.push(match[0]);
   }
-  const lower = cand.toLowerCase();
+  for (const match of cand.matchAll(ORDINAL_RE)) {
+    const n = Number(match[1]);
+    if (!src.nums.has(n) && !src.ords.has(n)) found.push(match[0].toLowerCase());
+  }
+  for (const [word, n] of Object.entries(ORDINAL_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.ords.has(n)) found.push(word);
+  }
   for (const day of WEEKDAYS) {
-    if (new RegExp(`\\b${day}\\b`).test(lower) && !srcDays.has(day)) found.push(day);
+    if (new RegExp(`\\b${day}\\b`).test(scrubbed) && !src.days.has(day)) found.push(day);
   }
   for (const time of timeTokens(cand)) {
-    if (!srcTimes.has(time)) found.push(time);
+    if (!src.times.has(time)) found.push(time);
+  }
+  for (const word of [...REL_DAY_WORDS, ...MONTHS]) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.rel.has(word)) found.push(word);
+  }
+  for (const token of phraseTokens(cand)) {
+    if (!src.phrases.has(token)) found.push(token);
   }
   return [...new Set(found)];
 }
@@ -157,7 +231,9 @@ const FACT_LABELS = {
 function spanKind(span) {
   const text = String(span || "").toLowerCase();
   if (WEEKDAYS.includes(text)) return "weekday";
+  if (MONTHS.includes(text) || /^\d{1,2}(st|nd|rd|th)$/.test(text)) return "date";
   if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeTokens(text).length > 0) return "time";
+  if (REL_DAY_WORDS.includes(text) || phraseTokens(text).length > 0) return "time";
   return "count";
 }
 
@@ -173,21 +249,51 @@ export function faithfulnessMessage(issues) {
 export function groundedSpans(candidate, source) {
   const blocked = new Set(ungroundedSpans(candidate, source));
   const kept = [];
-  const scrubbed = scrubCompounds(candidate).toLowerCase();
+  const cand = String(candidate || "");
+  const scrubbed = scrubCompounds(cand).toLowerCase();
   for (const word of Object.keys(NUMBER_WORDS)) {
     if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
   }
-  for (const match of String(candidate || "").matchAll(/\b\d+\b/g)) {
+  for (const match of cand.matchAll(/\b\d+\b/g)) {
     if (!blocked.has(match[0])) kept.push(match[0]);
   }
-  const lower = String(candidate || "").toLowerCase();
-  for (const day of WEEKDAYS) {
-    if (new RegExp(`\\b${day}\\b`).test(lower) && !blocked.has(day)) kept.push(day);
+  for (const match of cand.matchAll(ORDINAL_RE)) {
+    if (!blocked.has(match[0].toLowerCase())) kept.push(match[0].toLowerCase());
   }
-  for (const time of timeTokens(candidate)) {
+  for (const word of Object.keys(ORDINAL_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
+  }
+  for (const day of WEEKDAYS) {
+    if (new RegExp(`\\b${day}\\b`).test(scrubbed) && !blocked.has(day)) kept.push(day);
+  }
+  for (const time of timeTokens(cand)) {
     if (!blocked.has(time)) kept.push(time);
   }
+  for (const word of [...REL_DAY_WORDS, ...MONTHS]) {
+    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
+  }
+  for (const token of phraseTokens(cand)) {
+    if (!blocked.has(token)) kept.push(token);
+  }
   return [...new Set(kept)];
+}
+
+const DAYISH_RE = new RegExp(
+  `\\b(?:${WEEKDAYS.join("|")})\\b` +
+    "|\\b(?:today|tomorrow|tonight|yesterday|noon|midday|midnight)\\b" +
+    `|\\b(?:${MONTHS.join("|")})\\b` +
+    "|\\b(?:this|next|last)\\s+(?:morning|afternoon|evening|night)\\b" +
+    "|\\bin\\s+the\\s+(?:morning|afternoon|evening)\\b",
+  "i",
+);
+
+function hasDayOrTime(text) {
+  // True when the text names a specific day or time (not just a span
+  // like "this week"). Mirror of the plugin's _has_day_or_time.
+  const t = String(text || "");
+  if (DAYISH_RE.test(t)) return true;
+  if (t.match(ORDINAL_RE) || t.match(OCLOCK_RE)) return true;
+  return timeTokens(t).length > 0;
 }
 
 export const SCHEDULE_QUESTION = "You mentioned a deadline in the same week. Which day should the card name, if any?";
@@ -195,8 +301,7 @@ export const SCHEDULE_QUESTION = "You mentioned a deadline in the same week. Whi
 export function scheduleQuestion(source) {
   const text = String(source || "");
   const mentions = /\bdeadline\b/i.test(text) && /\b(?:same|this|the) week\b/i.test(text);
-  const hasDay = WEEKDAYS.some((day) => new RegExp(`\\b${day}\\b`, "i").test(text));
-  if (mentions && !hasDay && timeTokens(text).length === 0) return SCHEDULE_QUESTION;
+  if (mentions && !hasDayOrTime(text)) return SCHEDULE_QUESTION;
   return null;
 }
 

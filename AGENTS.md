@@ -425,19 +425,19 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. **Tool 0.4.10 / app 0.4.8 are the current
-  candidate, uncommitted:** `brume_prepare` now returns `open_window`
-  with an `open_app_view` interview payload; the window's new "Confirm
-  the details" stage collects the person's typed answers, substitutes
-  them (`factQuestions`/`applyAnswers`), blanks unconfirmed fields, and
-  saves the card with a `facts`/`blanked`/`deadlineDay` audit. The
-  earlier 0.4.9/0.4.7 cut (app v0.4.7, version_id=2272, executa 1103,
-  binaries `brume-executa-v0.4.9` published) was rejected: its second
-  call still trusted the model to be the user (`answers` was
-  model-written), and the card's "Key point" came from the unscanned
-  `key_point` relay. Remaining: commit, 0.4.10 binaries workflow,
-  publish, tier-3 fresh-install run, `apps submit-review`
-  (`docs/ANNA.md` §12.34).
+  one sayable paragraph. **App v0.4.8 / tool 0.4.10 are published**
+  (commit `8d11e85`, binaries `brume-executa-v0.4.10` all four
+  platforms checksum-verified, app cut version_id=2273,
+  executa_version=1104 — `docs/ANNA.md` §12.34, §12.35):
+  `brume_prepare` returns `open_window` with an `open_app_view`
+  interview payload; the window's "Confirm the details" stage collects
+  the person's typed answers, substitutes them (`factQuestions`/
+  `applyAnswers`), blanks unconfirmed fields, and saves the card with a
+  `facts`/`blanked`/`deadlineDay` audit. The earlier 0.4.9/0.4.7 cut was
+  rejected: its second call still trusted the model to be the user
+  (`answers` was model-written), and the card's "Key point" came from
+  the unscanned `key_point` relay. Remaining: tier-3 fresh-install
+  Cloud Agent run, then `apps submit-review`.
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -450,6 +450,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
-  Published as app v0.4.7 / tool 0.4.9; the 0.4.10/0.4.8 interview
-  redesign is uncommitted — binaries, republish, tier-3 and resubmit
+  Published as app v0.4.8 / tool 0.4.10 (binaries
+  `brume-executa-v0.4.10`); tier-3 fresh-install run and resubmit
   outstanding.

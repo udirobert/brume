@@ -1682,3 +1682,33 @@ with audit; declined facts blank their fields). Remaining, in order:
 commit, the 0.4.10 binaries workflow, download + checksum, `apps
 publish`, the tier-3 fresh-install Cloud Agent checklist (rewritten for
 the window interview), then `apps submit-review`.
+
+### 12.35 The interview cut is published — app v0.4.8, tool 0.4.10 (2026-11-13)
+
+§12.34 shipped the same day it was written. Commit `8d11e85` (23 files)
+went to `main`; the **Brume Executa Binaries** workflow (run
+43505664377) built and smoked all four platforms — the smoke now
+drives the one-call `open_window` contract — and published GitHub
+release `brume-executa-v0.4.10`. The four archives were pulled into
+`executas/brume/dist/` and every `.sha256` verified. `anna-app apps
+publish` (no bump — `app.json` already declared 0.4.8) registered the
+bundled executa unchanged at v0.4.10, synced the protocol manifest,
+uploaded the four binary artifacts (`executa_version=1104`), froze the
+reset-offer skill at 1098 (v1.0.1), and cut **app v0.4.8**
+(`version_id=2273`) — now the server's `latest`. App status stays
+`rejected`; the review pin moves only on `submit-review`.
+
+Local gates this round: `npm test` 154 green (incl. new recovery cases
+pinning the interview stage), `test_plan` 24 green, `validate --strict`
+clean, browser QA **37/37** including the two interview cases — masked
+questions → typed answers → `ready/last` with the facts audit, and
+declined facts blanking their fields.
+
+Still outstanding, in order: the tier-3 fresh-install Cloud Agent
+checklist (`anna/README.md`, rewritten for the window interview — each
+step a new chat: install v0.4.8, confirm `brume_prepare` is callable,
+run the three-projects sentence and watch `open_app_view` open
+"Confirm the details", type the answers in the window, verify
+`ready/last`; then the chat variant, reset/reflect/arrive/alertness),
+then `anna-app apps submit-review brume` to re-pin the review to v0.4.8
+/ tool 0.4.10.

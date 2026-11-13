@@ -18,20 +18,21 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut (in progress): **app v0.4.8** with tool **0.4.10**. The
-preparation card is the primary result, produced in the window as well
-as drafted in chat: `brume_prepare` takes the model's draft, returns
-`open_window` with an `open_app_view` payload, and the window masks every
-fact the draft asserts into a question the person answers by typing —
-the card is saved from those answers, so no model-written prose is ever
-the card's oracle (`docs/ANNA.md` §12.34). The earlier two-step chat
-design was rejected because its `answers` parameter was still
-model-written — the model could answer its own masked questions. A
-draft may not add a count, a weekday, or a clock time the person did not
-write (§12.26). Binaries **0.4.9** are published (GitHub release
-`brume-executa-v0.4.9`, all four platforms); **0.4.10** binaries,
-republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
-outstanding. App id 582, slug `brume`, tool id
+Latest cut: **app v0.4.8** with tool **0.4.10**, published
+(`docs/ANNA.md` §12.34–12.35). The preparation card is the primary
+result, produced in the window as well as drafted in chat:
+`brume_prepare` takes the model's draft, returns `open_window` with an
+`open_app_view` payload, and the window's "Confirm the details" screen
+masks every fact the draft asserts into a question the person answers
+by typing — the card is saved from those answers, so no model-written
+prose is ever the card's oracle. The earlier two-step chat design was
+rejected because its `answers` parameter was still model-written — the
+model could answer its own masked questions. A draft may not add a
+count, a weekday, or a clock time the person did not write (§12.26).
+Binaries **0.4.10** are published (GitHub release
+`brume-executa-v0.4.10`, all four platforms, checksums verified);
+`executa_version=1104`. The tier-3 fresh-install Cloud Agent run and
+resubmit are outstanding. App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 

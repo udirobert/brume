@@ -62,7 +62,7 @@
     },
     {
       "name": "emoji stripped, overlong title capped, missing why filled",
-      "raw": "{\"pattern\": \"long-exhale\", \"seconds\": 90, \"title\": \"A very long title that keeps going and going past sixty characters easily yes\", \"opening\": \"Nice easy rhythm \ud83c\udf3f\", \"cues\": [\"Breathe \ud83c\udf43\"], \"why\": \"\"}",
+      "raw": "{\"pattern\": \"long-exhale\", \"seconds\": 90, \"title\": \"A very long title that keeps going and going past sixty characters easily yes\", \"opening\": \"Nice easy rhythm 🌿\", \"cues\": [\"Breathe 🍃\"], \"why\": \"\"}",
       "expect": {
         "pattern": "long-exhale",
         "seconds": 90,
@@ -96,7 +96,7 @@
       "expect": {
         "pattern": "long-exhale",
         "planSource": "ai",
-        "opening": "A gentle rhythm \u2014 four counts in, six counts out \u2014 between one thing and the next."
+        "opening": "A gentle rhythm — four counts in, six counts out — between one thing and the next."
       }
     },
     {
@@ -201,13 +201,13 @@
     },
     {
       "name": "word-count parenthetical + alternative",
-      "raw": "You finished all 10 cycles and feel calmer\u2014nice. Take a quick stretch or sip of water before your call to keep that steadiness. (19 words)  \n\n(Alternative if over word count: You finished all 10 cycles and feel calmer. You could stretch or sip water before your call. (16 words))",
-      "expect": "You finished all 10 cycles and feel calmer\u2014nice. Take a quick stretch or sip of water before your call to keep that steadiness."
+      "raw": "You finished all 10 cycles and feel calmer—nice. Take a quick stretch or sip of water before your call to keep that steadiness. (19 words)  \n\n(Alternative if over word count: You finished all 10 cycles and feel calmer. You could stretch or sip water before your call. (16 words))",
+      "expect": "You finished all 10 cycles and feel calmer—nice. Take a quick stretch or sip of water before your call to keep that steadiness."
     },
     {
       "name": "wrapped quotes + word counts",
-      "raw": "\"This is your first check\u2014no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes.\" (36 words)  \n\n(Alternative if sleepy: \"Try a short break.\") (39 words)",
-      "expect": "This is your first check\u2014no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes."
+      "raw": "\"This is your first check—no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes.\" (36 words)  \n\n(Alternative if sleepy: \"Try a short break.\") (39 words)",
+      "expect": "This is your first check—no baseline yet. Median 305ms, 0 lapses. Try diving into your most focus-heavy task in the next few minutes."
     },
     {
       "name": "trailing word count",
@@ -729,7 +729,7 @@
     },
     {
       "name": "grounded reuse",
-      "source": "Due tomorrow at noon on the 14th \u2014 a couple of items, my fourth review.",
+      "source": "Due tomorrow at noon on the 14th — a couple of items, my fourth review.",
       "candidate": "Talk about tomorrow, the 14th, a couple of items, your fourth review.",
       "expect": []
     },
@@ -802,6 +802,301 @@
       "name": "date named",
       "source": "I added one deadline in the same week, due the 14th.",
       "expect": false
+    }
+  ],
+  "fact_scan": [
+    {
+      "name": "reviewer sentence",
+      "text": "I manage 3 projects and I added one deadline in the same week.",
+      "expect": [
+        {
+          "kind": "count",
+          "token": "one",
+          "value": 1
+        },
+        {
+          "kind": "count",
+          "token": "3",
+          "value": 3
+        },
+        {
+          "kind": "phrase",
+          "token": "this week",
+          "value": "this week"
+        }
+      ]
+    },
+    {
+      "name": "number word",
+      "text": "four projects",
+      "expect": [
+        {
+          "kind": "count",
+          "token": "four",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "weekday and clock time",
+      "text": "Can we meet Friday at 3pm?",
+      "expect": [
+        {
+          "kind": "weekday",
+          "token": "friday",
+          "value": "friday"
+        },
+        {
+          "kind": "time",
+          "token": "3pm",
+          "value": "3pm"
+        }
+      ]
+    },
+    {
+      "name": "digit ordinal",
+      "text": "It's on the 14th.",
+      "expect": [
+        {
+          "kind": "ordinal",
+          "token": "14th",
+          "value": 14
+        }
+      ]
+    },
+    {
+      "name": "vague count",
+      "text": "A couple of items.",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "a couple",
+          "value": "a couple"
+        }
+      ]
+    },
+    {
+      "name": "ordinal word",
+      "text": "My fourth review.",
+      "expect": [
+        {
+          "kind": "ordinal",
+          "token": "fourth",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "hyphenated compound is not a count",
+      "text": "a one-on-one meeting",
+      "expect": []
+    },
+    {
+      "name": "hyphenated ordinal is not a date",
+      "text": "the twenty-first of the month",
+      "expect": []
+    },
+    {
+      "name": "next week",
+      "text": "next week",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "next week",
+          "value": "next week"
+        }
+      ]
+    },
+    {
+      "name": "relative day words",
+      "text": "tomorrow at noon",
+      "expect": [
+        {
+          "kind": "relative",
+          "token": "tomorrow",
+          "value": "tomorrow"
+        },
+        {
+          "kind": "relative",
+          "token": "noon",
+          "value": "noon"
+        }
+      ]
+    },
+    {
+      "name": "o'clock",
+      "text": "the 3 o'clock meeting",
+      "expect": [
+        {
+          "kind": "count",
+          "token": "3",
+          "value": 3
+        },
+        {
+          "kind": "phrase",
+          "token": "3 o'clock",
+          "value": "3 o'clock"
+        }
+      ]
+    },
+    {
+      "name": "in the morning",
+      "text": "in the morning",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "in the morning",
+          "value": "in the morning"
+        }
+      ]
+    },
+    {
+      "name": "end of the week",
+      "text": "end of the week",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "end of the week",
+          "value": "end of the week"
+        }
+      ]
+    },
+    {
+      "name": "month and day",
+      "text": "January 5",
+      "expect": [
+        {
+          "kind": "count",
+          "token": "5",
+          "value": 5
+        },
+        {
+          "kind": "month",
+          "token": "january",
+          "value": "january"
+        }
+      ]
+    },
+    {
+      "name": "several",
+      "text": "several people",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "several",
+          "value": "several"
+        }
+      ]
+    },
+    {
+      "name": "a few",
+      "text": "a few days",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "a few",
+          "value": "a few"
+        }
+      ]
+    },
+    {
+      "name": "a dozen",
+      "text": "a dozen replies",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "a dozen",
+          "value": "a dozen"
+        }
+      ]
+    },
+    {
+      "name": "this morning",
+      "text": "this morning",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "this morning",
+          "value": "this morning"
+        }
+      ]
+    },
+    {
+      "name": "last week",
+      "text": "last week",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "last week",
+          "value": "last week"
+        }
+      ]
+    },
+    {
+      "name": "the same week folds to this week",
+      "text": "the same week",
+      "expect": [
+        {
+          "kind": "phrase",
+          "token": "this week",
+          "value": "this week"
+        }
+      ]
+    },
+    {
+      "name": "midnight",
+      "text": "midnight",
+      "expect": [
+        {
+          "kind": "relative",
+          "token": "midnight",
+          "value": "midnight"
+        }
+      ]
+    },
+    {
+      "name": "weekend",
+      "text": "the weekend",
+      "expect": [
+        {
+          "kind": "relative",
+          "token": "weekend",
+          "value": "weekend"
+        }
+      ]
+    },
+    {
+      "name": "month name",
+      "text": "May",
+      "expect": [
+        {
+          "kind": "month",
+          "token": "may",
+          "value": "may"
+        }
+      ]
+    },
+    {
+      "name": "teens",
+      "text": "ten",
+      "expect": [
+        {
+          "kind": "count",
+          "token": "ten",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "name": "digit ordinal",
+      "text": "the 3rd",
+      "expect": [
+        {
+          "kind": "ordinal",
+          "token": "3rd",
+          "value": 3
+        }
+      ]
     }
   ]
 }

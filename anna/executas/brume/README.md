@@ -16,14 +16,20 @@ Cloud Agent, 2026-10-19). `host_capabilities` = `aps.kv`,
 manifest's `storage` block, or publish fails with "storage declaration
 drift").
 
-- `brume_prepare` — the preparation's deterministic front end.
-  `situation` (required: the model's relay of the user's words) plus
-  optional `goal`, `key_point`, `preserve`. A dayless same-week deadline
-  returns `needs_input` (`missing: "deadline_day"`, the question to
-  ask); retry with `deadline_day` from the answer or
-  `schedule_unspecified: true`. Otherwise returns `open_window` with the
-  `open_app_view` payload — the person confirms or corrects the
-  situation in the window and the card is written there. Saves nothing.
+- `brume_prepare` — Brume's primary result: it prepares the
+  conversation and saves the card. Two steps.
+  1. `situation` (required: the model's relay of the user's words),
+     optional `goal`, `key_point`, `preserve`, and the model's own
+     draft in `draft_opening`, `draft_key_point`, `draft_approach`,
+     `draft_objection`, `draft_response`, `draft_next_step`. Returns
+     `needs_input` with one question per fact the draft asserts — the
+     value is masked, so the person states it — plus the deadline
+     question when a same-week deadline has no day.
+  2. `request_id` and `answers` (one "id = answer" per question). The
+     model's values are replaced by the person's, the card is re-checked
+     against the answers, and it is written to `ready/sessions/<iso>` and
+     `ready/last` (`scope: "user"`, shared with the window) and returned
+     in `_display` blocks.
 - `brume_reset` — plan args from the model: `context`, `pattern`
   (`cyclic-sigh` | `long-exhale` | `box` | `steady`), `seconds`
   (60/90/120/180), `title`, `opening`, `cues` (posture/attention only),
@@ -38,12 +44,20 @@ drift").
   filtered, fallback line if missing/blocked) and optional `felt`
   (`calmer`|`same`|`wired`). Writes `reset/sessions/<iso>`, `reset/last`
   and `reset/summary` (`scope: "user"`, shared with the window).
-There is deliberately no card-saving tool: every tool argument is
-model-written and the protocol offers the plugin no transcript, so a
-card saved from chat could never be checked against what the user
-actually said. `brume_prepare` therefore returns routing, not cards —
-the card lives in the app window, where the person confirms the source
-and saves it themselves.
+
+**Why the card asks for its facts.** Every tool argument is written by
+the calling model, and the protocol offers the plugin no transcript, so
+model prose can never be checked against what the user actually said. A
+card built that way would carry the model's inventions. So the model's
+values are masked in a question and the user's answer replaces them: the
+card's facts are the values the person stated, and every question and
+answer is recorded with the card. The window path is the same rule from
+the other side — there the person types the situation, and the draft is
+checked against their words.
+
+The fact scanner (`scan_facts` / `ungrounded_spans`) is a 1:1 port of
+`anna/bundle/preparation.js`; both are tested against the `fact_scan`
+and `faithfulness` sections of `anna/test/plan-cases.json`.
 
 `manifest.json` here is the exported `describe` output; `anna-app apps
 publish` syncs it as the protocol manifest (`test_plan.py` asserts it

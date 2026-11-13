@@ -241,7 +241,7 @@ try {
     await ev('document.getElementById("btn-home-nav").click()');
   });
 
-  await ok("initial ready payload populates prep input", async () => {
+  await ok("initial ready payload shows Anna's reading, never the source", async () => {
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -249,11 +249,18 @@ try {
     await cli("open", BASE);
     await sleep(1200);
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
-    assert.equal(await ev('document.getElementById("prep-event").value'), "Interview tomorrow");
-    assert.equal(await ev('document.getElementById("prep-goal").value'), "Senior role");
-    // Anna wrote these fields — the person must confirm or fix them.
+    // Anna's reading is shown, but it is never the source: the fields
+    // stay empty and Prepare stays off until the person writes.
+    assert.equal(await ev('document.getElementById("prep-event").value'), "");
+    assert.equal(await ev('document.getElementById("prep-goal").value'), "");
     assert.equal(await ev('document.getElementById("prep-source-note").hidden'), false);
+    assert.ok((await ev('document.getElementById("prep-source-quote").textContent')).includes("Interview tomorrow"));
     assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
+    // Writing it unlocks Prepare — the person, not Anna, is the source.
+    await ev(`(() => { const el = document.getElementById("prep-event");
+      el.value = "Interview tomorrow, about the team"; el.dispatchEvent(new Event("input", {bubbles:true})); return true; })()`);
+    await sleep(200);
+    assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
   });
 
   await ok("arrive entry payload opens ring, preselects feeling", async () => {
@@ -615,9 +622,10 @@ try {
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
-  await ok("draft in handoff payload is ignored — prefill only", async () => {
-    // A model-written draft can no longer reach the card: the payload
-    // only fills the form, and the person drives the draft themselves.
+  await ok("draft in handoff payload is ignored — the reading is a suggestion", async () => {
+    // A model-written draft can no longer reach the card, and neither
+    // can the model's reading: the payload only suggests, and the
+    // person writes the situation themselves.
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -626,8 +634,9 @@ try {
     await cli("open", BASE);
     await sleep(1500);
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
-    assert.equal(await ev('document.getElementById("prep-event").value'), "Interview next week");
-    assert.equal(await ev('document.getElementById("prep-goal").value'), "Senior PM");
+    assert.equal(await ev('document.getElementById("prep-event").value'), "");
+    assert.equal(await ev('document.getElementById("prep-goal").value'), "");
+    assert.ok((await ev('document.getElementById("prep-source-quote").textContent')).includes("Interview next week"));
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
@@ -639,13 +648,13 @@ try {
     await cli("open", BASE);
     await sleep(1500);
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
-    assert.equal(await ev('document.getElementById("prep-event").value'), "Team conflict");
+    assert.equal(await ev('document.getElementById("prep-event").value'), "");
     assert.equal((await post("/__dump")).llmCalls.length, 0);
   });
 
-  await ok("prefilled source gates Prepare until confirmed or corrected", async () => {
+  await ok("Anna's reading gates Prepare until the person writes their own", async () => {
     // A model-written situation cannot become the card's source on its
-    // own: Prepare stays off until the person engages it.
+    // own: Prepare stays off until the person writes the situation.
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -659,13 +668,14 @@ try {
     await sleep(400);
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
     assert.equal((await post("/__dump")).llmCalls.length, 0);
-    // Correcting Anna's words makes them the person's own — gate lifts.
+    // Writing their own situation lifts the gate — the person, not
+    // Anna, is the source.
     await cli("fill", "#prep-event", "I manage 3 projects and I added one deadline, due Friday.");
     await sleep(300);
     assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
   });
 
-  await ok("dayless deadline: prefill, ask, then draft in-window", async () => {
+  await ok("dayless deadline: the person writes it, then the question is asked", async () => {
     await cli("open", "about:blank");
     await sleep(400);
     await post("/__reset");
@@ -677,12 +687,12 @@ try {
         nextStep: "Can we meet Friday at 3pm?" } } });
     await cli("open", BASE);
     await sleep(1500);
-    // The handoff draft (four/4/3pm invented) never renders — input first.
+    // The handoff draft (four/4/3pm invented) never renders, and the
+    // model's reading is only a suggestion — input first, empty.
     assert.deepEqual(await ev(screens), ["screen-prep-input"]);
-    assert.equal(await ev('document.getElementById("prep-event").value'),
-      "I manage 3 projects and I added one deadline in the same week.");
+    assert.equal(await ev('document.getElementById("prep-event").value'), "");
     assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), true);
-    await ev('document.getElementById("btn-prep-source-ok").click()');
+    await cli("fill", "#prep-event", "I manage 3 projects and I added one deadline in the same week.");
     await sleep(300);
     assert.equal(await ev('document.getElementById("btn-prep-go").disabled'), false);
     await ev('document.getElementById("btn-prep-go").click()');
@@ -693,8 +703,8 @@ try {
     await ev('document.getElementById("prep-clarification").value = "It is due Friday."');
     await ev('document.getElementById("btn-prep-answer").click()');
     await sleep(1500);
-    // The in-window model drafts from the confirmed source; its invented
-    // "two" is withheld, the grounded "this week" stays.
+    // The in-window model drafts from the person's own words; its
+    // invented "two" is withheld, the grounded "this week" stays.
     assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
     assert.equal(await ev('document.getElementById("prep-opening").value'), "I wanted to talk through the timeline together.");
     assert.equal(await ev('document.getElementById("prep-keypoint-edit").value'), "");

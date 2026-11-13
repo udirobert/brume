@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """Brume Reset — Anna Executa plugin (stdio JSON-RPC 2.0, stdlib only).
 
-Chat-side surface for Brume. The preparation card lives in the app
-window, where the person reads the source and the draft and saves it
-themselves. A chat tool cannot save the card faithfully — every
-argument it receives is model-written, and this protocol offers no
-transcript to check them against — so no card-saving tool exists.
-What the chat tool CAN do faithfully is run the preparation's
-deterministic front end: detect the dayless-deadline ambiguity and
-hand the window a prefill payload.
+Chat-side surface for Brume. The preparation card is Brume's declared
+primary result, and this tool produces it: it takes the model's draft of
+the card, asks the person for every fact the draft asserts, and saves
+the card with the values they stated.
 
-  brume_prepare   Starts a preparation. Takes `situation` — the model's
-                  relay of what the user said — plus optional `goal`,
-                  `key_point`, `preserve`. If the situation names a
-                  deadline in the same week but no day or time, returns
-                  needs_input with the question to ask; the model calls
-                  again with `deadline_day` (or `schedule_unspecified`
-                  when the user chooses none). Otherwise returns
-                  open_window with the open_app_view payload: the person
-                  confirms or corrects the situation in the window, and
-                  the card is written there from what they submit. This
-                  tool saves nothing and writes no card fields.
+  brume_prepare   Prepares the conversation and saves the card. Called in
+                  two steps. Step 1 takes `situation` (the model's relay
+                  of what the user said) plus optional `goal`,
+                  `key_point`, `preserve` and the model's own draft in
+                  `draft_opening`, `draft_key_point`, `draft_approach`,
+                  `draft_objection`, `draft_response`,
+                  `draft_next_step`. It answers needs_input with one
+                  question per fact the draft asserts — the value is
+                  masked, so the person states it — and, when a deadline
+                  in the same week has no day, one question about which
+                  day to name. Step 2 takes `request_id` and `answers`
+                  (one "id = answer" per question): the model's values
+                  are replaced by the person's, the card is saved under
+                  `ready/sessions/<ts>` and `ready/last`, and the card
+                  comes back in `_display` blocks.
   brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
                   fields (pattern, seconds, title, opening, cues, why,
@@ -37,6 +37,11 @@ hand the window a prefill payload.
                   reverse-RPC failure degrades gracefully; abandoned runs
                   write nothing.
 
+Why the card's facts are asked for: every argument this tool receives
+was written by the calling model, and this protocol offers no transcript
+to check it against — so model prose can never be the oracle. The draft's
+values are masked in the question and the user's answer replaces them.
+
 Wire notes (anna.partners/developers/tools/*): `initialize` is answered
 with protocolVersion "2.0" + {"storage": {}}; the
 describe manifest declares host_capabilities ["aps.kv", ...] — the
@@ -48,9 +53,10 @@ without `initialize`; a strict v1 host ignores them and the wait times
 out into the same fallback.
 
 The plan contract (prompt, parsing, fallback, summary shape) is a 1:1
-port of anna/bundle/plan.js — keep them in sync via
-anna/test/plan-cases.json, which both this file's tests and the node
-smoke test consume.
+port of anna/bundle/plan.js; the fact scanner is a 1:1 port of
+anna/bundle/preparation.js — keep both in sync via
+anna/test/plan-cases.json, which this file's tests and the node smoke
+test consume.
 """
 
 from __future__ import annotations
@@ -66,7 +72,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.8"
+VERSION = "0.4.9"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -152,12 +158,11 @@ MANIFEST: dict[str, Any] = {
     "display_name": "Brume",
     "version": VERSION,
     "description": (
-        "Conversation preparation and an optional breathing break. "
-        "brume_prepare starts a preparation — it asks when the deadline "
-        "has no day, then hands the app window the situation as a "
-        "prefill; the person confirms it there and the card is written "
-        "from what they submit. brume_reset starts a short guided "
-        "break; brume_complete saves its record when the user says done."
+        "Conversation preparation — Brume's primary result is a saved card. "
+        "brume_prepare drafts the card from what the user said, asks them "
+        "for every fact it would assert, and saves the card with their "
+        "answers. brume_reset starts a short guided break; brume_complete "
+        "saves its record when the user says done."
     ),
     "author": "Brume",
     "category": "productivity",
@@ -167,17 +172,23 @@ MANIFEST: dict[str, Any] = {
         {
             "name": "brume_prepare",
             "description": (
-                "Start a conversation preparation — Brume's primary result. Pass the user's "
-                "situation in `situation` exactly as they stated it: their words, never additions "
-                "you invented. If the situation names a deadline in the same week but no day or "
-                "time, this returns needs_input with the question — ask the user, then call again "
-                "with `deadline_day` from their answer (or `schedule_unspecified` if they choose to "
-                "leave it unscheduled). Otherwise it returns open_window with an open_app_view "
-                "payload: call open_app_view with it. The person reads the situation in the window, "
-                "confirms or corrects it, and the card is written there from what they submit — "
-                "this tool saves nothing, so never write card fields in chat."
+                "Prepare the conversation and save the card — Brume's primary result. "
+                "Call it in two steps. Step 1: pass `situation` (your faithful relay of "
+                "what the user said — their words, never additions you invented), the "
+                "`goal`, `key_point` and `preserve` they stated if they stated them, and "
+                "your own draft of the card in `draft_opening`, `draft_key_point`, "
+                "`draft_approach`, `draft_objection`, `draft_response` and "
+                "`draft_next_step`. The tool returns needs_input with one question per "
+                "fact your draft asserts — each question masks the value and asks the "
+                "user to state it — and, when they mention a deadline in the same week "
+                "with no day, one question about which day to name. Step 2: ask the user "
+                "every question, then call brume_prepare again with `request_id` and "
+                "`answers` (one 'id = answer' per question, in the order asked). The tool "
+                "replaces your values with the user's, saves the card, and returns it. "
+                "Never write the card's facts yourself — the card's facts are the ones "
+                "the user stated."
             ),
-            "timeout": 10,
+            "timeout": 30,
             "parameters": [
                 {"name": "situation", "type": "string", "required": True,
                  "description": "Your faithful relay of what the user said about the upcoming conversation — their words, not additions."},
@@ -187,10 +198,22 @@ MANIFEST: dict[str, Any] = {
                  "description": "Their main point, if they stated one."},
                 {"name": "preserve", "type": "string", "required": False,
                  "description": "A boundary or relationship quality they explicitly want to protect, if stated."},
-                {"name": "deadline_day", "type": "string", "required": False,
-                 "description": "The day the user named for the deadline after you asked (e.g. 'Thursday'). Set only from their answer."},
-                {"name": "schedule_unspecified", "type": "boolean", "required": False,
-                 "description": "True only if, after you asked which day, the user chose to leave it unscheduled."},
+                {"name": "draft_opening", "type": "string", "required": False,
+                 "description": "Your draft of the card's opening line — one or two calm sentences."},
+                {"name": "draft_key_point", "type": "string", "required": False,
+                 "description": "Your draft of the card's key point — the one thing they want remembered."},
+                {"name": "draft_approach", "type": "string", "required": False,
+                 "description": "Your draft of the card's approach — how they open the conversation."},
+                {"name": "draft_objection", "type": "string", "required": False,
+                 "description": "Your draft of one hypothetical pushback, for practice."},
+                {"name": "draft_response", "type": "string", "required": False,
+                 "description": "Your draft of how they would answer that pushback."},
+                {"name": "draft_next_step", "type": "string", "required": False,
+                 "description": "Your draft of the card's next step."},
+                {"name": "request_id", "type": "string", "required": False,
+                 "description": "The id the first call returned. Pass it on the second call, with the answers."},
+                {"name": "answers", "type": "array", "items_type": "string", "required": False,
+                 "description": "The user's answers, one 'id = answer' per question, in the order the questions were asked."},
             ],
         },
         {
@@ -354,8 +377,10 @@ def _storage_get(key: str, invoke_id: str | None, timeout_s: float | None = None
         return None
 
 
-def _storage_set(key: str, value: Any, invoke_id: str | None) -> None:
-    _reverse_rpc("storage/set", {"scope": "user", "key": key, "value": value}, invoke_id)
+def _storage_set(key: str, value: Any, invoke_id: str | None,
+                 timeout_s: float | None = None) -> None:
+    _reverse_rpc("storage/set", {"scope": "user", "key": key, "value": value},
+                 invoke_id, timeout_s=timeout_s)
 
 
 # --- Plan contract (1:1 port of bundle/plan.js — see plan-cases.json) -----
@@ -717,11 +742,33 @@ def validate_agent_plan(args: dict) -> dict | None:
     }
 
 
-# --- Preparation interview -------------------------------------------------
-# Deterministic front end for the workspace: the dayless-deadline check is
-# a 1:1 port of scheduleQuestion/hasDayOrTime in bundle/preparation.js —
-# keep them in sync via the "deadline_day" section of plan-cases.json.
+# --- Preparation: the fact scanner and the card ---------------------------
+# The chat path cannot read the user's message: every argument this tool
+# receives was written by the calling model. So a card's facts are never
+# taken from the model's prose. The draft's values are masked in a
+# question, the person states them, and their answer replaces the value.
+#
+# The scanner finds those values. It is a 1:1 port of scanFacts in
+# bundle/preparation.js — keep them in sync via the "fact_scan" section
+# of anna/test/plan-cases.json, which both implementations run against.
 
+_NUMBER_WORDS = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
+    "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60,
+    "seventy": 70, "eighty": 80, "ninety": 90,
+}
+# "first"/"second" are excluded: they are too common as discourse markers
+# (and "second" is a time unit) to flag safely.
+_ORDINAL_WORDS = {
+    "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7,
+    "eighth": 8, "ninth": 9, "tenth": 10, "eleventh": 11, "twelfth": 12,
+    "thirteenth": 13, "fourteenth": 14, "fifteenth": 15, "sixteenth": 16,
+    "seventeenth": 17, "eighteenth": 18, "nineteenth": 19,
+    "twentieth": 20, "thirtieth": 30,
+}
 _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday",
              "saturday", "sunday")
 _MONTHS = (
@@ -730,9 +777,37 @@ _MONTHS = (
     "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept",
     "oct", "nov", "dec",
 )
+_REL_DAY_WORDS = ("today", "tomorrow", "tonight", "yesterday", "noon",
+                  "midday", "midnight", "weekend")
 _HOUR_WORDS = "one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve"
+_ORDINAL_RE = re.compile(r"\b(\d{1,2})(st|nd|rd|th)\b", re.I)
+_OCLOCK_RE = re.compile(r"\b(?:\d{1,2}|" + _HOUR_WORDS + r")\s*o'?clock\b", re.I)
+_VAGUE_COUNT_RES = [
+    re.compile(r"\ba\s+couple\b", re.I),
+    re.compile(r"\ba\s+few\b", re.I),
+    re.compile(r"\ba\s+dozen\b", re.I),
+    re.compile(r"\bseveral\b", re.I),
+]
+_REL_SPAN_RES = [
+    re.compile(r"\bthis\s+(?:morning|afternoon|evening|week|month|weekend)\b", re.I),
+    re.compile(r"\bnext\s+(?:week|month|year|weekend)\b", re.I),
+    re.compile(r"\blast\s+(?:week|month|year|night|weekend)\b", re.I),
+    re.compile(r"\b(?:the\s+)?same\s+(?:week|weekend|month|day)\b", re.I),
+    re.compile(r"\bin\s+the\s+(?:morning|afternoon|evening)\b", re.I),
+    re.compile(r"\bend\s+of\s+(?:the\s+)?(?:day|week|month)\b", re.I),
+]
+_TIME_RES = [
+    re.compile(r"\b\d{1,2}(?::[0-5]\d)?\s*[ap]\.?m\.?\b"),
+    re.compile(r"\b(?:[01]?\d|2[0-3]):[0-5]\d\b"),
+    re.compile(r"\bat\s+(?:\d{1,2}|" + _HOUR_WORDS + r")\b"),
+]
+_COMPOUND_RE = re.compile(r"\b[\w]+(?:-[\w]+)+\b", re.UNICODE)
 _DEADLINE_WEEK_RE = re.compile(r"\bdeadline\b", re.I)
 _SAME_WEEK_RE = re.compile(r"\b(?:same|this|the)\s+week\b", re.I)
+SCHEDULE_QUESTION = (
+    "You mentioned a deadline in the same week. "
+    "Which day should the card name, if any?"
+)
 _DAYISH_RE = re.compile(
     r"\b(?:" + "|".join(_WEEKDAYS) + r")\b"
     r"|\b(?:today|tomorrow|tonight|yesterday|noon|midday|midnight)\b"
@@ -741,18 +816,145 @@ _DAYISH_RE = re.compile(
     r"|\bin\s+the\s+(?:morning|afternoon|evening)\b",
     re.I,
 )
-_ORDINAL_RE = re.compile(r"\b\d{1,2}(?:st|nd|rd|th)\b", re.I)
-_OCLOCK_RE = re.compile(r"\b(?:\d{1,2}|" + _HOUR_WORDS + r")\s*o'?clock\b", re.I)
-_TIME_RES = [
-    re.compile(r"\b\d{1,2}(?::[0-5]\d)?\s*[ap]\.?m\.?\b"),
-    re.compile(r"\b(?:[01]?\d|2[0-3]):[0-5]\d\b"),
-    re.compile(r"\bat\s+(?:\d{1,2}|" + _HOUR_WORDS + r")\b"),
-]
 
-SCHEDULE_QUESTION = (
-    "You mentioned a deadline in the same week. "
-    "Which day should the card name, if any?"
-)
+
+def _compound_ranges(text: str) -> list[tuple[int, int]]:
+    """Hyphenated compounds ("one-on-one") are not facts. The scanner skips
+    every match inside one and keeps the original text's offsets."""
+    return [(m.start(), m.end()) for m in _COMPOUND_RE.finditer(text or "")]
+
+
+def _in_ranges(start: int, end: int, ranges: list[tuple[int, int]]) -> bool:
+    return any(start >= a and end <= b for a, b in ranges)
+
+
+def _time_spans(text: str) -> list[dict[str, Any]]:
+    found: list[dict[str, Any]] = []
+    lower = str(text or "").lower()
+    for i, rx in enumerate(_TIME_RES):
+        for m in rx.finditer(lower):
+            # "at 3 o'clock" belongs to the o'clock phrase, not "at 3".
+            if i == 2 and re.match(r"^\s*o'?clock\b", lower[m.end():]):
+                continue
+            found.append({
+                "token": re.sub(r"\s+", " ", m.group(0)).strip(),
+                "start": m.start(),
+                "end": m.end(),
+            })
+    return found
+
+
+def _phrase_spans(text: str) -> list[dict[str, Any]]:
+    found: list[dict[str, Any]] = []
+    lower = str(text or "").lower()
+    skip = _compound_ranges(text)
+    for rx in _VAGUE_COUNT_RES + _REL_SPAN_RES + [_OCLOCK_RE]:
+        for m in rx.finditer(lower):
+            if _in_ranges(m.start(), m.end(), skip):
+                continue
+            token = re.sub(r"\s+", " ", m.group(0)).strip()
+            # "the same week" and "this week" are one span — restating it is
+            # not a new fact, so both surfaces fold to a single token.
+            token = re.sub(r"^(?:the\s+)?same\s+(week|weekend|month|day)$",
+                           r"this \1", token, flags=re.I)
+            found.append({"token": token, "start": m.start(), "end": m.end()})
+    return found
+
+
+def scan_facts(text: str) -> list[dict[str, Any]]:
+    """Every fact a card could assert, with the span it occupies.
+
+    Kinds: count, ordinal, weekday, month, relative, time, phrase. The
+    order is the order the faithfulness message reads them in.
+    """
+    src = str(text or "")
+    lower = src.lower()
+    skip = _compound_ranges(src)
+    facts: list[dict[str, Any]] = []
+
+    def add(kind: str, token: str, value: Any, start: int, end: int,
+            scrubbed: bool) -> None:
+        if scrubbed and _in_ranges(start, end, skip):
+            return
+        facts.append({"kind": kind, "token": token, "value": value,
+                      "start": start, "end": end})
+
+    for word, n in _NUMBER_WORDS.items():
+        for m in re.finditer(r"\b" + word + r"\b", lower):
+            add("count", m.group(0), n, m.start(), m.end(), True)
+    for m in re.finditer(r"\b\d+\b", src):
+        add("count", m.group(0), int(m.group(0)), m.start(), m.end(), False)
+    for m in _ORDINAL_RE.finditer(src):
+        add("ordinal", m.group(0).lower(), int(m.group(1)),
+            m.start(), m.end(), False)
+    for word, n in _ORDINAL_WORDS.items():
+        for m in re.finditer(r"\b" + word + r"\b", lower):
+            add("ordinal", m.group(0), n, m.start(), m.end(), True)
+    for day in _WEEKDAYS:
+        for m in re.finditer(r"\b" + day + r"\b", lower):
+            add("weekday", m.group(0), day, m.start(), m.end(), True)
+    for t in _time_spans(src):
+        add("time", t["token"], t["token"], t["start"], t["end"], False)
+    for word in _REL_DAY_WORDS:
+        for m in re.finditer(r"\b" + word + r"\b", lower):
+            add("relative", m.group(0), word, m.start(), m.end(), True)
+    for word in _MONTHS:
+        for m in re.finditer(r"\b" + word + r"\b", lower):
+            add("month", m.group(0), word, m.start(), m.end(), True)
+    for p in _phrase_spans(src):
+        add("phrase", p["token"], p["token"], p["start"], p["end"], True)
+    return facts
+
+
+def _source_facts(text: str) -> dict[str, set[Any]]:
+    out: dict[str, set[Any]] = {
+        "counts": set(), "ordinals": set(), "weekdays": set(),
+        "relatives": set(), "times": set(), "phrases": set(),
+    }
+    for f in scan_facts(text):
+        kind = f["kind"]
+        if kind == "count":
+            out["counts"].add(f["value"])
+        elif kind == "ordinal":
+            out["ordinals"].add(f["value"])
+            out["counts"].add(f["value"])
+        elif kind == "weekday":
+            out["weekdays"].add(f["value"])
+        elif kind in ("relative", "month"):
+            out["relatives"].add(f["value"])
+        elif kind == "time":
+            out["times"].add(f["value"])
+        elif kind == "phrase":
+            out["phrases"].add(f["value"])
+    return out
+
+
+def _is_grounded(fact: dict[str, Any], src: dict[str, set[Any]]) -> bool:
+    kind = fact["kind"]
+    if kind == "count":
+        return fact["value"] in src["counts"]
+    if kind == "ordinal":
+        return fact["value"] in src["ordinals"]
+    if kind == "weekday":
+        return fact["value"] in src["weekdays"]
+    if kind in ("relative", "month"):
+        return fact["value"] in src["relatives"]
+    if kind == "time":
+        return fact["value"] in src["times"]
+    if kind == "phrase":
+        return fact["value"] in src["phrases"]
+    return False
+
+
+def ungrounded_spans(candidate: str, source: str) -> list[str]:
+    """Facts in the candidate the source does not contain. Mirror of
+    ungroundedSpans in bundle/preparation.js."""
+    src = _source_facts(source)
+    found: list[str] = []
+    for fact in scan_facts(candidate):
+        if not _is_grounded(fact, src):
+            found.append(fact["token"])
+    return list(dict.fromkeys(found))
 
 
 def _has_day_or_time(text: str) -> bool:
@@ -780,58 +982,430 @@ def _schedule_question(source: str) -> str | None:
     return SCHEDULE_QUESTION if mentions and not _has_day_or_time(text) else None
 
 
+# --- The chat path's card --------------------------------------------------
+# Card field caps — mirror of PREPARATION_CAPS in bundle/preparation.js.
+_CARD_CAPS = {
+    "opening": 300, "keyPoint": 220, "approach": 300, "objection": 240,
+    "response": 360, "nextStep": 220,
+}
+_CARD_FIELDS = ("opening", "keyPoint", "approach", "objection", "response",
+                "nextStep")
+_NEUTRAL_OBJECTION = "What makes this hard?"
+_MAX_QUESTIONS = 6
+
+# The card the chat path saves lives under the same keys the window uses,
+# so "your last card" opens it either way.
+CARD_RECORD_PREFIX = "ready/sessions/"
+CARD_RECORD_LAST_KEY = "ready/last"
+PREPARE_REQUEST_PREFIX = "ready/prepare/"
+
+# kind -> (the question the person answers, the answer kinds that fit it).
+# A vague count ("several", "a couple") is answered with a number; a
+# span of time ("next week") is answered with a span.
+_KIND_QUESTION = {
+    "count": ("How many?", ("count",)),
+    "ordinal": ("Which date?", ("ordinal",)),
+    "weekday": ("Which day of the week?", ("weekday",)),
+    "month": ("Which month?", ("month",)),
+    "relative": ("Which day?", ("relative",)),
+    "time": ("What time?", ("time",)),
+}
+_VAGUE_COUNT_RE = re.compile(r"\b(?:couple|few|dozen|several)\b", re.I)
+_MIDDAY_RE = re.compile(r"\b(?:noon|midday|midnight)\b", re.I)
+
+
+def _question_for(fact: dict[str, Any]) -> tuple[str, tuple[str, ...]]:
+    """The question for a fact, and the answer kinds that answer it."""
+    kind = fact["kind"]
+    if kind == "phrase":
+        token = str(fact.get("token") or "")
+        if "o'clock" in token.lower():
+            return ("What time?", ("time",))
+        if _VAGUE_COUNT_RE.search(token):
+            return ("How many?", ("count",))
+        return ("When?", ("phrase",))
+    if kind == "relative" and _MIDDAY_RE.search(str(fact.get("token") or "")):
+        return ("What time?", ("relative",))
+    return _KIND_QUESTION.get(kind, ("When?", ("phrase",)))
+
+# Answers arrive as "id = answer" lines; anything else is read in order.
+_ANSWER_LINE_RE = re.compile(r"^\s*(fact_\d+|schedule)\s*[:=]\s*(.*)$", re.I)
+
+
+def _masked_context(text: str, start: int, end: int, limit: int = 140) -> str:
+    """The sentence the fact sits in, with every value in it masked. The
+    person sees the draft's wording but never a value the model wrote."""
+    body = str(text or "")
+    left = max((body.rfind(ch, 0, start) for ch in ".?!\n"), default=-1)
+    rights = [i for i in (body.find(".", end), body.find("?", end),
+                          body.find("!", end), body.find("\n", end))
+              if i != -1]
+    right = min(rights) if rights else len(body)
+    frag_start = left + 1 if left >= 0 else 0
+    fragment = body[frag_start:right]
+    masked = fragment
+    for fact in sorted(scan_facts(fragment),
+                       key=lambda f: f["start"], reverse=True):
+        masked = masked[:fact["start"]] + "…" + masked[fact["end"]:]
+    masked = re.sub(r"\s+", " ", masked).strip()
+    if len(masked) > limit:
+        masked = masked[:limit].rstrip() + "…"
+    return masked
+
+
+def _fact_questions(fields: dict[str, str]) -> list[dict[str, Any]]:
+    """One question per fact the draft asserts. The value is masked, so
+    the person states it and the answer replaces the model's value."""
+    questions: list[dict[str, Any]] = []
+    seen: set[tuple[str, Any]] = set()
+    index = 0
+    for field in _CARD_FIELDS:
+        text = fields.get(field) or ""
+        if not text:
+            continue
+        for fact in scan_facts(text):
+            key = (fact["kind"], fact["value"])
+            if key in seen:
+                continue
+            seen.add(key)
+            index += 1
+            if index > _MAX_QUESTIONS:
+                return questions
+            ask, accept = _question_for(fact)
+            questions.append({
+                "id": f"fact_{index}",
+                "kind": fact["kind"],
+                "accept": list(accept),
+                "value": fact["value"],
+                "field": field,
+                "token": fact["token"],
+                "question": (
+                    f"Your draft says “{_masked_context(text, fact['start'], fact['end'])}”. "
+                    f"{ask}"
+                ),
+            })
+    return questions
+
+
+def _answer_facts(answer: str, accept: Any) -> list[dict[str, Any]]:
+    """The facts in the person's answer that could replace the model's
+    value: the kinds the question accepts, exactly one."""
+    kinds = tuple(accept) if isinstance(accept, (list, tuple)) else (str(accept),)
+    return [f for f in scan_facts(answer) if f["kind"] in kinds]
+
+
+def _apply_answers(fields: dict[str, str], questions: list[dict[str, Any]],
+                   answers: dict[str, str]) -> tuple[dict[str, str], list[str], set[str]]:
+    """Replace every fact the draft asserted with the value the person
+    gave. A fact the person did not answer leaves its field blank — the
+    same rule the window applies to an ungrounded draft."""
+    out = dict(fields)
+    blanked: list[str] = []
+    accepted: set[str] = set()
+    edits: dict[str, list[tuple[int, int, str]]] = {}
+    for question in questions:
+        if question.get("kind") == "schedule":
+            continue
+        answer = (answers.get(question["id"]) or "").strip()
+        field = question["field"]
+        if not answer:
+            blanked.append(field)
+            continue
+        facts = _answer_facts(answer, question.get("accept") or question["kind"])
+        if len(facts) != 1:
+            blanked.append(field)
+            continue
+        accepted.add(question["id"])
+        # The person's own wording, not the canonical token.
+        replacement = answer[facts[0]["start"]:facts[0]["end"]]
+        # Every occurrence of that fact in the field is the same claim.
+        for fact in scan_facts(out.get(field) or ""):
+            if fact["kind"] == question["kind"] and fact["value"] == question["value"]:
+                edits.setdefault(field, []).append(
+                    (fact["start"], fact["end"], replacement)
+                )
+    for field, spans in edits.items():
+        text = out.get(field) or ""
+        for start, end, token in sorted(spans, reverse=True):
+            text = text[:start] + token + text[end:]
+        out[field] = text
+    for field in set(blanked):
+        if field == "objection":
+            out[field] = _NEUTRAL_OBJECTION
+        else:
+            out[field] = ""
+    return out, sorted(set(blanked)), accepted
+
+
+def _parse_answers(raw: Any, questions: list[dict[str, Any]]) -> dict[str, str]:
+    """Answers arrive as an array of "id = answer" lines, or as a mapping.
+    A bare line is read in the order the questions were asked."""
+    out: dict[str, str] = {}
+    if isinstance(raw, dict):
+        for key, value in raw.items():
+            out[str(key)] = str(value or "").strip()
+        return out
+    items: list[str] = []
+    if isinstance(raw, list):
+        items = [str(v or "") for v in raw]
+    elif isinstance(raw, str):
+        items = [line for line in raw.splitlines() if line.strip()]
+    positional = 0
+    for item in items:
+        m = _ANSWER_LINE_RE.match(item)
+        if m:
+            out[m.group(1).lower()] = m.group(2).strip()
+        elif positional < len(questions):
+            out[questions[positional]["id"]] = item.strip()
+        positional += 1
+    return out
+
+
+def _card_text(fields: dict[str, str]) -> str:
+    parts = [fields.get("opening", ""), fields.get("keyPoint", ""),
+             fields.get("nextStep", "")]
+    return "\n\n".join(p for p in parts if p)
+
+
+def _card_blocks(record: dict[str, Any]) -> list[dict[str, Any]]:
+    lines = ["**Your preparation card**", ""]
+    labels = [
+        ("opening", "Open with"),
+        ("keyPoint", "Key point"),
+        ("approach", "Approach"),
+        ("objection", "Pushback (practice)"),
+        ("response", "Response"),
+        ("nextStep", "Next step"),
+    ]
+    for key, label in labels:
+        value = (record.get(key) or "").strip()
+        if not value:
+            continue
+        lines.append(f"**{label}**")
+        lines.append(value)
+        lines.append("")
+    source = (record.get("sourceText") or "").strip()
+    if source:
+        lines.append(f"Prepared from what you told me: {source}")
+    if record.get("deadlineDay"):
+        lines.append(f"Day you named: {record['deadlineDay']}")
+    lines.append("Saved to your Anna storage.")
+    return [{"type": "markdown", "text": "\n".join(lines).strip()}]
+
+
+def _clean_card_field(value: Any, cap: int) -> str:
+    text = _clean_text(value, cap)
+    if not text or HEALTH_CLAIM_RE.search(text):
+        return ""
+    return text
+
+
+# Requests awaiting the person's answers. The plugin process survives
+# between the two calls; the storage copy is the durable one.
+_PREPARE_REQUESTS: dict[str, dict[str, Any]] = {}
+
+
+def _prepare_request_key(request_id: str) -> str:
+    return f"{PREPARE_REQUEST_PREFIX}{request_id}"
+
+
 def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    """The preparation's deterministic front end. Saves nothing: it
-    detects the dayless-deadline ambiguity (needs_input) or hands the
-    window a prefill payload (open_window)."""
+    """Brume's primary result, produced in chat.
+
+    Phase 1 takes the situation, the draft, and the goal/boundary the
+    user stated. Every fact the draft asserts is masked and asked back,
+    so the model's values are never the oracle: the card's facts are the
+    values the person states. A deadline in the same week with no day
+    asks its own question, which the model cannot pre-empt.
+
+    Phase 2 takes the answers, replaces the model's values with the
+    person's, saves the card and returns it.
+    """
+    invoke_id = context.get("invoke_id")
+    request_id = _clean_text(args.get("request_id"), 64)
+    if request_id:
+        return _prepare_finish(request_id, args, invoke_id)
+
     situation = _clean_text(args.get("situation"), 600)
     if not situation:
         raise LookupError("brume_prepare: 'situation' is required")
     goal = _clean_text(args.get("goal"), 300)
     key_point = _clean_text(args.get("key_point"), 220)
     preserve = _clean_text(args.get("preserve"), 220)
-    deadline_day = _clean_text(args.get("deadline_day"), 60)
-    schedule_unspecified = args.get("schedule_unspecified") is True
 
-    source = "\n".join(p for p in (situation, goal, key_point, preserve) if p)
-    question = _schedule_question(source)
-    if question and not deadline_day and not schedule_unspecified:
-        return {
-            "success": True,
-            "data": {
-                "status": "needs_input",
-                "missing": "deadline_day",
-                "question": question,
-                "note": (
-                    "Ask the user this question, then call brume_prepare "
-                    "again with their answer in deadline_day — or "
-                    "schedule_unspecified true if they choose to leave it "
-                    "unscheduled."
-                ),
-            },
-        }
+    fields = {
+        "opening": _clean_card_field(args.get("draft_opening"), _CARD_CAPS["opening"]),
+        "keyPoint": _clean_card_field(args.get("draft_key_point"), _CARD_CAPS["keyPoint"]),
+        "approach": _clean_card_field(args.get("draft_approach"), _CARD_CAPS["approach"]),
+        "objection": _clean_card_field(args.get("draft_objection"), _CARD_CAPS["objection"]),
+        "response": _clean_card_field(args.get("draft_response"), _CARD_CAPS["response"]),
+        "nextStep": _clean_card_field(args.get("draft_next_step"), _CARD_CAPS["nextStep"]),
+    }
+    if not fields["opening"] and not fields["keyPoint"]:
+        raise LookupError(
+            "brume_prepare: 'draft_opening' or 'draft_key_point' is required"
+        )
 
-    context_text = situation
-    if deadline_day:
-        context_text = f"{situation}\nDeadline day: {deadline_day}"
-    payload = {"context": context_text}
-    if goal:
-        payload["goal"] = goal
-    if key_point:
-        payload["key_point"] = key_point
-    if preserve:
-        payload["preserve"] = preserve
+    questions = _fact_questions(fields)
+
+    source = "\n".join(p for p in (situation, " ".join(fields.values())) if p)
+    schedule = _schedule_question(source)
+    if schedule:
+        questions.append({
+            "id": "schedule",
+            "kind": "schedule",
+            "field": None,
+            "token": "",
+            "question": schedule,
+        })
+
+    request = {
+        "request_id": "",
+        "situation": situation,
+        "goal": goal,
+        "key_point": key_point,
+        "preserve": preserve,
+        "fields": fields,
+        "questions": questions,
+        "created_at": _utc_now_iso(),
+    }
+    request["request_id"] = str(uuid.uuid4())
+    _PREPARE_REQUESTS[request["request_id"]] = request
+    try:
+        _storage_set(_prepare_request_key(request["request_id"]), request, invoke_id)
+    except Exception as exc:  # noqa: BLE001
+        _log(f"prepare request not persisted: {exc}")
+
     return {
         "success": True,
         "data": {
-            "status": "open_window",
-            "open_app_view": payload,
+            "status": "needs_input",
+            "request_id": request["request_id"],
+            "questions": [
+                {"id": q["id"], "kind": q["kind"], "question": q["question"]}
+                for q in questions
+            ],
             "note": (
-                "Call open_app_view with this payload. It only prefills "
-                "the situation: the person reads it, confirms or "
-                "corrects it, and the card is written inside the window "
-                "from what they submit. Never write the card in chat."
+                "Ask the user every question, then call brume_prepare again "
+                "with request_id and answers (one 'id = answer' per "
+                "question). The card is saved from their answers."
             ),
+        },
+    }
+
+
+def _prepare_finish(request_id: str, args: dict[str, Any],
+                    invoke_id: str | None) -> dict[str, Any]:
+    request = _PREPARE_REQUESTS.get(request_id)
+    if request is None:
+        request = _storage_get(_prepare_request_key(request_id), invoke_id)
+    if not isinstance(request, dict) or not request.get("questions"):
+        raise LookupError(
+            "brume_prepare: unknown request_id — call brume_prepare again "
+            "with the situation and the draft"
+        )
+
+    questions = list(request.get("questions") or [])
+    answers = _parse_answers(args.get("answers"), questions)
+    fields, blanked, accepted = _apply_answers(
+        request.get("fields") or {}, questions, answers)
+
+    schedule_answer = (answers.get("schedule") or "").strip()
+    deadline_day = ""
+    if schedule_answer:
+        day_facts = [f for f in scan_facts(schedule_answer)
+                     if f["kind"] in ("weekday", "month", "relative", "ordinal")]
+        if day_facts:
+            deadline_day = schedule_answer[day_facts[0]["start"]:day_facts[0]["end"]]
+        elif re.search(r"\b(no|none|not|nothing|unspecified)\b",
+                        schedule_answer, re.I):
+            deadline_day = ""
+
+    # The person's answers are the source: nothing the model wrote may
+    # assert a fact they did not state.
+    source_parts = [(answers.get(q["id"]) or "").strip() for q in questions
+                     if q["id"] in accepted]
+    if deadline_day:
+        source_parts.append(deadline_day)
+    source_text = " · ".join(p for p in source_parts if p).strip()
+    for field in _CARD_FIELDS:
+        if ungrounded_spans(fields.get(field) or "", source_text):
+            if field == "objection":
+                fields[field] = _NEUTRAL_OBJECTION
+            else:
+                fields[field] = ""
+            if field not in blanked:
+                blanked.append(field)
+
+    record = {
+        "completedAt": _utc_now_iso(),
+        # The source is what the person stated — never the model's prose.
+        "event": source_text,
+        "sourceText": source_text,
+        "goal": request.get("goal") or "",
+        "keyPoint": request.get("key_point") or "",
+        "preserve": request.get("preserve") or "",
+        "kind": None,
+        "wordingStyle": "natural",
+        "clarification": None,
+        "opening": fields.get("opening", ""),
+        "preparedKeyPoint": fields.get("keyPoint", ""),
+        "approach": fields.get("approach", ""),
+        "objection": fields.get("objection", ""),
+        "response": fields.get("response", ""),
+        "nextStep": fields.get("nextStep", ""),
+        "sayable": _card_text(fields),
+        "rehearsed": False,
+        "adjustment": None,
+        "reply": None,
+        "planModel": None,
+        "planSource": "agent",
+        "sourceProvenance": "answered",
+        "feedbackModel": None,
+        "source": "executa.chat",
+        "deadlineDay": deadline_day or None,
+        "facts": [
+            {
+                "id": q["id"],
+                "kind": q["kind"],
+                "asked": q.get("question", ""),
+                "answered": answers.get(q["id"], ""),
+            }
+            for q in questions
+        ],
+        "blanked": sorted(set(blanked)),
+    }
+
+    record_key = f"{CARD_RECORD_PREFIX}{record['completedAt']}"
+    storage_error = None
+    try:
+        _storage_set(record_key, record, invoke_id)
+        _storage_set(CARD_RECORD_LAST_KEY, record, invoke_id)
+    except Exception as exc:  # noqa: BLE001
+        _log(f"card write failed: {exc}")
+        storage_error = str(exc)
+
+    _PREPARE_REQUESTS.pop(request_id, None)
+    try:
+        # The request held the draft; once the card is saved it is gone.
+        _storage_set(_prepare_request_key(request_id), None, invoke_id,
+                     timeout_s=5.0)
+    except Exception:  # noqa: BLE001
+        pass
+
+    return {
+        "success": True,
+        "data": {
+            "status": "saved" if storage_error is None else "not_saved",
+            "record_key": record_key,
+            "record_scope": "user",
+            "storage_error": storage_error,
+            "card": record,
+            "note": (
+                "The card is shown above and saved. Do not rewrite its "
+                "fields in chat — the values in it are the user's."
+            ),
+            "_display": {"blocks": _card_blocks(record)},
         },
     }
 

@@ -168,7 +168,7 @@ const els = {
   cardSource: $("#card-source"),
   cardSourceText: $("#card-source-text"),
   prepSourceNote: $("#prep-source-note"),
-  btnPrepSourceOk: $("#btn-prep-source-ok"),
+  prepSourceQuote: $("#prep-source-quote"),
   btnPrepGo: $("#btn-prep-go"),
   cardSaveNote: $("#card-save-note"),
   btnCardSaveRetry: $("#btn-card-save-retry"),
@@ -1929,9 +1929,13 @@ function newPrepState() {
     scheduleAsked: false,
     quoteNote: "",
     // Where the situation text came from: "typed" (the person wrote it),
-    // "handoff" (Anna prefilled it from the message — Prepare is gated),
-    // "confirmed" (they tapped it through), "edited" (they corrected it).
+    // "handoff" (Anna's reading is on screen — Prepare stays off until
+    // the person writes their own), "answered" (the person stated the
+    // facts in chat and the card was made from those answers),
+    // "confirmed" (older checkpoints), "edited" (they corrected it).
     sourceProvenance: "typed",
+    // Anna's reading of a chat message — a suggestion, never the source.
+    suggestion: null,
   };
 }
 
@@ -2094,13 +2098,32 @@ function syncPrepInputs() {
   updateWordingBadge();
 }
 
-// A situation Anna prefilled from the message is model-written: it only
-// becomes the source once the person engages it — an edit marks it
-// theirs; the confirm button marks it checked. Until then Prepare is off.
+// Anna's reading of a chat message is model-written, so it is never the
+// card's source: it sits on screen as a suggestion and the person writes
+// the situation themselves. Until they do, Prepare stays off — a card
+// whose facts come from the model's prose would be exactly the thing the
+// faithfulness gate exists to prevent.
 function updatePrepSourceGate() {
-  const gated = prep.sourceProvenance === "handoff";
-  if (els.prepSourceNote) els.prepSourceNote.hidden = !gated;
+  const gated = prep.sourceProvenance === "handoff" || !prep.input.event.trim();
+  // Anna's reading stays on screen as a reference while the person
+  // writes their own version.
+  if (els.prepSourceNote) els.prepSourceNote.hidden = !prep.suggestion;
   els.btnPrepGo.disabled = gated;
+}
+
+function renderPrepSuggestion() {
+  if (!els.prepSourceQuote) return;
+  const s = prep.suggestion;
+  if (!s) {
+    els.prepSourceQuote.textContent = "";
+    return;
+  }
+  const parts = [];
+  if (s.event) parts.push(s.event);
+  if (s.goal) parts.push(`What needs to change: ${s.goal}`);
+  if (s.keyPoint) parts.push(`The one thing to remember: ${s.keyPoint}`);
+  if (s.preserve) parts.push(`What to preserve: ${s.preserve}`);
+  els.prepSourceQuote.textContent = parts.join("\n");
 }
 
 function markSourceEngaged() {
@@ -2340,6 +2363,7 @@ function renderPrepStage() {
   if (prep.stage === "input") {
     syncPrepInputs();
     prepKindChips();
+    renderPrepSuggestion();
     updatePrepSourceGate();
   } else if (prep.stage === "clarify") {
     els.prepQuestion.textContent = prep.question;
@@ -2454,6 +2478,14 @@ function printPrepCard() {
   setTimeout(() => document.body.classList.remove("printing-card"), 300);
 }
 
+// Where a card's source came from. "answered" is a card the person made
+// in chat: its facts are the values they stated, so the card quotes
+// those. "typed"/"edited" is the window: what they wrote in the form.
+function prepSourceLabel(provenance) {
+  if (provenance === "answered") return "Prepared from what you told me in chat:";
+  return "Prepared from your words:";
+}
+
 function renderPrepCard() {
   if (!cardViewOnly && els.prefDetails && els.cardPrefSlot) {
     els.cardPrefSlot.appendChild(els.prefDetails);
@@ -2480,11 +2512,7 @@ function renderPrepCard() {
   const prov = prep.sourceProvenance;
   if (src) {
     els.cardSource.hidden = false;
-    els.cardSource.textContent = prov === "confirmed"
-      ? "Prepared from Anna's summary of your message — you confirmed it:"
-      : prov === "edited"
-        ? "Prepared from your words — you corrected Anna's summary:"
-        : "Prepared from your words:";
+    els.cardSource.textContent = prepSourceLabel(prov);
     els.cardSourceText.hidden = false;
     els.cardSourceText.textContent = `“${src}”`;
   } else {
@@ -2631,15 +2659,10 @@ async function showLastPreparation() {
   els.cardNextstep.textContent = record.nextStep ?? "";
   els.cardAdjustment.hidden = !record.adjustment;
   els.cardAdjustment.textContent = record.adjustment ? `Rehearsal note: ${record.adjustment}` : "";
-  const recSrc = (record.event || "").trim();
+  const recSrc = (record.sourceText || record.event || "").trim();
   if (recSrc) {
-    const prov = record.sourceProvenance;
     els.cardSource.hidden = false;
-    els.cardSource.textContent = prov === "confirmed"
-      ? "Prepared from Anna's summary of your message — you confirmed it:"
-      : prov === "edited"
-        ? "Prepared from your words — you corrected Anna's summary:"
-        : "Prepared from your words:";
+    els.cardSource.textContent = prepSourceLabel(record.sourceProvenance);
     els.cardSourceText.hidden = false;
     els.cardSourceText.textContent = `“${recSrc}”`;
   } else {
@@ -2672,19 +2695,20 @@ function applyEntryPayload(payload) {
   const ctx = typeof payload.context === "string" ? payload.context : "";
   const mode = payload.mode || "ready";
   if (mode === "ready") {
-    // Prefill only — Anna hands the situation over, the person reads it,
-    // and the card is drafted inside the window from what they submit.
+    // Anna's reading, not the source. It is shown as a suggestion and
+    // the person writes the situation themselves — the card's facts are
+    // grounded in what they write, never in the model's prose.
     const handoff = parseReadyHandoff(payload);
     startPreparation();
-    prep.input = { ...prep.input, ...handoff.input };
-    // Any field Anna prefilled is model-written: the person must confirm
-    // or correct it before it can become the card's source.
-    if (handoff.input.event || handoff.input.goal
-        || handoff.input.keyPoint || handoff.input.preserve) {
+    const s = handoff.suggestion;
+    if (s.event || s.goal || s.keyPoint || s.preserve) {
+      prep.suggestion = s;
       prep.sourceProvenance = "handoff";
     }
     prepKindChips();
     syncPrepInputs();
+    renderPrepSuggestion();
+    updatePrepSourceGate();
     renderPrepStage();
     snapshotReady("input");
     return true;
@@ -3413,13 +3437,6 @@ async function main() {
       collectPrepInput();
       markSourceEngaged();
       schedulePrepEdit();
-    });
-  }
-  if (els.btnPrepSourceOk) {
-    els.btnPrepSourceOk.addEventListener("click", () => {
-      prep.sourceProvenance = "confirmed";
-      updatePrepSourceGate();
-      snapshotReady("input");
     });
   }
   els.prepClarification.addEventListener("input", () => {

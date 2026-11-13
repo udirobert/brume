@@ -1505,3 +1505,81 @@ imported `skill-u3f06a4c-…` is owned by another identity, so
 (v1.0.1, preparation-offer content) and `optional_executas` now
 references it; 0.4.6 (id 2220) freezes it. NOT done: tier-3 fresh
 install + resubmit.
+
+### 12.31 The chat path makes the card, and the person states its facts (2026-11-13, local, unpublished)
+
+The next review pass had three points, and they pulled against each
+other: the chat surface never produced the declared primary result (a
+saved preparation card) — the only thing a chat could produce was a
+breathing session, "a timer with an AI closing line"; the prefill was an
+unchecked oracle, so an invented fact ("4 projects", "Friday at 3pm")
+was laundered through one tap; and the published cuts were skewed
+(0.4.2/0.4.5) against the source (0.4.6/0.4.8), so the tree could not
+be installed and judged.
+
+**The constraint that decides the shape.** The plugin's reverse-RPC
+surface is `storage/*` plus `sampling/createMessage`; the tool call
+carries `arguments` and an `invoke_id`. There is no transcript. So
+model prose can never be checked against the user's message, and any
+card built from a model relay inherits the relay's inventions. The
+answer cannot be "check the model's prose" — it has to be **"never let
+the model's prose be the fact"**.
+
+**So the chat path asks for the facts.** `brume_prepare` is now the
+card, in two steps (tool 0.4.9):
+
+- Step 1 takes `situation` (the model's relay), the optional
+  `goal`/`key_point`/`preserve` the user stated, and the model's own
+  draft in `draft_opening`, `draft_key_point`, `draft_approach`,
+  `draft_objection`, `draft_response`, `draft_next_step`. It scans the
+  draft for facts and answers `needs_input` with **one question per
+  fact, with the value masked** — "Your draft says “You are juggling …
+  projects”. How many?" — plus the deadline question when a same-week
+  deadline has no day. The person states each value.
+- Step 2 takes `request_id` and `answers` (one "id = answer" per
+  question). The tool replaces the model's value with the person's,
+  re-checks the card against the answers, writes `ready/sessions/<ts>`
+  and `ready/last`, and returns the card in `_display` blocks.
+
+The card's facts are therefore *the values the person stated*: "four
+projects" cannot survive, because "four" was masked and the answer was
+"three". A fact the person does not confirm leaves its field blank
+(the same rule the window applies to an ungrounded draft), and the card
+records every question and answer, so the transcript of the card is
+auditable. The deadline question is now unskippable by construction:
+`deadline_day` and `schedule_unspecified` are gone from the tool's
+parameters — there is no way to hand the tool a day it has not asked
+for.
+
+**The prefill is no longer an oracle either.** In the window, Anna's
+reading of a chat message is shown as a *suggestion* — read-only, above
+the form — and the fields start empty. Prepare stays off until the
+person writes the situation, so the source of a window card is text
+they typed and the truth-conferring "This is what I said" tap is gone.
+`parseReadyHandoff` returns a suggestion, not an input; `recovery.js`
+validates it.
+
+**The scanner became a shared contract.** `scanFacts` in
+`bundle/preparation.js` is now the single implementation of the fact
+vocabulary (counts, ordinals, weekdays, clock times, relative days,
+months, phrases), with the spans it occupies, and `ungroundedSpans` is
+built on it. `brume_plugin.py` ports it 1:1; the new `fact_scan`
+section of `test/plan-cases.json` (25 cases) runs against both sides.
+The plugin also ports `ungrounded_spans`, so the chat card and the
+window card are checked by the same rule.
+
+**Versions.** Tool 0.4.9 (`executa.json`, `pyproject.toml`, `VERSION`,
+`manifest.json` regenerated from `describe`), app 0.4.7, prompt
+addendum rewritten for the two-step contract, the proactive skill
+updated, the listing rewritten ("a chat message prefills the situation
+… it is marked as Anna's reading, not as your words").
+
+Verified locally: `npm test` in `anna/` (152 unit + smoke, incl. the
+new `fact_scan` parity), `python3 -m unittest test_plan` (27, incl. the
+card flow, the masking, the substitution and the unskippable day),
+`anna-app validate --strict` (one pre-existing warning about retired
+manifest fields). NOT verified: the browser QA suite — `agent-browser`
+is not installed in this environment — and the binaries, the publish,
+the tier-3 fresh install and the resubmit. The three-projects sentence
+must now be answered by the *person* in chat, and the saved card must
+show their values.

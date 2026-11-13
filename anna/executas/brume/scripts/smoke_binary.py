@@ -123,31 +123,56 @@ def main() -> None:
         print(f"  (brume_reset took {elapsed:.1f}s)")
 
         # invoke brume_prepare — the reviewer sentence must trigger the
-        # deadline-day question; a second call with the answer must hand
-        # back the open_window payload.
+        # questions (one per fact the draft asserts, plus the day); a
+        # second call with the answers must save the card.
         r = request(proc, 4, "invoke", {
             "tool": "brume_prepare",
             "arguments": {
                 "situation": "I manage 3 projects and I added one deadline in the same week.",
+                "draft_opening": "You are juggling four projects and a new deadline in the same week.",
+                "draft_key_point": "The new deadline needs two more people.",
+                "draft_next_step": "Name the day you will flag the new deadline.",
             },
         })
         result = r.get("result")
-        if not isinstance(result, dict) or (result.get("data") or {}).get("status") != "needs_input":
-            fail(f"invoke brume_prepare (dayless deadline): expected needs_input, got {result!r}")
+        data = (result or {}).get("data") or {}
+        if not isinstance(result, dict) or data.get("status") != "needs_input":
+            fail(f"invoke brume_prepare (questions): expected needs_input, got {result!r}")
+        questions = data.get("questions") or []
+        if not questions:
+            fail("invoke brume_prepare: expected at least one question")
+        for question in questions:
+            if question.get("kind") == "schedule":
+                continue
+            if "four" in (question.get("question") or ""):
+                fail(f"invoke brume_prepare: the question leaks the model's value: {question!r}")
+        request_id = data.get("request_id")
+        if not request_id:
+            fail("invoke brume_prepare: no request_id")
+        answers = []
+        for question in questions:
+            if question.get("kind") == "schedule":
+                answers.append(f"{question.get('id')} = Thursday")
+            else:
+                answers.append(f"{question.get('id')} = 3")
         r = request(proc, 45, "invoke", {
             "tool": "brume_prepare",
             "arguments": {
-                "situation": "I manage 3 projects and I added one deadline in the same week.",
-                "deadline_day": "Thursday",
+                "request_id": request_id,
+                "answers": answers,
             },
         })
         result = r.get("result")
-        if not isinstance(result, dict) or (result.get("data") or {}).get("status") != "open_window":
-            fail(f"invoke brume_prepare (with day): expected open_window, got {result!r}")
-        ctx = ((result.get("data") or {}).get("open_app_view") or {}).get("context") or ""
-        if "Thursday" not in ctx:
-            fail(f"invoke brume_prepare: context missing the answered day, got {ctx!r}")
-        print("  (brume_prepare asked for the day, then handed off the payload)")
+        data = (result or {}).get("data") or {}
+        if not isinstance(result, dict) or data.get("status") not in ("saved", "not_saved"):
+            fail(f"invoke brume_prepare (answered): expected a saved card, got {result!r}")
+        card = data.get("card") or {}
+        opening = card.get("opening") or ""
+        if "four" in opening or "4 projects" in opening:
+            fail(f"invoke brume_prepare: the card kept the model's value: {opening!r}")
+        if not card.get("sourceProvenance"):
+            fail("invoke brume_prepare: the card has no source provenance")
+        print("  (brume_prepare asked for every fact, then saved the card)")
 
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()

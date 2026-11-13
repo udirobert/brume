@@ -51,15 +51,21 @@ release checklist, one new chat per step.
 Rules:
 - `bundle/plan.js` and `executas/brume/brume_plugin.py` share one contract;
   change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
-  owns the second contract — the faithfulness spans and the deadline-day
-  question — covered by the `faithfulness` and `deadline_day` sections of
-  the same fixture; the plugin's `_schedule_question` ports the question.
-  `brume_prepare` is a deterministic front end, not a card tool: every
-  tool argument is model-written and there is no transcript to check it
-  against, so it only detects the dayless-deadline ambiguity and hands
-  back an `open_app_view` payload — cards are saved only in the window,
-  where prefilled text gates Prepare until the person confirms or edits
-  (`sourceProvenance` in `bundle/app.js`) and the card quotes its source.
+  owns the second contract — the fact vocabulary, the faithfulness spans and
+  the deadline-day question — covered by the `faithfulness`, `fact_scan` and
+  `deadline_day` sections of the same fixture; the plugin ports `scanFacts`,
+  `ungrounded_spans` and `_schedule_question` 1:1.
+- **A card's facts are never model-written.** Every tool argument is
+  model-written and the protocol offers no transcript to check it against,
+  so the chat path asks: `brume_prepare` masks each fact its draft would
+  assert ("Your draft says “You are juggling … projects”. How many?"), the
+  person states the value, and the answer replaces the model's. The
+  deadline-day question is unskippable — there is no `deadline_day`
+  parameter to pre-empt it with. In the window, Anna's reading of a chat
+  message is a read-only *suggestion*; the fields start empty and Prepare
+  stays off until the person writes the situation, so the source of a
+  window card is text they typed (`sourceProvenance` in `bundle/app.js`).
+  The card always quotes its source.
 - After changing the plugin's `describe`, regenerate
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the

@@ -10,12 +10,14 @@ const { validateCheckpoint, createCheckpointStore } = await import(join(here, ".
 
 const PLAN = { kind: "plan", opening: "o", keyPoint: "k", approach: "a", objection: "ob", response: "r", nextStep: "n" };
 
-test("handoff is prefill only — a draft key is ignored", () => {
-  // A model-written draft cannot reach the card: the payload may only
-  // fill the input the person reads before preparing.
+test("handoff is a suggestion — it never becomes the source", () => {
+  // A model-written reading may only be shown. The person writes the
+  // situation themselves, so the card's facts are grounded in their
+  // words, not in the model's prose.
   const r = parseReadyHandoff({ mode: "ready", context: "Interview", goal: "g", preparation: PLAN });
-  assert.equal(r.input.event, "Interview");
-  assert.equal(r.input.goal, "g");
+  assert.equal(r.suggestion.event, "Interview");
+  assert.equal(r.suggestion.goal, "g");
+  assert.equal("input" in r, false);
   assert.equal("plan" in r, false);
 });
 
@@ -23,17 +25,17 @@ test("malformed draft is ignored the same way", () => {
   for (const bad of [{ kind: "clarify", question: "q?" }, { kind: "plan", opening: "o" }, "junk", [PLAN],
     { ...PLAN, response: "it will cure your anxiety" }]) {
     const r = parseReadyHandoff({ context: "ctx", preparation: bad });
-    assert.equal(r.input.event, "ctx");
+    assert.equal(r.suggestion.event, "ctx");
     assert.equal("plan" in r, false);
   }
 });
 
 test("caps and empty context", () => {
   const r = parseReadyHandoff({ context: "x".repeat(700), goal: "g".repeat(400), preserve: "p".repeat(300) });
-  assert.equal(r.input.event.length, 600);
-  assert.equal(r.input.goal.length, 300);
-  assert.equal(r.input.preserve.length, 220);
-  assert.equal(parseReadyHandoff(null).input.event, "");
+  assert.equal(r.suggestion.event.length, 600);
+  assert.equal(r.suggestion.goal.length, 300);
+  assert.equal(r.suggestion.preserve.length, 220);
+  assert.equal(parseReadyHandoff(null).suggestion.event, "");
 });
 
 test("wording style normalisation", () => {

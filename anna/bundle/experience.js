@@ -11,13 +11,14 @@ export const normaliseWordingStyle = (value) => WORDING_STYLES.includes(value) ?
 const cap = (v, n) => typeof v === "string" ? v.trim().slice(0, n) : "";
 
 export function parseReadyHandoff(payload) {
-  const out = {
-    input: { event: "", goal: "", keyPoint: "", kind: null, preserve: "" },
-  };
+  // Anna's reading of the person's message. It is a SUGGESTION, never
+  // the source: the card's facts are grounded in what the person writes
+  // in the form, so the suggestion never lands in the fields.
+  const out = { suggestion: { event: "", goal: "", keyPoint: "", preserve: "" } };
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return out;
-  out.input.event = cap(payload.context, 600);
-  out.input.goal = cap(payload.goal, 300);
-  out.input.keyPoint = cap(payload.key_point ?? payload.keyPoint, 220);
-  out.input.preserve = cap(payload.preserve, 220);
+  out.suggestion.event = cap(payload.context, 600);
+  out.suggestion.goal = cap(payload.goal, 300);
+  out.suggestion.keyPoint = cap(payload.key_point ?? payload.keyPoint, 220);
+  out.suggestion.preserve = cap(payload.preserve, 220);
   return out;
 }

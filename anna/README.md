@@ -18,10 +18,14 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Local source (2026-11-12), **not published**: the preparation card is
-the primary result, and a draft may not add a count, a weekday, or a
-clock time the person did not write (`docs/ANNA.md` §12.26). Source tool
-version is **0.4.6**. The published binaries are still **0.4.5**
+Local source (2026-11-13), **not published**: the preparation card is
+the primary result, and it is produced in chat as well as in the window.
+The chat tool asks the person for every fact a draft would state — the
+value is masked in the question — and saves the card from their answers,
+so no model-written prose is ever the card's oracle (`docs/ANNA.md`
+§12.31). A draft may not add a count, a weekday, or a clock time the
+person did not write (§12.26). Source tool version is **0.4.9**, app
+**0.4.7**. The published binaries are still **0.4.5**
 (GitHub release `brume-executa-v0.4.5`; the darwin-arm64 matrix leg
 moved to macos-15 after GitHub retired macos-14). Run the Brume Executa
 Binaries workflow, download the four archives, and pass the
@@ -130,24 +134,38 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
    check against the person's own baseline. The home control does not
    chart those times. The check screen says it is not a medical test.
 
-Chat (`#brume …`): `brume_prepare` is the preparation's deterministic
-front end — it detects a dayless same-week deadline (`needs_input`, so
-the model asks the person) and otherwise returns an `open_app_view`
-prefill payload; it saves nothing and writes no card fields.
-`brume_reset` and `brume_complete` are the optional breathing break.
-The preparation card lives in the window: prefilled fields are marked
-as Anna's words and gate Prepare until the person confirms or edits
-them, and the saved card quotes the source it was drafted from. No card
-is saved from chat, on purpose — every tool argument is model-written
-and the protocol offers no transcript to check it against, so a
-chat-saved card could never be faithful. **Anna's own model writes the
-plan and the reflection as tool arguments**; the tool validates and
+Chat (`#brume …`): `brume_prepare` is Brume's primary result and it is
+produced in chat. It is called in two steps. Step 1 takes `situation`
+(the model's relay of what the user said) plus optional `goal`,
+`key_point`, `preserve`, and the model's own draft of the card
+(`draft_opening`, `draft_key_point`, `draft_approach`,
+`draft_objection`, `draft_response`, `draft_next_step`). It answers
+`needs_input` with one question per fact the draft would assert — the
+value is masked, so the person states it — plus a question about which
+day to name when a same-week deadline has none. Step 2 takes
+`request_id` and `answers`: the model's values are replaced by the
+person's, the card is saved (`ready/sessions/<ts>`, `ready/last`) and
+returned in `_display` blocks. **No tool argument is ever the oracle for
+a card's fact**: the protocol offers no transcript to check model prose
+against, so every fact in a chat-saved card is a value the person
+stated. `brume_reset` and `brume_complete` are the optional breathing
+break.
+
+In the window, Anna's reading of a chat message is shown as a
+*suggestion*, never as the source: the person writes the situation
+themselves, so the card's facts are grounded in their words, and the card
+always quotes the situation it was prepared from. The window's draft is
+checked against the submitted source; the chat path's draft is checked
+against the person's answers. **Anna's own model writes the plan, the
+draft and the reflection as tool arguments**; the tool validates and
 filters them, renders verbatim
 `_display` blocks, and writes records. The tool has no sampling
 capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
-`reset/summary`, `ready/sessions/<ts>`, `ready/last`, `alert/checks/<ts>`,
+`reset/summary`, `ready/sessions/<ts>`, `ready/last`, `ready/prepare/<id>`
+(the chat path's pending request, waiting for the person's answers),
+`alert/checks/<ts>`,
 `alert/summary`, `brume/prefs`, `brume/active-task` (single unfinished-
 task checkpoint; tombstoned via `set` null, never auto-erased when
 corrupt).
@@ -215,21 +233,22 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
    `tool_papa_brume_htcxvfcr__brume_reset`, not `exec_run`).
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
-   `brume_prepare` must return `needs_input` — the model asks which day
-   in chat before any window or draft. Answer with a day; the tool
-   returns `open_window`, the window opens prefilled and marked as
-   Anna's words, and Prepare stays off until the person confirms or
-   corrects it. The card must quote the situation it was drafted from;
-   nothing may say 4, four, Friday, or a clock time. This is the
-   reviewer's case — it has to pass before any other chat.
+   `brume_prepare` must return `needs_input` — the tool asks the person
+   for every fact the draft would state, with the value hidden, and for
+   which day to name. Answer each question; call `brume_prepare` again
+   with `request_id` and `answers`; the tool saves the card and returns
+   it. The card must not say 4, four, Friday, or a clock time unless
+   the person said it, and the saved card must appear under
+   `ready/last`. This is the reviewer's case — it has to pass before any
+   other chat.
 3. Same scenario, asked in chat instead ("put the card in chat"): the
-   model must open the workspace — no chat tool saves a card — and the
-   ask-then-draft flow still runs.
+   model calls `brume_prepare` and the card is saved and shown in chat.
 4. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
    posture-only.
 5. `done, feeling calmer` → `reflectionSource: "agent"`, record written.
-6. Ask to open the preparation in the app → no permission gate, event and
-   key point prefilled.
+6. Ask to open the preparation in the app → no permission gate; Anna's
+   reading appears as a suggestion and Prepare stays off until the
+   person writes the situation.
 7. One window alertness check → AI note (not the fallback line).
 
 Consider BYOK in Anna for test traffic so it doesn't burn credits.

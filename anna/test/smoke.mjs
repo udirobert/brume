@@ -329,6 +329,12 @@ for (const tc of planCases.faithfulness ?? []) {
 for (const tc of planCases.deadline_day ?? []) {
   ok(`deadline day "${tc.name}"`, (prep.scheduleQuestion(tc.source) !== null) === tc.expect);
 }
+for (const tc of planCases.fact_scan ?? []) {
+  // The scanner is the shared contract with the Python plugin: the chat
+  // path asks the person for every fact it finds, so both must agree.
+  const got = prep.scanFacts(tc.text).map((f) => ({ kind: f.kind, token: f.token, value: f.value }));
+  ok(`fact scan "${tc.name}"`, JSON.stringify(got) === JSON.stringify(tc.expect));
+}
 
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------
 

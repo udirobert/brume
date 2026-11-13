@@ -104,11 +104,23 @@ export const PLAN_FACT_FIELDS = ["opening", "keyPoint", "approach", "objection",
 export const REHEARSAL_FACT_FIELDS = ["adjustment", "response", "nextStep"];
 export const NEUTRAL_OBJECTION = "What makes this hard?";
 
-function scrubCompounds(text) {
-  return String(text || "").replace(/\b[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+\b/gu, " ");
+// Hyphenated compounds ("one-on-one", "twenty-first") are not facts.
+// The scanner skips every match inside one and keeps the offsets of the
+// original text, so a fact can be replaced in place.
+function compoundRanges(text) {
+  const out = [];
+  for (const m of String(text || "").matchAll(/\b[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)+\b/gu)) {
+    out.push([m.index, m.index + m[0].length]);
+  }
+  return out;
 }
 
-function timeTokens(text) {
+function inRanges(start, end, ranges) {
+  for (const [a, b] of ranges) if (start >= a && end <= b) return true;
+  return false;
+}
+
+function timeSpans(text) {
   const found = [];
   const lower = String(text || "").toLowerCase();
   const patterns = [
@@ -120,83 +132,132 @@ function timeTokens(text) {
     for (const match of lower.matchAll(patterns[i])) {
       // "at 3 o'clock" belongs to the o'clock phrase, not "at 3".
       if (i === 2 && /^\s*o'?clock\b/.test(lower.slice(match.index + match[0].length))) continue;
-      found.push(match[0].replace(/\s+/g, " ").trim());
+      found.push({
+        token: match[0].replace(/\s+/g, " ").trim(),
+        start: match.index,
+        end: match.index + match[0].length,
+      });
     }
   }
   return found;
 }
 
-function phraseTokens(text) {
-  const scrubbed = scrubCompounds(text).toLowerCase();
+function phraseSpans(text) {
+  const lower = String(text || "").toLowerCase();
+  const skip = compoundRanges(text);
   const found = [];
   for (const re of [...VAGUE_COUNT_RES, ...REL_SPAN_RES, OCLOCK_RE]) {
-    for (const match of scrubbed.matchAll(re)) {
+    for (const match of lower.matchAll(re)) {
+      if (inRanges(match.index, match.index + match[0].length, skip)) continue;
       const token = match[0].replace(/\s+/g, " ").trim();
       // "the same week" and "this week" are one span — restating it is
       // not a new fact, so both surfaces fold to a single token.
-      found.push(token.replace(/^(?:the\s+)?same\s+(week|weekend|month|day)$/i, "this $1"));
+      found.push({
+        token: token.replace(/^(?:the\s+)?same\s+(week|weekend|month|day)$/i, "this $1"),
+        start: match.index,
+        end: match.index + match[0].length,
+      });
     }
   }
   return found;
+}
+
+/**
+ * Every fact a card could assert, with the span it occupies.
+ *
+ * The kinds are the whole shared vocabulary: counts, ordinals, weekdays,
+ * clock times, relative day words, months and schedule/count phrases.
+ * The order is the order the faithfulness message reads them in.
+ *
+ * This is the contract the Python plugin mirrors (brume_plugin.py) — the
+ * chat path asks the person for each fact it finds, so the two scanners
+ * must agree. Pinned by the "fact_scan" section of test/plan-cases.json.
+ */
+export function scanFacts(text) {
+  const src = String(text || "");
+  const lower = src.toLowerCase();
+  const skip = compoundRanges(src);
+  const facts = [];
+  const add = (kind, token, value, start, end, scrubbed) => {
+    if (scrubbed && inRanges(start, end, skip)) return;
+    facts.push({ kind, token, value, start, end });
+  };
+  for (const [word, n] of Object.entries(NUMBER_WORDS)) {
+    for (const m of lower.matchAll(new RegExp(`\\b${word}\\b`, "g"))) {
+      add("count", m[0], n, m.index, m.index + m[0].length, true);
+    }
+  }
+  for (const m of src.matchAll(/\b\d+\b/g)) {
+    add("count", m[0], Number(m[0]), m.index, m.index + m[0].length, false);
+  }
+  for (const m of src.matchAll(ORDINAL_RE)) {
+    add("ordinal", m[0].toLowerCase(), Number(m[1]), m.index, m.index + m[0].length, false);
+  }
+  for (const [word, n] of Object.entries(ORDINAL_WORDS)) {
+    for (const m of lower.matchAll(new RegExp(`\\b${word}\\b`, "g"))) {
+      add("ordinal", m[0], n, m.index, m.index + m[0].length, true);
+    }
+  }
+  for (const day of WEEKDAYS) {
+    for (const m of lower.matchAll(new RegExp(`\\b${day}\\b`, "g"))) {
+      add("weekday", m[0], day, m.index, m.index + m[0].length, true);
+    }
+  }
+  for (const t of timeSpans(src)) add("time", t.token, t.token, t.start, t.end, false);
+  for (const word of REL_DAY_WORDS) {
+    for (const m of lower.matchAll(new RegExp(`\\b${word}\\b`, "g"))) {
+      add("relative", m[0], word, m.index, m.index + m[0].length, true);
+    }
+  }
+  for (const word of MONTHS) {
+    for (const m of lower.matchAll(new RegExp(`\\b${word}\\b`, "g"))) {
+      add("month", m[0], word, m.index, m.index + m[0].length, true);
+    }
+  }
+  for (const p of phraseSpans(src)) add("phrase", p.token, p.token, p.start, p.end, true);
+  return facts;
 }
 
 function sourceFacts(text) {
   // Every fact token a candidate may reuse: numbers, ordinals, weekdays,
   // clock times, months, relative day words and schedule/count phrases.
-  const src = String(text || "");
-  const scrubbed = scrubCompounds(src).toLowerCase();
-  const nums = new Set();
-  for (const [word, n] of Object.entries(NUMBER_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed)) nums.add(n);
-  }
-  for (const match of src.matchAll(/\b\d+\b/g)) nums.add(Number(match[0]));
-  const ords = new Set([...src.matchAll(ORDINAL_RE)].map((m) => Number(m[1])));
-  for (const [word, n] of Object.entries(ORDINAL_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed)) ords.add(n);
-  }
-  for (const n of ords) nums.add(n);
-  const days = new Set(WEEKDAYS.filter((day) => new RegExp(`\\b${day}\\b`).test(scrubbed)));
-  const rel = new Set([...REL_DAY_WORDS, ...MONTHS].filter((word) => new RegExp(`\\b${word}\\b`).test(scrubbed)));
-  return {
-    nums,
-    ords,
-    days,
-    times: new Set(timeTokens(src)),
-    rel,
-    phrases: new Set(phraseTokens(src)),
+  const out = {
+    counts: new Set(),
+    ordinals: new Set(),
+    weekdays: new Set(),
+    relatives: new Set(),
+    times: new Set(),
+    phrases: new Set(),
   };
+  for (const f of scanFacts(text)) {
+    if (f.kind === "count") out.counts.add(f.value);
+    else if (f.kind === "ordinal") {
+      out.ordinals.add(f.value);
+      out.counts.add(f.value);
+    } else if (f.kind === "weekday") out.weekdays.add(f.value);
+    else if (f.kind === "relative" || f.kind === "month") out.relatives.add(f.value);
+    else if (f.kind === "time") out.times.add(f.value);
+    else if (f.kind === "phrase") out.phrases.add(f.value);
+  }
+  return out;
+}
+
+function isGrounded(fact, src) {
+  if (fact.kind === "count") return src.counts.has(fact.value);
+  if (fact.kind === "ordinal") return src.ordinals.has(fact.value);
+  if (fact.kind === "weekday") return src.weekdays.has(fact.value);
+  if (fact.kind === "relative" || fact.kind === "month") return src.relatives.has(fact.value);
+  if (fact.kind === "time") return src.times.has(fact.value);
+  if (fact.kind === "phrase") return src.phrases.has(fact.value);
+  return false;
 }
 
 /** Counts, weekdays, dates, and clock times. Number words inside hyphenated compounds (one-on-one) are ignored. */
 export function ungroundedSpans(candidate, source) {
   const src = sourceFacts(source);
   const found = [];
-  const cand = String(candidate || "");
-  const scrubbed = scrubCompounds(cand).toLowerCase();
-  for (const [word, n] of Object.entries(NUMBER_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.nums.has(n)) found.push(word);
-  }
-  for (const match of cand.matchAll(/\b\d+\b/g)) {
-    if (!src.nums.has(Number(match[0]))) found.push(match[0]);
-  }
-  for (const match of cand.matchAll(ORDINAL_RE)) {
-    const n = Number(match[1]);
-    if (!src.nums.has(n) && !src.ords.has(n)) found.push(match[0].toLowerCase());
-  }
-  for (const [word, n] of Object.entries(ORDINAL_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.ords.has(n)) found.push(word);
-  }
-  for (const day of WEEKDAYS) {
-    if (new RegExp(`\\b${day}\\b`).test(scrubbed) && !src.days.has(day)) found.push(day);
-  }
-  for (const time of timeTokens(cand)) {
-    if (!src.times.has(time)) found.push(time);
-  }
-  for (const word of [...REL_DAY_WORDS, ...MONTHS]) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !src.rel.has(word)) found.push(word);
-  }
-  for (const token of phraseTokens(cand)) {
-    if (!src.phrases.has(token)) found.push(token);
+  for (const fact of scanFacts(candidate)) {
+    if (!isGrounded(fact, src)) found.push(fact.token);
   }
   return [...new Set(found)];
 }
@@ -232,8 +293,8 @@ function spanKind(span) {
   const text = String(span || "").toLowerCase();
   if (WEEKDAYS.includes(text)) return "weekday";
   if (MONTHS.includes(text) || /^\d{1,2}(st|nd|rd|th)$/.test(text)) return "date";
-  if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeTokens(text).length > 0) return "time";
-  if (REL_DAY_WORDS.includes(text) || phraseTokens(text).length > 0) return "time";
+  if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeSpans(text).length > 0) return "time";
+  if (REL_DAY_WORDS.includes(text) || phraseSpans(text).length > 0) return "time";
   return "count";
 }
 
@@ -247,33 +308,10 @@ export function faithfulnessMessage(issues) {
 }
 
 export function groundedSpans(candidate, source) {
-  const blocked = new Set(ungroundedSpans(candidate, source));
+  const src = sourceFacts(source);
   const kept = [];
-  const cand = String(candidate || "");
-  const scrubbed = scrubCompounds(cand).toLowerCase();
-  for (const word of Object.keys(NUMBER_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
-  }
-  for (const match of cand.matchAll(/\b\d+\b/g)) {
-    if (!blocked.has(match[0])) kept.push(match[0]);
-  }
-  for (const match of cand.matchAll(ORDINAL_RE)) {
-    if (!blocked.has(match[0].toLowerCase())) kept.push(match[0].toLowerCase());
-  }
-  for (const word of Object.keys(ORDINAL_WORDS)) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
-  }
-  for (const day of WEEKDAYS) {
-    if (new RegExp(`\\b${day}\\b`).test(scrubbed) && !blocked.has(day)) kept.push(day);
-  }
-  for (const time of timeTokens(cand)) {
-    if (!blocked.has(time)) kept.push(time);
-  }
-  for (const word of [...REL_DAY_WORDS, ...MONTHS]) {
-    if (new RegExp(`\\b${word}\\b`).test(scrubbed) && !blocked.has(word)) kept.push(word);
-  }
-  for (const token of phraseTokens(cand)) {
-    if (!blocked.has(token)) kept.push(token);
+  for (const fact of scanFacts(candidate)) {
+    if (isGrounded(fact, src)) kept.push(fact.token);
   }
   return [...new Set(kept)];
 }
@@ -293,7 +331,7 @@ function hasDayOrTime(text) {
   const t = String(text || "");
   if (DAYISH_RE.test(t)) return true;
   if (t.match(ORDINAL_RE) || t.match(OCLOCK_RE)) return true;
-  return timeTokens(t).length > 0;
+  return timeSpans(t).length > 0;
 }
 
 export const SCHEDULE_QUESTION = "You mentioned a deadline in the same week. Which day should the card name, if any?";

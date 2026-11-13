@@ -381,7 +381,7 @@ textarea:disabled, input:disabled { opacity: 0.55; }
 .moment-list.compact button { min-height: 44px; padding: 6px 12px; font-size: 0.85rem; }
 .source-note { margin: 10px 0; padding: 10px 14px; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface) / 0.7); }
 .source-note .hint { margin: 0 0 8px; }
-.source-note button { min-height: 44px; padding: 8px 14px; font: inherit; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface)); cursor: pointer; }
+.source-note blockquote { margin: 0; padding: 0 0 0 12px; border-left: 2px solid hsl(var(--brume-border)); color: hsl(var(--brume-text) / 0.75); font-size: 0.92em; white-space: pre-line; }
 #card-source-text { margin: 4px 0 10px; font-style: normal; }
 .quiet-details { margin: 14px 0; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); padding: 10px 14px; background: hsl(var(--brume-surface) / 0.7); }
 .quiet-details summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; }

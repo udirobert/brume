@@ -221,64 +221,172 @@ class InvokeContract(unittest.TestCase):
 REVIEWER_SENTENCE = "I manage 3 projects and I added one deadline in the same week."
 
 
-class PrepareInterview(unittest.TestCase):
-    """brume_prepare is the deterministic front end: it asks for the
-    missing day or hands the window a prefill payload. It saves nothing
-    and returns no card fields."""
+class FactScanner(unittest.TestCase):
+    """The scanner is a 1:1 port of scanFacts in bundle/preparation.js —
+    the same fixture the node smoke test runs against the JS side."""
+
     @classmethod
     def setUpClass(cls):
         with open(FIXTURE, encoding="utf-8") as f:
             cls.cases = json.load(f)
 
-    def test_deadline_day_fixture_parity(self):
-        # Same cases the node smoke test runs against scheduleQuestion.
-        for tc in self.cases["deadline_day"]:
+    def test_fact_scan_fixture_parity(self):
+        for tc in self.cases["fact_scan"]:
             with self.subTest(tc["name"]):
-                got = bp._schedule_question(tc["source"])
-                self.assertEqual(got is not None, tc["expect"])
+                got = [
+                    {"kind": f["kind"], "token": f["token"], "value": f["value"]}
+                    for f in bp.scan_facts(tc["text"])
+                ]
+                self.assertEqual(got, tc["expect"])
 
-    def test_reviewer_sentence_asks_for_day(self):
-        out = bp.invoke_prepare({"situation": REVIEWER_SENTENCE}, {})
+    def test_ungrounded_spans_match_the_window(self):
+        # The same rule the window applies to a draft: a fact the source
+        # does not contain is ungrounded.
+        self.assertEqual(
+            bp.ungrounded_spans("I want to talk about the four projects on my plate.",
+                                REVIEWER_SENTENCE),
+            ["four"],
+        )
+        self.assertEqual(
+            bp.ungrounded_spans("Can we meet Friday at 3pm?", REVIEWER_SENTENCE),
+            ["friday", "3pm"],
+        )
+        self.assertEqual(bp.ungrounded_spans("A one-on-one.", "A one-on-one."), [])
+
+
+class PrepareCard(unittest.TestCase):
+    """brume_prepare produces the card. Every fact the draft asserts is
+    asked back — the value is masked — so the model can never be the
+    oracle for the card's facts."""
+
+    @classmethod
+    def setUpClass(cls):
+        with open(FIXTURE, encoding="utf-8") as f:
+            cls.cases = json.load(f)
+
+    def setUp(self):
+        bp._STDIN_EOF = True
+        bp._PREPARE_REQUESTS.clear()
+
+    def tearDown(self):
+        bp._STDIN_EOF = False
+        bp._PREPARE_REQUESTS.clear()
+
+    def _draft(self, **over):
+        args = {
+            "situation": REVIEWER_SENTENCE,
+            "draft_opening": "You are juggling four projects and a new deadline in the same week.",
+            "draft_key_point": "The new deadline needs two more people.",
+            "draft_approach": "Open with what the deadline changed for your team.",
+            "draft_objection": "We cannot take on another project right now.",
+            "draft_response": "Then agree what slips and by when.",
+            "draft_next_step": "Name the day you will flag the new deadline.",
+        }
+        args.update(over)
+        return args
+
+    def _finish(self, first, answers):
+        return bp.invoke_prepare(
+            {"request_id": first["data"]["request_id"], "answers": answers}, {})
+
+    def test_first_call_asks_and_saves_nothing(self):
+        out = bp.invoke_prepare(self._draft(), {})
         self.assertTrue(out["success"])
-        self.assertEqual(out["data"]["status"], "needs_input")
-        self.assertEqual(out["data"]["missing"], "deadline_day")
-        self.assertIn("which day", out["data"]["question"].lower())
+        data = out["data"]
+        self.assertEqual(data["status"], "needs_input")
+        self.assertTrue(data["request_id"])
+        self.assertTrue(data["questions"])
+        # no card fields come back before the person answers
+        for banned in ("card", "opening", "nextStep"):
+            self.assertNotIn(banned, data)
 
-    def test_answered_day_opens_window_with_context(self):
-        out = bp.invoke_prepare(
-            {"situation": REVIEWER_SENTENCE, "deadline_day": "Thursday"}, {})
-        self.assertTrue(out["success"])
-        self.assertEqual(out["data"]["status"], "open_window")
-        ctx = out["data"]["open_app_view"]["context"]
-        self.assertIn("3 projects", ctx)
-        self.assertIn("Thursday", ctx)
+    def test_the_model_cannot_supply_the_day_up_front(self):
+        # There is no deadline_day parameter: the day can only arrive as
+        # an answer to the question the tool asked.
+        names = {p["name"] for t in bp.MANIFEST["tools"]
+                 if t["name"] == "brume_prepare" for p in t["parameters"]}
+        self.assertNotIn("deadline_day", names)
+        self.assertNotIn("schedule_unspecified", names)
 
-    def test_no_deadline_opens_window_directly(self):
-        out = bp.invoke_prepare(
-            {"situation": "A one-on-one about next quarter's workload",
-             "goal": "Agree on a realistic timeline",
-             "key_point": "The deadline needs two more people"}, {})
-        self.assertEqual(out["data"]["status"], "open_window")
-        payload = out["data"]["open_app_view"]
-        self.assertEqual(payload["goal"], "Agree on a realistic timeline")
-        self.assertEqual(payload["key_point"], "The deadline needs two more people")
+    def test_the_deadline_question_is_asked(self):
+        out = bp.invoke_prepare(self._draft(), {})
+        questions = out["data"]["questions"]
+        kinds = [q["kind"] for q in questions]
+        self.assertIn("schedule", kinds)
+        schedule = next(q for q in questions if q["kind"] == "schedule")
+        self.assertIn("which day", schedule["question"].lower())
 
-    def test_schedule_unspecified_opens_window(self):
-        out = bp.invoke_prepare(
-            {"situation": REVIEWER_SENTENCE, "schedule_unspecified": True}, {})
-        self.assertEqual(out["data"]["status"], "open_window")
-        self.assertNotIn("Deadline day", out["data"]["open_app_view"]["context"])
+    def test_the_questions_mask_the_values(self):
+        out = bp.invoke_prepare(self._draft(), {})
+        for question in out["data"]["questions"]:
+            if question["kind"] == "schedule":
+                continue
+            self.assertNotIn("four", question["question"])
+            self.assertNotIn("two", question["question"])
+            self.assertIn("…", question["question"])
+
+    def test_the_answers_replace_the_models_values(self):
+        first = bp.invoke_prepare(self._draft(), {})
+        ids = [q["id"] for q in first["data"]["questions"]]
+        replies = {"fact_1": "three projects", "fact_2": "the same week",
+                   "fact_3": "none", "schedule": "Thursday"}
+        answers = [f"{qid} = {replies.get(qid, 'none')}" for qid in ids]
+        out = self._finish(first, answers)
+        card = out["data"]["card"]
+        self.assertEqual(out["data"]["status"], "not_saved")  # no host in tests
+        self.assertEqual(card["opening"], "You are juggling three projects and a new deadline in the same week.")
+        # the model's "two more people" was never confirmed -> blanked
+        self.assertEqual(card["preparedKeyPoint"], "")
+        self.assertIn("keyPoint", card["blanked"])
+        self.assertEqual(card["deadlineDay"], "Thursday")
+        self.assertEqual(card["sourceProvenance"], "answered")
+        # the source is the person's words, not the model's prose
+        self.assertNotIn("four", card["sourceText"])
+
+    def test_a_declined_fact_leaves_its_field_blank(self):
+        first = bp.invoke_prepare(self._draft(), {})
+        ids = [q["id"] for q in first["data"]["questions"]]
+        answers = [f"{qid} = none" for qid in ids]
+        out = self._finish(first, answers)
+        card = out["data"]["card"]
+        self.assertEqual(card["opening"], "")
+        self.assertEqual(card["preparedKeyPoint"], "")
+
+    def test_the_card_is_shown_verbatim(self):
+        first = bp.invoke_prepare(self._draft(), {})
+        ids = [q["id"] for q in first["data"]["questions"]]
+        answers = [f"{qid} = 3" if qid == "fact_1" else "none" for qid in ids]
+        out = self._finish(first, answers)
+        blocks = out["data"]["_display"]["blocks"]
+        self.assertTrue(blocks)
+        self.assertIn("preparation card", blocks[0]["text"].lower())
+
+    def test_a_vague_count_is_answered_with_a_number(self):
+        # "several" is a count the person answers with a number; the
+        # card then carries their number, not the model's word.
+        first = bp.invoke_prepare({
+            "situation": "I am juggling several projects.",
+            "draft_opening": "You are juggling several projects at once.",
+        }, {})
+        question = first["data"]["questions"][0]
+        self.assertEqual(question["kind"], "phrase")
+        self.assertIn("How many?", question["question"])
+        self.assertNotIn("several", question["question"])
+        out = bp.invoke_prepare({
+            "request_id": first["data"]["request_id"],
+            "answers": [f"{question['id']} = 3 projects"],
+        }, {})
+        self.assertEqual(out["data"]["card"]["opening"],
+                         "You are juggling 3 projects at once.")
+
+    def test_an_unknown_request_is_refused(self):
+        with self.assertRaises(LookupError):
+            bp.invoke_prepare({"request_id": "nope"}, {})
 
     def test_situation_required(self):
         with self.assertRaises(LookupError):
             bp.invoke_prepare({}, {})
 
-    def test_returns_no_card_fields(self):
-        out = bp.invoke_prepare(
-            {"situation": "A one-on-one about workload"}, {})
-        for banned in ("opening", "approach", "objection", "response",
-                       "nextStep", "card"):
-            self.assertNotIn(banned, out["data"])
 
 
 class ProtocolManifest(unittest.TestCase):

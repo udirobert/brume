@@ -44,7 +44,14 @@ function validPrep(p) {
   if (p.planSource !== undefined && p.planSource !== null
     && !["ai", "anna-handoff"].includes(p.planSource)) return false;
   if (p.sourceProvenance !== undefined
-    && !["typed", "handoff", "confirmed", "edited"].includes(p.sourceProvenance)) return false;
+    && !["typed", "handoff", "confirmed", "edited", "answered"].includes(p.sourceProvenance)) return false;
+  if (p.suggestion !== undefined && p.suggestion !== null) {
+    if (!isObj(p.suggestion)) return false;
+    if (!str(p.suggestion.event, 600)) return false;
+    if (!str(p.suggestion.goal, 300)) return false;
+    if (!str(p.suggestion.keyPoint, 220)) return false;
+    if (!str(p.suggestion.preserve, 220)) return false;
+  }
   if (typeof p.clarificationUsed !== "boolean") return false;
   if (!str(p.question, 180)) return false;
   if (!str(p.clarification, 600)) return false;

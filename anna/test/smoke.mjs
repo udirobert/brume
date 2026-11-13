@@ -336,15 +336,10 @@ for (const tc of planCases.fact_scan ?? []) {
   ok(`fact scan "${tc.name}"`, JSON.stringify(got) === JSON.stringify(tc.expect));
 }
 for (const tc of planCases.interview ?? []) {
-  // The masked-fact interview is the shared contract too: the window
-  // substitutes the person's typed answers into the chat draft.
-  const questions = prep.factQuestions(tc.fields);
-  const { fields, blanked } = prep.applyAnswers(tc.fields, questions, tc.answers || {});
-  const got = {};
-  for (const key of Object.keys(tc.expect || {})) got[key] = fields[key] ?? "";
-  ok(`interview "${tc.name}"`,
-    JSON.stringify(got) === JSON.stringify(tc.expect) &&
-    JSON.stringify(blanked) === JSON.stringify(tc.expect_blanked ?? []));
+  // maskFacts is the shared display contract: the draft the window shows
+  // as reference never asserts a value the model wrote.
+  ok(`interview mask "${tc.name}"`,
+    prep.maskFacts(tc.text) === tc.expect);
 }
 
 // --- 2. Harness: manifest ACL + storage round-trip -------------------------

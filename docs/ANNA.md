@@ -1712,3 +1712,52 @@ run the three-projects sentence and watch `open_app_view` open
 `ready/last`; then the chat variant, reset/reflect/arrive/alertness),
 then `anna-app apps submit-review brume` to re-pin the review to v0.4.8
 / tool 0.4.10.
+
+### 12.36 The card is written by the person, field by field — tool 0.4.11, app 0.4.9 (candidate)
+
+§12.34–12.35's window interview was rejected on two counts, and both
+were structural, not copy:
+
+1. **A fact-free draft skipped the interview entirely.** A draft that
+   asserted nothing scanned produced an empty question list, "Continue
+   to my draft" stayed enabled, and the model's sentences saved as the
+   card with `sourceProvenance: "answered"`. Meanwhile Anna's reading on
+   the same screen could still show "4" and "Friday".
+2. **Token substitution left the model's sentences.** "Tell Priya you
+   manage …" + the typed "three" stayed "Tell Priya you manage three."
+   The name, the role, the motive survived; only the scanned token
+   changed, and the card's quoted "source" was the bare answer while
+   the body was still the model's prose.
+
+The fix removes substitution altogether. `brume_prepare` (tool
+**0.4.11**) still takes the situation plus the model's draft fields and
+still returns `open_window` with an `open_app_view` payload — but the
+payload's `interview.fields` is now masked *reference* only. The
+window's "Write your card" stage (`screen-prep-interview`) shows Anna's
+reading as a labelled suggestion, renders one labelled block per
+drafted field with `maskFacts` applied ("Anna's draft — for reference,
+not the card"), and gives the person a textarea per field. Nothing
+model-written is ever substituted into anything; blank fields are
+dropped; an interview with no typed field refuses to continue. The
+saved card records `interview: { draft, written, deadlineDay }` — the
+model's draft beside the person's own words — and
+`sourceProvenance: "answered"` now means "the person wrote every part".
+
+The deadline-day prompt keys on the *suggestion* (the relay of the
+person's words), never on the draft, which could invent a deadline.
+`preparation.js` lost `factQuestions`/`maskedContext`/`applyAnswers`/
+`questionFor`; it keeps `scanFacts` (the faithfulness gate and the
+shared vocabulary) and gains `maskFacts` + `scheduleDay`. The plugin
+lost `_fact_questions`/`_apply_answers`/`_schedule_question` the same
+way; `test_plan.py` asserts the manifest carries no `answers`,
+`request_id`, `deadline_day` or `schedule_unspecified` parameters.
+
+Versions: tool **0.4.11** (`executa.json`, `pyproject.toml`, plugin
+`VERSION`, regenerated `manifest.json`), app **0.4.9** (`app.json`).
+Local gates: `npm test` 154 green, `test_plan` 22 green,
+`anna-app validate --strict` clean, browser QA **37/37** — the two
+interview cases now write all six fields and assert no draft value
+reaches `ready/last`, plus the fact-free-draft case proves an empty
+interview cannot save. Remaining, in order: commit, the 0.4.11
+binaries workflow, download + checksum, `apps publish`, the tier-3
+fresh-install Cloud Agent checklist, then `apps submit-review`.

@@ -40,12 +40,11 @@ prepared conversation, and the offer should name one.
   `draft_key_point`, `draft_approach`, `draft_objection`,
   `draft_response` and `draft_next_step`. It returns `open_window` with
   an `open_app_view` payload: call `open_app_view` with it. The window
-  shows the draft with every fact masked into a question — a count, a
-  weekday, a clock time — plus a question about which day to name when
-  they mention a deadline in the same week, and the person types the
-  answers there. The card is saved in the window from what they wrote.
-  There is no `answers` parameter and you must never write the card's
-  facts yourself.
+  shows your draft with its facts masked and asks the person to write
+  every part of the card in their own words; the card is saved there
+  from what they typed. There is no `answers` parameter and you must
+  never write the card's content yourself — the draft is reference
+  only.
 - If the user says **"not now"**, declines, or simply moves on: accept
   it completely. Do not re-offer in the same session, do not follow up,
   do not keep score.

@@ -18,21 +18,20 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut: **app v0.4.8** with tool **0.4.10**, published
-(`docs/ANNA.md` §12.34–12.35). The preparation card is the primary
-result, produced in the window as well as drafted in chat:
-`brume_prepare` takes the model's draft, returns `open_window` with an
-`open_app_view` payload, and the window's "Confirm the details" screen
-masks every fact the draft asserts into a question the person answers
-by typing — the card is saved from those answers, so no model-written
-prose is ever the card's oracle. The earlier two-step chat design was
-rejected because its `answers` parameter was still model-written — the
-model could answer its own masked questions. A draft may not add a
-count, a weekday, or a clock time the person did not write (§12.26).
-Binaries **0.4.10** are published (GitHub release
-`brume-executa-v0.4.10`, all four platforms, checksums verified);
-`executa_version=1104`. The tier-3 fresh-install Cloud Agent run and
-resubmit are outstanding. App id 582, slug `brume`, tool id
+Latest cut (in progress): **app v0.4.9** with tool **0.4.11**. The
+preparation card is the primary result, and its content is the person's
+own typing: `brume_prepare` takes the model's draft, returns
+`open_window` with an `open_app_view` payload, and the window's "Write
+your card" screen shows each drafted field with its facts masked while
+the person writes every part themselves — the draft is reference only,
+so no model-written prose is ever the card (`docs/ANNA.md` §12.36).
+Both earlier designs were rejected: the two-step chat flow's `answers`
+parameter was model-written, and masked-fact substitution still left
+the model's sentences in the card. Binaries **0.4.10** are published
+(GitHub release `brume-executa-v0.4.10`, all four platforms, checksums
+verified; app v0.4.8 cut, `executa_version=1104`); **0.4.11** binaries,
+republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
+outstanding. App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
@@ -143,24 +142,26 @@ plus optional `goal`, `key_point`, `preserve`, and the model's own draft
 of the card (`draft_opening`, `draft_key_point`, `draft_approach`,
 `draft_objection`, `draft_response`, `draft_next_step`). It returns
 `open_window` with an `open_app_view` payload; the model calls
-`open_app_view` with it, and the window opens on a "Confirm the
-details" screen: one question per fact the draft asserts — the value is
-masked, so the person states it — plus a question about which day to
-name when a same-week deadline has none. The person types the answers in
-the window; the draft is substituted and saved there
-(`ready/sessions/<ts>`, `ready/last`). **No tool argument is ever the
-oracle for a card's fact**: the protocol offers no transcript to check
-model prose against, and the tool accepts no `answers` — an answers
-parameter would be model-written too, which is why the earlier two-step
-chat design was dropped. `brume_reset` and `brume_complete` are the
+`open_app_view` with it, and the window opens on a "Write your card"
+screen: each drafted field is shown with its facts masked, and the
+person writes every part of the card in their own words — the draft is
+reference only, and anything left blank is dropped. The card is saved
+there (`ready/sessions/<ts>`, `ready/last`) with an audit keeping the
+draft beside what they typed. **No tool argument is ever the oracle for
+a card's content**: the protocol offers no transcript to check model
+prose against, the tool accepts no `answers`, and substituting a typed
+value into a model sentence would still leave the model's sentence —
+which is why both earlier designs (chat answers, masked-fact
+substitution) were dropped. `brume_reset` and `brume_complete` are the
 optional breathing break.
 
 In the window, Anna's reading of a chat message is shown as a
 *suggestion*, never as the source: the person writes the situation
 themselves, so the card's facts are grounded in their words, and the card
 always quotes the situation it was prepared from. The window's draft is
-checked against the submitted source; the chat path's draft is checked
-against the person's answers. **Anna's own model writes the plan, the
+checked against the submitted source; the chat path's card is the
+person's own typed fields, checked the same way. **Anna's own model
+writes the plan, the
 draft and the reflection as tool arguments**; the tool validates and
 filters them, renders verbatim
 `_display` blocks, and writes records. The tool has no sampling
@@ -237,13 +238,13 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
    `brume_prepare` must return `open_window`; `open_app_view` opens the
-   "Confirm the details" screen, which asks the person for every fact
-   the draft would state — the value hidden — and for which day to
-   name. The person types the answers in the window; the card is saved
-   there. The card must not say 4, four, Friday, or a clock time unless
-   the person said it, and the saved card must appear under
-   `ready/last`. This is the reviewer's case — it has to pass before any
-   other chat.
+   "Write your card" screen, which shows the draft with its facts
+   masked and asks the person to write every part themselves. The card
+   is saved there from what they typed — it must contain nothing the
+   person did not write (no 4, four, Friday, Priya, or a clock time),
+   and the saved card must appear under `ready/last` with the
+   `interview` audit. This is the reviewer's case — it has to pass
+   before any other chat.
 3. Same scenario, asked in chat instead ("put the card in chat"): the
    model calls `brume_prepare` + `open_app_view`, the window opens on
    the interview, and the card is saved there.

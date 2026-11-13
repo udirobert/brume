@@ -51,26 +51,28 @@ release checklist, one new chat per step.
 Rules:
 - `bundle/plan.js` and `executas/brume/brume_plugin.py` share one contract;
   change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
-  owns the second contract — the fact vocabulary, the faithfulness spans and
-  the deadline-day question — covered by the `faithfulness`, `fact_scan` and
-  `deadline_day` sections of the same fixture; the plugin ports `scanFacts`,
-  `ungrounded_spans` and `_schedule_question` 1:1.
-- **A card's facts are never model-written.** Every tool argument is
-  model-written and the protocol offers no transcript to check it against,
-  so the chat path cannot be the oracle either: `brume_prepare` takes the
-  model's draft and returns `open_window` with an `open_app_view` payload;
-  the window masks each fact the draft asserts ("Your draft says “You are
-  juggling … projects”. How many?"), the person types the answers there —
-  the only surface where text is verifiably theirs — and `applyAnswers`
-  swaps the model's values for theirs. The tool accepts no `answers`
-  parameter: an answers argument would be model-written too (the two-step
-  chat design was rejected for exactly that). The deadline-day question
-  is unskippable — there is no `deadline_day` parameter to pre-empt it
-  with. In the window form, Anna's reading of a chat message is a
-  read-only *suggestion*; the fields start empty and Prepare stays off
-  until the person writes the situation (`sourceProvenance` in
-  `bundle/app.js`). The card always quotes its source and records the
-  interview audit (`facts`/`blanked`/`deadlineDay`).
+  owns the second contract — the fact vocabulary, the faithfulness spans,
+  the deadline-day question and `maskFacts` — covered by the `faithfulness`,
+  `fact_scan`, `deadline_day` and `interview` sections of the same fixture;
+  the plugin ports `scanFacts` and `ungrounded_spans` 1:1.
+- **A card's content is never model-written.** Every tool argument is
+  model-written and the protocol offers no transcript to check it
+  against, so neither chat nor substitution can be the oracle:
+  `brume_prepare` takes the model's draft and returns `open_window`
+  with an `open_app_view` payload; the window's "Write your card"
+  screen shows each drafted field with its facts masked (`maskFacts`)
+  and the person writes every part themselves — the only surface where
+  text is verifiably theirs. There is deliberately no `answers`
+  parameter and no `applyAnswers`: replacing a token inside a model
+  sentence still leaves the model's sentence ("Tell Priya …" + "three"
+  keeps Priya). The draft crosses as masked reference; the saved card
+  records an `interview` audit (`draft` beside `written`,
+  `deadlineDay`). The deadline-day question is asked in the window when
+  a same-week deadline has no day. In the window form, Anna's reading
+  of a chat message is a read-only *suggestion*; the fields start empty
+  and Prepare stays off until the person writes the situation
+  (`sourceProvenance` in `bundle/app.js`). The card always quotes its
+  source.
 - After changing the plugin's `describe`, regenerate
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the
@@ -425,19 +427,16 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. **App v0.4.8 / tool 0.4.10 are published**
-  (commit `8d11e85`, binaries `brume-executa-v0.4.10` all four
-  platforms checksum-verified, app cut version_id=2273,
-  executa_version=1104 — `docs/ANNA.md` §12.34, §12.35):
-  `brume_prepare` returns `open_window` with an `open_app_view`
-  interview payload; the window's "Confirm the details" stage collects
-  the person's typed answers, substitutes them (`factQuestions`/
-  `applyAnswers`), blanks unconfirmed fields, and saves the card with a
-  `facts`/`blanked`/`deadlineDay` audit. The earlier 0.4.9/0.4.7 cut was
-  rejected: its second call still trusted the model to be the user
-  (`answers` was model-written), and the card's "Key point" came from
-  the unscanned `key_point` relay. Remaining: tier-3 fresh-install
-  Cloud Agent run, then `apps submit-review`.
+  one sayable paragraph. **Tool 0.4.11 / app 0.4.9 are the current
+  candidate, uncommitted:** the 0.4.10/0.4.8 cut (published:
+  version_id=2273, executa 1104, binaries `brume-executa-v0.4.10`)
+  was rejected again — a fact-free draft skipped questioning entirely,
+  and token substitution still left model sentences ("Tell Priya you
+  manage three") in the card. Now the window's "Write your card" stage
+  shows each drafted field masked (`maskFacts`) and the person writes
+  every part; the card saves only typed text with an `interview`
+  audit. Remaining: commit, 0.4.11 binaries workflow, publish, tier-3
+  fresh-install run, `apps submit-review` (`docs/ANNA.md` §12.36).
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -451,5 +450,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
   Published as app v0.4.8 / tool 0.4.10 (binaries
-  `brume-executa-v0.4.10`); tier-3 fresh-install run and resubmit
+  `brume-executa-v0.4.10`); the 0.4.11/0.4.9 person-writes-the-card
+  redesign is uncommitted — binaries, republish, tier-3 and resubmit
   outstanding.

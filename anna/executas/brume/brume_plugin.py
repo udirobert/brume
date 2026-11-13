@@ -3,7 +3,7 @@
 
 Chat-side surface for Brume. The preparation card is Brume's declared
 primary result. This tool drafts it and opens the window where the
-person states its facts — the only surface where anything they type is
+person writes it — the only surface where anything they type is
 verifiably theirs.
 
   brume_prepare   Prepares the conversation. Takes `situation` (the
@@ -12,14 +12,13 @@ verifiably theirs.
                   draft in `draft_opening`, `draft_key_point`,
                   `draft_approach`, `draft_objection`, `draft_response`,
                   `draft_next_step`. It returns open_window with an
-                  open_app_view payload carrying the draft and one
-                  masked question per fact the draft asserts — the
-                  value is hidden, so the person states it — plus the
-                  deadline-day question when a same-week deadline has
-                  no day. The window collects the answers, substitutes
-                  them into the draft, and saves the card. This tool
-                  accepts no answers: there is no `answers` parameter,
-                  so the model cannot answer its own questions.
+                  open_app_view payload carrying the draft fields. The
+                  window shows each field with its facts masked and the
+                  person writes every part themselves; the card is saved
+                  there from what they typed. This tool accepts no
+                  answers and asks no questions: substituting a value
+                  into a model sentence would still leave the model's
+                  sentence.
   brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
                   fields (pattern, seconds, title, opening, cues, why,
@@ -36,12 +35,11 @@ verifiably theirs.
                   reverse-RPC failure degrades gracefully; abandoned runs
                   write nothing.
 
-Why the facts are asked in the window: every argument this tool receives
+Why the card is written in the window: every argument this tool receives
 was written by the calling model, and this protocol offers no transcript
 to check it against — so model prose can never be the oracle, and no
-parameter here can carry the person's answer back. The draft's values are
-masked into questions; the person types the answers into the window, and
-the card is saved there from what they wrote.
+parameter here can carry the person's words back. The draft crosses as
+masked reference; the person writes the card in the window.
 
 Wire notes (anna.partners/developers/tools/*): `initialize` is answered
 with protocolVersion "2.0" + {"storage": {}}; the
@@ -73,7 +71,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.10"
+VERSION = "0.4.11"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -161,8 +159,8 @@ MANIFEST: dict[str, Any] = {
     "description": (
         "Conversation preparation — Brume's primary result is a saved card. "
         "brume_prepare drafts the card from what the user said and opens the "
-        "window, where the person answers every fact the draft would state "
-        "and the card is saved from their own words. brume_reset starts a "
+        "window, where the person writes every part of it and the card is "
+        "saved from their own words. brume_reset starts a "
         "short guided break; brume_complete saves its record when the user "
         "says done."
     ),
@@ -181,11 +179,11 @@ MANIFEST: dict[str, Any] = {
                 "the card in `draft_opening`, `draft_key_point`, `draft_approach`, "
                 "`draft_objection`, `draft_response` and `draft_next_step`. The tool "
                 "returns open_window with an open_app_view payload: call "
-                "open_app_view with it. The window shows your draft with every fact "
-                "masked into a question — a count, a weekday, a clock time — and the "
-                "person types the answers; the card is saved there from what they "
-                "wrote, never from your prose. There is no way to supply the "
-                "answers here: never write the card's facts yourself."
+                "open_app_view with it. The window shows your draft with its facts "
+                "masked and asks the person to write every part of the card in "
+                "their own words; the card is saved there from what they typed, "
+                "never from your prose. There is no way to supply the card's "
+                "content here: never write the card's facts yourself."
             ),
             "timeout": 10,
             "parameters": [
@@ -797,20 +795,6 @@ _TIME_RES = [
     re.compile(r"\bat\s+(?:\d{1,2}|" + _HOUR_WORDS + r")\b"),
 ]
 _COMPOUND_RE = re.compile(r"\b[\w]+(?:-[\w]+)+\b", re.UNICODE)
-_DEADLINE_WEEK_RE = re.compile(r"\bdeadline\b", re.I)
-_SAME_WEEK_RE = re.compile(r"\b(?:same|this|the)\s+week\b", re.I)
-SCHEDULE_QUESTION = (
-    "You mentioned a deadline in the same week. "
-    "Which day should the card name, if any?"
-)
-_DAYISH_RE = re.compile(
-    r"\b(?:" + "|".join(_WEEKDAYS) + r")\b"
-    r"|\b(?:today|tomorrow|tonight|yesterday|noon|midday|midnight)\b"
-    r"|\b(?:" + "|".join(_MONTHS) + r")\b"
-    r"|\b(?:this|next|last)\s+(?:morning|afternoon|evening|night)\b"
-    r"|\bin\s+the\s+(?:morning|afternoon|evening)\b",
-    re.I,
-)
 
 
 def _compound_ranges(text: str) -> list[tuple[int, int]]:
@@ -952,171 +936,12 @@ def ungrounded_spans(candidate: str, source: str) -> list[str]:
     return list(dict.fromkeys(found))
 
 
-def _has_day_or_time(text: str) -> bool:
-    """True when the text names a specific day or time (not just a span
-    like 'this week'). Mirror of hasDayOrTime in bundle/preparation.js."""
-    t = str(text or "")
-    if _DAYISH_RE.search(t):
-        return True
-    if _ORDINAL_RE.search(t) or _OCLOCK_RE.search(t):
-        return True
-    for i, rx in enumerate(_TIME_RES):
-        for m in rx.finditer(t.lower()):
-            # "at 3 o'clock" belongs to the o'clock phrase, not "at 3".
-            if i == 2 and re.match(r"^\s*o'?clock\b",
-                                   t.lower()[m.end():]):
-                continue
-            return True
-    return False
-
-
-def _schedule_question(source: str) -> str | None:
-    text = str(source or "")
-    mentions = bool(_DEADLINE_WEEK_RE.search(text)
-                    and _SAME_WEEK_RE.search(text))
-    return SCHEDULE_QUESTION if mentions and not _has_day_or_time(text) else None
-
-
 # --- The chat path's card --------------------------------------------------
 # Card field caps — mirror of PREPARATION_CAPS in bundle/preparation.js.
 _CARD_CAPS = {
     "opening": 300, "keyPoint": 220, "approach": 300, "objection": 240,
     "response": 360, "nextStep": 220,
 }
-_CARD_FIELDS = ("opening", "keyPoint", "approach", "objection", "response",
-                "nextStep")
-_NEUTRAL_OBJECTION = "What makes this hard?"
-_MAX_QUESTIONS = 6
-
-# kind -> (the question the person answers, the answer kinds that fit it).
-# A vague count ("several", "a couple") is answered with a number; a
-# span of time ("next week") is answered with a span.
-_KIND_QUESTION = {
-    "count": ("How many?", ("count",)),
-    "ordinal": ("Which date?", ("ordinal",)),
-    "weekday": ("Which day of the week?", ("weekday",)),
-    "month": ("Which month?", ("month",)),
-    "relative": ("Which day?", ("relative",)),
-    "time": ("What time?", ("time",)),
-}
-_VAGUE_COUNT_RE = re.compile(r"\b(?:couple|few|dozen|several)\b", re.I)
-_MIDDAY_RE = re.compile(r"\b(?:noon|midday|midnight)\b", re.I)
-
-
-def _question_for(fact: dict[str, Any]) -> tuple[str, tuple[str, ...]]:
-    """The question for a fact, and the answer kinds that answer it."""
-    kind = fact["kind"]
-    if kind == "phrase":
-        token = str(fact.get("token") or "")
-        if "o'clock" in token.lower():
-            return ("What time?", ("time",))
-        if _VAGUE_COUNT_RE.search(token):
-            return ("How many?", ("count",))
-        return ("When?", ("phrase",))
-    if kind == "relative" and _MIDDAY_RE.search(str(fact.get("token") or "")):
-        return ("What time?", ("relative",))
-    return _KIND_QUESTION.get(kind, ("When?", ("phrase",)))
-
-
-def _masked_context(text: str, start: int, end: int, limit: int = 140) -> str:
-    """The sentence the fact sits in, with every value in it masked. The
-    person sees the draft's wording but never a value the model wrote."""
-    body = str(text or "")
-    left = max((body.rfind(ch, 0, start) for ch in ".?!\n"), default=-1)
-    rights = [i for i in (body.find(".", end), body.find("?", end),
-                          body.find("!", end), body.find("\n", end))
-              if i != -1]
-    right = min(rights) if rights else len(body)
-    frag_start = left + 1 if left >= 0 else 0
-    fragment = body[frag_start:right]
-    masked = fragment
-    for fact in sorted(scan_facts(fragment),
-                       key=lambda f: f["start"], reverse=True):
-        masked = masked[:fact["start"]] + "…" + masked[fact["end"]:]
-    masked = re.sub(r"\s+", " ", masked).strip()
-    if len(masked) > limit:
-        masked = masked[:limit].rstrip() + "…"
-    return masked
-
-
-def _fact_questions(fields: dict[str, str]) -> list[dict[str, Any]]:
-    """One question per fact the draft asserts. The value is masked, so
-    the person states it and the answer replaces the model's value."""
-    questions: list[dict[str, Any]] = []
-    seen: set[tuple[str, Any]] = set()
-    index = 0
-    for field in _CARD_FIELDS:
-        text = fields.get(field) or ""
-        if not text:
-            continue
-        for fact in scan_facts(text):
-            key = (fact["kind"], fact["value"])
-            if key in seen:
-                continue
-            seen.add(key)
-            index += 1
-            if index > _MAX_QUESTIONS:
-                return questions
-            ask, accept = _question_for(fact)
-            questions.append({
-                "id": f"fact_{index}",
-                "kind": fact["kind"],
-                "accept": list(accept),
-                "value": fact["value"],
-                "field": field,
-                "token": fact["token"],
-                "question": (
-                    f"Your draft says “{_masked_context(text, fact['start'], fact['end'])}”. "
-                    f"{ask}"
-                ),
-            })
-    return questions
-
-
-def _answer_facts(answer: str, accept: Any) -> list[dict[str, Any]]:
-    """The facts in the person's answer that could replace the model's
-    value: the kinds the question accepts, exactly one."""
-    kinds = tuple(accept) if isinstance(accept, (list, tuple)) else (str(accept),)
-    return [f for f in scan_facts(answer) if f["kind"] in kinds]
-
-
-def _apply_answers(fields: dict[str, str], questions: list[dict[str, Any]],
-                   answers: dict[str, str]) -> tuple[dict[str, str], list[str]]:
-    """Replace every fact the draft asserted with the value the person
-    gave. One question covers a fact value wherever it appears — a
-    deduped fact can sit in several fields, so every field is scanned.
-    A fact the person did not answer (or answered with anything but
-    exactly one acceptable fact) leaves every field carrying it blank."""
-    out = dict(fields)
-    blanked: set[str] = set()
-
-    def blank(field: str) -> None:
-        blanked.add(field)
-        out[field] = _NEUTRAL_OBJECTION if field == "objection" else ""
-
-    for question in questions:
-        if question.get("kind") == "schedule":
-            continue
-        answer = (answers.get(question["id"]) or "").strip()
-        facts = _answer_facts(answer, question.get("accept") or question["kind"]) if answer else []
-        valid = len(facts) == 1
-        # The person's own wording, not the canonical token.
-        replacement = answer[facts[0]["start"]:facts[0]["end"]] if valid else ""
-        for field in _CARD_FIELDS:
-            text = out.get(field) or ""
-            if not text:
-                continue
-            spans = [f for f in scan_facts(text)
-                     if f["kind"] == question["kind"] and f["value"] == question["value"]]
-            if not spans:
-                continue
-            if not valid:
-                blank(field)
-                continue
-            for fact in sorted(spans, key=lambda f: f["start"], reverse=True):
-                text = text[:fact["start"]] + replacement + text[fact["end"]:]
-            out[field] = text
-    return out, sorted(blanked)
 
 
 def _clean_card_field(value: Any, cap: int) -> str:
@@ -1127,14 +952,15 @@ def _clean_card_field(value: Any, cap: int) -> str:
 
 
 def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    """Brume's primary result, prepared in chat and finished in the window.
+    """Brume's primary result, drafted in chat and written in the window.
 
     The tool takes the situation, the goal/boundary the user stated, and
-    the model's own draft. Every fact the draft asserts is masked into a
-    question — the model's values are never the oracle, and this tool
-    accepts no answers, so the model cannot answer its own questions.
-    The window collects the person's typed answers, substitutes them into
-    the draft, and saves the card there.
+    the model's own draft. The draft is model-written, so it is never the
+    oracle: the window shows each field with its facts masked and the
+    person writes every part themselves — the card is saved there from
+    what they typed. This tool accepts no answers and generates no
+    questions; substituting a value into a model sentence would still
+    leave the model's sentence.
     """
     situation = _clean_text(args.get("situation"), 600)
     if not situation:
@@ -1156,19 +982,6 @@ def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "brume_prepare: 'draft_opening' or 'draft_key_point' is required"
         )
 
-    questions = _fact_questions(fields)
-
-    source = "\n".join(p for p in (situation, " ".join(fields.values())) if p)
-    schedule = _schedule_question(source)
-    if schedule:
-        questions.append({
-            "id": "schedule",
-            "kind": "schedule",
-            "field": None,
-            "token": "",
-            "question": schedule,
-        })
-
     payload = {"mode": "ready", "context": situation}
     if goal:
         payload["goal"] = goal
@@ -1176,7 +989,7 @@ def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, A
         payload["key_point"] = key_point
     if preserve:
         payload["preserve"] = preserve
-    payload["interview"] = {"fields": fields, "questions": questions}
+    payload["interview"] = {"fields": fields}
 
     return {
         "success": True,
@@ -1185,10 +998,10 @@ def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "open_app_view": payload,
             "note": (
                 "Call open_app_view with this payload. The window shows "
-                "the draft with every fact masked into a question; the "
-                "person types the answers there and the card is saved "
-                "from what they wrote. Do not ask the questions in chat "
-                "and never write the card's facts yourself."
+                "your draft with its facts masked and asks the person to "
+                "write every part of the card themselves; the card is "
+                "saved there from what they typed. Do not write the "
+                "card's facts yourself."
             ),
         },
     }

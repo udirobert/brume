@@ -70,18 +70,22 @@ function validPrep(p) {
   if (p.stage === "interview" && !isObj(p.interview)) return false;
   if (p.interview !== undefined && p.interview !== null) {
     if (!isObj(p.interview)) return false;
-    if (!isObj(p.interview.fields)) return false;
-    if (!isObj(p.interview.answers)) return false;
-    if (!Array.isArray(p.interview.questions)) return false;
-    for (const q of p.interview.questions) {
-      if (!isObj(q) || !str(q.id, 40) || !str(q.question, 400)) return false;
+    if (!isObj(p.interview.draft)) return false;
+    if (!isObj(p.interview.written)) return false;
+    for (const bag of [p.interview.draft, p.interview.written]) {
+      for (const v of Object.values(bag)) {
+        if (!str(v, 1000)) return false;
+      }
     }
+    if (p.interview.day !== undefined && !str(p.interview.day, 200)) return false;
+    if (p.interview.schedule !== undefined && !str(p.interview.schedule, 400)) return false;
   }
   if (p.interviewAudit !== undefined && p.interviewAudit !== null) {
     if (!isObj(p.interviewAudit)) return false;
-    if (!Array.isArray(p.interviewAudit.facts)) return false;
-    if (!Array.isArray(p.interviewAudit.blanked)) return false;
-    if (!isoOrNull(p.interviewAudit.deadlineDay) && typeof p.interviewAudit.deadlineDay !== "string") return false;
+    if (!isObj(p.interviewAudit.draft) || !isObj(p.interviewAudit.written)) return false;
+    if (p.interviewAudit.deadlineDay !== undefined
+      && p.interviewAudit.deadlineDay !== null
+      && !str(p.interviewAudit.deadlineDay, 200)) return false;
   }
   if (p.finalResponse !== null && !str(p.finalResponse, 1000)) return false;
   if (p.finalNextStep !== null && !str(p.finalNextStep, 1000)) return false;

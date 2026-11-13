@@ -17,10 +17,10 @@ const INTERVIEW_FIELDS = {
   objection: 240, response: 360, nextStep: 220,
 };
 // The draft brume_prepare hands to the window. Only the fields cross the
-// wire: the window derives the masked questions itself (factQuestions +
-// scheduleQuestion in preparation.js), so the person-typed answers are
-// applied by the same code that scanned the draft. Anything malformed is
-// dropped — a draft the window cannot honour is worse than none.
+// wire: the window shows each one masked (maskFacts in preparation.js)
+// and the person writes every part themselves — the draft is reference
+// only. Anything malformed is dropped — a draft the window cannot honour
+// is worse than none.
 export function parseInterview(payload) {
   const iv = payload?.interview;
   if (!iv || typeof iv !== "object" || Array.isArray(iv)) return null;
@@ -35,9 +35,9 @@ export function parseInterview(payload) {
 
 export function parseReadyHandoff(payload) {
   // Anna's reading of the person's message. It is a SUGGESTION, never
-  // the source: the card's facts are grounded in what the person writes
-  // in the form or types as interview answers, so the suggestion never
-  // lands in the fields.
+  // the source: the card's content is grounded in what the person writes
+  // in the form or types in the interview, so the suggestion never lands
+  // in the fields.
   const out = { suggestion: { event: "", goal: "", keyPoint: "", preserve: "" }, interview: null };
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return out;
   out.suggestion.event = cap(payload.context, 600);

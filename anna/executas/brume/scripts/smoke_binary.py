@@ -123,14 +123,14 @@ def main() -> None:
         print(f"  (brume_reset took {elapsed:.1f}s)")
 
         # invoke brume_prepare — the reviewer sentence must return
-        # open_window with an open_app_view interview payload. The facts
-        # are masked into questions; the person answers them in the
-        # window, so there is no second call and no answers parameter.
+        # open_window with an open_app_view payload carrying the draft
+        # fields. The window asks the person to write every part, so
+        # there is no second call, no answers parameter, no questions.
         r = request(proc, 4, "invoke", {
             "tool": "brume_prepare",
             "arguments": {
                 "situation": "I manage 3 projects and I added one deadline in the same week.",
-                "draft_opening": "You are juggling four projects and a new deadline in the same week.",
+                "draft_opening": "Tell Priya you manage four projects and a new deadline in the same week.",
                 "draft_key_point": "The new deadline needs two more people.",
                 "draft_next_step": "Name the day you will flag the new deadline.",
             },
@@ -148,14 +148,9 @@ def main() -> None:
         fields = interview.get("fields") or {}
         if not fields.get("opening") or not fields.get("keyPoint"):
             fail(f"invoke brume_prepare: interview fields missing draft text: {interview!r}")
-        questions = interview.get("questions") or []
-        if not questions:
-            fail("invoke brume_prepare: expected at least one masked question")
-        for question in questions:
-            text = question.get("question") or ""
-            if "four" in text or "Friday" in text or "3 projects" in text:
-                fail(f"invoke brume_prepare: the question leaks a fact value: {question!r}")
-        print("  (brume_prepare returned open_window with masked interview questions)")
+        if "questions" in interview:
+            fail("invoke brume_prepare: unexpected questions in interview payload")
+        print("  (brume_prepare returned open_window with the masked-reference draft)")
 
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()

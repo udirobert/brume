@@ -122,9 +122,10 @@ def main() -> None:
             fail(f"invoke brume_reset: unexpected planSource {data.get('planSource')!r}")
         print(f"  (brume_reset took {elapsed:.1f}s)")
 
-        # invoke brume_prepare — the reviewer sentence must trigger the
-        # questions (one per fact the draft asserts, plus the day); a
-        # second call with the answers must save the card.
+        # invoke brume_prepare — the reviewer sentence must return
+        # open_window with an open_app_view interview payload. The facts
+        # are masked into questions; the person answers them in the
+        # window, so there is no second call and no answers parameter.
         r = request(proc, 4, "invoke", {
             "tool": "brume_prepare",
             "arguments": {
@@ -136,43 +137,25 @@ def main() -> None:
         })
         result = r.get("result")
         data = (result or {}).get("data") or {}
-        if not isinstance(result, dict) or data.get("status") != "needs_input":
-            fail(f"invoke brume_prepare (questions): expected needs_input, got {result!r}")
-        questions = data.get("questions") or []
+        if not isinstance(result, dict) or data.get("status") != "open_window":
+            fail(f"invoke brume_prepare: expected open_window, got {result!r}")
+        if data.get("request_id") or "answers" in ((result.get("data") or {}).keys()):
+            fail("invoke brume_prepare: unexpected request_id/answers in result")
+        view = data.get("open_app_view") or {}
+        if view.get("mode") != "ready":
+            fail(f"invoke brume_prepare: expected open_app_view mode ready, got {view!r}")
+        interview = view.get("interview") or {}
+        fields = interview.get("fields") or {}
+        if not fields.get("opening") or not fields.get("keyPoint"):
+            fail(f"invoke brume_prepare: interview fields missing draft text: {interview!r}")
+        questions = interview.get("questions") or []
         if not questions:
-            fail("invoke brume_prepare: expected at least one question")
+            fail("invoke brume_prepare: expected at least one masked question")
         for question in questions:
-            if question.get("kind") == "schedule":
-                continue
-            if "four" in (question.get("question") or ""):
-                fail(f"invoke brume_prepare: the question leaks the model's value: {question!r}")
-        request_id = data.get("request_id")
-        if not request_id:
-            fail("invoke brume_prepare: no request_id")
-        answers = []
-        for question in questions:
-            if question.get("kind") == "schedule":
-                answers.append(f"{question.get('id')} = Thursday")
-            else:
-                answers.append(f"{question.get('id')} = 3")
-        r = request(proc, 45, "invoke", {
-            "tool": "brume_prepare",
-            "arguments": {
-                "request_id": request_id,
-                "answers": answers,
-            },
-        })
-        result = r.get("result")
-        data = (result or {}).get("data") or {}
-        if not isinstance(result, dict) or data.get("status") not in ("saved", "not_saved"):
-            fail(f"invoke brume_prepare (answered): expected a saved card, got {result!r}")
-        card = data.get("card") or {}
-        opening = card.get("opening") or ""
-        if "four" in opening or "4 projects" in opening:
-            fail(f"invoke brume_prepare: the card kept the model's value: {opening!r}")
-        if not card.get("sourceProvenance"):
-            fail("invoke brume_prepare: the card has no source provenance")
-        print("  (brume_prepare asked for every fact, then saved the card)")
+            text = question.get("question") or ""
+            if "four" in text or "Friday" in text or "3 projects" in text:
+                fail(f"invoke brume_prepare: the question leaks a fact value: {question!r}")
+        print("  (brume_prepare returned open_window with masked interview questions)")
 
         # invoke brume_complete with an agent-written reflection.
         started = time.monotonic()

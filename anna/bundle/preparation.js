@@ -343,6 +343,155 @@ export function scheduleQuestion(source) {
   return null;
 }
 
+// --- The chat interview ---------------------------------------------------
+// brume_prepare drafts the card in chat, but every argument it receives is
+// model-written and the protocol offers no transcript — so the draft's
+// facts are never the oracle. The tool masks each fact into a question,
+// the person answers IN THE WINDOW (the only person-typed surface), and
+// applyAnswers swaps the model's value for theirs. A fact the person does
+// not answer leaves its field blank — the same rule the window applies to
+// an ungrounded LLM draft. This is a 1:1 port of the plugin's interview
+// (brume_plugin.py) — pinned by the "interview" section of
+// test/plan-cases.json, which both implementations run.
+
+export const CARD_FACT_FIELDS = ["opening", "keyPoint", "approach", "objection", "response", "nextStep"];
+const MAX_FACT_QUESTIONS = 6;
+
+const KIND_QUESTION = {
+  count: ["How many?", ["count"]],
+  ordinal: ["Which date?", ["ordinal"]],
+  weekday: ["Which day of the week?", ["weekday"]],
+  month: ["Which month?", ["month"]],
+  relative: ["Which day?", ["relative"]],
+  time: ["What time?", ["time"]],
+};
+const VAGUE_COUNT_RE = /\b(?:couple|few|dozen|several)\b/i;
+const MIDDAY_RE = /\b(?:noon|midday|midnight)\b/i;
+
+function questionFor(fact) {
+  if (fact.kind === "phrase") {
+    const token = String(fact.token || "");
+    if (/o'clock/i.test(token)) return ["What time?", ["time"]];
+    if (VAGUE_COUNT_RE.test(token)) return ["How many?", ["count"]];
+    return ["When?", ["phrase"]];
+  }
+  if (fact.kind === "relative" && MIDDAY_RE.test(String(fact.token || ""))) {
+    return ["What time?", ["relative"]];
+  }
+  return KIND_QUESTION[fact.kind] || ["When?", ["phrase"]];
+}
+
+// The sentence the fact sits in, with every value in it masked — the
+// person sees the draft's wording but never a value the model wrote.
+export function maskedContext(text, start, end, limit = 140) {
+  const body = String(text || "");
+  let left = -1;
+  if (start > 0) {
+    for (const ch of ".?!\n") {
+      const i = body.lastIndexOf(ch, start - 1);
+      if (i > left) left = i;
+    }
+  }
+  const rights = [".", "?", "!", "\n"]
+    .map((ch) => body.indexOf(ch, end))
+    .filter((i) => i !== -1);
+  const right = rights.length ? Math.min(...rights) : body.length;
+  const fragStart = left >= 0 ? left + 1 : 0;
+  let masked = body.slice(fragStart, right);
+  const facts = scanFacts(masked).sort((a, b) => b.start - a.start);
+  for (const fact of facts) {
+    masked = masked.slice(0, fact.start) + "…" + masked.slice(fact.end);
+  }
+  masked = masked.replace(/\s+/g, " ").trim();
+  if (masked.length > limit) masked = masked.slice(0, limit).trimEnd() + "…";
+  return masked;
+}
+
+// One question per fact the draft asserts. The value is masked, so the
+// person states it and the answer replaces the model's value.
+export function factQuestions(fields) {
+  const questions = [];
+  const seen = new Set();
+  let index = 0;
+  for (const field of CARD_FACT_FIELDS) {
+    const text = fields?.[field] || "";
+    if (!text) continue;
+    for (const fact of scanFacts(text)) {
+      const key = `${fact.kind}:${fact.value}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      index += 1;
+      if (index > MAX_FACT_QUESTIONS) return questions;
+      const [ask, accept] = questionFor(fact);
+      questions.push({
+        id: `fact_${index}`,
+        kind: fact.kind,
+        accept,
+        value: fact.value,
+        field,
+        token: fact.token,
+        question: `Your draft says “${maskedContext(text, fact.start, fact.end)}”. ${ask}`,
+      });
+    }
+  }
+  return questions;
+}
+
+function answerFacts(answer, accept) {
+  const kinds = Array.isArray(accept) ? accept : [accept];
+  return scanFacts(answer).filter((f) => kinds.includes(f.kind));
+}
+
+// Replace every fact the draft asserted with the value the person typed.
+// One question covers a fact value wherever it appears — a deduped fact
+// can sit in several fields, so every field is scanned. A fact the person
+// did not answer (or answered with anything but exactly one acceptable
+// fact) leaves every field carrying it blank.
+export function applyAnswers(fields, questions, answers) {
+  const out = { ...(fields || {}) };
+  const blanked = new Set();
+  const blank = (field) => {
+    blanked.add(field);
+    out[field] = field === "objection" ? NEUTRAL_OBJECTION : "";
+  };
+  for (const question of questions || []) {
+    if (question?.kind === "schedule") continue;
+    const answer = String(answers?.[question.id] || "").trim();
+    const facts = answer ? answerFacts(answer, question.accept || question.kind) : [];
+    const valid = facts.length === 1;
+    const replacement = valid ? answer.slice(facts[0].start, facts[0].end) : "";
+    for (const field of CARD_FACT_FIELDS) {
+      const text = out[field] || "";
+      if (!text) continue;
+      const spans = scanFacts(text).filter(
+        (f) => f.kind === question.kind && f.value === question.value,
+      );
+      if (!spans.length) continue;
+      if (!valid) {
+        blank(field);
+        continue;
+      }
+      let next = text;
+      for (const span of spans.sort((a, b) => b.start - a.start)) {
+        next = next.slice(0, span.start) + replacement + next.slice(span.end);
+      }
+      out[field] = next;
+    }
+  }
+  return { fields: out, blanked: [...blanked].sort() };
+}
+
+// The day a schedule answer names, for the card's deadlineDay — a
+// weekday, month, relative day or ordinal in the person's own words.
+export function scheduleDay(answer) {
+  const text = String(answer || "");
+  const facts = scanFacts(text).filter((f) =>
+    ["weekday", "month", "relative", "ordinal"].includes(f.kind));
+  if (facts.length) return text.slice(facts[0].start, facts[0].end);
+  if (/\b(?:no|none|not|nothing|unspecified)\b/i.test(text)) return "";
+  return "";
+}
+
 export function quotesReply(adjustment, reply) {
   const words = String(reply || "").toLowerCase().match(/[a-z0-9']+/g) || [];
   const hay = String(adjustment || "").toLowerCase();

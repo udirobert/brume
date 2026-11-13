@@ -1629,3 +1629,56 @@ the chat-card variant, reset/reflect/arrive/alertness), then
 `anna-app apps submit-review brume` to re-pin the review to v0.4.7 /
 tool 0.4.9. `apps release` is refused while status is rejected — the
 console path is submit-review → approval → release.
+
+### 12.34 The answers move into the window — tool 0.4.10, app 0.4.8 (2026-11-14, local, unpublished)
+
+The 0.4.9/0.4.7 cut was reviewed again and failed on the point §12.31
+could not fully close: **the second call still trusted the model to be
+the user.** Phase 2 accepted `answers` as tool arguments, and nothing in
+the protocol is the person's reply — a model that answered its own
+masked questions with "four" and "Friday" wrote that card under a line
+reading "Prepared from what you told me." Two smaller findings rode
+along: the chat card's "Key point" came from the first call's
+`key_point` relay, which was never scanned, and names, roles and motives
+in any field never became questions, so the model's sentences around a
+replaced number survived untouched.
+
+The fix removes the channel entirely rather than trying to authenticate
+it. `brume_prepare` (tool **0.4.10**) is now a single call: it takes the
+same `situation`/`goal`/`key_point`/`preserve`/`draft_*` arguments —
+`request_id`, `answers`, `deadline_day` and `schedule_unspecified` are
+gone from the manifest — scans every draft field including
+`draft_key_point`, and returns `open_window` with an `open_app_view`
+payload carrying the draft fields. The window's new "Confirm the
+details" stage (`screen-prep-interview` in `bundle/app.js`) recomputes
+the masked questions itself via `factQuestions` + `scheduleQuestion`,
+shows Anna's reading as a suggestion only, and collects one typed
+answer per fact. `applyAnswers` substitutes the person's values into
+every field carrying the fact — a deduped fact is replaced everywhere,
+not just where it was first seen — and a fact left blank blanks every
+field carrying it. The substituted draft then passes the same
+`faithfulnessIssues` gate a model draft does, lands on the ordinary plan
+stage for review, and the card saves through the existing path with a
+`facts`/`blanked`/`deadlineDay` audit so a reviewer can compare the card
+against exactly what the person typed. "Write it myself instead" drops
+back to the manual form, which was already person-sourced.
+
+The contract moved with it: `preparation.js` gained `factQuestions`,
+`maskedContext`, `applyAnswers`, `scheduleDay`, `questionFor` and
+`CARD_FACT_FIELDS`; the plugin keeps the 1:1 Python port
+(`_fact_questions`/`_apply_answers`) for parity; `plan-cases.json` gained
+an `interview` section — now nine cases including cross-field dedupe —
+run by both `npm test` and `python3 -m unittest test_plan`. The
+`system_prompt_addendum`, the reset-offer skill, `app.json` copy and the
+executa README all describe the one-call `open_window` flow and state
+plainly that the tool accepts no answers.
+
+Versions: tool **0.4.10** (`executa.json`, `pyproject.toml`, plugin
+`VERSION`, regenerated `manifest.json`), app **0.4.8** (`app.json`).
+Local gates: `npm test` 152+ smoke green, `test_plan` 24 green,
+`anna-app validate --strict` clean, browser QA extended with two
+interview cases (masked questions → typed answers → `ready/last` record
+with audit; declined facts blank their fields). Remaining, in order:
+commit, the 0.4.10 binaries workflow, download + checksum, `apps
+publish`, the tier-3 fresh-install Cloud Agent checklist (rewritten for
+the window interview), then `apps submit-review`.

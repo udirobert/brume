@@ -18,19 +18,22 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut (2026-11-13): **app v0.4.7** (version_id=2272) with tool
-**0.4.9** frozen at executa_version 1103 and the reset-offer skill at
-1098. The preparation card is the primary result, produced in chat as
-well as in the window: the chat tool asks the person for every fact a
-draft would state — the value is masked in the question — and saves the
-card from their answers, so no model-written prose is ever the card's
-oracle (`docs/ANNA.md` §12.31). A draft may not add a count, a weekday,
-or a clock time the person did not write (§12.26). Binaries **0.4.9**
-are published (GitHub release `brume-executa-v0.4.9`, all four
-platforms). Outstanding before resubmit: the tier-3 fresh-install Cloud
-Agent run, then `anna-app apps submit-review brume`. App id 582, slug
-`brume`, tool id `tool-papa-brume-htcxvfcr`. Product context and the
-full progress log: [`docs/ANNA.md`](../docs/ANNA.md) §12.
+Latest cut (in progress): **app v0.4.8** with tool **0.4.10**. The
+preparation card is the primary result, produced in the window as well
+as drafted in chat: `brume_prepare` takes the model's draft, returns
+`open_window` with an `open_app_view` payload, and the window masks every
+fact the draft asserts into a question the person answers by typing —
+the card is saved from those answers, so no model-written prose is ever
+the card's oracle (`docs/ANNA.md` §12.34). The earlier two-step chat
+design was rejected because its `answers` parameter was still
+model-written — the model could answer its own masked questions. A
+draft may not add a count, a weekday, or a clock time the person did not
+write (§12.26). Binaries **0.4.9** are published (GitHub release
+`brume-executa-v0.4.9`, all four platforms); **0.4.10** binaries,
+republish, the tier-3 fresh-install Cloud Agent run, and resubmit are
+outstanding. App id 582, slug `brume`, tool id
+`tool-papa-brume-htcxvfcr`. Product context and the full progress log:
+[`docs/ANNA.md`](../docs/ANNA.md) §12.
 
 ## Layout
 
@@ -133,22 +136,23 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
    check against the person's own baseline. The home control does not
    chart those times. The check screen says it is not a medical test.
 
-Chat (`#brume …`): `brume_prepare` is Brume's primary result and it is
-produced in chat. It is called in two steps. Step 1 takes `situation`
-(the model's relay of what the user said) plus optional `goal`,
-`key_point`, `preserve`, and the model's own draft of the card
-(`draft_opening`, `draft_key_point`, `draft_approach`,
-`draft_objection`, `draft_response`, `draft_next_step`). It answers
-`needs_input` with one question per fact the draft would assert — the
-value is masked, so the person states it — plus a question about which
-day to name when a same-week deadline has none. Step 2 takes
-`request_id` and `answers`: the model's values are replaced by the
-person's, the card is saved (`ready/sessions/<ts>`, `ready/last`) and
-returned in `_display` blocks. **No tool argument is ever the oracle for
-a card's fact**: the protocol offers no transcript to check model prose
-against, so every fact in a chat-saved card is a value the person
-stated. `brume_reset` and `brume_complete` are the optional breathing
-break.
+Chat (`#brume …`): `brume_prepare` is Brume's primary result. It is
+called once with `situation` (the model's relay of what the user said)
+plus optional `goal`, `key_point`, `preserve`, and the model's own draft
+of the card (`draft_opening`, `draft_key_point`, `draft_approach`,
+`draft_objection`, `draft_response`, `draft_next_step`). It returns
+`open_window` with an `open_app_view` payload; the model calls
+`open_app_view` with it, and the window opens on a "Confirm the
+details" screen: one question per fact the draft asserts — the value is
+masked, so the person states it — plus a question about which day to
+name when a same-week deadline has none. The person types the answers in
+the window; the draft is substituted and saved there
+(`ready/sessions/<ts>`, `ready/last`). **No tool argument is ever the
+oracle for a card's fact**: the protocol offers no transcript to check
+model prose against, and the tool accepts no `answers` — an answers
+parameter would be model-written too, which is why the earlier two-step
+chat design was dropped. `brume_reset` and `brume_complete` are the
+optional breathing break.
 
 In the window, Anna's reading of a chat message is shown as a
 *suggestion*, never as the source: the person writes the situation
@@ -162,8 +166,7 @@ filters them, renders verbatim
 capability on purpose (see "Platform gotchas").
 
 Storage (all `scope: "user"`): `reset/sessions/<ts>`, `reset/last`,
-`reset/summary`, `ready/sessions/<ts>`, `ready/last`, `ready/prepare/<id>`
-(the chat path's pending request, waiting for the person's answers),
+`reset/summary`, `ready/sessions/<ts>`, `ready/last`,
 `alert/checks/<ts>`,
 `alert/summary`, `brume/prefs`, `brume/active-task` (single unfinished-
 task checkpoint; tombstoned via `set` null, never auto-erased when
@@ -232,16 +235,17 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
    `tool_papa_brume_htcxvfcr__brume_reset`, not `exec_run`).
 2. Fresh install, one new chat, this sentence and nothing else:
    "I manage 3 projects and I added one deadline in the same week."
-   `brume_prepare` must return `needs_input` — the tool asks the person
-   for every fact the draft would state, with the value hidden, and for
-   which day to name. Answer each question; call `brume_prepare` again
-   with `request_id` and `answers`; the tool saves the card and returns
-   it. The card must not say 4, four, Friday, or a clock time unless
+   `brume_prepare` must return `open_window`; `open_app_view` opens the
+   "Confirm the details" screen, which asks the person for every fact
+   the draft would state — the value hidden — and for which day to
+   name. The person types the answers in the window; the card is saved
+   there. The card must not say 4, four, Friday, or a clock time unless
    the person said it, and the saved card must appear under
    `ready/last`. This is the reviewer's case — it has to pass before any
    other chat.
 3. Same scenario, asked in chat instead ("put the card in chat"): the
-   model calls `brume_prepare` and the card is saved and shown in chat.
+   model calls `brume_prepare` + `open_app_view`, the window opens on
+   the interview, and the card is saved there.
 4. `#brume quick reset, call in 10 minutes` → `planSource: "agent"`, cues
    posture-only.
 5. `done, feeling calmer` → `reflectionSource: "agent"`, record written.

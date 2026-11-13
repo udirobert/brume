@@ -66,6 +66,9 @@ import {
   REHEARSAL_FACT_FIELDS,
   groundedSpans,
   scheduleQuestion,
+  scheduleDay,
+  factQuestions,
+  applyAnswers,
   quotesReply,
   sayableParagraph,
 } from "./preparation.js";
@@ -169,6 +172,11 @@ const els = {
   cardSourceText: $("#card-source-text"),
   prepSourceNote: $("#prep-source-note"),
   prepSourceQuote: $("#prep-source-quote"),
+  prepInterviewSource: $("#prep-interview-source"),
+  prepInterviewQuote: $("#prep-interview-quote"),
+  prepInterviewList: $("#prep-interview-list"),
+  btnPrepInterviewGo: $("#btn-prep-interview-go"),
+  btnPrepInterviewManual: $("#btn-prep-interview-manual"),
   btnPrepGo: $("#btn-prep-go"),
   cardSaveNote: $("#card-save-note"),
   btnCardSaveRetry: $("#btn-card-save-retry"),
@@ -231,6 +239,7 @@ const els = {
     alertResult: $("#screen-alert-result"),
     prepInput: $("#screen-prep-input"),
     prepClarify: $("#screen-prep-clarify"),
+    prepInterview: $("#screen-prep-interview"),
     prepPlan: $("#screen-prep-plan"),
     prepPractice: $("#screen-prep-practice"),
     prepFeedback: $("#screen-prep-feedback"),
@@ -1931,11 +1940,19 @@ function newPrepState() {
     // Where the situation text came from: "typed" (the person wrote it),
     // "handoff" (Anna's reading is on screen — Prepare stays off until
     // the person writes their own), "answered" (the person stated the
-    // facts in chat and the card was made from those answers),
-    // "confirmed" (older checkpoints), "edited" (they corrected it).
+    // draft's facts in the interview and the card was made from those
+    // answers), "confirmed" (older checkpoints), "edited" (they
+    // corrected it).
     sourceProvenance: "typed",
     // Anna's reading of a chat message — a suggestion, never the source.
     suggestion: null,
+    // A brume_prepare draft waiting on the person's typed answers:
+    // { fields, questions, answers } — the only place card facts the
+    // model drafted can become the person's own words.
+    interview: null,
+    // The audit the card records: every question asked and what the
+    // person typed, plus which draft fields were blanked.
+    interviewAudit: null,
   };
 }
 
@@ -2005,6 +2022,7 @@ let cardViewOnly = false;
 const PREP_SCREENS = {
   input: () => els.screens.prepInput,
   clarify: () => els.screens.prepClarify,
+  interview: () => els.screens.prepInterview,
   plan: () => els.screens.prepPlan,
   practice: () => els.screens.prepPractice,
   feedback: () => els.screens.prepFeedback,
@@ -2131,6 +2149,113 @@ function markSourceEngaged() {
     prep.sourceProvenance = "edited";
   }
   updatePrepSourceGate();
+}
+
+// --- The brume_prepare interview -----------------------------------------
+// The tool drafts the card but every argument it receives is model-written,
+// so the draft's facts are never the oracle. The window asks one masked
+// question per fact; the person types the answers here — the only surface
+// where typed text is verifiably theirs — and applyAnswers swaps the
+// model's values for theirs. A fact left blank blanks its field.
+
+function interviewQuestions(fields, sourceText) {
+  const questions = factQuestions(fields);
+  const sched = scheduleQuestion(sourceText);
+  if (sched) questions.push({ id: "schedule", kind: "schedule", question: sched });
+  return questions;
+}
+
+function renderPrepInterview() {
+  const iv = prep.interview;
+  if (!iv) return;
+  const s = prep.suggestion;
+  const quote = s
+    ? [s.event,
+       s.goal ? `What needs to change: ${s.goal}` : "",
+       s.keyPoint ? `The one thing to remember: ${s.keyPoint}` : "",
+       s.preserve ? `What to preserve: ${s.preserve}` : ""]
+        .filter(Boolean).join("\n")
+    : "";
+  if (els.prepInterviewQuote) els.prepInterviewQuote.textContent = quote;
+  if (els.prepInterviewSource) els.prepInterviewSource.hidden = !quote;
+  els.prepInterviewList.textContent = "";
+  for (const q of iv.questions) {
+    const block = document.createElement("div");
+    block.className = "interview-q";
+    const text = document.createElement("p");
+    text.className = "hint";
+    text.textContent = q.question;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 220;
+    input.dataset.qid = q.id;
+    input.value = iv.answers[q.id] || "";
+    input.placeholder = q.kind === "schedule"
+      ? "e.g. Thursday — or leave blank"
+      : "Your answer — or leave blank to remove it";
+    input.addEventListener("input", () => {
+      iv.answers[q.id] = input.value;
+      if (task?.flow === "ready") snapshotReady("interview");
+    });
+    block.append(text, input);
+    els.prepInterviewList.appendChild(block);
+  }
+}
+
+function submitInterview() {
+  const iv = prep.interview;
+  if (!iv) return;
+  const answers = {};
+  for (const input of els.prepInterviewList.querySelectorAll("input[data-qid]")) {
+    answers[input.dataset.qid] = input.value;
+  }
+  const { fields, blanked } = applyAnswers(iv.fields, iv.questions, answers);
+  const sched = iv.questions.find((q) => q.kind === "schedule");
+  const deadlineDay = sched ? scheduleDay(answers[sched.id] || "") : "";
+  // The person's typed answers are the only source the substituted draft
+  // may claim facts from. Anything still ungrounded — a fact beyond the
+  // question cap, or one the answers don't cover — leaves its field
+  // blank, the same rule the faithfulness gate applies to a model draft.
+  const sourceText = iv.questions
+    .filter((q) => q.kind !== "schedule")
+    .map((q) => (answers[q.id] || "").trim())
+    .filter(Boolean)
+    .concat(deadlineDay ? [deadlineDay] : [])
+    .join(" · ");
+  const issues = faithfulnessIssues(fields, sourceText, PLAN_FACT_FIELDS);
+  const finalFields = issues.length ? withholdUngrounded(fields, issues) : fields;
+  const extraBlanked = issues.map((issue) => issue.field);
+  prep.interviewAudit = {
+    facts: iv.questions.map((q) => ({
+      id: q.id,
+      kind: q.kind,
+      asked: q.question,
+      answered: (answers[q.id] || "").trim(),
+    })),
+    blanked: [...new Set([...blanked, ...extraBlanked])].sort(),
+    deadlineDay: deadlineDay || null,
+  };
+  prep.plan = {
+    opening: finalFields.opening ?? "",
+    keyPoint: finalFields.keyPoint ?? "",
+    approach: finalFields.approach ?? "",
+    objection: finalFields.objection ?? "",
+    response: finalFields.response ?? "",
+    nextStep: finalFields.nextStep ?? "",
+  };
+  prep.planModel = null;
+  prep.planSource = "ai";
+  prep.input.event = sourceText;
+  prep.sourceProvenance = "answered";
+  prep.interview = null;
+  prep.stage = "plan";
+  renderPrepStage();
+}
+
+function abandonInterview() {
+  prep.interview = null;
+  prep.stage = "input";
+  renderPrepStage();
 }
 
 function updateWordingBadge() {
@@ -2368,6 +2493,8 @@ function renderPrepStage() {
   } else if (prep.stage === "clarify") {
     els.prepQuestion.textContent = prep.question;
     els.prepClarification.value = prep.clarification;
+  } else if (prep.stage === "interview") {
+    renderPrepInterview();
   } else if (prep.stage === "plan") {
     for (const [key, el] of PLAN_FIELDS) el.value = prep.plan?.[key] ?? "";
     els.prepObjection.textContent = prep.plan?.objection ?? "";
@@ -2478,11 +2605,12 @@ function printPrepCard() {
   setTimeout(() => document.body.classList.remove("printing-card"), 300);
 }
 
-// Where a card's source came from. "answered" is a card the person made
-// in chat: its facts are the values they stated, so the card quotes
-// those. "typed"/"edited" is the window: what they wrote in the form.
+// Where a card's source came from. "answered" is a card whose facts the
+// person stated in answer to the masked draft questions — the values are
+// theirs, so the card quotes those answers. "typed"/"edited" is the
+// window form: what they wrote there.
 function prepSourceLabel(provenance) {
-  if (provenance === "answered") return "Prepared from what you told me in chat:";
+  if (provenance === "answered") return "Prepared from what you told me:";
   return "Prepared from your words:";
 }
 
@@ -2553,6 +2681,14 @@ function prepCardRecord() {
     sourceProvenance: prep.sourceProvenance,
     feedbackModel: prep.feedbackModel ?? null,
     source: "app",
+    // The interview audit: every masked question the draft raised and
+    // what the person actually typed, plus which fields were blanked.
+    // A reviewer can compare the card against these answers directly.
+    ...(prep.interviewAudit ? {
+      facts: prep.interviewAudit.facts,
+      blanked: prep.interviewAudit.blanked,
+      deadlineDay: prep.interviewAudit.deadlineDay,
+    } : {}),
   };
 }
 
@@ -2705,12 +2841,28 @@ function applyEntryPayload(payload) {
       prep.suggestion = s;
       prep.sourceProvenance = "handoff";
     }
+    if (handoff.interview) {
+      // brume_prepare drafted the card in chat; the window asks the
+      // masked fact questions and the person answers them here. The
+      // draft's facts are model-written, so nothing is trusted until
+      // the person types the answers.
+      const sourceText = [
+        s.event,
+        ...Object.values(handoff.interview.fields),
+      ].filter(Boolean).join("\n");
+      prep.interview = {
+        fields: handoff.interview.fields,
+        questions: interviewQuestions(handoff.interview.fields, sourceText),
+        answers: {},
+      };
+      prep.stage = "interview";
+    }
     prepKindChips();
     syncPrepInputs();
     renderPrepSuggestion();
     updatePrepSourceGate();
     renderPrepStage();
-    snapshotReady("input");
+    snapshotReady(prep.stage);
     return true;
   }
   if (mode === "alertness") {
@@ -3461,6 +3613,8 @@ async function main() {
     prep.clarificationUsed = true;
     runPreparationRequest();
   });
+  els.btnPrepInterviewGo.addEventListener("click", submitInterview);
+  els.btnPrepInterviewManual.addEventListener("click", abandonInterview);
   for (const [key, el] of PLAN_FIELDS) {
     el.addEventListener("input", () => {
       if (!prep.plan) return;

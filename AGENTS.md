@@ -57,15 +57,20 @@ Rules:
   `ungrounded_spans` and `_schedule_question` 1:1.
 - **A card's facts are never model-written.** Every tool argument is
   model-written and the protocol offers no transcript to check it against,
-  so the chat path asks: `brume_prepare` masks each fact its draft would
-  assert ("Your draft says “You are juggling … projects”. How many?"), the
-  person states the value, and the answer replaces the model's. The
-  deadline-day question is unskippable — there is no `deadline_day`
-  parameter to pre-empt it with. In the window, Anna's reading of a chat
-  message is a read-only *suggestion*; the fields start empty and Prepare
-  stays off until the person writes the situation, so the source of a
-  window card is text they typed (`sourceProvenance` in `bundle/app.js`).
-  The card always quotes its source.
+  so the chat path cannot be the oracle either: `brume_prepare` takes the
+  model's draft and returns `open_window` with an `open_app_view` payload;
+  the window masks each fact the draft asserts ("Your draft says “You are
+  juggling … projects”. How many?"), the person types the answers there —
+  the only surface where text is verifiably theirs — and `applyAnswers`
+  swaps the model's values for theirs. The tool accepts no `answers`
+  parameter: an answers argument would be model-written too (the two-step
+  chat design was rejected for exactly that). The deadline-day question
+  is unskippable — there is no `deadline_day` parameter to pre-empt it
+  with. In the window form, Anna's reading of a chat message is a
+  read-only *suggestion*; the fields start empty and Prepare stays off
+  until the person writes the situation (`sourceProvenance` in
+  `bundle/app.js`). The card always quotes its source and records the
+  interview audit (`facts`/`blanked`/`deadlineDay`).
 - After changing the plugin's `describe`, regenerate
   `executas/brume/manifest.json` and bump the version in `executa.json`,
   `pyproject.toml` and `VERSION`; binaries come from the
@@ -420,11 +425,19 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   person's text ("the same week" normalises to "this week"), asks once
   when a deadline is in the same week and no day was named, and hides a
   rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. Binaries **0.4.9** are published
-  (`brume-executa-v0.4.9`) and app **v0.4.7** is cut (version_id=2272,
-  tool frozen at executa_version 1103) — the remaining gate is the
-  three-projects Cloud Agent case, then `apps submit-review`
-  (`docs/ANNA.md` §12.31, §12.33).
+  one sayable paragraph. **Tool 0.4.10 / app 0.4.8 are the current
+  candidate, uncommitted:** `brume_prepare` now returns `open_window`
+  with an `open_app_view` interview payload; the window's new "Confirm
+  the details" stage collects the person's typed answers, substitutes
+  them (`factQuestions`/`applyAnswers`), blanks unconfirmed fields, and
+  saves the card with a `facts`/`blanked`/`deadlineDay` audit. The
+  earlier 0.4.9/0.4.7 cut (app v0.4.7, version_id=2272, executa 1103,
+  binaries `brume-executa-v0.4.9` published) was rejected: its second
+  call still trusted the model to be the user (`answers` was
+  model-written), and the card's "Key point" came from the unscanned
+  `key_point` relay. Remaining: commit, 0.4.10 binaries workflow,
+  publish, tier-3 fresh-install run, `apps submit-review`
+  (`docs/ANNA.md` §12.34).
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -435,6 +448,8 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
 - Tests: `npm test` = smoke + `node --test test/preparation.mjs
   test/recovery.mjs test/session-storage.mjs test/experience.mjs
   test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
-  (fake host :4618 + agent-browser, session `brume-preparation-qa`) —
-  35/35 on the 0.4.9 cut. Published as app v0.4.7 / tool 0.4.9;
-  tier-3 fresh-install run and resubmit still outstanding.
+  (fake host :4618 + agent-browser, session `brume-preparation-qa`).
+  Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
+  Published as app v0.4.7 / tool 0.4.9; the 0.4.10/0.4.8 interview
+  redesign is uncommitted — binaries, republish, tier-3 and resubmit
+  outstanding.

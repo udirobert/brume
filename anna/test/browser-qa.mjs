@@ -712,6 +712,90 @@ try {
     assert.equal((await post("/__dump")).llmCalls.length, 2);
   });
 
+  await ok("brume_prepare interview: masked questions, person-typed answers, saved card", async () => {
+    // The tool's draft crosses as data, never as fact: the window masks
+    // every asserted value into a question, and only what the person
+    // types here can reach the card.
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "ready",
+      context: "I manage 3 projects and I added one deadline in the same week.",
+      goal: "Get the deadline moved",
+      interview: { fields: {
+        opening: "You are juggling four projects and a new deadline in the same week.",
+        keyPoint: "Protect the relationship.",
+        approach: "Open with the week as it is.",
+        objection: "We cannot take that on right now.",
+        response: "Then agree what slips and by when.",
+        nextStep: "Name the day you will flag the new deadline.",
+      }, questions: [] } } });
+    await cli("open", BASE);
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-prep-interview"]);
+    // Anna's reading is a suggestion only; the draft values are masked.
+    assert.equal(await ev('document.getElementById("prep-interview-source").hidden'), false);
+    const questions = await ev('JSON.stringify([...document.querySelectorAll("#prep-interview-list input")].map(i => i.dataset.qid))');
+    assert.deepEqual(questions, ["fact_1", "fact_2", "schedule"]);
+    const qText = (await ev('[...document.querySelectorAll("#prep-interview-list .hint")].map(p => p.textContent).join("\\n")'));
+    assert.equal(qText.includes("four"), false);
+    assert.equal(qText.includes("Friday"), false);
+    assert.ok(qText.includes("How many?"));
+    assert.ok(qText.toLowerCase().includes("which day"));
+    // The person states the facts — three, not the model's four.
+    await ev(`(() => {
+      const set = (qid, v) => { const i = document.querySelector('#prep-interview-list input[data-qid="' + qid + '"]'); i.value = v; i.dispatchEvent(new Event("input", {bubbles:true})); };
+      set("fact_1", "three projects");
+      set("fact_2", "the same week");
+      set("schedule", "Thursday");
+      return true; })()`);
+    await sleep(300);
+    await ev('document.getElementById("btn-prep-interview-go").click()');
+    await sleep(600);
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    const opening = await ev('document.getElementById("prep-opening").value');
+    assert.ok(opening.includes("three projects"), opening);
+    assert.equal(opening.includes("four"), false);
+    // No model call happened — the draft came from the tool, the facts
+    // from the person.
+    assert.equal((await post("/__dump")).llmCalls.length, 0);
+    await ev('document.getElementById("btn-prep-finish").click()');
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-prep-card"]);
+    const rec = (await post("/__dump")).kv["ready/last"];
+    assert.ok(rec, "ready/last missing");
+    assert.ok(rec.opening.includes("three projects"), rec.opening);
+    assert.equal(rec.opening.includes("four"), false);
+    assert.equal(rec.preparedKeyPoint, "Protect the relationship.");
+    assert.equal(rec.deadlineDay, "Thursday");
+    assert.equal(rec.sourceProvenance, "answered");
+    assert.equal(rec.facts.length, 3);
+    assert.ok(rec.facts.every((f) => typeof f.answered === "string"));
+    assert.ok(rec.event.includes("three projects"), rec.event);
+    assert.equal(rec.event.includes("four"), false);
+  });
+
+  await ok("interview declined facts blank their fields; manual path still works", async () => {
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "ready",
+      context: "Prep for a panel.",
+      interview: { fields: {
+        opening: "You have four panelists asking questions.",
+        keyPoint: "Answer the first question fully.",
+      }, questions: [] } } });
+    await cli("open", BASE);
+    await sleep(1200);
+    assert.deepEqual(await ev(screens), ["screen-prep-interview"]);
+    // Leave every answer blank — the fact's field is removed.
+    await ev('document.getElementById("btn-prep-interview-go").click()');
+    await sleep(600);
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    assert.equal(await ev('document.getElementById("prep-opening").value'), "");
+    assert.equal(await ev('document.getElementById("prep-keypoint-edit").value'), "Answer the first question fully.");
+  });
+
   await ok("startup visible while connect hangs; failure retries once", async () => {
     await cli("open", "about:blank");
     await sleep(400);

@@ -8,14 +8,14 @@ const MAX_ID_LEN = 128;
 const MAX_DATA_BYTES = 120_000;
 const MAX_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
 
-const READY_STAGES = ["input", "clarify", "plan", "practice", "feedback", "card"];
+const READY_STAGES = ["input", "clarify", "interview", "plan", "practice", "feedback", "card"];
 const READY_KINDS = ["interview", "presentation", "hard-conversation", "meeting"];
 const PREP_BUSY = ["preparing", "rehearsing"];
 const INPUT_TYPES = ["touch", "mouse", "keyboard"];
 
 const SCREENS = {
   reset: ["input", "planning", "plan", "session", "checkin", "result"],
-  ready: ["input", "clarify", "plan", "practice", "feedback", "card", "pause"],
+  ready: ["input", "clarify", "interview", "plan", "practice", "feedback", "card", "pause"],
   alert: ["setup", "countdown", "test", "result"],
 };
 
@@ -67,6 +67,22 @@ function validPrep(p) {
     if (!["adjustment", "response", "nextStep"].every((k) => str(p.feedback[k], 1000))) return false;
   }
   if (p.stage === "feedback" && !p.feedback) return false;
+  if (p.stage === "interview" && !isObj(p.interview)) return false;
+  if (p.interview !== undefined && p.interview !== null) {
+    if (!isObj(p.interview)) return false;
+    if (!isObj(p.interview.fields)) return false;
+    if (!isObj(p.interview.answers)) return false;
+    if (!Array.isArray(p.interview.questions)) return false;
+    for (const q of p.interview.questions) {
+      if (!isObj(q) || !str(q.id, 40) || !str(q.question, 400)) return false;
+    }
+  }
+  if (p.interviewAudit !== undefined && p.interviewAudit !== null) {
+    if (!isObj(p.interviewAudit)) return false;
+    if (!Array.isArray(p.interviewAudit.facts)) return false;
+    if (!Array.isArray(p.interviewAudit.blanked)) return false;
+    if (!isoOrNull(p.interviewAudit.deadlineDay) && typeof p.interviewAudit.deadlineDay !== "string") return false;
+  }
   if (p.finalResponse !== null && !str(p.finalResponse, 1000)) return false;
   if (p.finalNextStep !== null && !str(p.finalNextStep, 1000)) return false;
   return true;

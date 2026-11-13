@@ -2,25 +2,24 @@
 """Brume Reset — Anna Executa plugin (stdio JSON-RPC 2.0, stdlib only).
 
 Chat-side surface for Brume. The preparation card is Brume's declared
-primary result, and this tool produces it: it takes the model's draft of
-the card, asks the person for every fact the draft asserts, and saves
-the card with the values they stated.
+primary result. This tool drafts it and opens the window where the
+person states its facts — the only surface where anything they type is
+verifiably theirs.
 
-  brume_prepare   Prepares the conversation and saves the card. Called in
-                  two steps. Step 1 takes `situation` (the model's relay
-                  of what the user said) plus optional `goal`,
-                  `key_point`, `preserve` and the model's own draft in
-                  `draft_opening`, `draft_key_point`, `draft_approach`,
-                  `draft_objection`, `draft_response`,
-                  `draft_next_step`. It answers needs_input with one
-                  question per fact the draft asserts — the value is
-                  masked, so the person states it — and, when a deadline
-                  in the same week has no day, one question about which
-                  day to name. Step 2 takes `request_id` and `answers`
-                  (one "id = answer" per question): the model's values
-                  are replaced by the person's, the card is saved under
-                  `ready/sessions/<ts>` and `ready/last`, and the card
-                  comes back in `_display` blocks.
+  brume_prepare   Prepares the conversation. Takes `situation` (the
+                  model's relay of what the user said) plus optional
+                  `goal`, `key_point`, `preserve` and the model's own
+                  draft in `draft_opening`, `draft_key_point`,
+                  `draft_approach`, `draft_objection`, `draft_response`,
+                  `draft_next_step`. It returns open_window with an
+                  open_app_view payload carrying the draft and one
+                  masked question per fact the draft asserts — the
+                  value is hidden, so the person states it — plus the
+                  deadline-day question when a same-week deadline has
+                  no day. The window collects the answers, substitutes
+                  them into the draft, and saves the card. This tool
+                  accepts no answers: there is no `answers` parameter,
+                  so the model cannot answer its own questions.
   brume_reset     Takes the agent's plan args and returns the pacing
                   script as verbatim `_display` blocks plus the plan
                   fields (pattern, seconds, title, opening, cues, why,
@@ -37,10 +36,12 @@ the card with the values they stated.
                   reverse-RPC failure degrades gracefully; abandoned runs
                   write nothing.
 
-Why the card's facts are asked for: every argument this tool receives
+Why the facts are asked in the window: every argument this tool receives
 was written by the calling model, and this protocol offers no transcript
-to check it against — so model prose can never be the oracle. The draft's
-values are masked in the question and the user's answer replaces them.
+to check it against — so model prose can never be the oracle, and no
+parameter here can carry the person's answer back. The draft's values are
+masked into questions; the person types the answers into the window, and
+the card is saved there from what they wrote.
 
 Wire notes (anna.partners/developers/tools/*): `initialize` is answered
 with protocolVersion "2.0" + {"storage": {}}; the
@@ -72,7 +73,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.9"
+VERSION = "0.4.10"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -159,10 +160,11 @@ MANIFEST: dict[str, Any] = {
     "version": VERSION,
     "description": (
         "Conversation preparation — Brume's primary result is a saved card. "
-        "brume_prepare drafts the card from what the user said, asks them "
-        "for every fact it would assert, and saves the card with their "
-        "answers. brume_reset starts a short guided break; brume_complete "
-        "saves its record when the user says done."
+        "brume_prepare drafts the card from what the user said and opens the "
+        "window, where the person answers every fact the draft would state "
+        "and the card is saved from their own words. brume_reset starts a "
+        "short guided break; brume_complete saves its record when the user "
+        "says done."
     ),
     "author": "Brume",
     "category": "productivity",
@@ -172,23 +174,20 @@ MANIFEST: dict[str, Any] = {
         {
             "name": "brume_prepare",
             "description": (
-                "Prepare the conversation and save the card — Brume's primary result. "
-                "Call it in two steps. Step 1: pass `situation` (your faithful relay of "
-                "what the user said — their words, never additions you invented), the "
-                "`goal`, `key_point` and `preserve` they stated if they stated them, and "
-                "your own draft of the card in `draft_opening`, `draft_key_point`, "
-                "`draft_approach`, `draft_objection`, `draft_response` and "
-                "`draft_next_step`. The tool returns needs_input with one question per "
-                "fact your draft asserts — each question masks the value and asks the "
-                "user to state it — and, when they mention a deadline in the same week "
-                "with no day, one question about which day to name. Step 2: ask the user "
-                "every question, then call brume_prepare again with `request_id` and "
-                "`answers` (one 'id = answer' per question, in the order asked). The tool "
-                "replaces your values with the user's, saves the card, and returns it. "
-                "Never write the card's facts yourself — the card's facts are the ones "
-                "the user stated."
+                "Prepare the conversation — Brume's primary result is the saved card. "
+                "Pass `situation` (your faithful relay of what the user said — their "
+                "words, never additions you invented), the `goal`, `key_point` and "
+                "`preserve` they stated if they stated them, and your own draft of "
+                "the card in `draft_opening`, `draft_key_point`, `draft_approach`, "
+                "`draft_objection`, `draft_response` and `draft_next_step`. The tool "
+                "returns open_window with an open_app_view payload: call "
+                "open_app_view with it. The window shows your draft with every fact "
+                "masked into a question — a count, a weekday, a clock time — and the "
+                "person types the answers; the card is saved there from what they "
+                "wrote, never from your prose. There is no way to supply the "
+                "answers here: never write the card's facts yourself."
             ),
-            "timeout": 30,
+            "timeout": 10,
             "parameters": [
                 {"name": "situation", "type": "string", "required": True,
                  "description": "Your faithful relay of what the user said about the upcoming conversation — their words, not additions."},
@@ -210,10 +209,6 @@ MANIFEST: dict[str, Any] = {
                  "description": "Your draft of how they would answer that pushback."},
                 {"name": "draft_next_step", "type": "string", "required": False,
                  "description": "Your draft of the card's next step."},
-                {"name": "request_id", "type": "string", "required": False,
-                 "description": "The id the first call returned. Pass it on the second call, with the answers."},
-                {"name": "answers", "type": "array", "items_type": "string", "required": False,
-                 "description": "The user's answers, one 'id = answer' per question, in the order the questions were asked."},
             ],
         },
         {
@@ -993,12 +988,6 @@ _CARD_FIELDS = ("opening", "keyPoint", "approach", "objection", "response",
 _NEUTRAL_OBJECTION = "What makes this hard?"
 _MAX_QUESTIONS = 6
 
-# The card the chat path saves lives under the same keys the window uses,
-# so "your last card" opens it either way.
-CARD_RECORD_PREFIX = "ready/sessions/"
-CARD_RECORD_LAST_KEY = "ready/last"
-PREPARE_REQUEST_PREFIX = "ready/prepare/"
-
 # kind -> (the question the person answers, the answer kinds that fit it).
 # A vague count ("several", "a couple") is answered with a number; a
 # span of time ("next week") is answered with a span.
@@ -1027,9 +1016,6 @@ def _question_for(fact: dict[str, Any]) -> tuple[str, tuple[str, ...]]:
     if kind == "relative" and _MIDDAY_RE.search(str(fact.get("token") or "")):
         return ("What time?", ("relative",))
     return _KIND_QUESTION.get(kind, ("When?", ("phrase",)))
-
-# Answers arrive as "id = answer" lines; anything else is read in order.
-_ANSWER_LINE_RE = re.compile(r"^\s*(fact_\d+|schedule)\s*[:=]\s*(.*)$", re.I)
 
 
 def _masked_context(text: str, start: int, end: int, limit: int = 140) -> str:
@@ -1095,102 +1081,42 @@ def _answer_facts(answer: str, accept: Any) -> list[dict[str, Any]]:
 
 
 def _apply_answers(fields: dict[str, str], questions: list[dict[str, Any]],
-                   answers: dict[str, str]) -> tuple[dict[str, str], list[str], set[str]]:
+                   answers: dict[str, str]) -> tuple[dict[str, str], list[str]]:
     """Replace every fact the draft asserted with the value the person
-    gave. A fact the person did not answer leaves its field blank — the
-    same rule the window applies to an ungrounded draft."""
+    gave. One question covers a fact value wherever it appears — a
+    deduped fact can sit in several fields, so every field is scanned.
+    A fact the person did not answer (or answered with anything but
+    exactly one acceptable fact) leaves every field carrying it blank."""
     out = dict(fields)
-    blanked: list[str] = []
-    accepted: set[str] = set()
-    edits: dict[str, list[tuple[int, int, str]]] = {}
+    blanked: set[str] = set()
+
+    def blank(field: str) -> None:
+        blanked.add(field)
+        out[field] = _NEUTRAL_OBJECTION if field == "objection" else ""
+
     for question in questions:
         if question.get("kind") == "schedule":
             continue
         answer = (answers.get(question["id"]) or "").strip()
-        field = question["field"]
-        if not answer:
-            blanked.append(field)
-            continue
-        facts = _answer_facts(answer, question.get("accept") or question["kind"])
-        if len(facts) != 1:
-            blanked.append(field)
-            continue
-        accepted.add(question["id"])
+        facts = _answer_facts(answer, question.get("accept") or question["kind"]) if answer else []
+        valid = len(facts) == 1
         # The person's own wording, not the canonical token.
-        replacement = answer[facts[0]["start"]:facts[0]["end"]]
-        # Every occurrence of that fact in the field is the same claim.
-        for fact in scan_facts(out.get(field) or ""):
-            if fact["kind"] == question["kind"] and fact["value"] == question["value"]:
-                edits.setdefault(field, []).append(
-                    (fact["start"], fact["end"], replacement)
-                )
-    for field, spans in edits.items():
-        text = out.get(field) or ""
-        for start, end, token in sorted(spans, reverse=True):
-            text = text[:start] + token + text[end:]
-        out[field] = text
-    for field in set(blanked):
-        if field == "objection":
-            out[field] = _NEUTRAL_OBJECTION
-        else:
-            out[field] = ""
-    return out, sorted(set(blanked)), accepted
-
-
-def _parse_answers(raw: Any, questions: list[dict[str, Any]]) -> dict[str, str]:
-    """Answers arrive as an array of "id = answer" lines, or as a mapping.
-    A bare line is read in the order the questions were asked."""
-    out: dict[str, str] = {}
-    if isinstance(raw, dict):
-        for key, value in raw.items():
-            out[str(key)] = str(value or "").strip()
-        return out
-    items: list[str] = []
-    if isinstance(raw, list):
-        items = [str(v or "") for v in raw]
-    elif isinstance(raw, str):
-        items = [line for line in raw.splitlines() if line.strip()]
-    positional = 0
-    for item in items:
-        m = _ANSWER_LINE_RE.match(item)
-        if m:
-            out[m.group(1).lower()] = m.group(2).strip()
-        elif positional < len(questions):
-            out[questions[positional]["id"]] = item.strip()
-        positional += 1
-    return out
-
-
-def _card_text(fields: dict[str, str]) -> str:
-    parts = [fields.get("opening", ""), fields.get("keyPoint", ""),
-             fields.get("nextStep", "")]
-    return "\n\n".join(p for p in parts if p)
-
-
-def _card_blocks(record: dict[str, Any]) -> list[dict[str, Any]]:
-    lines = ["**Your preparation card**", ""]
-    labels = [
-        ("opening", "Open with"),
-        ("keyPoint", "Key point"),
-        ("approach", "Approach"),
-        ("objection", "Pushback (practice)"),
-        ("response", "Response"),
-        ("nextStep", "Next step"),
-    ]
-    for key, label in labels:
-        value = (record.get(key) or "").strip()
-        if not value:
-            continue
-        lines.append(f"**{label}**")
-        lines.append(value)
-        lines.append("")
-    source = (record.get("sourceText") or "").strip()
-    if source:
-        lines.append(f"Prepared from what you told me: {source}")
-    if record.get("deadlineDay"):
-        lines.append(f"Day you named: {record['deadlineDay']}")
-    lines.append("Saved to your Anna storage.")
-    return [{"type": "markdown", "text": "\n".join(lines).strip()}]
+        replacement = answer[facts[0]["start"]:facts[0]["end"]] if valid else ""
+        for field in _CARD_FIELDS:
+            text = out.get(field) or ""
+            if not text:
+                continue
+            spans = [f for f in scan_facts(text)
+                     if f["kind"] == question["kind"] and f["value"] == question["value"]]
+            if not spans:
+                continue
+            if not valid:
+                blank(field)
+                continue
+            for fact in sorted(spans, key=lambda f: f["start"], reverse=True):
+                text = text[:fact["start"]] + replacement + text[fact["end"]:]
+            out[field] = text
+    return out, sorted(blanked)
 
 
 def _clean_card_field(value: Any, cap: int) -> str:
@@ -1200,32 +1126,16 @@ def _clean_card_field(value: Any, cap: int) -> str:
     return text
 
 
-# Requests awaiting the person's answers. The plugin process survives
-# between the two calls; the storage copy is the durable one.
-_PREPARE_REQUESTS: dict[str, dict[str, Any]] = {}
-
-
-def _prepare_request_key(request_id: str) -> str:
-    return f"{PREPARE_REQUEST_PREFIX}{request_id}"
-
-
 def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    """Brume's primary result, produced in chat.
+    """Brume's primary result, prepared in chat and finished in the window.
 
-    Phase 1 takes the situation, the draft, and the goal/boundary the
-    user stated. Every fact the draft asserts is masked and asked back,
-    so the model's values are never the oracle: the card's facts are the
-    values the person states. A deadline in the same week with no day
-    asks its own question, which the model cannot pre-empt.
-
-    Phase 2 takes the answers, replaces the model's values with the
-    person's, saves the card and returns it.
+    The tool takes the situation, the goal/boundary the user stated, and
+    the model's own draft. Every fact the draft asserts is masked into a
+    question — the model's values are never the oracle, and this tool
+    accepts no answers, so the model cannot answer its own questions.
+    The window collects the person's typed answers, substitutes them into
+    the draft, and saves the card there.
     """
-    invoke_id = context.get("invoke_id")
-    request_id = _clean_text(args.get("request_id"), 64)
-    if request_id:
-        return _prepare_finish(request_id, args, invoke_id)
-
     situation = _clean_text(args.get("situation"), 600)
     if not situation:
         raise LookupError("brume_prepare: 'situation' is required")
@@ -1259,153 +1169,27 @@ def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, A
             "question": schedule,
         })
 
-    request = {
-        "request_id": "",
-        "situation": situation,
-        "goal": goal,
-        "key_point": key_point,
-        "preserve": preserve,
-        "fields": fields,
-        "questions": questions,
-        "created_at": _utc_now_iso(),
-    }
-    request["request_id"] = str(uuid.uuid4())
-    _PREPARE_REQUESTS[request["request_id"]] = request
-    try:
-        _storage_set(_prepare_request_key(request["request_id"]), request, invoke_id)
-    except Exception as exc:  # noqa: BLE001
-        _log(f"prepare request not persisted: {exc}")
+    payload = {"mode": "ready", "context": situation}
+    if goal:
+        payload["goal"] = goal
+    if key_point:
+        payload["key_point"] = key_point
+    if preserve:
+        payload["preserve"] = preserve
+    payload["interview"] = {"fields": fields, "questions": questions}
 
     return {
         "success": True,
         "data": {
-            "status": "needs_input",
-            "request_id": request["request_id"],
-            "questions": [
-                {"id": q["id"], "kind": q["kind"], "question": q["question"]}
-                for q in questions
-            ],
+            "status": "open_window",
+            "open_app_view": payload,
             "note": (
-                "Ask the user every question, then call brume_prepare again "
-                "with request_id and answers (one 'id = answer' per "
-                "question). The card is saved from their answers."
+                "Call open_app_view with this payload. The window shows "
+                "the draft with every fact masked into a question; the "
+                "person types the answers there and the card is saved "
+                "from what they wrote. Do not ask the questions in chat "
+                "and never write the card's facts yourself."
             ),
-        },
-    }
-
-
-def _prepare_finish(request_id: str, args: dict[str, Any],
-                    invoke_id: str | None) -> dict[str, Any]:
-    request = _PREPARE_REQUESTS.get(request_id)
-    if request is None:
-        request = _storage_get(_prepare_request_key(request_id), invoke_id)
-    if not isinstance(request, dict) or not request.get("questions"):
-        raise LookupError(
-            "brume_prepare: unknown request_id — call brume_prepare again "
-            "with the situation and the draft"
-        )
-
-    questions = list(request.get("questions") or [])
-    answers = _parse_answers(args.get("answers"), questions)
-    fields, blanked, accepted = _apply_answers(
-        request.get("fields") or {}, questions, answers)
-
-    schedule_answer = (answers.get("schedule") or "").strip()
-    deadline_day = ""
-    if schedule_answer:
-        day_facts = [f for f in scan_facts(schedule_answer)
-                     if f["kind"] in ("weekday", "month", "relative", "ordinal")]
-        if day_facts:
-            deadline_day = schedule_answer[day_facts[0]["start"]:day_facts[0]["end"]]
-        elif re.search(r"\b(no|none|not|nothing|unspecified)\b",
-                        schedule_answer, re.I):
-            deadline_day = ""
-
-    # The person's answers are the source: nothing the model wrote may
-    # assert a fact they did not state.
-    source_parts = [(answers.get(q["id"]) or "").strip() for q in questions
-                     if q["id"] in accepted]
-    if deadline_day:
-        source_parts.append(deadline_day)
-    source_text = " · ".join(p for p in source_parts if p).strip()
-    for field in _CARD_FIELDS:
-        if ungrounded_spans(fields.get(field) or "", source_text):
-            if field == "objection":
-                fields[field] = _NEUTRAL_OBJECTION
-            else:
-                fields[field] = ""
-            if field not in blanked:
-                blanked.append(field)
-
-    record = {
-        "completedAt": _utc_now_iso(),
-        # The source is what the person stated — never the model's prose.
-        "event": source_text,
-        "sourceText": source_text,
-        "goal": request.get("goal") or "",
-        "keyPoint": request.get("key_point") or "",
-        "preserve": request.get("preserve") or "",
-        "kind": None,
-        "wordingStyle": "natural",
-        "clarification": None,
-        "opening": fields.get("opening", ""),
-        "preparedKeyPoint": fields.get("keyPoint", ""),
-        "approach": fields.get("approach", ""),
-        "objection": fields.get("objection", ""),
-        "response": fields.get("response", ""),
-        "nextStep": fields.get("nextStep", ""),
-        "sayable": _card_text(fields),
-        "rehearsed": False,
-        "adjustment": None,
-        "reply": None,
-        "planModel": None,
-        "planSource": "agent",
-        "sourceProvenance": "answered",
-        "feedbackModel": None,
-        "source": "executa.chat",
-        "deadlineDay": deadline_day or None,
-        "facts": [
-            {
-                "id": q["id"],
-                "kind": q["kind"],
-                "asked": q.get("question", ""),
-                "answered": answers.get(q["id"], ""),
-            }
-            for q in questions
-        ],
-        "blanked": sorted(set(blanked)),
-    }
-
-    record_key = f"{CARD_RECORD_PREFIX}{record['completedAt']}"
-    storage_error = None
-    try:
-        _storage_set(record_key, record, invoke_id)
-        _storage_set(CARD_RECORD_LAST_KEY, record, invoke_id)
-    except Exception as exc:  # noqa: BLE001
-        _log(f"card write failed: {exc}")
-        storage_error = str(exc)
-
-    _PREPARE_REQUESTS.pop(request_id, None)
-    try:
-        # The request held the draft; once the card is saved it is gone.
-        _storage_set(_prepare_request_key(request_id), None, invoke_id,
-                     timeout_s=5.0)
-    except Exception:  # noqa: BLE001
-        pass
-
-    return {
-        "success": True,
-        "data": {
-            "status": "saved" if storage_error is None else "not_saved",
-            "record_key": record_key,
-            "record_scope": "user",
-            "storage_error": storage_error,
-            "card": record,
-            "note": (
-                "The card is shown above and saved. Do not rewrite its "
-                "fields in chat — the values in it are the user's."
-            ),
-            "_display": {"blocks": _card_blocks(record)},
         },
     }
 

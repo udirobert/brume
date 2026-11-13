@@ -16,20 +16,24 @@ Cloud Agent, 2026-10-19). `host_capabilities` = `aps.kv`,
 manifest's `storage` block, or publish fails with "storage declaration
 drift").
 
-- `brume_prepare` — Brume's primary result: it prepares the
-  conversation and saves the card. Two steps.
-  1. `situation` (required: the model's relay of the user's words),
-     optional `goal`, `key_point`, `preserve`, and the model's own
-     draft in `draft_opening`, `draft_key_point`, `draft_approach`,
-     `draft_objection`, `draft_response`, `draft_next_step`. Returns
-     `needs_input` with one question per fact the draft asserts — the
-     value is masked, so the person states it — plus the deadline
-     question when a same-week deadline has no day.
-  2. `request_id` and `answers` (one "id = answer" per question). The
-     model's values are replaced by the person's, the card is re-checked
-     against the answers, and it is written to `ready/sessions/<iso>` and
-     `ready/last` (`scope: "user"`, shared with the window) and returned
-     in `_display` blocks.
+- `brume_prepare` — Brume's primary result: it drafts the
+  conversation's card and opens the window where the person states its
+  facts. One call.
+  - `situation` (required: the model's relay of the user's words),
+    optional `goal`, `key_point`, `preserve`, and the model's own
+    draft in `draft_opening`, `draft_key_point`, `draft_approach`,
+    `draft_objection`, `draft_response`, `draft_next_step`. Returns
+    `open_window` with an `open_app_view` payload carrying the draft
+    and one masked question per fact the draft asserts — the value is
+    hidden, so the person states it — plus the deadline question when
+    a same-week deadline has no day.
+  - The window collects the person's typed answers, substitutes them
+    into the draft (`factQuestions`/`applyAnswers` in
+    `bundle/preparation.js`, the same contract this file's
+    `_fact_questions`/`_apply_answers` mirror), and saves the card to
+    `ready/sessions/<iso>` and `ready/last`. This tool accepts no
+    `answers`: there is no way for the model to answer its own
+    questions.
 - `brume_reset` — plan args from the model: `context`, `pattern`
   (`cyclic-sigh` | `long-exhale` | `box` | `steady`), `seconds`
   (60/90/120/180), `title`, `opening`, `cues` (posture/attention only),
@@ -45,15 +49,18 @@ drift").
   (`calmer`|`same`|`wired`). Writes `reset/sessions/<iso>`, `reset/last`
   and `reset/summary` (`scope: "user"`, shared with the window).
 
-**Why the card asks for its facts.** Every tool argument is written by
-the calling model, and the protocol offers the plugin no transcript, so
-model prose can never be checked against what the user actually said. A
-card built that way would carry the model's inventions. So the model's
-values are masked in a question and the user's answer replaces them: the
-card's facts are the values the person stated, and every question and
-answer is recorded with the card. The window path is the same rule from
-the other side — there the person types the situation, and the draft is
-checked against their words.
+**Why the facts are asked in the window.** Every tool argument is
+written by the calling model, and the protocol offers the plugin no
+transcript, so model prose can never be checked against what the user
+actually said — and no parameter can carry the person's answer back
+either: an `answers` argument would be model-written too, which is
+exactly what the earlier two-step design got wrong (the model could
+answer its own masked questions). So the tool only drafts and opens the
+window; the person types the answers there, the only surface where
+text is verifiably theirs, and the card is saved from those answers.
+Every question and answer is recorded with the card. The window's own
+form path is the same rule — the person types the situation, and the
+draft is checked against their words.
 
 The fact scanner (`scan_facts` / `ungrounded_spans`) is a 1:1 port of
 `anna/bundle/preparation.js`; both are tested against the `fact_scan`

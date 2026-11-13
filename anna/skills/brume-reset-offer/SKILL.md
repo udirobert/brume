@@ -38,13 +38,14 @@ prepared conversation, and the offer should name one.
   only when they stated them — never invent facts, dates, counts, or
   goals — and with your own draft of the card in `draft_opening`,
   `draft_key_point`, `draft_approach`, `draft_objection`,
-  `draft_response` and `draft_next_step`. Write the draft the way you
-  would say it, but leave out any count, day or time the user did not
-  say. Follow what it returns: it asks one question per fact your draft
-  would state, each with the value hidden, plus a question about which
-  day to name when they mention a deadline in the same week — ask the
-  user every one of them, then call `brume_prepare` again with
-  `request_id` and `answers`. The card comes back saved.
+  `draft_response` and `draft_next_step`. It returns `open_window` with
+  an `open_app_view` payload: call `open_app_view` with it. The window
+  shows the draft with every fact masked into a question — a count, a
+  weekday, a clock time — plus a question about which day to name when
+  they mention a deadline in the same week, and the person types the
+  answers there. The card is saved in the window from what they wrote.
+  There is no `answers` parameter and you must never write the card's
+  facts yourself.
 - If the user says **"not now"**, declines, or simply moves on: accept
   it completely. Do not re-offer in the same session, do not follow up,
   do not keep score.

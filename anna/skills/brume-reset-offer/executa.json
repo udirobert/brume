@@ -1,0 +1,8 @@
+{
+  "slug": "brume-reset-offer",
+  "name": "brume-reset-offer",
+  "version": "1.0.1",
+  "executa_type": "skill",
+  "description": "Offer Brume's conversation-preparation workspace when the user mentions an upcoming interview, presentation, negotiation, hard conversation, or high-stakes send. Suggestion only — never auto-open, always dismissible.",
+  "content_file": "SKILL.md"
+}

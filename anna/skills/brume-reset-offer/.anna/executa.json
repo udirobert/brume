@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1330,
+  "tool_id": "skill-papa-brume-reset-offer-w4p5ngnh",
+  "slug": "brume-reset-offer",
+  "executa_type": "skill",
+  "first_published_at": "2026-11-13T13:19:25.238Z"
+}

@@ -252,7 +252,7 @@ function isGrounded(fact, src) {
   return false;
 }
 
-/** Counts, weekdays, dates, clock times — and names. Number words inside hyphenated compounds (one-on-one) are ignored. A capitalised token that is not an allowed sentence opener and is not in the person's words is an invented name, withheld like an ungrounded count. */
+/** Counts, weekdays, dates, clock times — names, and invented addressee roles. Number words inside hyphenated compounds (one-on-one) are ignored. A capitalised token that is not an allowed sentence opener and is not in the person's words is an invented name; a possessive + role noun ("your manager") whose role is not in the person's words is an invented addressee. Both are withheld like an ungrounded count. */
 export function ungroundedSpans(candidate, source) {
   const src = sourceFacts(source);
   const words = sourceWords(source);
@@ -262,6 +262,9 @@ export function ungroundedSpans(candidate, source) {
   }
   for (const ent of scanEntities(candidate)) {
     if (!words.has(ent.token.toLowerCase())) found.push(ent.token);
+  }
+  for (const role of scanRoles(candidate)) {
+    if (!roleGrounded(role.token, words)) found.push(role.token);
   }
   // A fact word ("Friday") is also a capitalised token; the fact span is
   // pushed first, so case-insensitive dedup keeps it and drops the name dupe.
@@ -311,6 +314,7 @@ function spanKind(span) {
   if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeSpans(text).length > 0) return "time";
   if (REL_DAY_WORDS.includes(text) || phraseSpans(text).length > 0) return "time";
   if (/^[A-Z]/.test(raw)) return "name";
+  if (isRoleNoun(text)) return "role";
   return "count";
 }
 
@@ -481,6 +485,68 @@ function sourceWords(text) {
   const out = new Set();
   for (const m of String(text || "").matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
     out.add(m[0].toLowerCase());
+  }
+  return out;
+}
+
+// --- Role gate (invented addressee) ----------------------------------------
+// A card may only name an addressee the person named. The name gate catches
+// capitalised names; a lowercase "your manager" is not a name the scanner
+// can see, yet it invents a specific person the person never stated. This
+// catches the common invented-addressee pattern — a possessive determiner +
+// a role noun ("your manager", "my boss", "their client") — and grounds the
+// role against the person's words, exactly like a name.
+//
+// Deliberately NARROW. A blanket role-noun gate was prototyped and rejected:
+// role nouns are common nouns ("the current team", "the same team"), so a
+// closed vocabulary blanked ~33% of legitimate cards (including this app's
+// own test plan). The possessive pattern is the high-precision subset — a
+// specific addressee ("your manager"), not a generic group ("the team") —
+// and measured ~7% false positives with zero fixture regressions. It is a
+// bounded backstop, not a complete role guarantee: "a colleague" and "the
+// stakeholder" (no possessive) still pass, and motives are open prose no
+// span scanner can ground. The user-facing guarantee stays the absolute
+// classes (facts + names); this is internal defense-in-depth, and the prompt
+// plus the person's review carry the rest. See docs/ANNA.md §12.39.
+
+export const ROLE_NOUNS = new Set([
+  "manager", "boss", "supervisor", "director", "lead", "chief", "officer",
+  "colleague", "coworker", "co-worker", "teammate", "team", "staff", "employee",
+  "employer", "client", "customer", "patient", "student", "teacher", "professor",
+  "mentor", "subordinate", "partner", "spouse", "husband", "wife",
+  "friend", "neighbor", "neighbour", "landlord", "tenant", "doctor", "nurse",
+  "therapist", "counselor", "counsellor", "lawyer", "attorney", "judge",
+  "recruiter", "interviewer", "candidate", "applicant", "stakeholder",
+  "shareholder", "investor", "board", "committee", "hr", "department",
+  "principal", "dean", "coach", "trainer", "advisor", "adviser", "consultant",
+  "contractor", "freelancer", "vendor", "supplier", "buyer", "seller",
+]);
+
+const POSSESSIVE_ROLE_RE = /\b(?:your|my|their|his|her|our|its)\s+([A-Za-z][A-Za-z'’-]*)/gi;
+
+// A role noun, tolerant of a trailing possessive ("manager's") and plural
+// ("managers"). Used both to recognise a role and to label its span.
+function isRoleNoun(word) {
+  const w = String(word || "").toLowerCase().replace(/['’]s$/, "");
+  return ROLE_NOUNS.has(w) || ROLE_NOUNS.has(w.replace(/s$/, ""));
+}
+
+// Ground a role generously across singular/plural so "your managers" is
+// grounded when the person wrote "manager" (and vice versa).
+function roleGrounded(role, words) {
+  const w = String(role || "").toLowerCase().replace(/['’]s$/, "");
+  const base = w.replace(/s$/, "");
+  return words.has(w) || words.has(base) || words.has(`${base}s`) || words.has(`${w}s`);
+}
+
+// Possessive + role phrases — candidate invented addressees. The token is
+// the role word, so the gate grounds and labels it like a name.
+export function scanRoles(text) {
+  const src = String(text || "");
+  const out = [];
+  for (const m of src.matchAll(POSSESSIVE_ROLE_RE)) {
+    if (!isRoleNoun(m[1])) continue;
+    out.push({ kind: "role", token: m[1], start: m.index, end: m.index + m[0].length });
   }
   return out;
 }

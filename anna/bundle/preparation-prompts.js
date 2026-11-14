@@ -40,13 +40,13 @@ approach: a concrete conversational move that handles the stated constraints; no
 objection: one plausible difficult question or pushback for practice, written as a hypothetical counterpart's line. The app labels it as a possibility.
 response: suggested wording that addresses that pushback and advances the goal without fabricating supporting facts.
 nextStep: a closing question or next action they can propose, not a claim that anyone has agreed. Do not name a weekday, date, or clock time, and do not change a count, unless that weekday, date, time, or count appears in the user JSON.
-Every count, weekday, date, clock time, and person's name in opening, keyPoint, approach, objection, response, and nextStep must already appear in the user JSON. Do not turn "3" into "4", do not add a meeting time or date to make a field sound finished, and do not name anyone the person did not name. Where a time, date, count, or name was not given, leave it out.
+Every count, weekday, date, clock time, and person's name in opening, keyPoint, approach, objection, response, and nextStep must already appear in the user JSON. Do not turn "3" into "4", do not add a meeting time or date to make a field sound finished, and do not name anyone the person did not name. Do not assign an addressee role the person did not state (for example "your manager" or "your client"); a generic group such as "the team" is fine when it fits the situation. Where a time, date, count, name, or role was not given, leave it out.
 Keep every field nonempty. Different goals for the same event must change the substance of the preparation.`;
   if (scheduleUnspecified) {
     instruction += "\nThe person was asked which day to name and did not name one. Keep the next step unscheduled: a question or action with no weekday, no date, and no clock time.";
   }
   if (Array.isArray(droppedFacts) && droppedFacts.length) {
-    instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, clock times, or names the person did not write.`;
+    instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, clock times, names, or addressee roles the person did not write.`;
   }
   return [
     { role: "system", content: { type: "text", text: instruction } },
@@ -80,10 +80,10 @@ Return:
 adjustment: one specific change, and it must repeat a short run of their reply in their words (three words in a row when the reply is that long). If you cannot quote them, still return the other fields and make adjustment restate their reply rather than a new fact.
 response: a revised version they can choose to use, preserving their intent and voice while addressing the difficult question. Treat new factual statements in their reply as their statements, not independently verified facts.
 nextStep: a closing question or action consistent with their goal and response. Do not invent agreements or commitments.
-The plan may be wrong. Do not repeat a count, weekday, date, clock time, or name from the plan unless it also appears in event, goal, keyPoint, preserve, clarification, or reply.
+The plan may be wrong. Do not repeat a count, weekday, date, clock time, name, or addressee role from the plan unless it also appears in event, goal, keyPoint, preserve, clarification, or reply.
 Keep every field nonempty. Do not ask another practice question; this is one bounded rehearsal turn.`;
   if (Array.isArray(droppedFacts) && droppedFacts.length) {
-    instruction += `\nA previous note added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, clock times, or names the person did not write.`;
+    instruction += `\nA previous note added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, clock times, names, or addressee roles the person did not write.`;
   }
   return [
     { role: "system", content: { type: "text", text: instruction } },

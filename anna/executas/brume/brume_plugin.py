@@ -49,10 +49,12 @@ without `initialize`; a strict v1 host ignores them and the wait times
 out into the same fallback.
 
 The plan contract (prompt, parsing, fallback, summary shape) is a 1:1
-port of anna/bundle/plan.js; the fact scanner is a 1:1 port of
-anna/bundle/preparation.js — keep both in sync via
+port of anna/bundle/plan.js — keep it in sync via
 anna/test/plan-cases.json, which this file's tests and the node smoke
-test consume.
+test consume. The faithfulness gate (the fact, entity and role scanners
+in anna/bundle/preparation.js) is NOT ported here: brume_prepare is a
+pure relay and the window owns the gate, so a card's facts, names and
+addressee roles are checked in the window against the person's own words.
 """
 
 from __future__ import annotations

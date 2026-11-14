@@ -819,6 +819,90 @@
     "four",
     "Priya"
    ]
+  },
+  {
+   "name": "reviewer: invented addressee role",
+   "source": "I manage 3 projects and I added one deadline in the same week.",
+   "candidate": "Tell your manager the extra project can move",
+   "expect": [
+    "manager"
+   ]
+  },
+  {
+   "name": "invented addressee role opens the line",
+   "source": "I have a review coming up.",
+   "candidate": "Your director needs the update",
+   "expect": [
+    "director"
+   ]
+  },
+  {
+   "name": "grounded role reused",
+   "source": "I need to talk to my manager about the deadline.",
+   "candidate": "I'd like to talk to my manager about it",
+   "expect": []
+  },
+  {
+   "name": "role grounded case-insensitive",
+   "source": "I told my Manager about it.",
+   "candidate": "Your manager needs the update",
+   "expect": []
+  },
+  {
+   "name": "generic group is not an addressee",
+   "source": "I manage 3 projects and I added one deadline in the same week.",
+   "candidate": "Why can't the current team absorb it?",
+   "expect": []
+  },
+  {
+   "name": "non-possessive role is a bounded miss",
+   "source": "I manage 3 projects.",
+   "candidate": "Tell the stakeholder it slips",
+   "expect": []
+  },
+  {
+   "name": "plural invented role",
+   "source": "I manage 3 projects.",
+   "candidate": "Ask your managers for another person",
+   "expect": [
+    "managers"
+   ]
+  },
+  {
+   "name": "plural role grounded",
+   "source": "My managers are overloaded.",
+   "candidate": "Your managers cannot take more",
+   "expect": []
+  },
+  {
+   "name": "singular role grounded by plural source",
+   "source": "I told my managers about it.",
+   "candidate": "Your manager needs the update",
+   "expect": []
+  },
+  {
+   "name": "invented name and role together",
+   "source": "I manage 3 projects.",
+   "candidate": "Tell Priya to ask your manager",
+   "expect": [
+    "Priya",
+    "manager"
+   ]
+  },
+  {
+   "name": "invented count and role together",
+   "source": "I manage 3 projects.",
+   "candidate": "Tell your manager about the four projects",
+   "expect": [
+    "four",
+    "manager"
+   ]
+  },
+  {
+   "name": "imperative lead is not a role",
+   "source": "I manage 3 projects.",
+   "candidate": "Lead with the shared goal",
+   "expect": []
   }
  ],
  "deadline_day": [

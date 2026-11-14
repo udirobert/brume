@@ -18,6 +18,7 @@ const {
   NEUTRAL_OBJECTION,
   faithfulnessMessage,
   groundedSpans,
+  ungroundedSpans,
   scheduleQuestion,
   SCHEDULE_QUESTION,
   quotesReply,
@@ -25,6 +26,8 @@ const {
   scanEntities,
   FUNCTION_WORDS,
   CARD_OPENERS,
+  scanRoles,
+  ROLE_NOUNS,
 } = await import(join(here, "..", "bundle", "preparation.js"));
 
 const PLAN = {
@@ -342,6 +345,63 @@ test("the name-leak surface is exactly the documented openers Hope/May/Will", ()
   }
   const allow = new Set([...FUNCTION_WORDS, ...CARD_OPENERS]);
   assert.deepEqual(names.filter((n) => allow.has(n)).sort(), ["Hope", "May", "Will"]);
+});
+
+test("reviewer case: an invented addressee role is withheld like a name", () => {
+  // The critique's exact case: a lowercase "your manager" invents a specific
+  // person the person never stated. The name gate cannot see it (not
+  // capitalised); the role gate grounds it against the person's words and
+  // withholds the field, exactly like an ungrounded count or name.
+  const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
+  const opening = "Tell your manager the extra project can move.";
+  const issues = faithfulnessIssues({ opening }, source, ["opening"]);
+  assert.deepEqual(issues, [{ field: "opening", spans: ["manager"] }]);
+  assert.equal(withholdUngrounded({ opening }, issues).opening, "");
+  assert.match(faithfulnessMessage(issues), /Opening added a role you didn't write/);
+});
+
+test("a role the person wrote is grounded; generic groups are not addressees", () => {
+  const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
+  // The person named their manager, so "your manager" is grounded.
+  const named = preparationSource({ event: "I need to tell my manager about the deadline." });
+  assert.deepEqual(ungroundedSpans("Tell your manager the plan.", named), []);
+  // A generic group ("the current team", "the same team") has no possessive
+  // addressee signal and is kept — the blanket role tier that blanked these
+  // was prototyped and rejected (~33% false positives).
+  assert.deepEqual(ungroundedSpans("The current team cannot absorb it.", source), []);
+  assert.deepEqual(ungroundedSpans("Here's what slips if we keep the same team.", source), []);
+  // An imperative verb that doubles as a role noun ("Lead") opens the line
+  // and is not an addressee.
+  assert.deepEqual(ungroundedSpans("Lead with the shared goal.", source), []);
+  // The same role, unstated, is withheld.
+  assert.deepEqual(
+    faithfulnessIssues({ opening: "Tell your manager the plan." }, source, ["opening"]),
+    [{ field: "opening", spans: ["manager"] }]);
+});
+
+test("the role gate is bounded: non-possessive roles and motives pass", () => {
+  const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
+  // No possessive determiner → not the addressee signal. These are documented
+  // bounded misses, not regressions: the prompt and the person's review carry
+  // them, and the user-facing guarantee stays facts + names.
+  assert.deepEqual(ungroundedSpans("Delegate it to a colleague.", source), []);
+  assert.deepEqual(ungroundedSpans("Tell the stakeholder it slips.", source), []);
+  // A motive ("because they are behind schedule") is open prose no span
+  // scanner can ground; only the invented addressee is flagged, not the motive.
+  assert.deepEqual(
+    faithfulnessIssues({ opening: "Tell your manager, because they are behind schedule." }, source, ["opening"]),
+    [{ field: "opening", spans: ["manager"] }]);
+});
+
+test("scanRoles finds possessive addressees, tolerant of plural and possessive 's", () => {
+  const tokens = (t) => scanRoles(t).map((r) => r.token);
+  assert.deepEqual(tokens("Tell your manager the plan."), ["manager"]);
+  assert.deepEqual(tokens("Ask your managers for help."), ["managers"]);
+  assert.deepEqual(tokens("My manager's deadline can move."), ["manager's"]);
+  assert.deepEqual(tokens("The current team cannot absorb it."), []);
+  assert.deepEqual(tokens("Lead with the shared goal."), []);
+  assert.equal(ROLE_NOUNS.has("manager"), true);
+  assert.equal(ROLE_NOUNS.has("team"), true);
 });
 
 test("rehearsal checks the reply, not the earlier draft", () => {

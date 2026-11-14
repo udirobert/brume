@@ -179,10 +179,9 @@ MANIFEST: dict[str, Any] = {
                 "with it. The window shows your reading as a masked suggestion; "
                 "the person writes the situation in their own words and the card "
                 "is drafted from their words and saved there. You supply no card "
-                "content — never write the card's facts yourself. In your visible "
-                "chat reply, say only that you are opening the window — do not "
-                "restate counts, days, times, or names from what the user said; "
-                "the person writes the details there."
+                "content — never write the card's facts yourself. Your visible "
+                "chat reply must be exactly the sentence in _display and nothing "
+                "else: do not restate a count, a day, a time, a name, or a role."
             ),
             "timeout": 10,
             "parameters": [
@@ -757,8 +756,12 @@ def invoke_prepare(args: dict[str, Any], context: dict[str, Any]) -> dict[str, A
                 "your reading as a masked suggestion; the person writes "
                 "the situation in their own words and the card is "
                 "drafted from their words and saved there. Do not write "
-                "the card's facts yourself."
+                "the card's facts yourself. Your visible chat reply is "
+                "the _display sentence and nothing else."
             ),
+            "_display": {"blocks": [{"type": "markdown", "text": (
+                "Opening the preparation window. Write the situation there in your own words."
+            )}]},
         },
     }
 

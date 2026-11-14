@@ -776,7 +776,8 @@
    "source": "I manage 3 projects and I added one deadline in the same week.",
    "candidate": "Tell Priya the extra project can move",
    "expect": [
-    "Priya"
+    "Priya",
+    "extra project"
    ]
   },
   {
@@ -825,7 +826,8 @@
    "source": "I manage 3 projects and I added one deadline in the same week.",
    "candidate": "Tell your manager the extra project can move",
    "expect": [
-    "manager"
+    "manager",
+    "extra project"
    ]
   },
   {
@@ -855,10 +857,12 @@
    "expect": []
   },
   {
-   "name": "non-possessive role is a bounded miss",
+   "name": "article addressee is withheld",
    "source": "I manage 3 projects.",
    "candidate": "Tell the stakeholder it slips",
-   "expect": []
+   "expect": [
+    "stakeholder"
+   ]
   },
   {
    "name": "plural invented role",

@@ -38,28 +38,16 @@ verified; app v0.4.10 cut, `version_id=2275`,
 `executa_version=1106`). The tier-3 fresh-install Cloud Agent run and
 resubmit are outstanding.
 
-Local candidate (unpublished): **app v0.4.12** with tool **0.4.13**
-(`docs/ANNA.md` §12.38–12.39) closes the name class the fact scanner does
-not know, and the invented-addressee class beside it. An entity gate
-(`scanEntities`) blanks a draft field that names someone the person did
-not write — "Tell Priya…" is withheld like an invented count — and
-`maskReference` now masks a name even when it opens a line, so only a
-closed opener set survives on the suggestion. A role gate (`scanRoles` +
-`ROLE_NOUNS`) blanks a possessive addressee the person did not state —
-"your manager" is grounded like a name — while a generic group ("the
-team") is kept; a blanket role-noun gate was prototyped and rejected
-(~33% false positives), so the signal is the narrow possessive subset
-(~7%). Non-possessive roles and motives stay bounded misses, and the
-user-facing claim stays facts + names — the role tier is internal
-defense-in-depth, not a promised guarantee. The opener signal is two
-tiers: `FUNCTION_WORDS` (the finite grammatical core, complete by
-enumeration) and `CARD_OPENERS` (the open lexical class, audited). A
-frequency-list inversion was prototyped and rejected — corpus lists are
-full of proper names, so it would exempt invented names; frequency is
-used only offline by `scripts/audit-openers.mjs`, whose `--check` guards
-the bounded name-leak surface {Will, May, Hope}. The plugin's
-`brume_prepare` describe also tells the model to keep its visible chat
-reply to "opening the window" — no restated counts, days, times or names.
+Local candidate (unpublished until this cut's binaries and publish):
+**app v0.4.12** with tool **0.4.13** (`docs/ANNA.md` §12.38–12.40).
+The faithfulness gate withholds a count, a day, a time, a capitalised
+name, an addressee ("your manager", "the manager", "a colleague"), an
+ascribed motive ("because they are behind schedule"), and an extra
+project the person did not write. "the team" stays. Will, May, and Hope
+are names unless they open "Will you", "May I", or "Hope you're".
+`brume_prepare` returns one fixed line for the chat reply. A model that
+speaks before the tool call can still restate a fact in the transcript;
+the tool has no transcript to check.
 
 App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:

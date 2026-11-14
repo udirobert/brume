@@ -2001,3 +2001,28 @@ fresh-install Cloud Agent checklist against v0.4.12 (the reviewer's
 the **Brume Executa Binaries** workflow for tool 0.4.13, `anna-app apps
 publish --bump patch`, and `anna-app apps submit-review brume` to move
 the review pin off v0.4.2.
+
+### 12.40 The remaining quoted inventions (2026-11-14, local)
+
+§12.39 left four sentences a reviewer could still quote. Three are now
+withheld by the window gate:
+
+- An article plus a person-shaped role — "the manager", "a colleague",
+  "the stakeholder" — is the same addressee as "your manager". Group
+  nouns stay possessive-only, so "the current team" is kept.
+- An ascribed cause ("because they are behind schedule") and an invented
+  extra project ("the extra project can move") blank the field as a
+  motive. The person writing those words still grounds them.
+- Will, May, and Hope are names unless they open a real frame ("Will
+  you", "May I", "Hope you're"). "Hope can take the extra project" is
+  withheld.
+
+The chat bubble is the one the gate cannot see. `brume_prepare` now
+returns a fixed `_display` line, and the system prompt requires that
+sentence as the whole visible reply. A model that talks before the tool
+call can still say "4" or "Friday" in the transcript. There is no
+transcript for the tool to check.
+
+Local gates: `npm test` green, `test_plan` 20 green. Still unpublished:
+binaries for tool 0.4.13, publish of app 0.4.12, the fresh-install
+Cloud Agent run, then `submit-review`.

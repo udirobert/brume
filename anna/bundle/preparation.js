@@ -266,6 +266,9 @@ export function ungroundedSpans(candidate, source) {
   for (const role of scanRoles(candidate)) {
     if (!roleGrounded(role.token, words)) found.push(role.token);
   }
+  for (const motive of scanMotives(candidate)) {
+    if (!motiveGrounded(motive.token, source)) found.push(motive.token);
+  }
   // A fact word ("Friday") is also a capitalised token; the fact span is
   // pushed first, so case-insensitive dedup keeps it and drops the name dupe.
   const seen = new Set();
@@ -313,8 +316,9 @@ function spanKind(span) {
   if (MONTHS.includes(text) || /^\d{1,2}(st|nd|rd|th)$/.test(text)) return "date";
   if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeSpans(text).length > 0) return "time";
   if (REL_DAY_WORDS.includes(text) || phraseSpans(text).length > 0) return "time";
-  if (/^[A-Z]/.test(raw)) return "name";
+  if (/^[A-Z]/.test(raw) && !isRoleNoun(text)) return "name";
   if (isRoleNoun(text)) return "role";
+  if (/\bbecause\b/.test(text) || /\b(?:extra|another|additional)\s+projects?\b/.test(text)) return "motive";
   return "count";
 }
 
@@ -467,6 +471,16 @@ function isOpener(word) {
   return base !== word && SENTENCE_OPENERS.has(base);
 }
 
+// Will, May, and Hope are on the opener list because "Will you", "May I",
+// and "Hope you're" are ordinary English. Without this frame they are names
+// ("Hope can take the extra project") and the gate must see them.
+function grammaticalNameOpener(text, offset, word) {
+  if (!/^(?:Will|May|Hope)$/.test(word)) return true;
+  const after = String(text).slice(offset + word.length);
+  if (word === "Hope") return /^\s+you(?:'re|’re)?\b/i.test(after);
+  return /^\s+(?:you(?:'re|’re)?|i(?:'m|’m)?|we(?:'re|’re)?|they|he|she|it|the|a|an|this|that|not)\b/i.test(after);
+}
+
 // Capitalised tokens that are not first-person pronouns and not allowed
 // sentence openers — candidate names, with the span they occupy.
 export function scanEntities(text) {
@@ -475,7 +489,9 @@ export function scanEntities(text) {
   for (const m of src.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
     const word = m[0];
     if (!/^[A-Z]/.test(word) || word.length < 2 || REFERENCE_KEEP.has(word)) continue;
-    if (opensSentence(src, m.index) && isOpener(word)) continue;
+    // Will/May/Hope stay openers only in the grammatical frame ("Will you",
+    // "May I", "Hope you're"). "Hope can take…" is a name and is flagged.
+    if (opensSentence(src, m.index) && isOpener(word) && grammaticalNameOpener(src, m.index, word)) continue;
     out.push({ kind: "name", token: word, start: m.index, end: m.index + word.length });
   }
   return out;
@@ -503,11 +519,12 @@ function sourceWords(text) {
 // own test plan). The possessive pattern is the high-precision subset — a
 // specific addressee ("your manager"), not a generic group ("the team") —
 // and measured ~7% false positives with zero fixture regressions. It is a
-// bounded backstop, not a complete role guarantee: "a colleague" and "the
-// stakeholder" (no possessive) still pass, and motives are open prose no
-// span scanner can ground. The user-facing guarantee stays the absolute
-// classes (facts + names); this is internal defense-in-depth, and the prompt
-// plus the person's review carry the rest. See docs/ANNA.md §12.39.
+// backstop. An article plus a person-shaped role ("the manager", "a
+// colleague", "the stakeholder") is the same addressee and is flagged.
+// Group nouns ("the team", "the board") stay possessive-only: a blanket
+// over those blanked legitimate cards. A narrow motive tier flags an
+// ascribed cause ("because they are behind schedule") and an invented
+// extra project. See docs/ANNA.md §12.40.
 
 export const ROLE_NOUNS = new Set([
   "manager", "boss", "supervisor", "director", "lead", "chief", "officer",
@@ -522,13 +539,27 @@ export const ROLE_NOUNS = new Set([
   "contractor", "freelancer", "vendor", "supplier", "buyer", "seller",
 ]);
 
+// Groups a card may mention without the person having named them. Flagging
+// "the team" blanked legitimate cards; a possessive ("your team") still flags.
+const GROUP_ROLE_NOUNS = new Set(["team", "staff", "board", "committee", "hr", "department"]);
+
 const POSSESSIVE_ROLE_RE = /\b(?:your|my|their|his|her|our|its)\s+([A-Za-z][A-Za-z'’-]*)/gi;
+const ARTICLE_ROLE_RE = /\b(?:the|a|an|this|that)\s+([A-Za-z][A-Za-z'’-]*)/gi;
+const ARTICLE_ROLE_MOD_RE = /\b(?:the|a|an|this|that)\s+[a-z][a-z'’-]*\s+([A-Za-z][A-Za-z'’-]*)/gi;
 
 // A role noun, tolerant of a trailing possessive ("manager's") and plural
 // ("managers"). Used both to recognise a role and to label its span.
+function roleBase(word) {
+  return String(word || "").toLowerCase().replace(/['’]s$/, "").replace(/s$/, "");
+}
+
 function isRoleNoun(word) {
   const w = String(word || "").toLowerCase().replace(/['’]s$/, "");
   return ROLE_NOUNS.has(w) || ROLE_NOUNS.has(w.replace(/s$/, ""));
+}
+
+function isArticleRole(word) {
+  return isRoleNoun(word) && !GROUP_ROLE_NOUNS.has(roleBase(word));
 }
 
 // Ground a role generously across singular/plural so "your managers" is
@@ -544,9 +575,40 @@ function roleGrounded(role, words) {
 export function scanRoles(text) {
   const src = String(text || "");
   const out = [];
-  for (const m of src.matchAll(POSSESSIVE_ROLE_RE)) {
-    if (!isRoleNoun(m[1])) continue;
-    out.push({ kind: "role", token: m[1], start: m.index, end: m.index + m[0].length });
+  const push = (m, word, article) => {
+    if (article ? !isArticleRole(word) : !isRoleNoun(word)) return;
+    out.push({ kind: "role", token: word, start: m.index, end: m.index + m[0].length });
+  };
+  for (const m of src.matchAll(POSSESSIVE_ROLE_RE)) push(m, m[1], false);
+  for (const m of src.matchAll(ARTICLE_ROLE_RE)) push(m, m[1], true);
+  for (const m of src.matchAll(ARTICLE_ROLE_MOD_RE)) push(m, m[1], true);
+  return out;
+}
+
+const MOTIVE_RES = [
+  /\bbecause\s+(?:they|he|she)\s+(?:are|is|aren't|isn't|'re|’re)\b(?:\s+[A-Za-z'’-]+){0,5}/gi,
+  /\b(?:extra|another|additional)\s+projects?\b/gi,
+];
+
+function motiveGrounded(token, source) {
+  const s = String(source || "").toLowerCase();
+  const t = String(token || "").toLowerCase();
+  if (s.includes(t)) return true;
+  if (t.endsWith("projects") && s.includes(t.replace(/projects$/, "project"))) return true;
+  if (t.endsWith("project") && s.includes(`${t}s`)) return true;
+  return false;
+}
+
+// Ascribed causes and an invented extra project. Open prose beyond these
+// two patterns is still the prompt's job.
+export function scanMotives(text) {
+  const src = String(text || "");
+  const out = [];
+  for (const re of MOTIVE_RES) {
+    re.lastIndex = 0;
+    for (const m of src.matchAll(re)) {
+      out.push({ kind: "motive", token: m[0], start: m.index, end: m.index + m[0].length });
+    }
   }
   return out;
 }
@@ -610,7 +672,7 @@ export function maskReference(text) {
   const body = maskFacts(text);
   return body.replace(/[A-Za-z][A-Za-z'’-]*/g, (word, offset) => {
     if (!/^[A-Z]/.test(word) || word.length < 2 || REFERENCE_KEEP.has(word)) return word;
-    if (opensSentence(body, offset) && isOpener(word)) return word;
+    if (opensSentence(body, offset) && isOpener(word) && grammaticalNameOpener(body, offset, word)) return word;
     return "…";
   });
 }

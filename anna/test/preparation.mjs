@@ -258,11 +258,11 @@ test("reviewer case: an invented name is withheld like an invented count", () =>
     nextStep: "Can we look at it this week?",
   };
   const issues = faithfulnessIssues(plan, source, PLAN_FACT_FIELDS);
-  assert.deepEqual(issues, [{ field: "opening", spans: ["Priya"] }]);
+  assert.deepEqual(issues, [{ field: "opening", spans: ["Priya", "extra project"] }]);
   const kept = withholdUngrounded(plan, issues);
   assert.equal(kept.opening, "");
   assert.equal(kept.keyPoint, plan.keyPoint);
-  assert.match(faithfulnessMessage(issues), /Opening added a name you didn't write/);
+  assert.match(faithfulnessMessage(issues), /Opening added a name and a motive you didn't write/);
 });
 
 test("a name the person wrote is grounded; openers and I are not names", () => {
@@ -322,7 +322,6 @@ test("the name-leak surface is exactly the documented openers Hope/May/Will", ()
   // name must be flagged even at sentence start — so accidentally adding a
   // name to the opener sets fails here. The comprehensive guard against the
   // corpus name set is scripts/audit-openers.mjs --check.
-  const documented = new Set(["Hope", "May", "Will"]);
   const names = ["Hope", "May", "Will", "Priya", "Aisha", "Wei", "Marcus", "Sarah",
     "John", "David", "Michael", "Mary", "Anna", "Jessica", "Rachel", "Robert", "James",
     "Linda", "Patricia", "Jennifer", "Elizabeth", "Susan", "Karen", "Lisa", "Nancy",
@@ -340,9 +339,13 @@ test("the name-leak surface is exactly the documented openers Hope/May/Will", ()
     const mid = scanEntities(`Tell ${n} the plan.`).map((e) => e.token);
     assert.equal(mid.includes(n), true, `${n} mid-sentence must be a name candidate`);
     const start = scanEntities(`${n} needs the update.`).map((e) => e.token);
-    assert.equal(start.includes(n), !documented.has(n),
-      `${n} at sentence start: ${documented.has(n) ? "documented opener, exempt" : "must be flagged"}`);
+    assert.equal(start.includes(n), true, `${n} before "needs" is a name, including Hope/May/Will`);
   }
+  assert.deepEqual(scanEntities("Will you move the deadline?").map((e) => e.token), []);
+  assert.deepEqual(scanEntities("May I ask about the deadline?").map((e) => e.token), []);
+  assert.deepEqual(scanEntities("Hope you're well.").map((e) => e.token), []);
+  assert.ok(scanEntities("Hope can take the extra project.").some((e) => e.token === "Hope"));
+  assert.ok(scanEntities("Will should hear this.").some((e) => e.token === "Will"));
   const allow = new Set([...FUNCTION_WORDS, ...CARD_OPENERS]);
   assert.deepEqual(names.filter((n) => allow.has(n)).sort(), ["Hope", "May", "Will"]);
 });
@@ -355,9 +358,9 @@ test("reviewer case: an invented addressee role is withheld like a name", () => 
   const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
   const opening = "Tell your manager the extra project can move.";
   const issues = faithfulnessIssues({ opening }, source, ["opening"]);
-  assert.deepEqual(issues, [{ field: "opening", spans: ["manager"] }]);
+  assert.deepEqual(issues, [{ field: "opening", spans: ["manager", "extra project"] }]);
   assert.equal(withholdUngrounded({ opening }, issues).opening, "");
-  assert.match(faithfulnessMessage(issues), /Opening added a role you didn't write/);
+  assert.match(faithfulnessMessage(issues), /Opening added a role and a motive you didn't write/);
 });
 
 test("a role the person wrote is grounded; generic groups are not addressees", () => {
@@ -379,18 +382,22 @@ test("a role the person wrote is grounded; generic groups are not addressees", (
     [{ field: "opening", spans: ["manager"] }]);
 });
 
-test("the role gate is bounded: non-possessive roles and motives pass", () => {
+test("an article addressee and an ascribed motive are withheld", () => {
   const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
-  // No possessive determiner → not the addressee signal. These are documented
-  // bounded misses, not regressions: the prompt and the person's review carry
-  // them, and the user-facing guarantee stays facts + names.
-  assert.deepEqual(ungroundedSpans("Delegate it to a colleague.", source), []);
-  assert.deepEqual(ungroundedSpans("Tell the stakeholder it slips.", source), []);
-  // A motive ("because they are behind schedule") is open prose no span
-  // scanner can ground; only the invented addressee is flagged, not the motive.
+  assert.deepEqual(ungroundedSpans("Delegate it to a colleague.", source), ["colleague"]);
+  assert.deepEqual(ungroundedSpans("Tell the manager the plan.", source), ["manager"]);
+  assert.deepEqual(ungroundedSpans("Tell the stakeholder it slips.", source), ["stakeholder"]);
+  // A group without a possessive stays. "the team" is not an addressee.
+  assert.deepEqual(ungroundedSpans("The current team cannot absorb it.", source), []);
+  const named = preparationSource({ event: "I need to tell the manager about the deadline." });
+  assert.deepEqual(ungroundedSpans("Tell the manager the plan.", named), []);
   assert.deepEqual(
     faithfulnessIssues({ opening: "Tell your manager, because they are behind schedule." }, source, ["opening"]),
-    [{ field: "opening", spans: ["manager"] }]);
+    [{ field: "opening", spans: ["manager", "because they are behind schedule"] }]);
+  assert.match(
+    faithfulnessMessage(faithfulnessIssues(
+      { opening: "Tell your manager, because they are behind schedule." }, source, ["opening"])),
+    /role and a motive/);
 });
 
 test("scanRoles finds possessive addressees, tolerant of plural and possessive 's", () => {
@@ -399,6 +406,8 @@ test("scanRoles finds possessive addressees, tolerant of plural and possessive '
   assert.deepEqual(tokens("Ask your managers for help."), ["managers"]);
   assert.deepEqual(tokens("My manager's deadline can move."), ["manager's"]);
   assert.deepEqual(tokens("The current team cannot absorb it."), []);
+  assert.deepEqual(tokens("Tell the manager the plan."), ["manager"]);
+  assert.deepEqual(tokens("Delegate it to a colleague."), ["colleague"]);
   assert.deepEqual(tokens("Lead with the shared goal."), []);
   assert.equal(ROLE_NOUNS.has("manager"), true);
   assert.equal(ROLE_NOUNS.has("team"), true);

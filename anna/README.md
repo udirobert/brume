@@ -18,7 +18,7 @@ reset-offer skill at 767). That pin is the review-feedback release plus
 Set it down — and the model writes only the invitation line. v0.4.2
 rebuilds both acts (`docs/ANNA.md` §12.25).
 
-Latest cut: **app v0.4.10** with tool **0.4.12**, published
+Latest published cut: **app v0.4.10** with tool **0.4.12**
 (`docs/ANNA.md` §12.37). The
 preparation card is the primary result, and on the chat path it is now
 made by the same pipeline as the in-app button: `brume_prepare` only
@@ -36,7 +36,25 @@ storage write with no `llm.complete` — not a qualified run
 release `brume-executa-v0.4.12`, all four platforms, checksums
 verified; app v0.4.10 cut, `version_id=2275`,
 `executa_version=1106`). The tier-3 fresh-install Cloud Agent run and
-resubmit are outstanding. App id 582, slug `brume`, tool id
+resubmit are outstanding.
+
+Local candidate (unpublished): **app v0.4.11** with tool **0.4.13**
+(`docs/ANNA.md` §12.38) closes the name class the fact scanner does not
+know. An entity gate (`scanEntities`) blanks a draft field that names
+someone the person did not write — "Tell Priya…" is withheld like an
+invented count — and `maskReference` now masks a name even when it opens
+a line, so only a closed opener set survives on the suggestion. The
+opener signal is two tiers: `FUNCTION_WORDS` (the finite grammatical
+core, complete by enumeration) and `CARD_OPENERS` (the open lexical
+class, audited). A frequency-list inversion was prototyped and rejected
+— corpus lists are full of proper names, so it would exempt invented
+names; frequency is used only offline by `scripts/audit-openers.mjs`,
+whose `--check` guards the bounded name-leak surface {Will, May, Hope}.
+The plugin's `brume_prepare` describe also tells the model to keep its
+visible chat reply to "opening the window" — no restated counts, days,
+times or names.
+
+App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:
 [`docs/ANNA.md`](../docs/ANNA.md) §12.
 
@@ -81,6 +99,10 @@ resubmit are outstanding. App id 582, slug `brume`, tool id
   `test/fake-host-server.mjs` + `test/fake-sdk.js` (test-only host with
   scripted llm replies + persistent KV for browser QA).
 - `scripts/prompt-check.mjs` — real-LLM prompt check via Featherless.
+- `scripts/audit-openers.mjs` — offline opener audit (`npm run
+  audit:openers`). Ranks corpus-frequency words missing from the opener
+  allowlist and guards the bounded name-leak surface; `--check` fails if
+  it grows beyond {Will, May, Hope}. Frequency is never used at runtime.
 - `listing/` — store screenshots, cover, logo; `listing/candidate/`
   contains the 2026-10-22 fixtures and needs regeneration for the shared
   mascot before the next release.
@@ -119,10 +141,10 @@ One contract, three consumers (Anna bundle, web app, MCP widget):
    leaves the next step unscheduled, and that question uses the only
    clarify slot. The model then drafts
    opening/keyPoint/approach/objection/response/nextStep. Counts, weekdays,
-   and clock times must already be in the person's text: a failing line is
-   blanked (the pushback becomes "What makes this hard?"), the message
-   names the field, and the sprite looks at it. A kept fact is marked
-   "From what you wrote." Optional one-turn rehearsal ("Get one
+   clock times and people's names must already be in the person's text: a
+   failing line is blanked (the pushback becomes "What makes this hard?"),
+   the message names the field, and the sprite looks at it. A kept fact is
+   marked "From what you wrote." Optional one-turn rehearsal ("Get one
    adjustment") is shown only when the note quotes the reply. The saved
    card (`ready/sessions/<ts>`, `ready/last`) leads with one sayable
    paragraph — opening, key point, next step — and says it was drafted
@@ -194,6 +216,7 @@ node --test test/mascot.mjs                                            # focused
 (cd ../mcp && npm test)                                                # MCP contract + widget tests
 (cd executas/brume && python3 -m unittest test_plan)
 anna-app validate --strict
+npm run audit:openers -- --check                                       # opener name-leak surface stays {Will, May, Hope}
 ```
 
 Browser QA without quota: `node test/fake-host-server.mjs` serves the

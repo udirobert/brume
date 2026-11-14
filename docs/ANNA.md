@@ -1841,3 +1841,87 @@ the window, verify the model-drafted card under `ready/last`; then the
 chat variant, reset/reflect/arrive/alertness), then
 `anna-app apps submit-review brume` to re-pin the review to v0.4.10 /
 tool 0.4.12.
+
+### 12.38 The gate learns names — tool 0.4.13, app 0.4.11 (candidate)
+
+§12.37 made the chat path produce a real AI card and masked the relay,
+but the reviewer's name objection survived it in two places, and both
+are the same class the fact scanner does not know. The card's own
+faithfulness gate (`ungroundedSpans`) scanned counts, weekdays, dates
+and clock times — not names — so a window draft reading "Tell Priya the
+extra project can move" saved untouched: "four" and "Friday" were
+withheld, "Priya" was not a fact the scanner could see. And
+`maskReference` let *any* sentence-initial capital survive, so the
+suggestion still showed "Priya needs the update" on the review screen
+above the empty boxes. A name is not a count, but it is still the
+model's invention, and the person never wrote it.
+
+The fix is an **entity gate** beside the fact gate. `scanEntities`
+(preparation.js) flags every capitalised token that is neither a
+first-person pronoun nor an allowed sentence opener; `ungroundedSpans`
+grounds each against the person's typed words (case-insensitive, facts
+deduped first so "Friday" stays a weekday not a name) and blanks the
+field exactly like an ungrounded count, with one retry. `spanKind`
+labels it `name`, so the message reads "Opening added a name you didn't
+write." `maskReference` now uses the *same* opener allowlist, so a name
+that opens a line masks too — only the closed opener set survives, and
+the suggestion and the gate agree. The plugin's `brume_prepare`
+describe also constrains the visible chat reply: say only that you are
+opening the window, do not restate counts, days, times or names from
+what the user said. The prompts name the rule outright ("Name only
+people the person has already named").
+
+The ambitious part was the opener signal, and the honest result is a
+rejection. A **frequency-list inversion** was prototyped — treat the
+top-N corpus words as openers, flag everything else — and measured
+against the fixtures: it leaks 5–8 invented names where the allowlist
+leaks a documented few, because corpus frequency lists are saturated
+with proper names (john@372, sam@3386, sarah@3524…). Inverting
+frequency would *exempt* invented names and write them into the saved
+card — the exact failure the gate exists to prevent. So frequency is
+used only **offline**, to audit the open tier for gaps, never at
+runtime. The runtime signal stays a **closed set**, deliberately: it
+errs toward flagging (a rare opener is withheld and retried — the safe
+direction), never toward exempting.
+
+Two tiers, honest about which is complete:
+- `FUNCTION_WORDS` — the finite grammatical core (pronouns,
+  determiners, prepositions, conjunctions, auxiliaries/modals, question
+  words). Enumerable and complete; none are names except the modals
+  Will/May.
+- `CARD_OPENERS` — the open lexical class (imperative verbs, situation
+  nouns, discourse markers). Best-effort, kept complete by
+  `scripts/audit-openers.mjs` plus the one retry. ~39 reviewed safe
+  openers were added from the audit (Help/Use/Know…,
+  Time/People/Business…, Personally/Frankly/Hopefully…).
+
+`SENTENCE_OPENERS` is the union and drives both `scanEntities` and
+`maskReference`. The bounded name-leak surface is exactly
+**{Will, May, Hope}** — frequent legitimate openers that double as given
+names ("Will you…", "May I…", "Hope you're well"); exempt at sentence
+start, flagged mid-sentence. `npm run audit:openers -- --check` fails if
+that surface ever grows. The audit's precision name set is raw corpus
+frequency minus a no-names frequency list (509 corpus-curated names);
+broad name lists (forbes/Unix propernames) were dropped because they
+inject junk ("the", "think", "just", "my") that would mislabel the
+surface.
+
+Versions: tool **0.4.13** (`executa.json`, `pyproject.toml`, plugin
+`VERSION`, regenerated `manifest.json`), app **0.4.11** (`app.json`,
+whose description now says "a count, a day, a time or a name you did not
+write"). Local gates: `npm test` (smoke + 157 unit) green, `test_plan`
+20 green, `anna-app validate --strict` clean (one pre-existing
+retired-field warning), `audit:openers --check` exit 0 (surface
+{Hope, May, Will}), browser QA **38/38** — a new case drives the
+window's own model to draft an invented name and asserts the field is
+blanked after one retry while the clean fields survive. New fixtures:
+`fact_scan` name cases (invented at sentence start and mid-sentence,
+grounded reuse, case-insensitive grounding, name+count together) and
+`mask_reference` sentence-initial-name masked.
+
+Still local and unpublished. Outstanding, in order: the tier-3
+fresh-install Cloud Agent checklist against v0.4.11 (the reviewer's
+three-projects sentence must save a card with no invented name), then
+the **Brume Executa Binaries** workflow for tool 0.4.13, `anna-app apps
+publish --bump patch`, and `anna-app apps submit-review brume` to move
+the review pin off v0.4.2.

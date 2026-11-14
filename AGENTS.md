@@ -52,10 +52,14 @@ Rules:
 - `bundle/plan.js` and `executas/brume/brume_plugin.py` share one contract;
   change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
   owns the second contract — the fact vocabulary, the faithfulness spans,
-  the deadline-day question and `maskReference` — covered by the `faithfulness`,
+  the entity gate (`scanEntities` + the closed `FUNCTION_WORDS` / audited
+  `CARD_OPENERS` opener sets, which also drive `maskReference`), the
+  deadline-day question and `maskReference` — covered by the `faithfulness`,
   `fact_scan`, `deadline_day` and `mask_reference` sections of the same
   fixture; the plugin no longer ports the scanner (the window owns the
-  gate).
+  gate). `scripts/audit-openers.mjs --check` guards the opener name-leak
+  surface {Will, May, Hope}; corpus frequency is an offline audit signal
+  only, never a runtime opener signal (it is saturated with proper names).
 - **A card's facts are never model-written — and its prose is
   model-composed in the window.** Every tool argument is model-written
   and the protocol offers no transcript to check it against, so
@@ -423,22 +427,31 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
 
 - Conversation preparation is the primary result. `bundle/preparation.js`
   blanks a factual span — counts and vague counts, ordinals, weekdays,
-  month names, relative days and spans, clock phrases — that is not in the
-  person's text ("the same week" normalises to "this week"), asks once
-  when a deadline is in the same week and no day was named, and hides a
-  rehearsal note that does not quote the reply. The saved card leads with
-  one sayable paragraph. **App v0.4.10 / tool 0.4.12 are published**
-  (commit `b330b19`, binaries `brume-executa-v0.4.12` all four
-  platforms checksum-verified, app cut version_id=2275,
-  executa_version=1106 — `docs/ANNA.md` §12.37): v0.4.9/0.4.11 was
-  rejected — the chat path produced no AI card at all: person-typed
-  fields were a storage write with no `llm.complete`, and masked
-  reference still showed names like "Priya". Now `brume_prepare` is a
-  pure relay (no draft parameters), the window shows the relay masked
-  via `maskReference`, the person writes the situation, and the
+  month names, relative days and spans, clock phrases — and an invented
+  name (the entity gate) that is not in the person's text ("the same
+  week" normalises to "this week"), asks once when a deadline is in the
+  same week and no day was named, and hides a rehearsal note that does
+  not quote the reply. The saved card leads with one sayable paragraph.
+  **App v0.4.10 / tool 0.4.12 are published** (commit `b330b19`, binaries
+  `brume-executa-v0.4.12` all four platforms checksum-verified, app cut
+  version_id=2275, executa_version=1106 — `docs/ANNA.md` §12.37):
+  v0.4.9/0.4.11 was rejected — the chat path produced no AI card at all:
+  person-typed fields were a storage write with no `llm.complete`, and
+  masked reference still showed names like "Priya". Now `brume_prepare`
+  is a pure relay (no draft parameters), the window shows the relay
+  masked via `maskReference`, the person writes the situation, and the
   window's own model call drafts the card — identical to the in-app
-  Prepare pipeline. Remaining: tier-3 fresh-install Cloud Agent run,
-  then `apps submit-review`.
+  Prepare pipeline. **Local candidate app v0.4.11 / tool 0.4.13**
+  (`docs/ANNA.md` §12.38, unpublished) closes the name class: the entity
+  gate (`scanEntities`) blanks a draft field naming someone the person
+  did not write, `maskReference` masks a name even at sentence start
+  (only the closed `FUNCTION_WORDS` / audited `CARD_OPENERS` openers
+  survive), and the plugin describe keeps the visible chat reply to
+  "opening the window". A frequency-list opener inversion was prototyped
+  and rejected (corpus lists leak proper names); frequency is offline
+  audit only (`scripts/audit-openers.mjs --check`, surface {Will, May,
+  Hope}). Remaining: tier-3 fresh-install Cloud Agent run, binaries
+  workflow for 0.4.13, `apps publish`, then `apps submit-review`.
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -451,6 +464,8 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   test/mascot.mjs test/arrive.mjs`. Browser QA via `test/browser-qa.mjs`
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
-  Published as app v0.4.10 / tool 0.4.12 (binaries
-  `brume-executa-v0.4.12`); tier-3 fresh-install run and resubmit
-  outstanding.
+  Opener audit: `npm run audit:openers -- --check` (name-leak surface
+  stays {Will, May, Hope}). Published as app v0.4.10 / tool 0.4.12
+  (binaries `brume-executa-v0.4.12`); local candidate v0.4.11 / 0.4.13
+  (entity gate) — tier-3 fresh-install run, 0.4.13 binaries, publish and
+  resubmit outstanding.

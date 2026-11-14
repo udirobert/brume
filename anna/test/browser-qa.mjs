@@ -798,6 +798,35 @@ try {
     assert.equal(cardText.includes("Priya"), false, "relay name reached the card");
   });
 
+  await ok("brume_prepare handoff: an invented name in the draft is withheld", async () => {
+    // The window's own model drafts a name the person never wrote. The
+    // entity gate blanks that field after one retry, exactly like an
+    // invented count, while the clean fields survive.
+    await cli("open", "about:blank");
+    await sleep(400);
+    await post("/__reset");
+    await post("/__entry", { payload: { mode: "ready", context: "Timeline pushback" } });
+    await cli("open", BASE);
+    await sleep(1200);
+    await ev('document.getElementById("prep-event").value = "I need to push back on the timeline this week."');
+    await ev('document.getElementById("prep-event").dispatchEvent(new Event("input", {bubbles:true}))');
+    await sleep(300);
+    const invented = JSON.stringify({ kind: "plan",
+      opening: "Tell Priya the extra project can move.",
+      keyPoint: "The timeline needs more room.",
+      approach: "Start from the shared goal.",
+      objection: "What makes this hard?",
+      response: "I can adjust the scope.",
+      nextStep: "Can we look at it this week?" });
+    await post("/__script", { responses: [{ text: invented }, { text: invented }] });
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(1500);
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    assert.equal(await ev('document.getElementById("prep-opening").value'), "", "invented name not withheld");
+    assert.equal(await ev('document.getElementById("prep-nextstep").value'), "Can we look at it this week?");
+    assert.equal((await post("/__dump")).llmCalls.length, 2, "gate did not retry once");
+  });
+
   await ok("startup visible while connect hangs; failure retries once", async () => {
     await cli("open", "about:blank");
     await sleep(400);

@@ -68,7 +68,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.12"
+VERSION = "0.4.13"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -155,9 +155,9 @@ MANIFEST: dict[str, Any] = {
     "version": VERSION,
     "description": (
         "Conversation preparation — Brume's primary result is a saved card. "
-        "brume_prepare drafts the card from what the user said and opens the "
-        "window, where the person writes every part of it and the card is "
-        "saved from their own words. brume_reset starts a "
+        "brume_prepare relays what the user said and opens the window, where "
+        "the person writes the situation in their own words and the card is "
+        "drafted from those words and saved. brume_reset starts a "
         "short guided break; brume_complete saves its record when the user "
         "says done."
     ),
@@ -177,7 +177,10 @@ MANIFEST: dict[str, Any] = {
                 "with it. The window shows your reading as a masked suggestion; "
                 "the person writes the situation in their own words and the card "
                 "is drafted from their words and saved there. You supply no card "
-                "content — never write the card's facts yourself."
+                "content — never write the card's facts yourself. In your visible "
+                "chat reply, say only that you are opening the window — do not "
+                "restate counts, days, times, or names from what the user said; "
+                "the person writes the details there."
             ),
             "timeout": 10,
             "parameters": [

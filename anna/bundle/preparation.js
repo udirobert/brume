@@ -252,14 +252,28 @@ function isGrounded(fact, src) {
   return false;
 }
 
-/** Counts, weekdays, dates, and clock times. Number words inside hyphenated compounds (one-on-one) are ignored. */
+/** Counts, weekdays, dates, clock times — and names. Number words inside hyphenated compounds (one-on-one) are ignored. A capitalised token that is not an allowed sentence opener and is not in the person's words is an invented name, withheld like an ungrounded count. */
 export function ungroundedSpans(candidate, source) {
   const src = sourceFacts(source);
+  const words = sourceWords(source);
   const found = [];
   for (const fact of scanFacts(candidate)) {
     if (!isGrounded(fact, src)) found.push(fact.token);
   }
-  return [...new Set(found)];
+  for (const ent of scanEntities(candidate)) {
+    if (!words.has(ent.token.toLowerCase())) found.push(ent.token);
+  }
+  // A fact word ("Friday") is also a capitalised token; the fact span is
+  // pushed first, so case-insensitive dedup keeps it and drops the name dupe.
+  const seen = new Set();
+  const out = [];
+  for (const token of found) {
+    const key = token.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(token);
+  }
+  return out;
 }
 
 export function faithfulnessIssues(fields, source, keys) {
@@ -290,11 +304,13 @@ const FACT_LABELS = {
 };
 
 function spanKind(span) {
-  const text = String(span || "").toLowerCase();
+  const raw = String(span || "");
+  const text = raw.toLowerCase();
   if (WEEKDAYS.includes(text)) return "weekday";
   if (MONTHS.includes(text) || /^\d{1,2}(st|nd|rd|th)$/.test(text)) return "date";
   if (/\d:\d|\b[ap]\.?m\b|\bat\b/.test(text) || timeSpans(text).length > 0) return "time";
   if (REL_DAY_WORDS.includes(text) || phraseSpans(text).length > 0) return "time";
+  if (/^[A-Z]/.test(raw)) return "name";
   return "count";
 }
 
@@ -314,6 +330,159 @@ export function groundedSpans(candidate, source) {
     if (isGrounded(fact, src)) kept.push(fact.token);
   }
   return [...new Set(kept)];
+}
+
+// --- Entity gate -----------------------------------------------------------
+// A card may only name people the person named. The fact scanner knows
+// counts and dates, not names, so a draft that invents "Priya" passes the
+// fact gate untouched. This closes that: every capitalised token in a
+// draft field must either open the sentence with a common opener (below)
+// or appear in the person's own words. Anything else is an invented name
+// and the field is withheld, exactly like an ungrounded count. The same
+// opener sets drive maskReference, so the suggestion and the gate agree.
+//
+// The signal is a CLOSED set, deliberately: it errs toward flagging (a
+// rare opener is withheld and retried — the safe direction), never toward
+// exempting. A frequency list was prototyped as the opener signal and
+// rejected: corpus frequency lists are full of proper names (john@372,
+// sam@3386, sarah@3524…), so they would exempt invented names and leak
+// them into the saved card. See scripts/audit-openers.mjs — frequency is
+// used only OFFLINE to audit the open tier for gaps, never at runtime.
+//
+// Two tiers, honest about which is complete:
+//   FUNCTION_WORDS — the finite grammatical core (pronouns, determiners,
+//     prepositions, conjunctions, auxiliaries/modals, question words).
+//     Enumerable and complete; none are names except the modals Will/May.
+//   CARD_OPENERS — the open lexical class (imperative verbs, situation
+//     nouns, discourse markers). Best-effort and audited; the retry covers
+//     the tail. The only names here are deliberate common openers (Hope).
+// The bounded name-leak surface is exactly {Will, May, Hope}: each is a
+// frequent legitimate opener ("Will you…", "May I…", "Hope you're well"),
+// so exempting them trades a tiny sentence-initial risk for readable cards.
+
+// First-person pronouns are never names.
+const REFERENCE_KEEP = new Set(["I", "I'm", "I'll", "I've", "I'd", "I’m", "I’ll", "I’ve", "I’d"]);
+
+// The finite grammatical core. Complete by enumeration — these classes do
+// not grow. Contractions match on their base ("It's" -> "It") via isOpener.
+// Will/May are modals that double as names; that trade is documented above.
+export const FUNCTION_WORDS = new Set([
+  // pronouns + possessives + reflexives
+  "I", "Me", "My", "Mine", "Myself", "You", "Your", "Yours", "Yourself", "Yourselves",
+  "He", "Him", "His", "Himself", "She", "Her", "Hers", "Herself",
+  "It", "Its", "Itself", "We", "Us", "Our", "Ours", "Ourselves",
+  "They", "Them", "Their", "Theirs", "Themselves",
+  "This", "That", "These", "Those", "There", "Here",
+  // determiners + quantifiers
+  "The", "A", "An", "One", "Some", "Any", "No", "Every", "Each", "Either", "Neither",
+  "Both", "All", "Few", "Fewer", "Many", "Much", "More", "Most", "Several", "Enough", "Such",
+  // auxiliary + modal verbs
+  "Am", "Is", "Are", "Was", "Were", "Be", "Been", "Being",
+  "Have", "Has", "Had", "Having", "Do", "Does", "Did", "Done", "Doing",
+  "Will", "Would", "Shall", "Should", "Can", "Could", "May", "Might", "Must", "Ought", "Used",
+  // question words
+  "What", "When", "Where", "Which", "Who", "Whom", "Whose", "Why", "How",
+  // conjunctions
+  "And", "But", "Or", "Nor", "So", "Yet", "If", "Because", "Since", "While", "Whilst",
+  "After", "Before", "Once", "Until", "Unless", "Though", "Although", "Whether", "Whereas",
+  "Whenever", "Wherever",
+  // prepositions
+  "About", "Above", "Across", "After", "Against", "Along", "Among", "Around", "As", "At",
+  "Before", "Behind", "Below", "Beneath", "Beside", "Between", "Beyond", "By", "Down",
+  "During", "Except", "For", "From", "In", "Inside", "Into", "Like", "Near", "Of", "Off",
+  "On", "Onto", "Out", "Outside", "Over", "Past", "Than", "Through", "Throughout", "To",
+  "Toward", "Towards", "Under", "Underneath", "Until", "Up", "Upon", "With", "Within", "Without",
+]);
+
+// The open lexical class: imperative verbs, situation nouns, discourse
+// markers. Best-effort, kept complete by scripts/audit-openers.mjs (offline
+// frequency audit) plus the one retry. A rare opener missed here is withheld
+// and retried — never leaked. "Hope" is a discourse marker that doubles as a
+// name; the same documented trade as Will/May.
+export const CARD_OPENERS = new Set([
+  // imperative / lexical verbs that open a card line
+  "Tell", "Ask", "Say", "Keep", "Meet", "Let", "Try", "Start", "Begin", "Open",
+  "Close", "Give", "Take", "Make", "Get", "Put", "Set", "Bring", "Send", "Share",
+  "Show", "Explain", "Describe", "Suggest", "Propose", "Offer", "Request",
+  "Confirm", "Check", "Clarify", "Focus", "Lead", "End", "Follow", "Move",
+  "Hold", "Leave", "Stay", "Wait", "Pause", "Breathe", "Remember", "Consider",
+  "Think", "Look", "Listen", "Notice", "Acknowledge", "Name", "See", "Talk",
+  "Push", "Due", "Discuss", "Review", "Plan", "Schedule", "Arrange", "Prepare",
+  "Present", "Pitch", "Raise", "Mention", "Note", "Add", "Cover", "Address",
+  "Handle", "Negotiate", "Agree", "Decide", "Choose", "Pick", "Select", "Find",
+  "Build", "Create", "Write", "Draft", "Read", "Call", "Email", "Message",
+  "Contact", "Reach", "Invite", "Join", "Attend", "Cancel", "Reschedule",
+  "Postpone", "Delay", "Defer", "Split", "Divide", "Assign", "Delegate",
+  "Escalate", "Flag", "Highlight", "Emphasize", "Stress", "Summarize", "Recap",
+  "Wrap", "Finish", "Complete", "Submit", "Deliver", "Ship", "Launch", "Release",
+  "Update", "Revise", "Edit", "Adjust", "Change", "Modify", "Improve", "Fix",
+  "Resolve", "Solve", "Answer", "Reply", "Respond", "Walk", "Run", "Stand",
+  "Sit", "Feel", "Hear", "Speak", "State", "Express", "Voice", "Recommend",
+  "Advise", "Guide", "Direct", "Manage", "Organize", "Organise", "Coordinate",
+  "Align", "Verify", "Validate", "Test", "Measure", "Track", "Monitor", "Watch",
+  "Observe", "Reflect", "Rest", "Relax", "Slow", "Stop", "Continue", "Proceed",
+  "Resume", "Return", "Come", "Go", "Maintain", "Preserve", "Protect", "Save",
+  "Store", "Record", "Log", "Document", "Report", "Define", "Outline", "Detail",
+  "Specify", "Identify", "Recognize", "Appreciate", "Value", "Respect", "Trust",
+  "Believe", "Wish", "Want", "Need", "Prefer",
+  // verbs added from the offline opener audit (common, not names)
+  "Help", "Use", "Know", "Support", "Order", "List", "View", "Include",
+  "Apologize", "Reassure", "Empathize",
+  // situation nouns that open a relay ("Interview tomorrow", "Meeting with…")
+  "Interview", "Meeting", "Panel", "Conversation", "Discussion", "Chat", "Sync",
+  "Standup", "Presentation", "Negotiation", "Demo", "Workshop", "Session",
+  "Briefing", "Debrief", "Hearing", "Appeal", "Mediation", "Debate", "Status",
+  "Planning", "Strategy", "Budget", "Salary", "Promotion", "Feedback",
+  "Performance", "Appraisal", "Confrontation", "Argument", "Exchange",
+  "Follow-up", "Catch-up", "Check-in",
+  // situation nouns added from the offline opener audit (common, not names)
+  "Time", "People", "Business", "Management", "Group", "Company", "Program",
+  "Research", "Information", "Audit", "Assessment", "Evaluation", "Arbitration", "Tribunal",
+  // discourse markers, greetings, common adverbs/adjectives
+  "Thank", "Thanks", "Please", "Sorry", "Hi", "Hey", "Hello", "Welcome",
+  "Then", "Next", "First", "Finally", "Also", "Now", "Maybe", "Perhaps",
+  "Yes", "Not", "Never", "Always", "Sometimes", "Often", "Still", "Even",
+  "Just", "Only", "Good", "Great", "Nice", "Hope", "Well", "Sure", "Right",
+  "Okay", "Honestly", "Actually", "Basically", "Clearly", "Obviously", "Really",
+  // discourse markers added from the offline opener audit (not names)
+  "Top", "Full", "Personally", "Frankly", "Surely", "Certainly", "Hopefully",
+  "Fortunately", "Thankfully", "Unfortunately", "Sadly", "Interestingly", "Importantly",
+]);
+
+const SENTENCE_OPENERS = new Set([...FUNCTION_WORDS, ...CARD_OPENERS]);
+
+function opensSentence(text, offset) {
+  const before = String(text).slice(0, offset);
+  return !before.trim() || /[.!?…,;:]\s*$/.test(before);
+}
+
+// An allowed opener, matching contractions on their base ("It's" -> "It").
+function isOpener(word) {
+  if (SENTENCE_OPENERS.has(word)) return true;
+  const base = word.split(/['’]/)[0];
+  return base !== word && SENTENCE_OPENERS.has(base);
+}
+
+// Capitalised tokens that are not first-person pronouns and not allowed
+// sentence openers — candidate names, with the span they occupy.
+export function scanEntities(text) {
+  const src = String(text || "");
+  const out = [];
+  for (const m of src.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+    const word = m[0];
+    if (!/^[A-Z]/.test(word) || word.length < 2 || REFERENCE_KEEP.has(word)) continue;
+    if (opensSentence(src, m.index) && isOpener(word)) continue;
+    out.push({ kind: "name", token: word, start: m.index, end: m.index + word.length });
+  }
+  return out;
+}
+
+function sourceWords(text) {
+  const out = new Set();
+  for (const m of String(text || "").matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+    out.add(m[0].toLowerCase());
+  }
+  return out;
 }
 
 const DAYISH_RE = new RegExp(
@@ -350,9 +519,10 @@ export function scheduleQuestion(source) {
 // check it against. Model text is therefore never the card's source and
 // is never shown raw: on screen it appears only through maskReference,
 // which hides every scanned fact AND every capitalised token that is not
-// a sentence start (names like "Priya" are not facts the scanner knows,
-// but they are still the model's words). scanFacts stays the shared
-// fact vocabulary (the faithfulness gate uses it).
+// an allowed sentence opener (names like "Priya" are not facts the scanner
+// knows, but they are still the model's words). A name that opens a line
+// masks too — only the closed opener set survives. scanFacts stays the
+// shared fact vocabulary (the faithfulness gate uses it).
 
 // The text with every asserted fact masked.
 export function maskFacts(text) {
@@ -365,19 +535,16 @@ export function maskFacts(text) {
   return out.replace(/\s+/g, " ").trim();
 }
 
-const REFERENCE_KEEP = new Set(["I", "I'm", "I'll", "I've", "I'd"]);
-
 // Model prose safe to show as reference: facts masked, and capitalised
-// words masked too unless they open a sentence — the remaining capitals
-// mid-sentence are names or inventions the fact scanner cannot know.
+// words masked too unless they open a sentence with an allowed opener.
 // Only real sentence boundaries keep a capital: a quote or bracket does
-// not, so '(Priya' and '"Priya' mask like any other name.
+// not, so '(Priya' and '"Priya' mask like any other name — and so does a
+// name that opens the line ("Priya needs…"), which is not an opener.
 export function maskReference(text) {
   const body = maskFacts(text);
   return body.replace(/[A-Za-z][A-Za-z'’-]*/g, (word, offset) => {
     if (!/^[A-Z]/.test(word) || word.length < 2 || REFERENCE_KEEP.has(word)) return word;
-    const before = body.slice(0, offset);
-    if (!before.trim() || /[.!?…,;:]\s*$/.test(before)) return word;
+    if (opensSentence(body, offset) && isOpener(word)) return word;
     return "…";
   });
 }

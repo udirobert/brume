@@ -6,7 +6,8 @@
   "description": "Brume — Anna App. Primary function is conversation preparation. Isolated from the root app toolchain.",
   "scripts": {
     "test": "node test/smoke.mjs && node --test test/preparation.mjs test/recovery.mjs test/session-storage.mjs test/experience.mjs test/mascot.mjs test/arrive.mjs",
-    "test:browser": "node test/browser-qa.mjs"
+    "test:browser": "node test/browser-qa.mjs",
+    "audit:openers": "node scripts/audit-openers.mjs"
   },
   "devDependencies": {
     "@anna-ai/cli": "^0.1.64"

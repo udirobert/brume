@@ -770,6 +770,55 @@
    "expect": [
     "this week"
    ]
+  },
+  {
+   "name": "reviewer: invented name",
+   "source": "I manage 3 projects and I added one deadline in the same week.",
+   "candidate": "Tell Priya the extra project can move",
+   "expect": [
+    "Priya"
+   ]
+  },
+  {
+   "name": "invented name opens the line",
+   "source": "I have a review coming up.",
+   "candidate": "Priya needs the update",
+   "expect": [
+    "Priya"
+   ]
+  },
+  {
+   "name": "grounded name reused",
+   "source": "I told Priya about the deadline.",
+   "candidate": "Tell Priya the plan",
+   "expect": []
+  },
+  {
+   "name": "name grounded case-insensitive",
+   "source": "I told priya about it.",
+   "candidate": "Priya will hear the plan",
+   "expect": []
+  },
+  {
+   "name": "allowlisted opener is not a name",
+   "source": "I have a review coming up.",
+   "candidate": "Can we talk about the review?",
+   "expect": []
+  },
+  {
+   "name": "first-person is not a name",
+   "source": "I have a review.",
+   "candidate": "I'm ready to talk",
+   "expect": []
+  },
+  {
+   "name": "invented name and count together",
+   "source": "I manage 3 projects.",
+   "candidate": "Tell Priya about the four projects",
+   "expect": [
+    "four",
+    "Priya"
+   ]
   }
  ],
  "deadline_day": [
@@ -1111,9 +1160,19 @@
    "expect": "Meet … at … about the deadline."
   },
   {
-   "name": "name mid-sentence masked, sentence start kept",
+   "name": "name masked even at sentence start",
    "text": "Priya asked about the deadline. Tell Sam it moved.",
-   "expect": "Priya asked about the deadline. Tell … it moved."
+   "expect": "… asked about the deadline. Tell … it moved."
+  },
+  {
+   "name": "sentence-initial name masked",
+   "text": "Priya needs the update on Friday.",
+   "expect": "… needs the update on …."
+  },
+  {
+   "name": "allowlisted opener kept",
+   "text": "Can we look at staffing this week?",
+   "expect": "Can we look at staffing …?"
   },
   {
    "name": "quoted name still masked",
@@ -1129,6 +1188,11 @@
    "name": "first-person pronoun kept",
    "text": "I think I'm ready for Friday.",
    "expect": "I think I'm ready for …."
+  },
+  {
+   "name": "curly first-person pronoun kept",
+   "text": "I’m ready for Friday.",
+   "expect": "I’m ready for …."
   }
  ]
 }

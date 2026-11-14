@@ -22,6 +22,9 @@ const {
   SCHEDULE_QUESTION,
   quotesReply,
   sayableParagraph,
+  scanEntities,
+  FUNCTION_WORDS,
+  CARD_OPENERS,
 } = await import(join(here, "..", "bundle", "preparation.js"));
 
 const PLAN = {
@@ -239,6 +242,106 @@ test("three matches a digit 3, and one-on-one is not a count", () => {
   const source = "I manage 3 projects.";
   assert.deepEqual(faithfulnessIssues({ opening: "I manage three projects." }, source, ["opening"]), []);
   assert.deepEqual(faithfulnessIssues({ opening: "Let's have a one-on-one." }, source, ["opening"]), []);
+});
+
+test("reviewer case: an invented name is withheld like an invented count", () => {
+  const source = preparationSource({ event: REVIEW_SOURCE, goal: "Keep the week workable" });
+  const plan = {
+    opening: "Tell Priya the extra project can move.",
+    keyPoint: "I manage 3 projects and one new deadline.",
+    approach: "Start from the week as it is.",
+    objection: "What makes this hard?",
+    response: "I can move the one deadline I added.",
+    nextStep: "Can we look at it this week?",
+  };
+  const issues = faithfulnessIssues(plan, source, PLAN_FACT_FIELDS);
+  assert.deepEqual(issues, [{ field: "opening", spans: ["Priya"] }]);
+  const kept = withholdUngrounded(plan, issues);
+  assert.equal(kept.opening, "");
+  assert.equal(kept.keyPoint, plan.keyPoint);
+  assert.match(faithfulnessMessage(issues), /Opening added a name you didn't write/);
+});
+
+test("a name the person wrote is grounded; openers and I are not names", () => {
+  const named = preparationSource({ event: "I told Priya about the deadline." });
+  assert.deepEqual(faithfulnessIssues({ opening: "Tell Priya the plan." }, named, ["opening"]), []);
+  assert.deepEqual(faithfulnessIssues({ opening: "Priya needs the update." }, named, ["opening"]), []);
+  const plain = preparationSource({ event: "I have a review coming up." });
+  assert.deepEqual(faithfulnessIssues({ opening: "Can we talk about the review?" }, plain, ["opening"]), []);
+  assert.deepEqual(faithfulnessIssues({ opening: "I'm ready to talk." }, plain, ["opening"]), []);
+  assert.deepEqual(faithfulnessIssues({ opening: "Priya needs the update." }, plain, ["opening"]), [
+    { field: "opening", spans: ["Priya"] },
+  ]);
+});
+
+test("the closed FUNCTION_WORDS class opens a line without being a name", () => {
+  // The grammatical core is finite and complete; a removed pronoun, modal,
+  // question word or preposition would regress here.
+  const closedClass = [
+    "I", "Me", "My", "We", "Us", "Our", "You", "Your", "He", "Him", "His",
+    "She", "Her", "It", "Its", "They", "Them", "Their", "This", "That", "These", "Those",
+    "Can", "Could", "Will", "Would", "Shall", "Should", "May", "Might", "Must",
+    "Is", "Are", "Was", "Were", "Am", "Be", "Been", "Being",
+    "Have", "Has", "Had", "Having", "Do", "Does", "Did", "Done",
+    "What", "When", "Where", "Which", "Who", "Whom", "Whose", "Why", "How",
+    "And", "But", "Or", "Nor", "If", "Because", "Since", "While", "Although", "Unless",
+    "To", "For", "With", "Without", "About", "On", "In", "At", "By", "From", "Of", "As",
+    "The", "An", "Some", "Any", "Every", "Each", "Both", "All", "Many", "Much", "Several",
+  ];
+  for (const w of closedClass) {
+    const names = scanEntities(`${w} we look at the plan.`).map((e) => e.token);
+    assert.equal(names.includes(w), false, `function word "${w}" flagged as a name`);
+  }
+  for (const w of FUNCTION_WORDS) {
+    const names = scanEntities(`${w} the rest of the line.`).map((e) => e.token);
+    assert.equal(names.includes(w), false, `FUNCTION_WORDS entry "${w}" not exempt at start`);
+  }
+});
+
+test("invented names are withheld at sentence start and mid-sentence", () => {
+  const source = preparationSource({ event: "I have a review coming up." });
+  const names = ["Priya", "Aisha", "Wei", "Yuki", "Marcus", "Jamal", "Sofia", "Mateo",
+    "Sarah", "John", "David", "Michael", "Mary", "Anna", "Jessica", "Rachel", "Robert",
+    "James", "Linda", "Patricia", "Jennifer", "Elizabeth", "Susan", "Karen", "Lisa"];
+  for (const n of names) {
+    assert.deepEqual(
+      faithfulnessIssues({ opening: `${n} needs the update.` }, source, ["opening"]),
+      [{ field: "opening", spans: [n] }], `${n} at sentence start`);
+    assert.deepEqual(
+      faithfulnessIssues({ opening: `Tell ${n} the plan.` }, source, ["opening"]),
+      [{ field: "opening", spans: [n] }], `${n} mid-sentence`);
+  }
+});
+
+test("the name-leak surface is exactly the documented openers Hope/May/Will", () => {
+  // These three are frequent legitimate openers that double as given names:
+  // exempt at sentence start, flagged mid-sentence. Every OTHER common given
+  // name must be flagged even at sentence start — so accidentally adding a
+  // name to the opener sets fails here. The comprehensive guard against the
+  // corpus name set is scripts/audit-openers.mjs --check.
+  const documented = new Set(["Hope", "May", "Will"]);
+  const names = ["Hope", "May", "Will", "Priya", "Aisha", "Wei", "Marcus", "Sarah",
+    "John", "David", "Michael", "Mary", "Anna", "Jessica", "Rachel", "Robert", "James",
+    "Linda", "Patricia", "Jennifer", "Elizabeth", "Susan", "Karen", "Lisa", "Nancy",
+    "Betty", "Margaret", "Sandra", "Ashley", "Kimberly", "Emily", "Donna", "Michelle",
+    "Carol", "Amanda", "Dorothy", "Melissa", "Deborah", "Stephanie", "Rebecca", "Sharon",
+    "Laura", "Cynthia", "Kathleen", "Amy", "Angela", "Shirley", "Brenda", "Pamela",
+    "Emma", "Nicole", "Helen", "Samantha", "Katherine", "Christine", "Debra", "Carolyn",
+    "Janet", "Catherine", "Maria", "Heather", "Diane", "Olivia", "Julie", "Joyce",
+    "Victoria", "Ruth", "Virginia", "Lauren", "Kelly", "Christina", "Joan", "Evelyn",
+    "Judith", "Andrea", "Hannah", "Megan", "Cheryl", "Jacqueline", "Martha", "Madison",
+    "Teresa", "Gloria", "Sara", "Janice", "Ann", "Jean", "Abigail", "Alice", "Judy",
+    "Sophia", "Grace", "Denise", "Amber", "Doris", "Marilyn", "Danielle", "Beverly",
+    "Isabella", "Theresa", "Diana", "Natalie", "Brittany", "Charlotte", "Marie", "Kayla", "Alexis"];
+  for (const n of names) {
+    const mid = scanEntities(`Tell ${n} the plan.`).map((e) => e.token);
+    assert.equal(mid.includes(n), true, `${n} mid-sentence must be a name candidate`);
+    const start = scanEntities(`${n} needs the update.`).map((e) => e.token);
+    assert.equal(start.includes(n), !documented.has(n),
+      `${n} at sentence start: ${documented.has(n) ? "documented opener, exempt" : "must be flagged"}`);
+  }
+  const allow = new Set([...FUNCTION_WORDS, ...CARD_OPENERS]);
+  assert.deepEqual(names.filter((n) => allow.has(n)).sort(), ["Hope", "May", "Will"]);
 });
 
 test("rehearsal checks the reply, not the earlier draft", () => {

@@ -53,13 +53,16 @@ Rules:
   change both and cover it in `test/plan-cases.json`. `bundle/preparation.js`
   owns the second contract — the fact vocabulary, the faithfulness spans,
   the entity gate (`scanEntities` + the closed `FUNCTION_WORDS` / audited
-  `CARD_OPENERS` opener sets, which also drive `maskReference`), the
-  deadline-day question and `maskReference` — covered by the `faithfulness`,
-  `fact_scan`, `deadline_day` and `mask_reference` sections of the same
-  fixture; the plugin no longer ports the scanner (the window owns the
-  gate). `scripts/audit-openers.mjs --check` guards the opener name-leak
-  surface {Will, May, Hope}; corpus frequency is an offline audit signal
-  only, never a runtime opener signal (it is saturated with proper names).
+  `CARD_OPENERS` opener sets, which also drive `maskReference`), the role
+  gate (`scanRoles` + `ROLE_NOUNS` — a possessive addressee "your manager"
+  grounded like a name; deliberately narrow, not a blanket role-noun gate),
+  the deadline-day question and `maskReference` — covered by the
+  `faithfulness`, `fact_scan`, `deadline_day` and `mask_reference` sections
+  of the same fixture; the plugin no longer ports the scanner (the window
+  owns the gate). `scripts/audit-openers.mjs --check` guards the opener
+  name-leak surface {Will, May, Hope}; corpus frequency is an offline audit
+  signal only, never a runtime opener signal (it is saturated with proper
+  names).
 - **A card's facts are never model-written — and its prose is
   model-composed in the window.** Every tool argument is model-written
   and the protocol offers no transcript to check it against, so
@@ -441,17 +444,25 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   is a pure relay (no draft parameters), the window shows the relay
   masked via `maskReference`, the person writes the situation, and the
   window's own model call drafts the card — identical to the in-app
-  Prepare pipeline. **Local candidate app v0.4.11 / tool 0.4.13**
-  (`docs/ANNA.md` §12.38, unpublished) closes the name class: the entity
-  gate (`scanEntities`) blanks a draft field naming someone the person
-  did not write, `maskReference` masks a name even at sentence start
-  (only the closed `FUNCTION_WORDS` / audited `CARD_OPENERS` openers
-  survive), and the plugin describe keeps the visible chat reply to
-  "opening the window". A frequency-list opener inversion was prototyped
-  and rejected (corpus lists leak proper names); frequency is offline
-  audit only (`scripts/audit-openers.mjs --check`, surface {Will, May,
-  Hope}). Remaining: tier-3 fresh-install Cloud Agent run, binaries
-  workflow for 0.4.13, `apps publish`, then `apps submit-review`.
+  Prepare pipeline. **Local candidate app v0.4.12 / tool 0.4.13**
+  (`docs/ANNA.md` §12.38–12.39, unpublished) closes the name class and
+  the invented-addressee class: the entity gate (`scanEntities`) blanks a
+  draft field naming someone the person did not write, `maskReference`
+  masks a name even at sentence start (only the closed `FUNCTION_WORDS` /
+  audited `CARD_OPENERS` openers survive), and the plugin describe keeps
+  the visible chat reply to "opening the window". The role gate
+  (`scanRoles` + `ROLE_NOUNS`) blanks a possessive addressee the person
+  did not state ("your manager"), grounded like a name; a blanket
+  role-noun gate was prototyped and rejected (~33% false positives, it
+  blanked "the current team"), so the signal is the narrow possessive
+  subset (~7%). Bounded by design: non-possessive roles ("a colleague")
+  and motives pass, and the user-facing claim stays facts + names — the
+  role tier is internal defense-in-depth, not a promised guarantee. A
+  frequency-list opener inversion was also prototyped and rejected
+  (corpus lists leak proper names); frequency is offline audit only
+  (`scripts/audit-openers.mjs --check`, surface {Will, May, Hope}).
+  Remaining: tier-3 fresh-install Cloud Agent run, binaries workflow for
+  0.4.13, `apps publish`, then `apps submit-review`.
 - `bundle/recovery.js` checkpoints one active task to
   `brume/active-task` and validates per-flow data on load/save; reset and
   preparation restore their exact screen paused, a live alert test always
@@ -466,6 +477,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
   Opener audit: `npm run audit:openers -- --check` (name-leak surface
   stays {Will, May, Hope}). Published as app v0.4.10 / tool 0.4.12
-  (binaries `brume-executa-v0.4.12`); local candidate v0.4.11 / 0.4.13
-  (entity gate) — tier-3 fresh-install run, 0.4.13 binaries, publish and
-  resubmit outstanding.
+  (binaries `brume-executa-v0.4.12`); local candidate v0.4.12 / 0.4.13
+  (entity + role gate) — tier-3 fresh-install run, 0.4.13 binaries, publish
+  and resubmit outstanding.

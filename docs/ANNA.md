@@ -1925,3 +1925,79 @@ three-projects sentence must save a card with no invented name), then
 the **Brume Executa Binaries** workflow for tool 0.4.13, `anna-app apps
 publish --bump patch`, and `anna-app apps submit-review brume` to move
 the review pin off v0.4.2.
+
+### 12.39 The gate learns addressees — app 0.4.12, tool 0.4.13 (candidate)
+
+§12.38 closed the capitalised-name hole, and a reviewer pressed on what
+it left open: a card can still invent a *lowercase* person. "Tell your
+manager the extra project can move" asserts a specific addressee the
+person never stated, and the name gate cannot see it — "manager" is not
+capitalised, so `scanEntities` skips it and the field saves untouched.
+The same critique named three other surfaces, and the honest answer
+splits them into what a span scanner can close and what it cannot.
+
+The fix is a **role gate** beside the name gate, deliberately narrow.
+`scanRoles` (preparation.js) matches a possessive determiner + a role
+noun — "your manager", "my boss", "their client" — against a closed
+`ROLE_NOUNS` vocabulary, and `ungroundedSpans` grounds the role against
+the person's typed words exactly like a name (tolerant of plural and
+possessive 's, so "your managers" is grounded when the person wrote
+"manager"). `spanKind` labels it `role`, so the message reads "Opening
+added a role you didn't write." The prompts name the rule ("Do not
+assign an addressee role the person did not state") and the retry
+strings carry it.
+
+The ambitious part, again, is a rejection measured against the fixtures.
+A **blanket role-noun gate** — flag any role noun not in the source — was
+prototyped first and blanked ~33% of legitimate cards, including this
+app's own test plan ("the current team", "the same team"): role nouns
+are common nouns, so a closed vocabulary over-withholds the generic
+groups a card legitimately uses. The **possessive subset** is the
+high-precision signal — a specific addressee ("your manager"), not a
+generic group ("the team") — and measured ~7% false positives with zero
+fixture regressions and the test plan intact. So the blanket tier was
+reversed out and the narrow one shipped. "head" and "report" were
+dropped from `ROLE_NOUNS` for the same precision reason ("your report"
+is a document, "your head" a body part, not a person).
+
+What stays **bounded**, written down rather than promised away:
+- Non-possessive roles ("a colleague", "the stakeholder") and motives
+  ("because they are behind schedule") still pass. Motives are open
+  prose no span scanner can ground; the prompt and the person's review
+  carry them. The role gate is internal defense-in-depth, not a complete
+  role guarantee.
+- The user-facing claim stays the **absolute classes** — "a count, a day,
+  a time or a name you did not write" (app.json unchanged). The role tier
+  is not added to the promise: under-promise the mechanical guarantee,
+  over-deliver quietly.
+- The name-leak surface is still exactly **{Will, May, Hope}** — the
+  documented sentence-initial trade ("Hope can take the extra project"
+  keeps Hope at the start of a line). `audit:openers --check` pins it.
+- The visible **chat reply** is constrained by instruction, not by a
+  check: the relay protocol offers no transcript to verify the model's
+  bubble against, so "say only that you are opening the window" is a
+  prompt rule the card gate cannot enforce. The card is mechanically
+  gated; the bubble is prompt-bounded, and that difference is honest.
+
+Versions: app **0.4.12** (`app.json`); tool stays **0.4.13** — the gate
+change is window-only (`preparation.js`, `preparation-prompts.js`). The
+plugin's relay logic and `describe` are unchanged (a stale module
+docstring that still claimed a fact-scanner port was corrected to match
+the window-owns-the-gate architecture); the manifest is `describe`-derived,
+so no regeneration or tool bump. Local gates: `npm test` (smoke + 161
+unit) green, `test_plan` 20 green, `anna-app validate --strict` clean (one
+pre-existing retired-field warning), `audit:openers --check` exit 0
+(surface {Hope, May, Will}), browser QA **38/38**. New fixtures: 12
+`faithfulness` role cases (invented addressee at sentence start and
+mid-sentence, grounded reuse, case-insensitive grounding, generic group
+kept, non-possessive bounded miss, plural invented/grounded, singular
+grounded by plural source, name+role and count+role together, imperative
+"Lead" kept) and 4 unit tests pinning the withhold, the grounding, the
+bounded scope and `scanRoles`.
+
+Still local and unpublished. Outstanding, in order: the tier-3
+fresh-install Cloud Agent checklist against v0.4.12 (the reviewer's
+"your manager" sentence must save a card with the role withheld), then
+the **Brume Executa Binaries** workflow for tool 0.4.13, `anna-app apps
+publish --bump patch`, and `anna-app apps submit-review brume` to move
+the review pin off v0.4.2.

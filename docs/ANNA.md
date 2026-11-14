@@ -2023,6 +2023,18 @@ sentence as the whole visible reply. A model that talks before the tool
 call can still say "4" or "Friday" in the transcript. There is no
 transcript for the tool to check.
 
-Local gates: `npm test` green, `test_plan` 20 green. Still unpublished:
-binaries for tool 0.4.13, publish of app 0.4.12, the fresh-install
-Cloud Agent run, then `submit-review`.
+Local gates before publish: `npm test` green, `test_plan` 20 green.
+`smoke_binary.py` passed against the local darwin-arm64 build.
+
+Shipped the same night: commit `6c87e64` to `main`; the **Brume Executa
+Binaries** workflow (run 43548702496) built and smoked all four
+platforms and published GitHub release `brume-executa-v0.4.13`; the
+four archives were pulled into `executas/brume/dist/` and every
+`.sha256` verified. `anna-app apps publish` (no bump — `app.json`
+already declared 0.4.12) registered the bundled executa at v0.4.13,
+synced the protocol manifest, uploaded the four binary artifacts
+(`executa_version=1107`), froze the reset-offer skill at 1098
+(v1.0.1), and cut **app v0.4.12** (`version_id=2277`).
+`anna-app apps submit-review brume` moved the app to `pending_review`
+with review candidate **0.4.12**. The fresh-install Cloud Agent
+checklist was not run before that submit.

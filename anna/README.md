@@ -10,36 +10,11 @@ should treat as the product. A basic breathing plan remains available
 when the model is down. Unfinished tasks checkpoint to user storage and
 resume on reopen.
 
-Review pin (still v0.4.2 until resubmit): **v0.4.2** (version_id=1994, cut
-by `anna-app apps publish --bump patch` and re-pinned with
-`apps submit-review`; tool frozen at 0.4.5/executa_version 1012,
-reset-offer skill at 767). That pin is the review-feedback release plus
-**Arrive**: a feeling ring proposes exactly one small act — Scatter or
-Set it down — and the model writes only the invitation line. v0.4.2
-rebuilds both acts (`docs/ANNA.md` §12.25).
+Review candidate (submitted 2026-11-14, status `pending_review`): **app
+v0.4.12** (`version_id=2277`) with tool **0.4.13**
+(`executa_version=1107`). The previous review pin was v0.4.2
+(version_id=1994, tool 0.4.5 / executa_version 1012).
 
-Latest published cut: **app v0.4.10** with tool **0.4.12**
-(`docs/ANNA.md` §12.37). The
-preparation card is the primary result, and on the chat path it is now
-made by the same pipeline as the in-app button: `brume_prepare` only
-relays the situation (`situation` + stated `goal`/`key_point`/
-`preserve` — no draft parameters at all) and returns `open_window` with
-an `open_app_view` payload; the window shows the relay masked as a
-suggestion (`maskReference` — facts *and* names hidden), the person
-writes the situation in their own words, and the window's own model
-call drafts the card from it under the faithfulness gate. Three designs
-were rejected getting here: the two-step chat flow's `answers`
-parameter was model-written; masked-fact substitution still left the
-model's sentences in the card; and person-typed card fields were a
-storage write with no `llm.complete` — not a qualified run
-(`docs/ANNA.md` §12.37). Binaries **0.4.12** are published (GitHub
-release `brume-executa-v0.4.12`, all four platforms, checksums
-verified; app v0.4.10 cut, `version_id=2275`,
-`executa_version=1106`). The tier-3 fresh-install Cloud Agent run and
-resubmit are outstanding.
-
-Local candidate (unpublished until this cut's binaries and publish):
-**app v0.4.12** with tool **0.4.13** (`docs/ANNA.md` §12.38–12.40).
 The faithfulness gate withholds a count, a day, a time, a capitalised
 name, an addressee ("your manager", "the manager", "a colleague"), an
 ascribed motive ("because they are behind schedule"), and an extra
@@ -47,7 +22,11 @@ project the person did not write. "the team" stays. Will, May, and Hope
 are names unless they open "Will you", "May I", or "Hope you're".
 `brume_prepare` returns one fixed line for the chat reply. A model that
 speaks before the tool call can still restate a fact in the transcript;
-the tool has no transcript to check.
+the tool has no transcript to check. Binaries are GitHub release
+`brume-executa-v0.4.13` (workflow run 43548702496); the reset-offer
+skill stays frozen at 1098 (v1.0.1). The fresh-install Cloud Agent
+checklist was not run before this submit. Full log: `docs/ANNA.md`
+§12.40.
 
 App id 582, slug `brume`, tool id
 `tool-papa-brume-htcxvfcr`. Product context and the full progress log:

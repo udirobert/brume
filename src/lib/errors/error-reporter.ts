@@ -8,6 +8,19 @@
 import { AppError, ErrorInfo, ErrorSeverity, ErrorCategory } from './error-types';
 import * as Sentry from "@sentry/react";
 
+// The minute gift's line lives in the URL fragment; reports from that
+// room carry only origin + pathname so it can never ride along.
+function reportUrl(): string {
+  const { origin, pathname, search } = window.location;
+  if (
+    /^\/decompress\/?$/i.test(pathname) &&
+    new URLSearchParams(search).get("room") === "minute"
+  ) {
+    return origin + pathname;
+  }
+  return window.location.href;
+}
+
 export interface ErrorReportConfig {
   enableConsoleLogging: boolean;
   enableRemoteReporting: boolean;
@@ -204,7 +217,7 @@ class ErrorReporter {
   private createErrorReport(error: AppError, additionalContext?: Record<string, any>): ErrorReport {
     return {
       ...error.toErrorInfo(),
-      url: window.location.href,
+      url: reportUrl(),
       userAgent: navigator.userAgent,
       userId: this.config.userId,
       sessionId: this.sessionId,

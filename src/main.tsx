@@ -10,7 +10,10 @@ import "./polyfills";
 
 // Sentry — production only, and off the entry path: the SDK loads as its
 // own chunk after first paint so the room arrives light.
-if (import.meta.env.PROD) {
+const privateMinute =
+  /^\/decompress\/?$/i.test(window.location.pathname) &&
+  new URLSearchParams(window.location.search).get("room") === "minute";
+if (import.meta.env.PROD && !privateMinute) {
   void import("@sentry/react").then((Sentry) =>
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,

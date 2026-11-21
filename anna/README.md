@@ -10,8 +10,9 @@ should treat as the product. A basic breathing plan remains available
 when the model is down. Unfinished tasks checkpoint to user storage and
 resume on reopen.
 
-Review candidate (submitted 2026-11-14, status `pending_review`): **app
-v0.4.12** (`version_id=2277`) with tool **0.4.13**
+Review candidate (submitted 2026-11-14, rejected after reviewer
+feedback — full log `docs/ANNA.md` §12.40–12.41): **app v0.4.12**
+(`version_id=2277`) with tool **0.4.13**
 (`executa_version=1107`). The previous review pin was v0.4.2
 (version_id=1994, tool 0.4.5 / executa_version 1012).
 

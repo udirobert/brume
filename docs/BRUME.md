@@ -32,7 +32,11 @@ share it. No camera, no scores, no streaks, no account required.
    One glyph on the breath cycles its sound — **spoken → breath → quiet** — mid-session,
    no menu, each tap auditioning the texture it just switched to.
 3. Post-session: practice-time summary → "put it into words" — one honest sentence you can copy or share
-4. /decompress: two unhurried minutes, then the same check-in → words loop
+4. /decompress: a two-minute shoulder pause beside a little pond —
+   tapping Brume's pond makes one ripple and never starts the timer →
+   rest → **Done** back to Home, or **Add a word** → an optional words
+   card, shared only on request. Two tiny toys link quietly from the
+   same room (`?room=firefly`, `?room=minute`).
 
 **What turns a loop into a companion** is that step 1 accumulates: one
 device-local ledger of `(when, feeling, reason, daypart)` that the room
@@ -50,9 +54,9 @@ to prove" rules out a classifier by definition.
 | Screen | Notes |
 |---|---|
 | Onboarding | Emotional check-in; no permissions, no account |
-| Home | "How is it for you right now?" — check-in words suggest a rhythm; doors to reset and /decompress |
+| Home | "How are you feeling?" — check-in words suggest a rhythm; doors to reset and /decompress |
 | Session | Breathing animation only (no camera); one cue glyph — spoken · breath · quiet |
-| Decompress | Two-minute pause → check-in → words card |
+| Decompress | Two-minute shoulder pause at a pond (tap Brume for a ripple — it never starts anything) → rest → Done, or Add a word → optional words card, shared only on request; quiet links to two room-play toys |
 | Post-session | Practice-time summary + words card (no score or verification marks) |
 | Progress | Sessions and minutes — plain facts, no streaks shown |
 | Paywall | RevenueCat; see below |

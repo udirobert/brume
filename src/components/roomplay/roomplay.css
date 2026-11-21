@@ -1,0 +1,748 @@
+/* RoomPlay — scoped styles for the two Decompress experiments.
+   Warm ink/paper/pear tokens from anna/bundle/brand.css. */
+
+.rp-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--brume-font);
+  color: var(--brume-ink);
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--brume-paper-2), transparent),
+    var(--brume-paper);
+}
+
+.rp-shell {
+  flex: 1;
+  width: min(34rem, 100%);
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+.rp-shell--toy {
+  width: min(26rem, 100%);
+}
+
+.rp-toprow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.rp-toprow .rp-exit { margin-bottom: 0; }
+.rp-toprow .rp-sharelink { margin: 0; }
+
+.rp-sharelink--compact .rp-sharelink__row { gap: 0; }
+.rp-sharelink__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 0.4rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--brume-ink-muted);
+  cursor: pointer;
+}
+.rp-sharelink__btn:hover { color: var(--brume-ink); }
+.rp-sharelink--compact .rp-input--url {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 100%;
+  z-index: 2;
+}
+.rp-sharelink--compact { position: relative; }
+
+.rp-exit {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--brume-ink-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.rp-exit:hover { color: var(--brume-ink); }
+
+.rp-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  outline: none;
+}
+
+.rp-lede {
+  margin: 0 0 1.25rem;
+  color: var(--brume-ink-muted);
+  line-height: 1.55;
+  max-width: 30rem;
+}
+
+.rp-legend, .rp-note, .rp-hint {
+  font-size: 0.85rem;
+  color: var(--brume-ink-muted);
+  line-height: 1.5;
+}
+
+.rp-legend { margin: 0.35rem 0; }
+.rp-hint { display: block; margin-top: 0.3rem; font-size: 0.8rem; }
+
+.rp-eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--brume-ink-muted);
+}
+
+.rp-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rp-sharelink { margin: 1rem 0; }
+.rp-sharelink__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.rp-sharelink__manual {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0.5rem 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--brume-ink-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rp-sharelink__manual:hover { color: var(--brume-ink); }
+.rp-sharelink .rp-input--url { margin-top: 0.5rem; }
+
+.rp-send { margin-top: 1rem; }
+
+.rp-status {
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.rp-field {
+  display: block;
+  margin: 1rem 0;
+}
+.rp-field__label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brume-ink-muted);
+  margin-bottom: 0.35rem;
+}
+.rp-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  font: inherit;
+  color: var(--brume-ink);
+  background: var(--brume-card);
+  border: 1px solid var(--brume-rule);
+  border-radius: var(--brume-radius);
+}
+.rp-input:focus-visible {
+  outline: 2px solid var(--brume-primary);
+  outline-offset: 2px;
+}
+.rp-input[aria-invalid="true"] {
+  border-color: var(--brume-coral, oklch(62% 0.16 40));
+}
+.rp-input--url {
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.rp-verbs, .rp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.rp-verbs .brume-btn, .rp-actions .brume-btn {
+  min-height: 44px;
+}
+.rp-verbs {
+  flex-wrap: nowrap;
+}
+.rp-verbs .brume-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* --- firefly: deck composition --- */
+.rp-title--toy {
+  letter-spacing: -0.02em;
+  margin-bottom: 0.1rem;
+}
+.rp-title--toy::after {
+  content: "";
+  display: block;
+  width: 2.6rem;
+  height: 2px;
+  margin-top: 0.45rem;
+  border-radius: 1px;
+  background: color-mix(in oklch, var(--brume-pear-deep) 55%, transparent);
+}
+.rp-lede--toy {
+  color: var(--brume-ink-muted);
+  margin-top: 0.15rem;
+}
+
+/* --- firefly board: the marsh shadow-box --- */
+
+.rp-board-wrap {
+  margin: 0.75rem 0;
+  max-width: 24rem;
+  width: 100%;
+}
+.rp-board-deck {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--brume-ink) 55%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--brume-paper) 30%, transparent),
+    0 2px 0 color-mix(in oklch, var(--brume-ink) 30%, transparent),
+    0 10px 24px -14px color-mix(in oklch, var(--brume-ink) 70%, transparent);
+  --rm-sky-top: oklch(26% 0.05 265);
+  --rm-sky-low: oklch(52% 0.06 300);
+  --rm-star: oklch(85% 0.03 80);
+  --rm-apricot: oklch(72% 0.1 65);
+  --rm-moon: oklch(90% 0.03 80);
+  --rm-ridge: oklch(30% 0.05 230);
+  --rm-water-hi: oklch(42% 0.07 240);
+  --rm-water-lo: oklch(30% 0.06 235);
+  --rm-leaf: oklch(40% 0.06 160);
+  --rm-cattail: oklch(56% 0.08 70);
+  --rm-glow: color-mix(in oklch, var(--brume-pear) 60%, transparent);
+  --rm-brass: oklch(62% 0.1 75);
+  --rm-glass: oklch(38% 0.03 60);
+  --rm-glass-lit: color-mix(in oklch, var(--brume-pear) 75%, oklch(60% 0.08 70));
+  --rm-post: oklch(34% 0.04 55);
+  --rm-wick: oklch(70% 0.03 60);
+  --rm-rock: oklch(42% 0.03 60);
+  --rm-rock-line: oklch(28% 0.03 60);
+  --rm-moss: oklch(48% 0.07 140);
+  --rm-islet-top: oklch(66% 0.04 120);
+  --rm-islet-face: oklch(34% 0.03 80);
+  --rm-islet-line: oklch(40% 0.03 90);
+}
+.rp-marsh {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.rp-marsh__water-lines path {
+  fill: none;
+  stroke: oklch(62% 0.05 250);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+.rp-marsh__reeds path {
+  fill: none;
+  stroke: oklch(30% 0.05 200);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.rp-marsh__moth path {
+  fill: color-mix(in oklch, var(--brume-pear-soft) 70%, var(--rm-moon));
+}
+.rp-marsh__light {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+.rp-marsh__light[data-lit] { opacity: 1; }
+.rp-marsh__glowlines path {
+  fill: none;
+  stroke: var(--brume-pear);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+.rp-marsh__lit-reeds path {
+  fill: none;
+  stroke: color-mix(in oklch, var(--brume-pear) 70%, var(--rm-cattail));
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.rp-board {
+  position: absolute;
+  top: 27%;
+  left: 4%;
+  right: 4%;
+  bottom: 6%;
+  display: grid;
+  gap: 4px;
+}
+/* cells are transparent — the marsh bleeds through; each
+   traversable cell carries a raised stepping-islet silhouette */
+.rp-cell {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.rp-islet {
+  width: 80%;
+  height: 80%;
+}
+.rp-islet__face { fill: var(--rm-islet-face); }
+.rp-islet__top {
+  fill: var(--rm-islet-top);
+  stroke: color-mix(in oklch, var(--rm-islet-line) 70%, transparent);
+  stroke-width: 0.7;
+}
+.rp-islet__line {
+  fill: none;
+  stroke: var(--rm-islet-line);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.rp-rock { width: 86%; height: 86%; }
+.rp-lantern-wrap {
+  position: relative;
+  display: block;
+  width: 88%;
+  height: 88%;
+  transform: translateX(16%);
+}
+.rp-lantern {
+  width: 100%;
+  height: 100%;
+  color: var(--brume-ink-muted);
+}
+.rp-lantern--lit {
+  filter: drop-shadow(0 0 7px var(--brume-pear));
+}
+/* The firefly's last flight: from Brume's shoulder to the wick,
+   ending inside the lamp. */
+.rp-lampfly {
+  position: absolute;
+  left: 64.6%;
+  top: 54%;
+  translate: -50% -50%;
+  width: 16%;
+  height: 16%;
+  border-radius: 50%;
+  background: var(--brume-pear-deep);
+  box-shadow: 0 0 6px 2px var(--brume-pear);
+  animation: rp-flyhome 700ms var(--ease-soft, ease) both;
+}
+@keyframes rp-flyhome {
+  0% { transform: translate(-130%, -70%) scale(0.8); opacity: 0.9; }
+  60% { transform: translate(-24%, -24%) scale(1); }
+  100% { transform: translate(0, 0) scale(0.9); opacity: 1; }
+}
+
+.rp-walker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc((100% - 4px * (5 - 1)) / 5);
+  height: calc((100% - 4px * (3 - 1)) / 3);
+  display: grid;
+  place-items: center;
+  transition: transform 0.42s ease;
+  pointer-events: none;
+}
+.rp-walker__inner { display: grid; place-items: center; }
+/* a short lift-and-settle each landed step; alternating names
+   retrigger without remounting the shared mascot */
+.rp-walker__inner.rp-hop[data-hop="0"] { animation: rp-hop-a 420ms var(--ease-soft, ease); }
+.rp-walker__inner.rp-hop[data-hop="1"] { animation: rp-hop-b 420ms var(--ease-soft, ease); }
+@keyframes rp-hop-a {
+  35% { transform: translateY(-3px); }
+}
+@keyframes rp-hop-b {
+  35% { transform: translateY(-3px); }
+}
+/* facing pointer: orbits the mascot on the shortest arc */
+.rp-walker__dir {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.3s var(--ease-soft, ease);
+}
+.rp-walker__dir::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  margin-top: -4px;
+  border: 4px solid transparent;
+  border-left-color: var(--brume-pear-deep);
+}
+
+.rp-firefly {
+  --rp-wing: color-mix(in oklch, var(--brume-pear), transparent 45%);
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 2px;
+  top: 2px;
+  filter: drop-shadow(0 0 4px var(--brume-pear));
+}
+.rp-firefly[data-dir="1"] { top: auto; bottom: 2px; }
+.rp-firefly[data-dir="2"] { right: auto; left: 2px; }
+.rp-firefly[data-dir="3"] { top: 2px; bottom: auto; }
+
+/* a landing wake: two short strokes under the visited tile */
+.rp-wake {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc((100% - 4px * (5 - 1)) / 5);
+  height: calc((100% - 4px * (3 - 1)) / 3);
+  pointer-events: none;
+}
+.rp-wake::before,
+.rp-wake::after {
+  content: "";
+  position: absolute;
+  bottom: 12%;
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--brume-pear-soft) 55%, var(--rm-water));
+  animation: rp-wake 420ms var(--ease-soft, ease) both;
+}
+.rp-wake::before { left: 18%; width: 26%; }
+.rp-wake::after { right: 18%; width: 20%; animation-delay: 60ms; }
+@keyframes rp-wake {
+  0% { transform: scaleX(0.4); opacity: 0.9; }
+  100% { transform: scaleX(1.5); opacity: 0; }
+}
+
+/* contact ring where the fly met stone or edge */
+.rp-ring {
+  position: absolute;
+  width: 46%;
+  height: 46%;
+  border: 2px solid color-mix(in oklch, var(--brume-coral-deep) 75%, transparent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: rp-ring 560ms var(--ease-soft, ease) 80ms both;
+}
+.rp-ring[data-dir="0"] { right: -14%; top: 27%; }
+.rp-ring[data-dir="1"] { bottom: -14%; left: 27%; }
+.rp-ring[data-dir="2"] { left: -14%; top: 27%; }
+.rp-ring[data-dir="3"] { top: -14%; left: 27%; }
+@keyframes rp-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* --- the brass instrument deck: stamped keys + token slots --- */
+
+.rp-verbs {
+  flex-wrap: nowrap;
+}
+.rp-verbs .brume-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.rp-key {
+  border: 1px solid color-mix(in oklch, var(--brume-ink) 45%, transparent) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--brume-pear-soft) 75%, var(--brume-card)),
+    color-mix(in oklch, var(--brume-pear-soft) 45%, var(--brume-paper-2))
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--brume-paper) 80%, transparent),
+    0 3px 0 color-mix(in oklch, var(--brume-ink) 35%, transparent);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+}
+.rp-key:not(:disabled):active {
+  transform: translateY(2.5px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--brume-paper) 60%, transparent),
+    0 1px 0 color-mix(in oklch, var(--brume-ink) 35%, transparent);
+}
+.rp-key:disabled { opacity: 0.5; }
+
+.rp-pathrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin: 0.25rem 0;
+}
+.rp-pathrow__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brume-ink-muted);
+}
+.rp-undo {
+  appearance: none;
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--brume-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.rp-undo:hover { color: var(--brume-ink); }
+.rp-undo:disabled { opacity: 0.45; cursor: default; }
+
+.rp-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 8rem;
+}
+.rp-path__empty {
+  font-size: 0.85rem;
+  color: var(--brume-ink-muted);
+}
+/* queued tokens sit in stamped slots on the deck */
+.rp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in oklch, var(--brume-ink) 35%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--brume-card) 85%, var(--rm-apricot)),
+    var(--brume-paper-2)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in oklch, var(--brume-paper) 70%, transparent),
+    0 2px 0 color-mix(in oklch, var(--brume-ink) 25%, transparent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--brume-ink);
+}
+.rp-chip__count {
+  font-size: 0.72rem;
+  color: var(--brume-ink-muted);
+}
+.rp-chip--played {
+  background: var(--brume-pear-soft);
+  border-color: var(--brume-pear-deep);
+}
+.rp-chip--blocked {
+  position: relative;
+  border-style: dashed;
+  border-color: var(--brume-coral-deep);
+  color: var(--brume-ink-muted);
+}
+.rp-chip--blocked::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 1.5px;
+  background: var(--brume-coral-deep);
+  transform: rotate(-6deg);
+}
+.rp-chip--pending {
+  opacity: 0.55;
+}
+
+.rp-walker--bump .rp-firefly {
+  animation: rp-coast 620ms var(--ease-soft, ease) both;
+}
+.rp-walker--bump .rp-firefly[data-dir="0"] { animation-name: rp-coast-e; }
+.rp-walker--bump .rp-firefly[data-dir="1"] { animation-name: rp-coast-s; }
+.rp-walker--bump .rp-firefly[data-dir="2"] { animation-name: rp-coast-w; }
+.rp-walker--bump .rp-firefly[data-dir="3"] { animation-name: rp-coast-n; }
+/* The walking fly is home — it lives in the lamp now. */
+.rp-walker--home .rp-firefly {
+  display: none;
+}
+@keyframes rp-coast-e {
+  0% { transform: translateX(0); }
+  35% { transform: translateX(9px); }
+  100% { transform: translateX(0); }
+}
+@keyframes rp-coast-s {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(9px); }
+  100% { transform: translateY(0); }
+}
+@keyframes rp-coast-w {
+  0% { transform: translateX(0); }
+  35% { transform: translateX(-9px); }
+  100% { transform: translateX(0); }
+}
+@keyframes rp-coast-n {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(-9px); }
+  100% { transform: translateY(0); }
+}
+/* Home: the mascot rests beside the lantern, not on top of it. */
+.rp-walker--home .rp-walker__inner {
+  transform: translate(-30%, 10%);
+}
+
+/* --- minute scenes & mist --- */
+
+.rp-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--brume-radius);
+}
+.rp-scene {
+  --rp-dusk: oklch(34% 0.05 255);
+  --rp-water: oklch(28% 0.05 250);
+  --rp-hull: oklch(30% 0.03 40);
+  --rp-cabin: oklch(42% 0.04 50);
+  --rp-lit: var(--brume-pear);
+  --rp-lit-dim: var(--brume-pear-soft);
+  --rp-pier: oklch(35% 0.03 40);
+  --rp-rain: oklch(70% 0.05 235);
+  --rp-ripple: oklch(55% 0.06 240);
+  --rp-wall: var(--brume-paper-2);
+  --rp-sill: oklch(80% 0.04 80);
+  --rp-sill-line: oklch(70% 0.04 80);
+  --rp-cup: var(--brume-primary);
+  --rp-steam: var(--brume-ink-muted);
+  --rp-night: oklch(22% 0.04 260);
+  --rp-leaf: oklch(34% 0.07 150);
+  --rp-firefly: var(--brume-pear);
+}
+
+.rp-gift {
+  position: relative;
+  margin: 1rem 0;
+}
+.rp-mist {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-radius: var(--brume-radius);
+  overflow: hidden;
+  touch-action: none;
+}
+.rp-mist__pane {
+  appearance: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background:
+    radial-gradient(80% 60% at 50% 40%, rgba(var(--brume-mist-r), var(--brume-mist-g), var(--brume-mist-b), 0.9), rgba(var(--brume-mist-r), var(--brume-mist-g), var(--brume-mist-b), 0.55));
+  backdrop-filter: blur(6px);
+  transition: opacity 0.5s ease;
+}
+.rp-mist__pane.is-clear {
+  opacity: 0;
+  pointer-events: none;
+}
+.rp-mist__step {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  min-height: 44px;
+}
+
+.rp-line {
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--brume-card);
+  border-left: 3px solid var(--brume-pear-deep);
+  border-radius: var(--brume-radius);
+}
+.rp-line blockquote {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.rp-scenes {
+  border: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.rp-scenes legend { padding: 0; }
+.rp-scenes .rp-field__label { grid-column: 1 / -1; }
+.rp-scene-pick {
+  appearance: none;
+  border: 2px solid transparent;
+  border-radius: var(--brume-radius);
+  background: var(--brume-card);
+  padding: 0.35rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--brume-ink);
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+}
+.rp-scene-pick.is-selected {
+  border-color: var(--brume-pear-deep);
+  background: var(--brume-pear-soft);
+}
+.rp-scene-pick .rp-scene { border-radius: 8px; }
+
+.rp-footer {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--brume-ink-muted);
+}
+
+@media (max-width: 420px) {
+  .rp-scenes { grid-template-columns: 1fr 1fr 1fr; }
+  .rp-actions .brume-btn { flex: 1 1 auto; }
+}
+
+@media (max-height: 700px) {
+  .rp-board-wrap { max-width: 17rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-walker { transition: none; }
+  .rp-walker--bump .rp-firefly { animation: none; }
+  .rp-lampfly { animation: none; }
+  .rp-wake, .rp-wake::before, .rp-wake::after { animation: none; display: none; }
+  .rp-ring { animation: none; }
+  .rp-walker__inner.rp-hop[data-hop] { animation: none; }
+  .rp-walker__dir { transition: none; }
+  .rp-marsh__light { transition: none; }
+  .rp-key, .rp-key:not(:disabled):active { transition: none; transform: none; }
+  .rp-mist__pane { transition: opacity 0.2s ease; }
+}

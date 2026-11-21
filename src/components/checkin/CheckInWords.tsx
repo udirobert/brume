@@ -17,7 +17,7 @@ interface CheckInWordsProps {
 export function CheckInWords({ index, touched, onChoose }: CheckInWordsProps) {
   return (
     <>
-      <div className="dc-words" role="radiogroup" aria-label="How is it for you right now?">
+      <div className="dc-words" role="radiogroup" aria-label="How are you feeling?">
         {LEGACY_FEEL_INDICES.map((i) => ({ label: CHECK_IN_SHORT_LABELS[i], i })).map(({ label, i }) => (
           <label
             key={label}
@@ -36,11 +36,13 @@ export function CheckInWords({ index, touched, onChoose }: CheckInWordsProps) {
           </label>
         ))}
       </div>
-      <div className="text-center mt-4">
-        <span className="dc-slider-current" aria-live="polite">
-          {touched ? CHECK_IN_LABELS[index] : "Choose a point"}
-        </span>
-      </div>
+      {touched && (
+        <div className="text-center mt-4">
+          <span className="dc-slider-current" aria-live="polite">
+            {CHECK_IN_LABELS[index]}
+          </span>
+        </div>
+      )}
     </>
   );
 }

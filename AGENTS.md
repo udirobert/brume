@@ -126,8 +126,12 @@ same file — retuning affects the Anna bundle too). Shared controls are in
 check-in vocabulary/message builder is `src/lib/checkin.ts`. The web app
 uses no camera and no scores or streaks UI, and its microphone is a
 transient, per-tap option that records nothing (see the sensing rule
-above); core loop is a breathing reset or `/decompress` → check-in word →
-optional one-sentence message.
+above); core loop is a breathing reset → check-in word →
+optional one-sentence message. Home records explicitly chosen check-in
+words in the device-local ledger. Decompress offers a two-minute
+shoulder break. Done returns to Home; Add a word leads to an optional
+shareable sentence. Neither the pond nor the room-play toys write to
+that ledger.
 
 Sign-in is an email and nothing else, and the web app sells nothing. Cut on
 4 November 2026: wallet and SIWE sign-in, Flow attestations, Lens posting and
@@ -435,10 +439,10 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   week" normalises to "this week"), asks once when a deadline is in the
   same week and no day was named, and hides a rehearsal note that does
   not quote the reply. The saved card leads with one sayable paragraph.
-  **App v0.4.12 / tool 0.4.13 are in review** (`pending_review`,
-  version_id=2277, executa_version=1107, binaries
-  `brume-executa-v0.4.13`, workflow run 43548702496 — `docs/ANNA.md`
-  §12.40). The gate withholds a count, a day, a time, a capitalised name,
+  **App v0.4.12 / tool 0.4.13 were rejected after reviewer feedback**
+  (submitted 2026-11-14 as `pending_review`, version_id=2277,
+  executa_version=1107, binaries `brume-executa-v0.4.13`, workflow run
+  43548702496 — `docs/ANNA.md` §12.40–12.41). The gate withholds a count, a day, a time, a capitalised name,
   an addressee ("your manager", "the manager", "a colleague"), an
   ascribed motive, and an extra project the person did not write. "the
   team" stays. Will, May, and Hope are names unless they open "Will you",
@@ -459,5 +463,6 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
   Opener audit: `npm run audit:openers -- --check` (name-leak surface
-  stays {Will, May, Hope}). In review as app v0.4.12 / tool 0.4.13
-  (`version_id=2277`, `executa_version=1107`).
+  stays {Will, May, Hope}). v0.4.12 / tool 0.4.13
+  (`version_id=2277`, `executa_version=1107`) was submitted for review
+  and rejected after reviewer feedback (§12.41).

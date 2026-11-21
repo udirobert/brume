@@ -1,18 +1,97 @@
 import { track } from "@/lib/events";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { BrumeMascot, type BrumeMascotState, type MascotReaction } from "@/components/BrumeMascot";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { type BrumeMascotState, type MascotReaction } from "@/components/BrumeMascot";
+import { CompanionAnchor } from "@/components/companion/JourneyCompanion";
 import { startDecompressTrack } from "@/lib/decompressAudio";
 import { useMascotPresence } from "@/hooks/useMascotPresence";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { DECOMPRESS_SECONDS, getDecompressStep } from "@/lib/decompress";
 import { CheckInWords } from "@/components/checkin/CheckInWords";
+import {
+  DecompressPond,
+  type PondBeat,
+  type PondMoment,
+} from "@/components/atmosphere/DecompressPond";
+import { PauseIcon, PlayIcon } from "@/components/icons/BrumeIcons";
 import { WordsCard } from "@/components/checkin/WordsCard";
 import { applyFeel, feelAt } from "@/lib/feelTheme";
-import { isPositiveFeel } from "@/lib/feelings";
 import { demeanorForFeel, practiceProgress, useRoomExperience } from "@/lib/roomExperience";
 import "./Decompress.css";
 
-type DecompressStage = "arrive" | "pause" | "checkin" | "done";
+type DecompressStage = "arrive" | "pause" | "rest" | "checkin";
+
+// Closed, plain-language headlines keyed to the internal step identity —
+// step.title/cue stay the lib contract; the room renders these instead.
+const STEP_HEADLINE: Record<string, string> = {
+  Arrive: "Rest your hands.",
+  Settle: "Let your shoulders drop.",
+  Roll: "Circle your shoulders.",
+  Soften: "Let your arms hang.",
+  Land: "Come to stillness.",
+};
+
+const STEP_GUIDANCE: Record<number, string> = {
+  20: "Skip any movement that hurts.",
+  48: "Small circles, if comfortable.",
+};
+
+/** A soft speaker — rhythm toggle, drawn in the same stroke style. */
+const SoundIcon = ({ size = 16 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 9.5v5h3.2l4.3 3.4c.7.6 1.7.1 1.7-.8V6.9c0-.9-1-1.4-1.7-.8L8.2 9.5H5z" />
+    <path d="M17 9.2c1.1 1.5 1.1 4.1 0 5.6" />
+  </svg>
+);
+
+/** A tiny hand-drawn firefly with a dotted flight trail. */
+const FireflyGlyph = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path
+      d="M12.4 13.6c0 2.4-1.6 4-3.6 4s-3.4-1.7-3.4-4c0-2.3 1.5-4.1 3.4-4.1s3.6 1.7 3.6 4.1z"
+      fill="var(--brume-coral-deep)"
+      opacity=".85"
+    />
+    <path
+      d="M9.6 9.8c.8-2 2.6-3.4 4.6-3.8M8 9.8C7.2 7.8 5.4 6.4 3.6 6"
+      stroke="var(--brume-ink)"
+      strokeWidth="1.1"
+      strokeLinecap="round"
+    />
+    <circle cx="8.8" cy="15.4" r="1.3" fill="var(--brume-pear)" />
+    <circle cx="16.4" cy="12.8" r=".8" fill="var(--brume-coral-deep)" />
+    <circle cx="18.4" cy="10.4" r=".8" fill="var(--brume-coral-deep)" />
+    <circle cx="19.6" cy="7.6" r=".8" fill="var(--brume-coral-deep)" />
+  </svg>
+);
+
+/** A small folded envelope with its flap. */
+const EnvelopeGlyph = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <path
+      d="M3.6 6.8c0-.6.5-1.1 1.1-1.1h12.6c.6 0 1.1.5 1.1 1.1v8.4c0 .6-.5 1.1-1.1 1.1H4.7c-.6 0-1.1-.5-1.1-1.1V6.8z"
+      stroke="var(--brume-ink)"
+      strokeWidth="1.2"
+    />
+    <path
+      d="M4.2 7l6.8 4.6L17.8 7"
+      stroke="var(--brume-ink)"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const formatRemaining = (elapsed: number) => {
   const remaining = Math.max(0, Math.ceil(DECOMPRESS_SECONDS - elapsed));
@@ -21,7 +100,11 @@ const formatRemaining = (elapsed: number) => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 };
 
-export default function Decompress() {
+function DecompressRoom() {
+  const isMobile = useIsMobile();
+  const { presence } = useMascotPresence();
+  const companion = presence === "companion";
+
   const [stage, setStage] = useState<DecompressStage>("arrive");
   const [elapsed, setElapsed] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -29,45 +112,26 @@ export default function Decompress() {
   const [audioAvailable, setAudioAvailable] = useState(true);
   const [checkInIndex, setCheckInIndex] = useState(2);
   const [checkInTouched, setCheckInTouched] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [sparkKey, setSparkKey] = useState(0);
-  const { presence, setPresence } = useMascotPresence();
-  const [nudgeState, setNudgeState] = useState<BrumeMascotState | null>(null);
+  const [wordsOpen, setWordsOpen] = useState(false);
   const [nudgeReaction, setNudgeReaction] = useState<{ name: MascotReaction; key: number } | undefined>();
-  const nudgeTimerRef = useRef(0);
+  const [pondMoment, setPondMoment] = useState<PondMoment>({ kind: "idle", id: 0 });
 
+  const headRef = useRef<HTMLHeadingElement>(null);
   const elapsedOffsetRef = useRef(0);
   const startedAtRef = useRef(0);
-  const lastUiElapsedRef = useRef(0);
-  const roomRef = useRef<HTMLDivElement>(null);
   const stopAudioRef = useRef<(() => void) | null>(null);
+  const rafRef = useRef(0);
+  const reactionSerial = useRef(0);
 
-  const step = useMemo(() => getDecompressStep(elapsed), [elapsed]);
+  const step = getDecompressStep(elapsed);
 
-  const setRoomDepth = useCallback((depth: number) => {
-    const room = roomRef.current;
-    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!room || reduced) return;
-    const mistOpacity = 0.44 - depth * 0.12;
-    room.style.setProperty("--dc-depth", String(depth));
-    room.style.setProperty("--dc-depth-y", `${depth * 2.4}rem`);
-    room.style.setProperty("--dc-mist-left", `${depth * -2.8}rem`);
-    room.style.setProperty("--dc-mist-right", `${depth * 2.2}rem`);
-    room.style.setProperty("--dc-mist-up", `${depth * -1.4}rem`);
-    room.style.setProperty("--dc-mist-down", `${depth * 1.2}rem`);
-    room.style.setProperty("--dc-mist-scale", String(1 - depth * 0.16));
-    room.style.setProperty("--dc-mist-opacity", String(mistOpacity));
-    room.style.setProperty("--dc-mist-faint", String(mistOpacity * 0.62));
-  }, []);
-
-  const currentElapsed = useCallback(() => {
-    if (stage !== "pause" || isPaused) return elapsedOffsetRef.current;
+  const currentElapsed = () => {
+    if (isPaused) return elapsedOffsetRef.current;
     return Math.min(
       DECOMPRESS_SECONDS,
-      elapsedOffsetRef.current +
-        (performance.now() - startedAtRef.current) / 1000,
+      elapsedOffsetRef.current + (performance.now() - startedAtRef.current) / 1000,
     );
-  }, [stage, isPaused]);
+  };
 
   const stopMusic = () => {
     stopAudioRef.current?.();
@@ -97,8 +161,12 @@ export default function Decompress() {
     };
   }, []);
 
-  // A chosen word tints the room while this page holds it; leaving
-  // releases the room back to the daypart.
+  // The heading holds focus once per stage so the timer's own updates
+  // never steal it.
+  useEffect(() => {
+    headRef.current?.focus();
+  }, [stage]);
+
 
   useEffect(() => stopMusic, []);
 
@@ -119,52 +187,59 @@ export default function Decompress() {
   }, [stage, elapsed, isPaused]);
 
   useEffect(
-    () => () =>
-      useRoomExperience.getState().setPractice({ practicing: false, paused: false }),
-    [],
-  );
-
-  useEffect(
     () => () => {
-      if (nudgeTimerRef.current) window.clearTimeout(nudgeTimerRef.current);
+      useRoomExperience.getState().setPractice({ practicing: false, paused: false });
+      cancelAnimationFrame(rafRef.current);
     },
     [],
   );
 
+  const playBeat = (kind: Exclude<PondBeat, "idle">) => {
+    const key = ++reactionSerial.current;
+    setPondMoment({ kind, id: key });
+    setNudgeReaction({ name: kind === "land" ? "settle" : "hop", key });
+  };
+
+  const finishPause = () => {
+    cancelAnimationFrame(rafRef.current);
+    elapsedOffsetRef.current = 0;
+    setIsPaused(false);
+    stopMusic();
+    playBeat("land");
+    setStage("rest");
+  };
+
+  // Active time only: pausing freezes the offset, resuming restarts the
+  // clock from it, so wall-clock pauses never count.
   useEffect(() => {
     if (stage !== "pause" || isPaused) return undefined;
     startedAtRef.current = performance.now();
-    lastUiElapsedRef.current = elapsedOffsetRef.current;
-    let frame = 0;
+    let lastSecond = Math.floor(elapsedOffsetRef.current);
     const tick = () => {
       const next = currentElapsed();
-      setRoomDepth(next / DECOMPRESS_SECONDS);
-      if (next - lastUiElapsedRef.current >= 0.25 || next >= DECOMPRESS_SECONDS) {
-        lastUiElapsedRef.current = next;
-        setElapsed(next);
-      }
       if (next >= DECOMPRESS_SECONDS) {
-        elapsedOffsetRef.current = DECOMPRESS_SECONDS;
-        setIsPaused(false);
-        stopAudioRef.current?.();
-        stopAudioRef.current = null;
-        setStage("checkin");
+        finishPause();
         return;
       }
-      frame = requestAnimationFrame(tick);
+      const second = Math.floor(next);
+      if (second !== lastSecond) {
+        lastSecond = second;
+        setElapsed(second);
+      }
+      rafRef.current = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [stage, isPaused, currentElapsed, setRoomDepth]);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, isPaused]);
 
-  const beginPause = () => {
+  const begin = () => {
     elapsedOffsetRef.current = 0;
-    lastUiElapsedRef.current = 0;
-    setRoomDepth(0);
     setElapsed(0);
-    setShareOpen(false);
-    setStage("pause");
     setIsPaused(false);
+    setWordsOpen(false);
+    playBeat("enter");
+    setStage("pause");
     if (musicOn) beginMusic();
   };
 
@@ -174,10 +249,8 @@ export default function Decompress() {
       if (musicOn) beginMusic();
       return;
     }
-    const next = currentElapsed();
-    elapsedOffsetRef.current = next;
-    setElapsed(next);
-    setRoomDepth(next / DECOMPRESS_SECONDS);
+    elapsedOffsetRef.current = currentElapsed();
+    setElapsed(elapsedOffsetRef.current);
     setIsPaused(true);
     stopMusic();
   };
@@ -192,321 +265,176 @@ export default function Decompress() {
     if (stage === "pause" && !isPaused) beginMusic();
   };
 
-  const moveToCheckIn = () => {
-    setIsPaused(false);
-    stopMusic();
-    setStage("checkin");
-  };
-
   const chooseCheckIn = (index: number) => {
     setCheckInIndex(index);
     setCheckInTouched(true);
     applyFeel(index);
     track("checkin_word", { feeling: index, surface: "decompress" });
-    if (nudgeTimerRef.current) {
-      window.clearTimeout(nudgeTimerRef.current);
-      nudgeTimerRef.current = 0;
-    }
-    setNudgeState(null);
     const reaction = feelAt(index)?.reaction;
-    if (reaction) setNudgeReaction({ name: reaction, key: Date.now() });
-  };
-
-  const openShare = () => {
-    setShareOpen(true);
+    if (reaction) setNudgeReaction({ name: reaction, key: ++reactionSerial.current });
   };
 
   const nudgeBrume = () => {
-    if (nudgeTimerRef.current) window.clearTimeout(nudgeTimerRef.current);
-    const light = checkInTouched && isPositiveFeel(checkInIndex);
-    setNudgeState(light ? "topup" : "tender");
-    setNudgeReaction({ name: light ? "hop" : "ready", key: Date.now() });
-    nudgeTimerRef.current = window.setTimeout(() => {
-      nudgeTimerRef.current = 0;
-      setNudgeState(null);
-    }, 950);
+    playBeat("splash");
   };
 
-  const pointerFrameRef = useRef(0);
-  const pointerRef = useRef({ x: 0, y: 0 });
-  const handleRoomPointer = (event: React.PointerEvent<HTMLDivElement>) => {
-    const room = roomRef.current;
-    if (!room) return;
-    const rect = room.getBoundingClientRect();
-    pointerRef.current = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-    // One write per frame — pointermove fires far more often than that.
-    if (pointerFrameRef.current) return;
-    pointerFrameRef.current = requestAnimationFrame(() => {
-      pointerFrameRef.current = 0;
-      const r = roomRef.current;
-      if (!r) return;
-      r.style.setProperty("--dc-mx", `${pointerRef.current.x}px`);
-      r.style.setProperty("--dc-my", `${pointerRef.current.y}px`);
-    });
-  };
-
-  const finish = () => {
-    setShareOpen(false);
-    setStage("done");
-    if (checkInTouched && isPositiveFeel(checkInIndex)) {
-      setSparkKey((key) => key + 1);
-    }
-  };
-
-  const celebrated = checkInTouched && isPositiveFeel(checkInIndex);
   const mascotState: BrumeMascotState =
-    stage === "done"
-      ? (celebrated ? "proud" : "tender")
+    stage === "rest"
+      ? "tender"
       : stage === "checkin"
         ? (checkInTouched ? (feelAt(checkInIndex)?.state ?? "watching") : "watching")
         : stage === "pause"
           ? step.mascot
           : "idle";
-  const companion = presence === "companion";
-  const displayMascot = nudgeState ?? mascotState;
   const demeanor = checkInTouched ? demeanorForFeel(checkInIndex) : "open";
-  const roomMode = stage === "pause" || stage === "checkin";
 
-  const activeRail = stage === "checkin" ? 1 : stage === "done" ? 2 : 0;
+  const h1 =
+    stage === "arrive"
+      ? "A little room for you."
+      : stage === "pause"
+        ? (isPaused ? "Paused." : (STEP_HEADLINE[step.title] ?? step.title))
+        : stage === "rest"
+          ? "A moment of rest."
+          : "How are you feeling?";
 
   return (
-    <div className="decompress-page" data-stage={stage}>
-      <main className={roomMode ? "dc-room" : "dc-shell"}>
-        {roomMode ? (
-          <div
-            className={`dc-room__field ${stage === "checkin" ? "dc-room__field--checkin" : ""}`}
-            ref={roomRef}
-            data-rhythm={stage === "pause" && musicOn && !isPaused}
-            onPointerMove={handleRoomPointer}
-          >
-            {sparkKey > 0 && <span key={sparkKey} className="dc-star-burst" aria-hidden="true" />}
-            <span className="dc-room__mist dc-room__mist--one" aria-hidden="true" />
-            <span className="dc-room__mist dc-room__mist--two" aria-hidden="true" />
-            <span className="dc-room__mist dc-room__mist--three" aria-hidden="true" />
-            <span className="dc-room__wisp" aria-hidden="true" />
+    <div className="decompress-page" data-stage={stage} data-paused={isPaused || undefined}>
+      <div className="dc-col">
+        <h1 ref={headRef} tabIndex={-1} className="dc-h1" aria-live={stage === "pause" ? "polite" : "off"} aria-atomic="true">
+          <span key={h1} className="dc-h1__text">{h1}</span>
+        </h1>
 
-            {stage === "pause" ? (
-              <>
-            <div className="dc-room__cue" aria-live="polite">
-              <p className="dc-eyebrow">Settle</p>
-              <h1 key={step.title}>{step.title}</h1>
-              <p key={`${step.title}-cue`} className="dc-room__text">{step.cue}</p>
-            </div>
+        <button
+          type="button"
+          className="dc-pond"
+          onClick={nudgeBrume}
+          aria-label="Make a ripple with Brume"
+        >
+          <span className="dc-pond__art" aria-hidden="true">
+            <DecompressPond
+              moment={pondMoment}
+              mood={stage === "arrive" ? "bank" : stage === "pause" ? "near" : "rest"}
+            />
+          </span>
+          <span className="dc-pond__sprite">
+            <CompanionAnchor
+              size={isMobile ? 132 : 156}
+              state={mascotState}
+              presence={presence}
+              breathing={companion}
+              trackPointer={companion}
+              reaction={nudgeReaction}
+              demeanor={demeanor}
+            />
+          </span>
+        </button>
 
-            <button type="button" className="dc-room__companion" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={156} presence={presence} breathing={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
-              <span className="dc-room__companion-caption">with you · tap me</span>
+        {stage === "arrive" && (
+          <div key="arrive" className="dc-stage-copy">
+            <button type="button" className="brume-btn brume-btn--push" onClick={begin}>
+              Begin a two-minute pause
             </button>
-
-            <div
-              className="dc-room__shoulder"
-              role="progressbar"
-              aria-label="Pause progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round((elapsed / DECOMPRESS_SECONDS) * 100)}
-            >
-              <svg viewBox="0 0 320 92" aria-hidden="true">
-                <path className="dc-room__shoulder-back" d="M 8 58 C 78 30, 128 30, 160 42 C 192 30, 242 30, 312 58" />
-                <path className="dc-room__shoulder-front" d="M 8 64 C 78 36, 128 36, 160 48 C 192 36, 242 36, 312 64" />
-              </svg>
+            <p className="dc-clue">A quiet shoulder break.</p>
+            <div className="dc-quiet-links dc-quiet-links--below">
+              <a className="dc-quiet-link dc-quiet-link--art" href="/decompress?room=firefly">
+                <FireflyGlyph />
+                Play with a firefly
+              </a>
+              <a className="dc-quiet-link dc-quiet-link--art" href="/decompress?room=minute">
+                <EnvelopeGlyph />
+                Make a gift
+              </a>
             </div>
+          </div>
+        )}
 
-            <p className="dc-room__time">{formatRemaining(elapsed)} left · move only within comfort</p>
-            <div className="dc-room__controls">
+        {stage === "pause" && (
+          <div key="pause" className="dc-stage-copy">
+            {STEP_GUIDANCE[step.start] && !isPaused && (
+              <p className="dc-field-note">{STEP_GUIDANCE[step.start]}</p>
+            )}
+            <p className="dc-time">{formatRemaining(elapsed)} left</p>
+            <div className="dc-actions dc-actions--center">
               <button type="button" className="brume-btn brume-btn--soft" onClick={togglePause}>
+                {isPaused ? <PlayIcon size={15} /> : <PauseIcon size={15} />}
                 {isPaused ? "Resume" : "Pause"}
               </button>
-              <button type="button" className="brume-btn brume-btn--outline" onClick={moveToCheckIn}>
-                Check in now
-              </button>
-              <button
-                type="button"
-                className="brume-toggle"
-                aria-pressed={musicOn}
-                onClick={toggleMusic}
-              >
-                <span className="brume-toggle__dot" aria-hidden="true" />
-                {musicOn ? "Rhythm on" : "Add a rhythm"}
+              <button type="button" className="brume-btn brume-btn--outline" onClick={finishPause}>
+                Finish early
               </button>
             </div>
-              </>
-            ) : (
-              <>
-            <div className="dc-room__cue dc-room__cue--checkin">
-              <p className="dc-eyebrow">Check in</p>
-              <h1>How is it for you right now?</h1>
-              <p className="dc-room__text">You don’t have to explain it.</p>
-              <p className="dc-field-note">Nothing leaves this page unless you choose to share it.</p>
-            </div>
-
-            <button type="button" className="dc-room__companion dc-room__companion--checkin" onClick={nudgeBrume} aria-label="Give Brume a little nudge">
-              <BrumeMascot state={displayMascot} size={112} presence={presence} breathing={companion} trackPointer={companion} reaction={nudgeReaction} demeanor={demeanor} layoutId="brume-companion" />
+            <button
+              type="button"
+              className="brume-toggle"
+              aria-pressed={musicOn}
+              aria-label="Rhythm sound"
+              onClick={toggleMusic}
+            >
+              <SoundIcon size={15} />
+              {musicOn ? "Sound on" : "Sound off"}
             </button>
+            {!audioAvailable && (
+              <p className="dc-field-note">Audio is unavailable in this browser.</p>
+            )}
+          </div>
+        )}
 
-            <div className="dc-room__shoulder" aria-hidden="true">
-              <svg viewBox="0 0 320 92" aria-hidden="true">
-                <path className="dc-room__shoulder-back" d="M 8 58 C 78 30, 128 30, 160 42 C 192 30, 242 30, 312 58" />
-                <path className="dc-room__shoulder-front" d="M 8 64 C 78 36, 128 36, 160 48 C 192 36, 242 36, 312 64" />
-              </svg>
-            </div>
-
-            <div className="dc-room__status">
-              <CheckInWords
-                index={checkInIndex}
-                touched={checkInTouched}
-                onChoose={chooseCheckIn}
-              />
-              <p className="dc-field-note" id="dc-share-help">
-                {checkInTouched ? "That can be enough." : "Pick a point — or just leave it there."}
-              </p>
-            </div>
-
-            <div className="dc-room__controls">
-              <button type="button" className="brume-btn brume-btn--push" onClick={finish}>
-                Leave it here
+        {stage === "rest" && (
+          <div key="rest" className="dc-stage-copy">
+            <Link to="/" className="brume-btn brume-btn--push">
+              Done
+            </Link>
+            <div className="dc-quiet-links">
+              <button type="button" className="dc-quiet-link" onClick={() => setStage("checkin")}>
+                Add a word
               </button>
+            </div>
+          </div>
+        )}
+
+        {stage === "checkin" && (
+          <div key="checkin" className="dc-stage-copy">
+            <CheckInWords index={checkInIndex} touched={checkInTouched} onChoose={chooseCheckIn} />
+            {checkInTouched && !wordsOpen && (
               <button
                 type="button"
                 className="brume-btn brume-btn--soft"
-                onClick={openShare}
-                aria-describedby="dc-share-help"
+                onClick={() => setWordsOpen(true)}
               >
                 Put it into words
               </button>
-            </div>
-
-            {shareOpen && (
-              <div className="dc-room__share-wrap">
-                <div className="dc-room__share">
-                  <WordsCard
-                    checkInIndex={checkInTouched ? checkInIndex : null}
-                    onCopied={() => setSparkKey((key) => key + 1)}
-                    onShared={() => setSparkKey((key) => key + 1)}
-                  />
-                </div>
-              </div>
             )}
+            {checkInTouched && wordsOpen && (
+              <>
+                <WordsCard key={checkInIndex} checkInIndex={checkInIndex} />
+                <p className="dc-field-note">
+                  Your message stays here until you copy or share it.
+                </p>
               </>
             )}
+            <div className="dc-quiet-links">
+              <Link to="/" className="dc-quiet-link">
+                Done
+              </Link>
+            </div>
           </div>
-        ) : (
-          <>
-        <ol className="dc-rail" aria-label="Decompress flow">
-          <li className={`dc-rail__item dc-rail__item--pear ${activeRail === 0 ? "is-active" : ""}`} aria-current={activeRail === 0 ? "step" : undefined}>
-            <span className="dc-rail__dot" aria-hidden="true" />
-            <span className="dc-rail__copy">
-              <strong>Settle</strong>
-              <span>Two minutes to settle.</span>
-            </span>
-          </li>
-          <li className={`dc-rail__item dc-rail__item--cyan ${activeRail === 1 ? "is-active" : ""}`} aria-current={activeRail === 1 ? "step" : undefined}>
-            <span className="dc-rail__dot" aria-hidden="true" />
-            <span className="dc-rail__copy">
-              <strong>Check in</strong>
-              <span>Name the moment without explaining it.</span>
-            </span>
-          </li>
-          <li className={`dc-rail__item dc-rail__item--coral ${activeRail === 2 ? "is-active" : ""}`} aria-current={activeRail === 2 ? "step" : undefined}>
-            <span className="dc-rail__dot" aria-hidden="true" />
-            <span className="dc-rail__copy">
-              <strong>Choose</strong>
-              <span>Share it, copy it, or leave it here.</span>
-            </span>
-          </li>
-        </ol>
-
-        <section className="dc-panel" aria-live="polite">
-          {sparkKey > 0 && <span key={sparkKey} className="dc-star-burst" aria-hidden="true" />}
-
-          {stage === "arrive" && (
-            <div className="dc-stage dc-stage--arrive">
-              <div className="dc-stage__copy">
-                <h1>A little room <span className="brume-hl">for you.</span></h1>
-                <p className="dc-lede">
-                  Two minutes, a soft rhythm, and one easy way to say how the
-                  moment feels. No account. Nothing saved.
-                </p>
-                <div className="dc-actions">
-                  <button type="button" className="brume-btn brume-btn--push" onClick={beginPause}>
-                    Take a moment
-                  </button>
-                  <button type="button" className="brume-btn brume-btn--soft" onClick={moveToCheckIn}>
-                    Just check in
-                  </button>
-                </div>
-                <p className="dc-note">Small comfortable movements only. Skip anything that hurts.</p>
-              </div>
-
-              <div className="brume-mascot-card" data-presence={presence}>
-                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} demeanor={demeanor} />
-                <p>Brume can keep you company.</p>
-                <button
-                  type="button"
-                  className="brume-toggle"
-                  aria-pressed={musicOn}
-                  onClick={toggleMusic}
-                >
-                  <span className="brume-toggle__dot" aria-hidden="true" />
-                  {musicOn ? "Rhythm on" : "Add a rhythm"}
-                </button>
-                <div className="dc-presence" role="group" aria-label="Brume presence">
-                  <button
-                    type="button"
-                    className={`brume-pill ${presence === "quiet" ? "is-selected" : ""}`}
-                    aria-pressed={presence === "quiet"}
-                    onClick={() => setPresence("quiet")}
-                  >
-                    Quiet
-                  </button>
-                  <button
-                    type="button"
-                    className={`brume-pill ${presence === "companion" ? "is-selected" : ""}`}
-                    aria-pressed={presence === "companion"}
-                    onClick={() => setPresence("companion")}
-                  >
-                    Company
-                  </button>
-                </div>
-                {!audioAvailable && (
-                  <p className="dc-field-note">Audio is unavailable in this browser.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {stage === "done" && (
-            <div className="dc-stage dc-stage--done">
-              <div className="dc-done-card">
-                <BrumeMascot state={mascotState} size={132} presence={presence} breathing={companion} trackPointer={companion} demeanor={demeanor} />
-                <p className="dc-eyebrow">Choose</p>
-                <h1>You can go now.</h1>
-                <p className="dc-lede">That can be enough.</p>
-                <div className="dc-actions dc-actions--center">
-                  <button type="button" className="brume-btn brume-btn--soft" onClick={() => setStage("checkin")}>
-                    Stay a moment
-                  </button>
-                  <Link to="/" className="brume-btn brume-btn--outline">
-                    Back to Brume
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-          </>
         )}
-      </main>
-
-      <footer className="dc-footer">
-        <p className="dc-footer__line">A pause can be enough.</p>
-        <div className="dc-footer__meta">
-          <span>Brume</span>
-        </div>
-      </footer>
+      </div>
     </div>
   );
+}
+
+const RoomPlay = lazy(() => import("@/components/roomplay/RoomPlay"));
+
+export default function Decompress() {
+  const { search } = useLocation();
+  const room = new URLSearchParams(search).get("room");
+  if (room === "firefly" || room === "minute") {
+    return (
+      <Suspense fallback={null}>
+        <RoomPlay room={room} />
+      </Suspense>
+    );
+  }
+  return <DecompressRoom />;
 }

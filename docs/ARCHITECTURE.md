@@ -9,8 +9,12 @@
 > `src/`. One persistent room (`components/atmosphere/RoomEnvironment.tsx`,
 > WebGL1 + CSS fallback) and one persistent companion
 > (`components/companion/JourneyCompanion.tsx`) sit outside the routes.
-> Core loop: breathing session or `/decompress` -> check-in word -> optional
-> one-sentence message. Check-in is a closed set of 14 feelings
+> Core loop: breathing session -> check-in word -> optional
+> one-sentence message. Home records explicitly chosen check-in words in
+> the device-local ledger. Decompress offers a two-minute shoulder
+> break. Done returns to Home; Add a word leads to an optional shareable
+> sentence. Neither the pond nor the room-play toys (`?room=firefly`,
+> `?room=minute`) write to that ledger. Check-in is a closed set of 14 feelings
 > (`lib/feelings.ts`) written to an append-only, device-local ledger
 > (`lib/checkinLedger.ts`). Optional email sign-in via Supabase syncs history;
 > the check-in microphone and spoken cues go to the voice service on Hetzner

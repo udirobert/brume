@@ -181,3 +181,19 @@ describe("check-in copy", () => {
   });
 });
 });
+
+describe("room play copy", () => {
+  it("the two Decompress experiments stay rhythm-only", async () => {
+    const { FIREFLY_END_COPY, GIFT_PRIVACY, SCENE_LABELS, SCENE_PROMISES } = await import("../roomPlay");
+    const strings: string[] = [
+      ...Object.values(FIREFLY_END_COPY),
+      GIFT_PRIVACY,
+      ...Object.values(SCENE_LABELS),
+      ...Object.values(SCENE_PROMISES),
+    ];
+    for (const str of strings) {
+      expect(str, `"${str}"`).not.toMatch(BANNED);
+      expect(str, `"${str}"`).not.toMatch(/score|streak|\d\s*(point|win)/i);
+    }
+  });
+});

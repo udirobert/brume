@@ -536,3 +536,61 @@ percentage is then the only thing left to argue from.
   decided, and not decided silently mid-window.
 - If E6 fails: is the product a session sold into hosts, and does the
   consumer web app become a demo of it?
+
+## Room play
+
+*Local prototype, unmeasured — nothing here is wired to the metrics.*
+
+Two small toys share the Decompress stage, reached from two quiet
+arrival links ("Play with a firefly", "Make a gift") — no nav, no
+route, no wire. They load as
+their own lazy module (`src/components/roomplay/RoomPlay.tsx`,
+`src/lib/roomPlay.ts`) only when `?room=firefly` or `?room=minute` is on
+the URL, so the ordinary room's timers and effects never run alongside
+them. Both end at the same exit (`/decompress`) and write **nothing** to
+the ledger — the check-in ledger stays for check-ins only.
+
+- **The Last Firefly** (`?room=firefly`): a little wind-up toy — the
+  player taps moves into a path of chips (step, left, right, ≤16 moves)
+  and winds it with "Walk it"; the companion carries a light across a
+  5×3 board around one stone (`runFirefly`). Played moves mark their
+  chips, a blocked move is notched, unused moves stay pale. Outcomes:
+  lantern lit, bumped the stone, off the edge, ran out of steps. The
+  old text grammar (`parseMoves`) stays in the library though the UI
+  no longer asks for a line. The board is a marsh shadow-box with a
+  marsh backdrop behind transparent cells; the fly leaves a small
+  wake on landed steps and, on a win, flies into the lamp. Haptics are
+  `navigator.vibrate` — short taps on edit/release and collision, a
+  double pulse at the lantern, on supported visible browsers without
+  reduced motion; actual OS/hardware behaviour is not physically
+  verified. No score.
+- **A Minute From You** (`?room=minute`): pick one of three scenes
+  (rain ferry, kitchen window, night garden), write one last line
+  (≤140 chars), and the gift is sealed entirely into the URL fragment
+  (`minuteFragment` / `readMinute`, versioned `v=1`). The recipient
+  wipes three panes of mist to read the line, then may "make one back".
+  The line is the sender's own words. Anyone with the link can read
+  the line. Brume does not upload its text; the fragment is not part
+  of HTTP requests. Sentry init is
+  skipped on this path (`src/main.tsx`) and error reports strip the
+  fragment (`reportUrl` in `src/lib/errors/error-reporter.ts`).
+
+**There is no measurement.** Nothing in either toy calls `track()` or
+the metrics wire. If you want to know whether it lands, send a minute
+link to someone by hand (the share/copy buttons do exactly that —
+explicit, never automatic), note where you posted or sent it, and
+listen: a replayed lantern walk or a gift made back is the signal, and
+it arrives as a person telling you, not an event.
+
+Copy is a closed set (`FIREFLY_END_COPY`, `GIFT_PRIVACY`,
+`SCENE_LABELS`, `SCENE_PROMISES`), covered by `copy-claims.test.ts`;
+`roomPlay.test.ts` covers grammar, board and fragment round-trips.
+Focused run:
+
+```bash
+pnpm vitest run src/components/roomplay/__tests__/RoomPlay.firefly.test.tsx src/lib/__tests__/roomPlay.test.ts src/lib/__tests__/copy-claims.test.ts
+```
+
+The ordinary room's pause/pond behaviour lives in
+`src/pages/__tests__/Decompress.test.tsx` and
+`src/pages/__tests__/Decompress.interaction.test.tsx`.

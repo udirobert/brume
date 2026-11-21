@@ -2038,3 +2038,14 @@ synced the protocol manifest, uploaded the four binary artifacts
 `anna-app apps submit-review brume` moved the app to `pending_review`
 with review candidate **0.4.12**. The fresh-install Cloud Agent
 checklist was not run before that submit.
+
+### 12.41 Review outcome: differentiation
+
+Source: Anna Developer Team feedback shared by the owner after the
+November 14 submission. The reviewer rejected v0.4.12 / tool 0.4.13:
+a general-purpose assistant produced similar results, and they asked
+for distinct ongoing coaching across multiple conversations before
+resubmission — plus a full, self-run fresh-install Cloud Agent test
+(the §12.40 checklist was never run before that submit). The current
+pond and room-play experiments are web-only work; this note implies no
+resubmission and no test run.

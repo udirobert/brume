@@ -29,24 +29,31 @@ describe("Decompress helpers", () => {
 });
 
 describe("Decompress page", () => {
-  it("opens as a private pause with check-in as a first-class choice", () => {
+  it("opens with one begin, the two quiet links, and nothing else", () => {
     const html = renderToString(
       <MemoryRouter initialEntries={["/decompress"]}>
         <Decompress />
       </MemoryRouter>,
     );
 
-    expect(html).toContain("A little room");
-    expect(html).toContain("Take a moment");
-    expect(html).toContain("Just check in");
-    expect(html).toContain("No account. Nothing saved.");
-    expect(html).toContain("Brume presence");
-    expect(html).toContain("Company");
-    expect(html).toContain('data-presence="companion"');
-    expect(html).not.toContain("How are you really");
+    expect(html).toContain("A little room for you.");
+    expect(html).toContain("Begin a two-minute pause");
+    expect(html).toContain('href="/decompress?room=firefly"');
+    expect(html).toContain('href="/decompress?room=minute"');
+    expect(html).toContain("Play with a firefly");
+    expect(html).toContain("Make a gift");
+
+    // No rail, no immediate check-in, no presence/rhythm/share controls.
+    expect(html).not.toContain("dc-rail");
+    expect(html).not.toContain("How are you feeling?");
+    expect(html).not.toContain("Brume presence");
+    expect(html).not.toContain("Sound off");
+    expect(html).not.toContain("Rhythm sound");
+    expect(html).not.toContain("Put it into words");
+    expect(html).not.toContain("dc-share-card");
+    expect(html).not.toContain("Take a moment");
+    expect(html).not.toContain("Just check in");
     expect(html).not.toContain("score");
     expect(html).not.toContain("streak");
-    expect(html).not.toContain("quiet prototype");
-    expect(html).not.toContain("1.0");
   });
 });

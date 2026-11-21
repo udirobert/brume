@@ -8,7 +8,7 @@
 
 Brume is a mist sprite who breathes with you. Two faces, one character:
 
-- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided breathing patterns, a two-minute Decompress check-in, and session history — no camera, no account needed.
+- **🌐 Web app** ([brumeapp.netlify.app](https://brumeapp.netlify.app)) - the full practice: guided breathing patterns, a two-minute shoulder break with an optional check-in, and session history — no camera, no account needed.
 - **🤖 Anna app** (`anna/`, [@papa/brume](https://anna.partners)) - the pocket version inside the Anna agent. The result is a preparation card for one conversation: the model drafts the words, the person keeps them, and the card may not add a count, a day, or a time they did not write. A breathing break, Arrive, and a one-minute alertness check stay optional. No camera, no account.
 
 **Core Philosophy:** Progress over perfection, consistency over intensity, mindful awareness over mechanical practice.
@@ -33,6 +33,10 @@ pnpm install --frozen-lockfile
 # Start development (includes fallback AI)
 pnpm dev  # Opens http://localhost:4556
 ```
+
+Open `/decompress` for the pond. Its two optional toys are directly
+linkable at `/decompress?room=firefly` and `/decompress?room=minute`.
+See [Room play](docs/EXPERIMENTS.md#room-play) for sharing and privacy.
 
 **Works immediately with:** 20+ breathing patterns, progress tracking, offline support
 

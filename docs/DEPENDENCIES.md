@@ -6,14 +6,20 @@ ranges or `latest` tags in `package.json`, so the manifest is the audited
 target. `package.json` is always the source of truth; this page explains the
 choices behind it.
 
-> **The chain era is gone (2026-11-05).** `@onflow/*`, `viem`, `@lens-*`,
-> `wagmi`'s consumers, `src/lib/crypto`, `src/lib/ai`, `src/lib/sharing`,
-> `cadence/` and `flow.json` were removed. `lucide-react`, `next-themes` and
-> `recharts` went with them. One leftover remains: **`wagmi@3.7.7` is still
-> declared in `package.json` and imported nowhere in `src/`** — the guard in
-> `src/lib/__tests__/no-wallet.test.ts` names it as forbidden. Dropping the
-> declaration is a small, safe tidy-up that nobody has done yet; until then it
-> installs without being used.
+> **The chain era is gone (2026-11-05), and the leftovers went on 2026-11-24.**
+> `@onflow/*`, `viem`, `@lens-*`, `src/lib/crypto`, `src/lib/ai`,
+> `src/lib/sharing`, `cadence/` and `flow.json` were removed. `lucide-react`,
+> `next-themes` and `recharts` went with them. The last stragglers were cleared
+> on 2026-11-24: **`wagmi@3.7.7` and `zod@3.25.76` were declared in
+> `package.json` and imported nowhere in `src/`**, so both declarations went,
+> and the lockfile lost 278 lines with them (viem, abitype, ox, noble and the
+> ENS encoder, none of which anything reached). `scripts/setup/setup-lens-integration.sh`
+> was deleted for the same reason — it would have reinstalled the removed chain
+> packages. `zod` survives only as a transitive dependency of
+> `eslint-plugin-react-hooks`, at lint time; `mcp/` carries its own copy, where
+> it is actually used (`mcp/server.js`). The guard in
+> `src/lib/__tests__/no-wallet.test.ts` still names `wagmi` as forbidden, so it
+> cannot come back by import.
 
 ## Runtime requirements
 
@@ -31,10 +37,10 @@ pnpm dev    # http://localhost:4556
 - All direct dependencies are **exact pins** resolved against npm `latest`
   at migration time. Upgrade deliberately, not via floating ranges.
 - `pnpm-workspace.yaml` is tracked and applies pnpm's `minimumReleaseAge`
-  gate to every package. The only `minimumReleaseAgeExclude` entries are the
-  two exact pins `eslint@10.13.0` and `lucide-react@1.58.0` — exact versions
-  only, no wildcards. (`lucide-react` is no longer a dependency; its entry is
-  harmless and can be retired with the next lockfile change.)
+  gate to every package. The only `minimumReleaseAgeExclude` entry is the exact
+  pin `eslint@10.13.0` — exact versions only, no wildcards. (The
+  `lucide-react@1.58.0` entry was retired on 2026-11-24, long after the package
+  stopped being a dependency.)
 - The lockfile is multi-document; always install with `--frozen-lockfile`.
 
 ## Intentional exceptions to "latest"
@@ -43,7 +49,6 @@ pnpm dev    # http://localhost:4556
 |---|---|---|
 | `typescript` | **6.0.3** | `typescript-eslint@8.71.2` peers `typescript >=4.8.4 <6.1.0`; TS 7.0.2 is outside that range |
 | `@types/node` | **24.19.2** | matches the Node 24 runtime; `@types/node@26` tracks Node 26 |
-| `zod` | **3.25.76** | pinned for `@lens-protocol/metadata`'s `zod ^3` peer — a reason that left with the chain cut. Now an upgrade candidate, not a constraint |
 
 ## Current major versions
 

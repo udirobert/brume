@@ -60,6 +60,10 @@ function validPrep(p) {
   if (p.error !== undefined && !str(p.error, 300)) return false;
   if (!isoOrNull(p.completedAt)) return false;
   if (typeof p.saved !== "boolean") return false;
+  if (p.previousNote !== undefined && !str(p.previousNote, 240)) return false;
+  if (p.record !== undefined && p.record !== null && !isObj(p.record)) return false;
+  if (p.followUpOutcome !== undefined && p.followUpOutcome !== null
+    && !["planned", "partly", "not"].includes(p.followUpOutcome)) return false;
   if (p.plan !== null && !validReadyPlan(p.plan)) return false;
   if (["plan", "practice", "feedback", "card", "pause"].includes(p.stage) && !p.plan) return false;
   if (p.feedback !== null) {

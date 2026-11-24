@@ -28,7 +28,15 @@ const {
   CARD_OPENERS,
   scanRoles,
   ROLE_NOUNS,
+  PREP_FOLLOW_UP,
+  cleanFollowUpNote,
+  followUpOutcome,
+  followUpLine,
+  withFollowUp,
 } = await import(join(here, "..", "bundle", "preparation.js"));
+const { buildPreparationMessages } = await import(
+  join(here, "..", "bundle", "preparation-prompts.js")
+);
 
 const PLAN = {
   kind: "plan",
@@ -454,4 +462,91 @@ test("requestRehearsal timeout surfaces", async () => {
     () => requestRehearsal(anna, {}, { timeoutMs: 30 }),
     (e) => e.code === "timeout",
   );
+});
+
+// --- the follow-up line (docs/ANNA.md 12.42, candidate A) -------------------
+// The person's own words about a previous conversation of the same kind. It is
+// a SOURCE like the situation they typed: quotable, and no licence for a fact
+// it does not contain.
+
+test("follow-up: the line joins the gate's source", () => {
+  const source = preparationSource({
+    event: "One-to-one about next quarter",
+    previousNote: "It went partly. I never asked for the day.",
+  });
+  assert.match(source, /never asked for the day/);
+  // quotable, because it is theirs
+  assert.deepEqual(
+    faithfulnessIssues(
+      { nextStep: "Ask for the day this time." },
+      source,
+      ["nextStep"],
+    ),
+    [],
+  );
+});
+
+test("follow-up: a fact that is not in any source stays withheld", () => {
+  const source = preparationSource({
+    event: "One-to-one about next quarter",
+    previousNote: "It went partly. I never asked for the day.",
+  });
+  const issues = faithfulnessIssues(
+    { opening: "I would like to move the Friday review to Thursday at 4." },
+    source,
+    ["opening"],
+  );
+  assert.ok(issues.length > 0, "an invented day, weekday and time must be caught");
+});
+
+test("follow-up: same kind only, most recent, empty notes ignored", () => {
+  const sessions = [
+    { kind: "interview", completedAt: "2026-11-01", followUp: { note: "older interview note" } },
+    { kind: "interview", completedAt: "2026-11-09", followUp: { note: "newer interview note" } },
+    { kind: "meeting", completedAt: "2026-11-10", followUp: { note: "a meeting note" } },
+    { kind: "interview", completedAt: "2026-11-11", followUp: { note: "   " } },
+    { kind: "interview", completedAt: "2026-11-12" },
+  ];
+  assert.deepEqual(followUpLine(sessions, "interview"), {
+    note: "newer interview note",
+    at: "2026-11-09",
+  });
+  assert.equal(followUpLine(sessions, "presentation"), null);
+  assert.equal(followUpLine(sessions, null), null);
+  assert.equal(followUpLine([], "interview"), null);
+});
+
+test("follow-up: closed set and note cap, never a stored surprise", () => {
+  assert.deepEqual(PREP_FOLLOW_UP.map((o) => o.id), ["planned", "partly", "not"]);
+  assert.equal(followUpOutcome("planned"), "planned");
+  assert.equal(followUpOutcome("great"), null);
+  assert.equal(cleanFollowUpNote("  a\n\nb   c "), "a b c");
+  assert.equal(cleanFollowUpNote("x".repeat(400)).length, 240);
+
+  const base = { completedAt: "2026-11-24T10:00:00.000Z", kind: "meeting" };
+  assert.equal(withFollowUp(base, {}) .followUp, null);
+  const patched = withFollowUp(base, { outcome: "partly", note: "  They moved it. ", now: 0 });
+  assert.deepEqual(patched.followUp, {
+    outcome: "partly",
+    note: "They moved it.",
+    at: new Date(0).toISOString(),
+  });
+  assert.equal(base.followUp, undefined, "the old record is not mutated");
+  assert.equal(withFollowUp(base, { outcome: "great" }).followUp, null);
+});
+
+test("follow-up: the prompt carries the line as theirs, and omits it when empty", () => {
+  const withLine = buildPreparationMessages({
+    event: "One-to-one",
+    goal: "Agree a timeline",
+    previousNote: "I never asked for the day.",
+  });
+  const userJson = JSON.parse(withLine[1].content.text);
+  assert.equal(userJson.previousNote, "I never asked for the day.");
+  assert.match(withLine[0].content.text, /previousNote is what the person wrote/);
+  assert.match(withLine[0].content.text, /Do not infer preferences/);
+
+  const without = buildPreparationMessages({ event: "One-to-one", previousNote: "  " });
+  assert.equal(JSON.parse(without[1].content.text).previousNote, "");
+  assert.doesNotMatch(without[0].content.text, /previousNote is what the person wrote/);
 });

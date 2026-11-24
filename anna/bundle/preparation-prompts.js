@@ -22,6 +22,7 @@ export function buildPreparationMessages({
   clarificationUsed = false,
   droppedFacts = null,
   scheduleUnspecified = false,
+  previousNote = "",
 } = {}) {
   let instruction = `${POLICY}
 Create a short, useful preparation for this particular conversation.
@@ -45,6 +46,10 @@ Keep every field nonempty. Different goals for the same event must change the su
   if (scheduleUnspecified) {
     instruction += "\nThe person was asked which day to name and did not name one. Keep the next step unscheduled: a question or action with no weekday, no date, and no clock time.";
   }
+  const previous = typeof previousNote === "string" ? previousNote.trim() : "";
+  if (previous) {
+    instruction += "\npreviousNote is what the person wrote about how a previous conversation of the same kind went. It is theirs and it is in the user JSON, so you may quote it or let it shape the next step. It is a source like event and goal: it does not license any fact it does not contain, and it is not evidence about who they are. Do not infer preferences, patterns, personality or motives from it, and do not mention that you remember anything.";
+  }
   if (Array.isArray(droppedFacts) && droppedFacts.length) {
     instruction += `\nA previous draft added facts the person did not state: ${droppedFacts.join(", ")}. Rewrite so none of those remain, and add no other counts, weekdays, dates, clock times, names, or addressee roles the person did not write.`;
   }
@@ -54,7 +59,17 @@ Keep every field nonempty. Different goals for the same event must change the su
       role: "user",
       content: {
         type: "text",
-        text: JSON.stringify({ event, goal, keyPoint, preserve, wordingStyle, kind, clarification, clarificationUsed }),
+        text: JSON.stringify({
+          event,
+          goal,
+          keyPoint,
+          preserve,
+          wordingStyle,
+          kind,
+          clarification,
+          clarificationUsed,
+          previousNote: previous,
+        }),
       },
     },
   ];

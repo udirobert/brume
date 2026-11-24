@@ -61,6 +61,9 @@ import {
   withholdUngrounded,
   faithfulnessMessage,
   preparationSource,
+  PREP_FOLLOW_UP,
+  followUpLine,
+  withFollowUp,
   rehearsalSource,
   PLAN_FACT_FIELDS,
   REHEARSAL_FACT_FIELDS,
@@ -138,6 +141,13 @@ const els = {
   btnPrefRetry: $("#btn-pref-retry"),
   prefDetails: $("#pref-details"),
   cardPrefSlot: $("#card-pref-slot"),
+  prepLastNote: $("#prep-last-note"),
+  prepLastNoteText: $("#prep-last-note-text"),
+  btnPrepLastDrop: $("#btn-prep-last-drop"),
+  cardFollowUp: $("#card-follow-up"),
+  cardFollowUpChips: $("#card-follow-up-chips"),
+  cardFollowUpNote: $("#card-follow-up-note"),
+  cardFollowUpSaved: $("#card-follow-up-saved"),
   homeScreen: $("#screen-home"),
   prepEvent: $("#prep-event"),
   prepGoal: $("#prep-goal"),
@@ -1925,6 +1935,9 @@ function newPrepState() {
     error: "",
     completedAt: null,
     saved: false,
+    record: null,
+    previousNote: "",
+    followUpOutcome: null,
     faithfulnessRetried: false,
     rehearsalRetried: false,
     scheduleAsked: false,
@@ -2027,9 +2040,98 @@ function prepKindChips() {
       prep.input.kind = id;
       els.prepKindChips.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
       b.classList.add("selected");
+      refreshPreviousNote();
       snapshotReady("input");
     });
     els.prepKindChips.appendChild(b);
+  }
+}
+
+// --- the follow-up line -----------------------------------------------------
+// The person's own words about how a previous conversation of the SAME kind
+// went. Shown as a suggestion on the input screen, carried into the prompt and
+// into the gate's source, and dropped for this card if they say so.
+async function refreshPreviousNote() {
+  const kind = prep.input.kind;
+  let line = null;
+  if (kind && anna?.storage?.list) {
+    try {
+      line = followUpLine(await loadReadySessions(anna), kind);
+    } catch {
+      line = null;
+    }
+  }
+  prep.previousNote = line ? line.note : "";
+  if (!els.prepLastNote) return;
+  els.prepLastNote.hidden = !line;
+  if (line && els.prepLastNoteText) els.prepLastNoteText.textContent = line.note;
+}
+
+function followUpNoteValue() {
+  return els.cardFollowUpNote ? els.cardFollowUpNote.value : "";
+}
+
+async function saveFollowUp() {
+  if (!prep.record || !anna?.storage?.set) return;
+  const record = withFollowUp(prep.record, {
+    outcome: prep.followUpOutcome,
+    note: followUpNoteValue(),
+  });
+  prep.record = record;
+  try {
+    unwrapHostResponse(
+      await anna.storage.set({
+        key: `ready/sessions/${record.completedAt}`,
+        value: record,
+        scope: "user",
+      }),
+    );
+    unwrapHostResponse(
+      await anna.storage.set({ key: "ready/last", value: record, scope: "user" }),
+    );
+    if (els.cardFollowUpSaved) {
+      els.cardFollowUpSaved.textContent = "Saved.";
+      els.cardFollowUpSaved.hidden = false;
+    }
+  } catch {
+    if (els.cardFollowUpSaved) {
+      els.cardFollowUpSaved.textContent = "Couldn't save that.";
+      els.cardFollowUpSaved.hidden = false;
+    }
+  }
+}
+
+function renderFollowUp() {
+  if (!els.cardFollowUp) return;
+  const open = Boolean(prep.saved && prep.record);
+  els.cardFollowUp.hidden = !open;
+  if (!open) return;
+  if (!els.cardFollowUpChips.childElementCount) {
+    for (const option of PREP_FOLLOW_UP) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = option.label;
+      b.dataset.outcome = option.id;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => {
+        prep.followUpOutcome = option.id;
+        els.cardFollowUpChips.querySelectorAll("button").forEach((x) => {
+          x.setAttribute("aria-pressed", String(x === b));
+        });
+        if (els.cardFollowUpSaved) els.cardFollowUpSaved.hidden = true;
+        snapshotReady("card");
+        saveFollowUp();
+      });
+      els.cardFollowUpChips.appendChild(b);
+    }
+  }
+  const current = prep.record?.followUp || null;
+  prep.followUpOutcome = current?.outcome ?? prep.followUpOutcome ?? null;
+  els.cardFollowUpChips.querySelectorAll("button").forEach((x) => {
+    x.setAttribute("aria-pressed", String(Boolean(current?.outcome && current.outcome === x.dataset.outcome)));
+  });
+  if (els.cardFollowUpNote && document.activeElement !== els.cardFollowUpNote) {
+    els.cardFollowUpNote.value = current?.note || "";
   }
 }
 
@@ -2185,6 +2287,7 @@ function prepRequestPayload() {
       : null,
     clarificationUsed: prep.clarificationUsed,
     scheduleUnspecified: Boolean(prep.scheduleAsked && prep.clarificationUsed && !prep.clarification),
+    previousNote: prep.previousNote || "",
   };
 }
 
@@ -2367,6 +2470,7 @@ function renderPrepStage() {
     prepKindChips();
     renderPrepSuggestion();
     updatePrepSourceGate();
+    refreshPreviousNote();
   } else if (prep.stage === "clarify") {
     els.prepQuestion.textContent = prep.question;
     els.prepClarification.value = prep.clarification;
@@ -2383,6 +2487,7 @@ function renderPrepStage() {
     els.prepFinalNextstep.value = prepFinalValues().nextStep;
   } else if (prep.stage === "card") {
     renderPrepCard();
+    renderFollowUp();
     els.cardSaveNote.textContent = prep.saved ? "Saved." : "This card hasn't been saved yet.";
     els.cardSaveNote.hidden = false;
     els.btnCardSaveRetry.hidden = prep.saved;
@@ -2586,9 +2691,11 @@ async function savePrepCard() {
       await anna.storage.set({ key: "ready/last", value: record, scope: "user" }),
     );
     state.saved = true;
+    state.record = record;
     if (!ownsTask(taskId, taskGen) || prep !== state) return;
     els.cardSaveNote.textContent = "Saved.";
     els.cardSaveNote.hidden = false;
+    renderFollowUp();
   } catch {
     if (!ownsTask(taskId, taskGen) || prep !== state) return;
     els.cardSaveNote.textContent = "Couldn't save this card.";
@@ -3349,6 +3456,16 @@ async function main() {
     else if (prefRetryAction === "forget") doPrefForget();
     else if (prefRetryAction.startsWith("save:")) doPrefSave(prefRetryAction.slice(5));
   });
+  if (els.btnPrepLastDrop) {
+    els.btnPrepLastDrop.addEventListener("click", () => {
+      prep.previousNote = "";
+      if (els.prepLastNote) els.prepLastNote.hidden = true;
+      snapshotReady("input");
+    });
+  }
+  if (els.cardFollowUpNote) {
+    els.cardFollowUpNote.addEventListener("change", () => { saveFollowUp(); });
+  }
   els.btnLastPrep.addEventListener("click", () => {
     if (loadBlocked()) return;
     showLastPreparation();

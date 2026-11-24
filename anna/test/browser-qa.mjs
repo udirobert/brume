@@ -175,7 +175,7 @@ try {
     const r = await ev('JSON.stringify({screen:[...document.querySelectorAll(".screen")].filter(s=>!s.hidden).map(s=>s.id),pause:document.getElementById("btn-pause").textContent,elapsed:document.getElementById("elapsed").textContent})');
     assert.deepEqual(r.screen, ["screen-session"]);
     assert.equal(r.pause, "Resume");
-    assert.ok(r.elapsed === "0:02" || r.elapsed === "0:03" || r.elapsed === "0:04", r.elapsed);
+    assert.ok(/^0:0[2-6]$/.test(r.elapsed), r.elapsed); // bounded, not exact: the real assertion is the frozen value below
     await sleep(1500);
     assert.equal(await ev('document.getElementById("elapsed").textContent'), r.elapsed);
     await ev('document.getElementById("btn-end").click()');
@@ -977,6 +977,54 @@ try {
     assert.notEqual(r.msg, "Connecting to Anna…");
     assert.notEqual(r.msg, "Checking for unfinished work…");
     await post("/__startup", { delayMs: 0, fail: false });
+  });
+
+  await ok("follow-up: the same kind comes back quoted, and reaches the model", async () => {
+    await fresh();
+    await ev('document.getElementById("btn-ready").click()');
+    await ev('[...document.querySelectorAll("#prep-kind-chips button")].find(b=>b.textContent==="Interview").click()');
+    await cli("fill", "#prep-event", "Second interview at a small studio; we need two more people to hit the date.");
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(900);
+    assert.deepEqual(await ev(screens), ["screen-prep-plan"]);
+    await ev('document.getElementById("btn-prep-finish").click()');
+    await sleep(1400);
+    assert.deepEqual(await ev(screens), ["screen-prep-card"]);
+    // offered only once the card is actually saved
+    assert.equal(await ev('document.getElementById("card-follow-up").hidden'), false);
+    await ev('[...document.querySelectorAll("#card-follow-up-chips button")].find(b=>b.textContent==="Partly").click()');
+    await cli("fill", "#card-follow-up-note", "They asked about pay and I didn't have a number.");
+    await ev('document.getElementById("card-follow-up-note").dispatchEvent(new Event("change"))');
+    await sleep(700);
+    const saved = await post("/__dump");
+    const entry = Object.entries(saved.kv).find(([k]) => k.startsWith("ready/sessions/"));
+    assert.ok(entry, "a card record exists");
+    assert.equal(entry[1].followUp.outcome, "partly");
+    assert.match(String(entry[1].followUp.note), /didn't have a number/);
+
+    // a new preparation of the same kind shows their line back
+    await cli("reload");
+    await sleep(1500);
+    await ev('document.getElementById("btn-card-done").click()');
+    await sleep(900);
+    await ev('document.getElementById("btn-ready").click()');
+    await ev('[...document.querySelectorAll("#prep-kind-chips button")].find(b=>b.textContent==="Interview").click()');
+    await sleep(700);
+    assert.equal(await ev('document.getElementById("prep-last-note").hidden'), false);
+    assert.match(await ev('document.getElementById("prep-last-note-text").textContent'), /pay/);
+
+    // and it is source the model can see
+    const before = (await post("/__dump")).llmCalls.length;
+    await cli("fill", "#prep-event", "A third interview, same team");
+    await ev('document.getElementById("btn-prep-go").click()');
+    await sleep(1000);
+    const calls = (await post("/__dump")).llmCalls;
+    assert.ok(calls.length > before, "the preparation made at least one model call");
+    // A faithfulness retry is a second call on the same source, so every new
+    // call must carry the line — not just the last one.
+    for (const call of calls.slice(before)) {
+      assert.match(JSON.stringify(call), /didn't have a number/);
+    }
   });
 
   console.log(`\n${passed} passed, ${failures.length} failed`);

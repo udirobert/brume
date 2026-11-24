@@ -296,6 +296,11 @@
           <p class="hint">Anna's reading of your message. It is only a reading — write your own version below, so the card can only use facts you wrote.</p>
           <blockquote id="prep-source-quote"></blockquote>
         </div>
+        <div id="prep-last-note" class="source-note" hidden>
+          <p class="hint">Last time, in your words. It carries into this card; drop it if it doesn't fit.</p>
+          <blockquote id="prep-last-note-text"></blockquote>
+          <button id="btn-prep-last-drop" type="button">Don't use it</button>
+        </div>
         <button id="btn-prep-go" class="primary" type="button">Prepare my talking points</button>
       </section>
 
@@ -386,6 +391,13 @@
         <p id="card-adjustment" class="hint" hidden></p>
         <p id="card-save-note" class="muted" hidden></p>
         <button id="btn-card-save-retry" type="button" hidden>Retry save</button>
+        <div id="card-follow-up" hidden>
+          <p class="field-label">How did it go? <span class="muted">(optional, once)</span></p>
+          <div class="chips" id="card-follow-up-chips" role="group" aria-label="How did it go?"></div>
+          <label class="field-label" for="card-follow-up-note">What happened, in your words? <span class="muted">(optional)</span></label>
+          <textarea id="card-follow-up-note" rows="2" maxlength="240" placeholder="What you actually said, or what you would change"></textarea>
+          <p id="card-follow-up-saved" class="muted" hidden></p>
+        </div>
         <div class="btn-row">
           <button id="btn-card-export" type="button">Export card</button>
           <button id="btn-card-print" type="button">Print</button>

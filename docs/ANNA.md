@@ -2131,8 +2131,10 @@ implies no resubmission; that stays true until a shape is chosen deliberately.
    the same `kind` in a *new chat*, and confirm the quoted line appears and the
    card still adds no fact the person did not write.
 
-Nothing in this section has been built. It exists so the next increment starts
-from a decision instead of a draft.
+Candidate A was built the same day on the owner's go-ahead — see §12.44 for what
+changed and what the fixtures taught, including one correction to the gate plan
+above (`plan-cases.json` is the *plan* contract shared with the Python executa,
+so the follow-up cases belong in `test/preparation.mjs` instead).
 
 ### 12.43 The preflight found two things before spending a chat (2026-11-24, local)
 
@@ -2175,3 +2177,76 @@ Green after the fix, all free, no Anna quota spent:
 (id=582) reads **REJECTED**. Nothing was published, submitted or chatted at —
 the tier-3 Cloud Agent steps 1–8 still need the owner's console, and nothing in
 §12.42 is built yet.
+
+### 12.44 Candidate A built: what happened last time (app 0.4.13, local, unpublished)
+
+The follow-up loop from §12.42 is in, window-only — the tool, the manifest and
+the Python executa are untouched, so this cut needs an app bump and a
+resubmission but **no binary rebuild**.
+
+**What it does.** A saved card now offers one question on its own screen —
+*How did it go?* (`Went as planned` / `Partly` / `Not really`) and, if the person
+wants, one line in their own words. Both are stored on that card as
+`followUp: { outcome, note, at }`. When they prepare for the **same `kind`**
+again, the input screen shows that line back ("Last time, in your words. It
+carries into this card; drop it if it doesn't fit", with *Don't use it*), and
+the line goes into the prompt as `previousNote` — and into the gate's source,
+which is the part that matters:
+
+- `preparationSource()` now includes `input.previousNote`, so a card may quote
+  their line and still may not invent a count, day, time, name, role or motive
+  the line does not contain. The fixture in `test/preparation.mjs` proves both
+  halves: "Ask for the day this time" passes because the person wrote "the day";
+  "move the Friday review to Thursday at 4" stays withheld.
+- The prompt rule is explicit (`preparation-prompts.js`): the line is theirs,
+  it is a source like event and goal, it is *not* evidence about who they are,
+  and the model must not infer preferences or patterns from it — the same rule
+  that already forbade inferring from history and edits.
+- Same `kind` only. A meeting note never surfaces in an interview preparation;
+  that is what keeps this from becoming a dossier.
+
+**Where the §12.42 gate plan was wrong.** It put the cases in
+`plan-cases.json`. That file is the **plan** contract shared by `plan.js`, the
+Python executa and the MCP server, and the plugin deliberately does not port the
+scanner, so a `follow_up` section there would have described behaviour no other
+implementation has — the parity test would then be asserting a fiction. The
+cases live in `test/preparation.mjs` (window-only logic) and one end-to-end case
+in `test/browser-qa.mjs`.
+
+**Files.** `bundle/preparation.js` (`PREP_FOLLOW_UP`, `cleanFollowUpNote`,
+`followUpOutcome`, `followUpLine`, `withFollowUp`, and the source change),
+`bundle/preparation-prompts.js`, `bundle/app.js` (render, save, the drop
+control), `bundle/index.html`, `bundle/app.css`, `bundle/recovery.js`
+(checkpoint allows the new fields), `app.json` (one sentence, version 0.4.13).
+
+**Gates, all local.** `npm test` 166 (161 + 5 new: source join, withheld fact,
+same-kind/most-recent, closed set and cap, prompt carries it); `test_plan` 20;
+`mcp` 17; `validate --strict` clean; `audit:openers --check` exit 0; browser QA
+**39 cases** with the new end-to-end one — save a card, answer *Partly*, write
+the line, reload, go home, prepare the same kind, the line is on screen, and the
+next model call carries it as `previousNote`.
+
+**What the suite taught on the way.** The new end-to-end case failed twice before
+it passed, and both failures were the product behaving: the canned fixture plan
+says "we need two more people to hit the date", the test's event never wrote
+"two", so `faithfulnessIssues` blanked the key point and the card correctly
+refused to save with an empty field. The fixture had to ground its own canned
+plan. That is the gate doing its job on a sentence a test put there — worth
+noting, because it is the same thing that will happen to a model that tries it.
+(Separately, "reset session reload" asserts an exact elapsed value in a two-to-
+four second window; under a loaded machine it recorded 0:05. The assertion now
+bounds 0:02–0:06 and the real claim — that the value stays *frozen* after resume
+— is unchanged.)
+
+**One environment lesson worth the ink.** A full run reported 31 passed / 8 failed,
+and six of those eight were `agent-browser` transport errors ("Resource
+temporarily unavailable (os error 35)" / "the command reached the daemon but no
+response came back") — another agent on this machine was driving its own
+`databard-anna-qa` session through the same daemon. Re-running with
+`AGENT_BROWSER_SESSION=brume-qa-clean` gave **39 passed, 0 failed**. So: one
+session per run, and a transport error is a harness signal, never a product one.
+The remaining two failures in that run were the two fixed above.
+
+**Then the owner asked for publish and resubmit** on the same day. See §12.45
+for what that produced, including the one checklist item that still had not been
+run when the version went up.

@@ -694,9 +694,72 @@ export function sayableParagraph({ opening = "", keyPoint = "", nextStep = "" } 
 
 export function preparationSource(input = {}) {
   const clarification = input.clarification;
-  return [input.event, input.goal, input.keyPoint, input.preserve, clarification?.question, clarification?.answer]
+  return [
+    input.event,
+    input.goal,
+    input.keyPoint,
+    input.preserve,
+    clarification?.question,
+    clarification?.answer,
+    input.previousNote,
+  ]
     .filter((part) => typeof part === "string" && part.trim())
     .join("\n");
+}
+
+// --- the follow-up: what happened, asked once per card ----------------------
+// Closed set, about the conversation (never about the person), and one optional
+// line in their own words. The line joins the next card's source, so it can be
+// quoted and cannot license a fact it does not contain.
+export const PREP_FOLLOW_UP = [
+  { id: "planned", label: "Went as planned" },
+  { id: "partly", label: "Partly" },
+  { id: "not", label: "Not really" },
+];
+export const FOLLOW_UP_NOTE_CAP = 240;
+const FOLLOW_UP_IDS = PREP_FOLLOW_UP.map((o) => o.id);
+
+export function cleanFollowUpNote(note) {
+  if (typeof note !== "string") return "";
+  const t = note.replace(/\s+/g, " ").trim();
+  return t.slice(0, FOLLOW_UP_NOTE_CAP);
+}
+
+/** Closed set guard for a stored outcome; null when it is not one of ours. */
+export function followUpOutcome(value) {
+  return FOLLOW_UP_IDS.includes(value) ? value : null;
+}
+
+/**
+ * The most recent note the person wrote about a conversation of the same kind,
+ * or null. Same kind only: that is what keeps this from becoming a dossier of
+ * everything they have ever said.
+ */
+export function followUpLine(readySessions, kind) {
+  if (!kind) return null;
+  const preps = Array.isArray(readySessions) ? readySessions : [];
+  let best = null;
+  for (const r of preps) {
+    if (!r || typeof r !== "object" || r.kind !== kind) continue;
+    const note = cleanFollowUpNote(r.followUp?.note);
+    if (!note) continue;
+    const at = String(r.completedAt || "");
+    if (!best || at > best.at) best = { note, at };
+  }
+  return best;
+}
+
+/** A new card record with the follow-up attached; never mutates the old one. */
+export function withFollowUp(record, { outcome = null, note = "", now } = {}) {
+  if (!record || typeof record !== "object") return record;
+  const id = followUpOutcome(outcome);
+  const text = cleanFollowUpNote(note);
+  if (!id && !text) return { ...record, followUp: null };
+  const stamp = now === undefined || now === null ? Date.now() : now;
+  return {
+    ...record,
+    followUp: { outcome: id, note: text || null, at: new Date(stamp).toISOString() },
+  };
 }
 
 export function rehearsalSource(input = {}) {

@@ -383,6 +383,12 @@ textarea:disabled, input:disabled { opacity: 0.55; }
 .source-note .hint { margin: 0 0 8px; }
 .source-note blockquote { margin: 0; padding: 0 0 0 12px; border-left: 2px solid hsl(var(--brume-border)); color: hsl(var(--brume-text) / 0.75); font-size: 0.92em; white-space: pre-line; }
 #card-source-text { margin: 4px 0 10px; font-style: normal; }
+#prep-last-note { margin: 14px 0; }
+#prep-last-note button { margin-top: 10px; min-height: 44px; }
+#card-follow-up { margin: 16px 0 6px; padding: 12px 14px; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface) / 0.7); }
+#card-follow-up[hidden] { display: none; }
+#card-follow-up .chips button[aria-pressed="true"] { border-color: hsl(var(--brume-primary)); color: hsl(var(--brume-primary)); }
+#card-follow-up textarea { margin: 6px 0 10px; }
 .quiet-details { margin: 14px 0; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); padding: 10px 14px; background: hsl(var(--brume-surface) / 0.7); }
 .quiet-details summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; }
 .quiet-details select, .quiet-details input { min-height: 44px; margin: 8px 0; padding: 6px 10px; font: inherit; border: 1px solid hsl(var(--brume-border)); border-radius: var(--brume-radius); background: hsl(var(--brume-surface)); }

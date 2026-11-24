@@ -431,8 +431,15 @@ variables with empty values.
 The active `gh` account may be `sneldao`; for udirobert/brume use
 `gh auth token --user udirobert` (don't switch the active account).
 
-### Release candidate notes (local, unpublished)
+### Release candidate notes (candidate app 0.4.13, tool 0.4.13)
 
+- **The differentiation answer is a follow-up loop** (`docs/ANNA.md` §12.42,
+  §12.44): a saved card offers one closed-set *How did it go?* plus one optional
+  line in the person's own words, stored as `followUp` on that card; the next
+  preparation of the **same `kind`** shows that line back and passes it to the
+  prompt as `previousNote` — and `preparationSource()` includes it, so the gate
+  lets a card quote it and still blocks any fact it does not contain. Never for
+  a different `kind`, never a score, never a count of them.
 - Conversation preparation is the primary result. `bundle/preparation.js`
   blanks a factual span — counts and vague counts, ordinals, weekdays,
   month names, relative days and spans, clock phrases — and an invented
@@ -443,7 +450,9 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   **App v0.4.12 / tool 0.4.13 were rejected after reviewer feedback**
   (submitted 2026-11-14 as `pending_review`, version_id=2277,
   executa_version=1107, binaries `brume-executa-v0.4.13`, workflow run
-  43548702496 — `docs/ANNA.md` §12.40–12.41). The gate withholds a count, a day, a time, a capitalised name,
+  43548702496 — `docs/ANNA.md` §12.40–12.41) because a general-purpose
+  assistant produced similar results. App 0.4.13 answers that with the
+  follow-up loop above; the tool is unchanged, so no binary rebuild. The gate withholds a count, a day, a time, a capitalised name,
   an addressee ("your manager", "the manager", "a colleague"), an
   ascribed motive, and an extra project the person did not write. "the
   team" stays. Will, May, and Hope are names unless they open "Will you",
@@ -464,6 +473,9 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   (fake host :4618 + agent-browser, session `brume-preparation-qa`).
   Python parity: `python3 -m unittest test_plan` in `executas/brume/`.
   Opener audit: `npm run audit:openers -- --check` (name-leak surface
-  stays {Will, May, Hope}). v0.4.12 / tool 0.4.13
-  (`version_id=2277`, `executa_version=1107`) was submitted for review
-  and rejected after reviewer feedback (§12.41).
+  stays {Will, May, Hope}). The preflight before any tier-3 run is in
+  `anna/README.md`; `anna/node_modules` is gitignored, so `npm test` fails
+  with `ERR_MODULE_NOT_FOUND` until `npm install` runs there (§12.43).
+  v0.4.12 / tool 0.4.13 (`version_id=2277`, `executa_version=1107`) was
+  submitted and rejected after reviewer feedback (§12.41); app 0.4.13 is
+  the follow-up-loop cut recorded in §12.44–12.45.

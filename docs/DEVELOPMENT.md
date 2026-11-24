@@ -34,13 +34,18 @@ git push origin main
 # The Anna app — publish a version, then (owner only) submit for review
 cd anna && anna-app apps publish
 
-# The voice service — NOT deploy-hetzner.sh (root@ :22 times out and it
-# re-provisions a shared box). The four-file scp route is written out in
-# AGENTS.md, "Getting a change onto the box". Never docker-compose down.
+# The voice service — the four-file scp route written out in AGENTS.md,
+# "Getting a change onto the box". Never docker-compose down, and never the
+# old provision-and-deploy script (deleted 2026-11-24; the box still carries
+# a September copy that would re-provision shared infrastructure).
 ```
 
-`pnpm run deploy` is a status check, not a deploy. `pnpm run deploy:vision`
-runs the stale provisioning script — don't.
+`pnpm run deploy` is a status check, not a deploy. The provisioning scripts that
+used to sit behind `deploy:vision`, `deploy:firewall` and `deploy:domain` were
+deleted on 2026-11-24, along with the `verify:blockchain`/`verify:lens`/
+`verify:flow`/`verify:api` probes (they required a module the chain cut removed,
+so none of them had run in weeks), `lens:v3-only`, `lens:dev`, `debug:prod`
+(its target file was already gone) and the committed `tmp_rovodev_*` files.
 
 The MCP app (`mcp/`) is deliberately undeployed; see [`MCP-APP.md`](./MCP-APP.md).
 

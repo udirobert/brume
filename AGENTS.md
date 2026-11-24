@@ -390,11 +390,12 @@ on that box belong to the product Brume was before: the web app calls neither.
 
 ### Getting a change onto the box
 
-`deploy-hetzner.sh` is a provision-and-deploy script (explicit tar list →
-`scp` → `docker-compose down` → `build --no-cache` → rewrite the systemd unit),
-and it is not the route: it connects as `root@` on port 22, which times out,
+The repo's `deploy-hetzner.sh` (deleted 2026-11-24) was a provision-and-deploy
+script — explicit tar list → `scp` → `docker-compose down` → `build --no-cache`
+→ rewrite the systemd unit — and it was never the route: it connected as
+`root@` on port 22, which times out,
 while the box is reachable as the `snel-bot` ssh alias — `deploy@157.180.36.156`
-port 49152, in the `docker` group, with `NOPASSWD: ALL`. It is also a shared
+port 49152, in the `docker` group, with `NOPASSWD: ALL`. It was also a shared
 box (`voisss_butler`, onpoint grafana/prometheus/node-exporter, ollama), so
 re-provisioning Docker and rewriting units for one project is out of scope.
 
@@ -415,9 +416,9 @@ app (not from the edge `limit_req`, which is a separate 10 r/s), and the 9
 guard tests pass inside the container. Host nginx sets `X-Real-IP`, which is
 what makes the per-visitor bucket per *visitor*; without it every request
 would share one bucket keyed on the proxy. `/opt/vision-service` is not a git
-checkout and the `deploy-hetzner.sh` sitting on the box is the September copy,
-so files land there only by this route — whoever runs the webhook runs that
-stale script, not this one.
+checkout and the `deploy-hetzner.sh` sitting on the box is the September copy
+(the repo copy was deleted on 2026-11-24), so files land there only by this
+route — whoever runs the webhook runs that stale script, not a current one.
 
 ## Secrets
 

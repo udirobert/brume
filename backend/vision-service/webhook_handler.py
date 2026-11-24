@@ -51,7 +51,11 @@ async def handle_push_event(payload: Dict[str, Any]) -> Dict[str, str]:
     logger.info(f"Push to {ref} in {repository} - triggering deployment")
     
     try:
-        # Trigger deployment script
+        # Trigger deployment script. This is the copy sitting on the box; the
+        # repository's copy was deleted on 2026-11-24 because it was never the
+        # deploy route (see AGENTS.md, "Getting a change onto the box"). Nothing
+        # reaches this line while GITHUB_WEBHOOK_SECRET is unset or disagrees
+        # with the hook's, which is the current state.
         result = subprocess.run(
             ['./deploy-hetzner.sh'],
             cwd='/opt/vision-service',

@@ -58,10 +58,11 @@ MCP host    → mcp/worker.js + mcp-core.js, importing anna/bundle/plan.js
 
 - **The site:** a push to `main` deploys the Netlify site (`netlify.toml`; `pnpm build`, SPA fallback,
   `/api/tts` and `/api/metrics` redirects to functions).
-- **The voice service:** *not* `deploy-hetzner.sh`. That script provisions as `root@` on port 22,
-  which times out, and it would re-provision a shared box. The route that works is the four-file `scp`
-  plus `docker-compose up -d --build vision-service` written out in `AGENTS.md` ("Getting a change onto
-  the box"). Never `docker-compose down`, and `VOICE_SHARED_SECRET` unset is a supported state.
+- **The voice service:** the four-file `scp` plus `docker-compose up -d --build vision-service` route
+  written out in `AGENTS.md` ("Getting a change onto the box"). Never `docker-compose down`, and
+  `VOICE_SHARED_SECRET` unset is a supported state. The old provisioning script
+  (`deploy-hetzner.sh`, as `pnpm run deploy:vision`) was deleted on 2026-11-24: it connected as
+  `root@` on port 22, which times out, and would have re-provisioned a shared box.
 - **The Anna app:** `cd anna && anna-app apps publish`, then — only when the owner decides —
   `anna-app apps submit-review brume`. Publishing is not submitting; review is done by the owner.
 - **The MCP app:** not deployed, by decision. See `MCP-APP.md` for what a deploy would need.

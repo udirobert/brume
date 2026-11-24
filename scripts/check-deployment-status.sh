@@ -202,7 +202,7 @@ case $OVERALL_STATUS in
         echo "❌ External access is blocked (likely cloud firewall)"
         echo ""
         echo "🔧 To fix external access:"
-        echo "   1. Run: ./scripts/setup-hetzner-firewall.sh"
+        echo "   1. Allow the port in the Hetzner Cloud firewall (the old setup script was removed 2026-11-24)"
         echo "   2. Or configure Hetzner Cloud Firewall manually"
         echo "   3. Allow port $VISION_PORT in cloud firewall"
         ;;
@@ -213,7 +213,8 @@ case $OVERALL_STATUS in
         echo "   1. Check Docker containers: ssh $SERVER_USER@$SERVER_HOST 'cd /opt/vision-service && sudo docker-compose ps'"
         echo "   2. Check logs: ssh $SERVER_USER@$SERVER_HOST 'cd /opt/vision-service && sudo docker-compose logs'"
         echo "   3. Restart service: ssh $SERVER_USER@$SERVER_HOST 'cd /opt/vision-service && sudo docker-compose restart'"
-        echo "   4. Redeploy: cd backend/vision-service && ./deploy-hetzner.sh"
+        echo "   4. Redeploy: scp the changed .py files, sudo cp into /opt/vision-service, then rebuild"
+        echo "      (AGENTS.md, \"Getting a change onto the box\" — never docker-compose down)"
         ;;
 esac
 
@@ -222,8 +223,8 @@ echo "📋 Quick Commands:"
 echo "=================="
 echo "🔄 Restart service:    ssh $SERVER_USER@$SERVER_HOST 'cd /opt/vision-service && sudo docker-compose restart'"
 echo "📜 View logs:          ssh $SERVER_USER@$SERVER_HOST 'cd /opt/vision-service && sudo docker-compose logs -f'"
-echo "🚀 Redeploy:           cd backend/vision-service && ./deploy-hetzner.sh"
-echo "🔥 Setup firewall:     ./scripts/setup-hetzner-firewall.sh"
+echo "🚀 Redeploy:           four-file scp + docker-compose up -d --build (AGENTS.md)"
+echo "🔥 Firewall:           Allow the port in the Hetzner Cloud firewall"
 echo "🧪 Test health:        curl http://$SERVER_HOST:$VISION_PORT/health"
 
 echo ""

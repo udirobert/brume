@@ -8,12 +8,6 @@ const config: CapacitorConfig = {
     androidScheme: "https",
   },
   plugins: {
-    Camera: {
-      permissions: ["camera"],
-    },
-    Device: {
-      permissions: ["camera"],
-    },
     SplashScreen: {
       launchShowDuration: 3000,
       backgroundColor: "#0f172a",

@@ -146,3 +146,9 @@ mcp/.wrangler/
 
 # Local agent/tooling state
 .perch/
+
+# Android signing secrets
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+*.jks

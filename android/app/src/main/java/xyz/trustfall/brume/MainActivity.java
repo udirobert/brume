@@ -1,4 +1,4 @@
-package com.imperfectbreath.app;
+package xyz.trustfall.brume;
 
 import com.getcapacitor.BridgeActivity;
 

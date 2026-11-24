@@ -2250,3 +2250,37 @@ The remaining two failures in that run were the two fixed above.
 **Then the owner asked for publish and resubmit** on the same day. See §12.45
 for what that produced, including the one checklist item that still had not been
 run when the version went up.
+
+### 12.45 Submitted: app 0.4.13 with the follow-up loop (2026-11-24)
+
+On the owner's instruction, the cut went up the same day — publish, then
+resubmit. What actually happened, in order, because two of the steps are not
+obvious from the CLI's output:
+
+1. **`apps publish` failed first on missing binaries.** The tool is unchanged,
+   so the artifacts were already published — but the CLI still hashes local
+   files at `executas/brume/dist/`, which is gitignored and was empty. They came
+   back from the GitHub release and every `.sha256` verified:
+   `gh release download brume-executa-v0.4.13 --repo udirobert/brume --dir
+   executas/brume/dist`. Then the upload deduped all four (`0 uploaded, 4
+   cached`). *A local clone cannot publish without this step.*
+2. **`apps publish --skip-executa-publish`** reused the cached tool id
+   (`tool-papa-brume-htcxvfcr`) instead of re-registering the executa, then cut
+   an immutable version: **app 0.4.13, `version_id=2901`**, froze
+   `executa_version=1107` (tool v0.4.13) and skill `…w4p5ngnh` at 1098 (v1.0.1).
+3. **`apps submit-review brume`** moved the app to `pending_review` with review
+   candidate **0.4.13**.
+
+**What was not run, stated plainly.** The tier-3 fresh-install Cloud Agent
+checklist (§12.40, now written out in `anna/README.md` with its preflight) was
+**not** run before this submission — it needs the Developer Console and Anna
+quota, neither of which an agent can use. That is the same gap the reviewer
+named last time, and it is the most likely reason this one comes back too. The
+free gates that could run were green: 166 unit, 20 parity, 17 MCP, `validate
+--strict`, opener audit, and browser QA 39/39 on a dedicated session (§12.44).
+
+**The claim this cut rests on**, so the reviewer can test it directly: prepare
+for a kind, save the card, answer *How did it go?*, write one line — then open a
+**new chat**, prepare for the same kind, and the line is on the drafting screen,
+quoted as theirs. The card may quote it; the card may not invent a fact it does
+not contain. A different kind never sees it.

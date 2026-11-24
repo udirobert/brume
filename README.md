@@ -14,7 +14,7 @@ no scores, no streaks, no account required.
 | Surface | Where it runs | State |
 |---|---|---|
 | **Web app** — `src/` | brumeapp.netlify.app | **live**, and the only surface the product is judged by right now |
-| **Anna app** — `anna/` | inside the Anna agent, `@papa/brume` | current cut v0.4.12 carries the reviewer's rework request (`docs/ANNA.md` §12.40–12.41) |
+| **Anna app** — `anna/` | inside the Anna agent, `@papa/brume` | **v0.4.13 submitted for review** (`pending_review`) — it answers the reviewer's differentiation feedback with a follow-up loop (`docs/ANNA.md` §12.42, §12.44–12.45) |
 | **MCP app** — `mcp/` | any MCP host (ChatGPT Apps SDK target) | built and tested, **not deployed** — held behind the retention bar in `docs/EXPERIMENTS.md` |
 
 All three run one breathing-plan contract, `anna/bundle/plan.js`, which the Python executa in

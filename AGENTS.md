@@ -431,7 +431,7 @@ variables with empty values.
 The active `gh` account may be `sneldao`; for udirobert/brume use
 `gh auth token --user udirobert` (don't switch the active account).
 
-### Release candidate notes (candidate app 0.4.13, tool 0.4.13)
+### Release candidate notes (app 0.4.13 submitted 2026-11-24, tool 0.4.13)
 
 - **The differentiation answer is a follow-up loop** (`docs/ANNA.md` §12.42,
   §12.44): a saved card offers one closed-set *How did it go?* plus one optional
@@ -452,7 +452,11 @@ The active `gh` account may be `sneldao`; for udirobert/brume use
   executa_version=1107, binaries `brume-executa-v0.4.13`, workflow run
   43548702496 — `docs/ANNA.md` §12.40–12.41) because a general-purpose
   assistant produced similar results. App 0.4.13 answers that with the
-  follow-up loop above; the tool is unchanged, so no binary rebuild. The gate withholds a count, a day, a time, a capitalised name,
+  follow-up loop above; the tool is unchanged, so no binary rebuild. Cut as
+  app 0.4.13 (`version_id=2901`, `executa_version=1107`, skill 1098 v1.0.1) and
+  submitted the same day: `pending_review`, candidate 0.4.13 (§12.45). The
+  tier-3 fresh-install Cloud Agent checklist was **not** run before submit —
+  again — because it needs the console and quota. The gate withholds a count, a day, a time, a capitalised name,
   an addressee ("your manager", "the manager", "a colleague"), an
   ascribed motive, and an extra project the person did not write. "the
   team" stays. Will, May, and Hope are names unless they open "Will you",

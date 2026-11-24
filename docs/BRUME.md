@@ -6,8 +6,10 @@
 > `docs/EXPERIMENTS.md`, Anna program in `docs/ANNA.md`.
 
 **Status (2026-11-24).** The web app is the only live surface, and it sells
-nothing. The Anna app's current cut (v0.4.12) came back from review with a
-differentiation request and is not resubmitted. The MCP app is built, tested
+nothing. The Anna app's v0.4.12 came back from review with a differentiation
+request; **v0.4.13** answers it with a follow-up loop (what happened last time,
+in the person's own words, quoted back on the next preparation of the same kind)
+and is now `pending_review`. The MCP app is built, tested
 and deliberately undeployed until the retention bar in `docs/EXPERIMENTS.md`
 is met. Everything below describes the product; the sections marked
 *historical* describe what it was during the Shipaton window (Aug 1 – Sep 30,

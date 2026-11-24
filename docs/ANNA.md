@@ -2049,3 +2049,87 @@ resubmission — plus a full, self-run fresh-install Cloud Agent test
 (the §12.40 checklist was never run before that submit). The current
 pond and room-play experiments are web-only work; this note implies no
 resubmission and no test run.
+
+### 12.42 What would answer "distinct ongoing coaching" (2026-11-24, local, unpublished)
+
+§12.41 records the rejection: a general-purpose assistant produced similar
+results, and the reviewer wants distinct ongoing coaching across multiple
+conversations. This section is the design work that comes before any code, and
+it starts by being honest about why the current cut reads as a one-shot.
+
+**What the app actually does across conversations today.** Three small things,
+none of which is coaching:
+
+| Piece | Where | What it carries |
+|---|---|---|
+| `preparationMemoryLine` | `plan.js:540`, shown on Home | names a preparation `kind` that recurred ("Interviews, twice") — a tally, closed set, never typed text |
+| `prepPersonalizationFromReady` | `plan.js:565` → `session.js:280` | passes `kind` counts into the **plan** prompt ("They have prepared for: interview 3") |
+| `ready/last` | `app.js:695` | a shortcut back to the last saved card |
+
+So the app knows *that* you prepared, and roughly for what. It does not know
+whether the conversation went well, what you actually said, or what surprised
+you — which means the next card cannot be better because of the last one. An
+assistant with the transcript in front of it can do at least as much. That is
+the gap the reviewer named, and no amount of perseverance in the drafting
+prompt closes it.
+
+**Candidate A — the follow-up loop (recommended).** A saved card gains one
+question, asked once, on the card's own screen: *How did it go?* — closed set
+(`went as planned` / `partly` / `not at all`) — and, optionally, one line in the
+person's own words about what happened. Both attach to that card. When they
+prepare for the same `kind` again, the card's drafting screen shows that line
+back **quoted, as theirs**, and the preparation prompt receives it as source
+text alongside the situation they type.
+
+Why this fits the doctrine rather than bending it:
+
+- **Their words, quoted, never interpreted.** `preparation-prompts.js:30`
+  already forbids inferring preferences from history or edits. The follow-up
+  line enters the prompt the same way the situation does — as a fact the person
+  wrote — so the grounding rules in `preparation.js` apply to it unchanged.
+- **No scores, no streaks.** The closed set is about a *conversation*, not about
+  the person, and nothing is counted back to them. The moment it becomes "you
+  usually rate these poorly", it is a mood tracker and must be deleted.
+- **Suggestion only.** The question sits after the card, dismissible, and the
+  product works fully if it is never answered.
+- **Cost.** One in-window state, one storage field on the existing record, one
+  prompt input, and fixtures. The tool (`brume_prepare`) does not change — this
+  is window-only, like the 0.4.11→0.4.12 gates — so it needs an app bump and a
+  resubmission, but **no binary rebuild**.
+
+**Candidate B — the thread.** A running view of the month's conversations.
+Rejected on shape: a list of cards is a gallery, and a new destination is
+exactly what `docs/EXPERIMENTS.md` ("Product shape") forbids. It also reads as a
+journal, which is a different product.
+
+**Candidate C — deeper rehearsal.** Multi-turn practice inside one card,
+escalating pushbacks. It makes the single conversation stronger and is the
+cheapest of the three to argue for, but it is still *one* conversation, so it
+answers the wrong half of the feedback.
+
+**The honest alternative.** If ongoing coaching is not wanted — if the product's
+whole claim is "one conversation, prepared, and out" — then the correct move is
+to leave the program rather than dress a one-shot as a coach. §12.41 already
+implies no resubmission; that stays true until a shape is chosen deliberately.
+
+**If A is chosen, the gate plan is:**
+
+1. `plan-cases.json` gains a `follow_up` section: the closed set maps to the
+   record, an unanswered card stays `null`, and the next preparation receives
+   the quoted line only for the same `kind` (a different kind gets nothing —
+   that is what stops it becoming a dossier).
+2. `faithfulness` fixtures gain the continuity case: a follow-up line the person
+   wrote may be quoted in the next card; a fact that only appears in the
+   *follow-up* line still may not be invented into a *new* field it was not
+   written for. The span scanner sees one source, so the question is whether the
+   follow-up text joins that source — answer it in the fixture before the code.
+3. `copy-claims.test.ts` covers the new strings; `app.json` gains one sentence
+   about the follow-up and what is stored.
+4. Tier-1 green (`npm test`, `test_plan`, `validate --strict`, browser QA).
+5. The tier-3 fresh-install Cloud Agent checklist, run unmodified and recorded,
+   with one added step: prepare for a `kind`, answer the follow-up, prepare for
+   the same `kind` in a *new chat*, and confirm the quoted line appears and the
+   card still adds no fact the person did not write.
+
+Nothing in this section has been built. It exists so the next increment starts
+from a decision instead of a draft.

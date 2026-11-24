@@ -230,6 +230,24 @@ storage reverse-RPC; a fake-host harness that answers it is a TODO.)
 
 **Tier 3 — Anna Cloud Agent, once per release candidate**
 
+**Preflight — free, no quota, and all of it green before you spend a chat.**
+`anna/node_modules` is gitignored, so a fresh clone fails `npm test` with
+`ERR_MODULE_NOT_FOUND: @anna-ai/cli` until `npm install` runs here (not at the
+repo root — `anna/` is its own project on purpose).
+
+```bash
+cd anna && npm install && npm test && npm run test:browser
+(cd ../mcp && npm test)
+(cd executas/brume && python3 -m unittest test_plan)
+anna-app validate --strict
+npm run audit:openers -- --check
+```
+
+Keep the evidence as you go: one line per step saying which chat, how many
+turns, and what the saved record under `ready/last` actually contains. A
+checklist ticked from memory is what §12.40 did, and it is why the reviewer
+asked for a self-run test.
+
 Fixed checklist, each step in a NEW chat (context size drives cost):
 
 1. Developer Console → Install vX; wait for "Deploying bundled tools…" to
@@ -254,6 +272,12 @@ Fixed checklist, each step in a NEW chat (context size drives cost):
    reading appears as a suggestion and Prepare stays off until the
    person writes the situation.
 7. One window alertness check → AI note (not the fallback line).
+
+**After the differentiation cut (`docs/ANNA.md` §12.42), add:**
+8. Prepare for one `kind`, save, answer the follow-up once, then open a *new*
+   chat and prepare for the same `kind`: the quoted line from the follow-up is
+   on the drafting screen, and the card still adds no count, day, time, name,
+   role or motive the person did not write.
 
 Consider BYOK in Anna for test traffic so it doesn't burn credits.
 

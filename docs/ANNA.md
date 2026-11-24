@@ -2338,3 +2338,41 @@ makes the target ambiguous); step 2's window-side half and step 8 ✓ as above.
 fair "where I got stuck"); if a platform answer says the tool must declare
 `client_id`, add it to `describe` and re-run; otherwise wait for the host
 fix and re-run steps 2–7.
+
+### 12.47 The `client_id` workaround is proven dead — valid ID still rejected (2026-11-24)
+
+Followed the error's own advice: shipped executa **v0.4.14** declaring
+`client_id` as an optional parameter on all three tools so the model *can*
+pass a real online ID. Build path: version bump in `brume_plugin.py` /
+`executa.json` / `pyproject.toml`, regenerated `manifest.json` from describe,
+`Brume Executa Binaries` workflow → GH release `brume-executa-v0.4.14` →
+`gh release download` into `dist/` → `anna-app executa publish` (without
+`--publish` — public-Hub visibility needs a paid plan; `app_bundled`
+visibility is all the tool needs). Frozen as executa v0.4.14.
+
+**Result, observed live on the Cloud Agent:** the model called
+`brume_reset` with `client_id: "agent_dcc86f05e19c45b3a4f9e9aa3ddd21fe"` —
+the account's real, online, default agent, **present verbatim in the
+error's own `online_clients` list** — and got the identical
+`client_id is required` error. So dispatch rejects even a correct ID:
+validation isn't checking presence/format, it's resolving against a
+registry where the right answer doesn't qualify. Combined with
+`online_clients` listing **40+ `agent_*` ids on an account with one
+registered agent**, the likeliest mechanism is a stale/platform-wide
+client registry defeating default-resolution — the "Do NOT pass
+placeholder values like 'default_client'" wording suggests the host may
+inject exactly that sentinel, which then fails validation.
+
+**Where this leaves things:** no user-side route exists (omit → injection
+never lands; pass → valid ID rejected; `get_default_client` → `user_id is
+required`). The `client_id` param stays in the schema — harmless, optional,
+and lets the model pass an ID the day the validator accepts one. The
+submitted review candidate is untouched: app 0.4.13 (version_id=2901)
+still pins executa_version=1107 (tool v0.4.13). Bug report drafted for
+Anna (forum Developers + dev@anna.partners) with the full repro —
+`client_id` injection and the `online_clients` registry are both theirs.
+
+Housekeeping from the same session: expired Featherless BYOK provider
+(DeepSeek V3) deleted from /llm — its native `confirm()` dialog had been
+silently blocking earlier saves. SandBase + Anthropic(OpenRouter)
+providers remain; Main Model still SandBase Haiku.

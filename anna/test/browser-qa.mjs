@@ -58,6 +58,12 @@ try {
   });
   await post("/__reset");
   browserStarted = true;
+  // The agent-browser session persists between runs, and navigating to the URL
+  // the tab is already on is a no-op — so a run that was killed mid-flow leaves
+  // its document (and whatever screen it was on) in place for the next run's
+  // first assertion. Go through about:blank to force a real load. Found when a
+  // hung run made "boots to home" fail with screen-prep-card.
+  await cli("open", "about:blank");
   await cli("open", BASE);
   await sleep(1200);
 

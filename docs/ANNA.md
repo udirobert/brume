@@ -2133,3 +2133,45 @@ implies no resubmission; that stays true until a shape is chosen deliberately.
 
 Nothing in this section has been built. It exists so the next increment starts
 from a decision instead of a draft.
+
+### 12.43 The preflight found two things before spending a chat (2026-11-24, local)
+
+Running the tier-3 preflight for the first time since the rejection — the part
+that costs nothing — turned up two facts and one fix.
+
+**A fresh clone cannot run `npm test` in `anna/`.** `anna/node_modules` is
+gitignored and `test/smoke.mjs` imports `@anna-ai/cli`, so the first command in
+the release checklist dies with `ERR_MODULE_NOT_FOUND` until `npm install` runs
+in `anna/` (not at the repo root). That is now the first line of the preflight in
+`anna/README.md`, with the reason.
+
+**`browser-qa` case 1 fails whenever the previous run did not exit cleanly.**
+The agent-browser session persists between runs and the harness opened `BASE`
+directly, so if the tab was already on that URL the navigation was a no-op and
+the *old* document — mid-flow, card on screen — answered the first assertion:
+`expected screen-prep-input, got screen-prep-card`. Fixed by going through
+`about:blank` first (the same thing `fresh()` does, which is why every later
+case was immune). Worth the fix rather than a re-run: a release checklist whose
+first line is flaky teaches you to ignore it.
+
+**What a stalled run looks like here.** The first attempt sat for an hour with
+zero output and 2.5 s of CPU — waiting on the CLI, not spinning. Killing it and
+re-running from a blank page finished the suite in about eight minutes. Whether
+the stale session caused that stall as well is unproven; the fix removes the
+stale-document class either way.
+
+Green after the fix, all free, no Anna quota spent:
+
+| Gate | Result |
+|---|---|
+| `cd anna && npm install && npm test` | 161 unit tests, smoke green |
+| `npm run test:browser` | **38 passed, 0 failed** (was 37/1 before the fix) |
+| `(cd ../mcp && npm test)` | 17 pass |
+| `(cd executas/brume && python3 -m unittest test_plan)` | 20 OK |
+| `anna-app validate --strict` | clean (one pre-existing retired-field warning) |
+| `npm run audit:openers -- --check` | exit 0, surface {Will, May, Hope} |
+
+`anna-app apps list` confirms the account state §12.41 described: `brume`
+(id=582) reads **REJECTED**. Nothing was published, submitted or chatted at —
+the tier-3 Cloud Agent steps 1–8 still need the owner's console, and nothing in
+§12.42 is built yet.

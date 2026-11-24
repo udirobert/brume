@@ -27,6 +27,46 @@ src/**/__tests__/           # Unit tests (vitest + jsdom)
 e2e/                        # Playwright E2E (root-level, stale fixtures)
 ```
 
+## What is tested today (2026-11-24)
+
+Seven suites, one per surface. None of them needs a network, an account or a
+model call.
+
+| Surface | Command | What it pins |
+|---|---|---|
+| Web app | `pnpm vitest run` | the copy contracts (`copy-claims`, `no-streaks`, `no-wallet`), `checkinLedger`, the metrics wire client map, voice propose-never-commit, feelings/`feelTheme`/room, mascot demeanour, Home and session behaviour |
+| Anna bundle | `cd anna && npm test` | node smoke + shared fixtures (`preparation`, `recovery`, `session-storage`, `experience`, `mascot`, `arrive`) |
+| Python parity | `cd anna/executas/brume && python3 -m unittest test_plan` | the executa's port of `plan.js` |
+| Anna manifest | `cd anna && anna-app validate --strict` | schema and `host_api` ACL |
+| MCP app | `cd mcp && npm test` | the plan contract, plus a real jsdom run of the embedded widget (phases → mascot states → single-loop `Again` → `pagehide` cleanup) |
+| Voice service | `cd backend/vision-service && python3 -m unittest test_voice_guard` | per-visitor/per-day metering and the optional key |
+| Counter | `pnpm vitest run src/lib/__tests__/metrics.test.ts` | the client `WIRE` and the function's `ALLOWED` map stay equal |
+
+Browser QA is the eighth: `cd anna && npm run test:browser` drives a fake host on
+`:4618` with a real browser.
+
+**What makes these load-bearing.** Contract tests are parity tests: the metrics
+test fails when `WIRE` and `ALLOWED` disagree, `test_plan` fails when the Python
+executa drifts from `plan.js`, and `mascot.mjs` pins the engine the web app and
+the MCP widget both draw. The claim tests are refusal tests: they fail when copy
+invents a health claim, a score or a streak, and `no-wallet.test.ts` fails on an
+import of a chain library anywhere under `src/`.
+
+**Not covered, and known to be:** native Capacitor builds (no JDK on the dev
+machine, no iOS project), the Playwright `e2e/` fixtures (stale routes — `login`
+vs `/auth`), a real phone for room touch, and any assertion about how a real
+person feels afterwards. The last one is the qualitative table in
+[`EXPERIMENTS.md`](./EXPERIMENTS.md), not a test.
+
+---
+
+# History — the chain-era test plan (kept verbatim, 2026-10)
+
+Everything below describes Flow/Lens wallet flows, NFT minting and AI analysis,
+none of which exist in the app. It is kept because it records what was once
+considered coverage, and because two of its habits survived: mock the adapter,
+not the component, and never assert on copy without the claims list.
+
 ## Unit Testing
 
 ### Framework

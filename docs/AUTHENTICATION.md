@@ -1,5 +1,11 @@
 # Authentication Architecture
 
+> **Status: historical (2026-08 → 2026-11-04).** This describes wallet, SIWE,
+> Flow and Lens sign-in. All of it was cut on 4 November 2026: sign-in is an
+> email and a password through Supabase, the app is complete signed out, and
+> `src/lib/__tests__/no-wallet.test.ts` fails on an import of a chain library
+> anywhere under `src/`. The current account shape is `src/types/user.ts`.
+
 Comprehensive authentication system supporting multiple methods with unified user experience.
 
 ## Overview

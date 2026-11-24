@@ -2,8 +2,25 @@
 
 > **Brume** (French: *mist*) — a calm companion for the two minutes between
 > things. Nothing to get right, nothing to prove.
-> Shipaton 2026 entry · bundle `xyz.trustfall.brume` · see `docs/STRATEGY.md`
-> (historical — the camera-verification thesis there is superseded).
+> Bundle `xyz.trustfall.brume` · rules in `AGENTS.md`, experiments in
+> `docs/EXPERIMENTS.md`, Anna program in `docs/ANNA.md`.
+
+**Status (2026-11-24).** The web app is the only live surface, and it sells
+nothing. The Anna app's current cut (v0.4.12) came back from review with a
+differentiation request and is not resubmitted. The MCP app is built, tested
+and deliberately undeployed until the retention bar in `docs/EXPERIMENTS.md`
+is met. Everything below describes the product; the sections marked
+*historical* describe what it was during the Shipaton window (Aug 1 – Sep 30,
+2026) and are kept so the decisions stay legible.
+
+> **The camera thesis is dropped, not merely unproven.** The web app does not
+> request or use the camera at all, results report recorded practice time
+> only, and no credential is minted or shown. `docs/STRATEGY.md` is history.
+>
+> **Tech migration (2026-10-17):** the frontend runs exact pinned versions —
+> React 19, Vite 8, Tailwind 4, Capacitor 8 — see
+> [DEPENDENCIES.md](./DEPENDENCIES.md) for pins and exceptions, and
+> `package.json` for what is actually installed.
 
 ## One-liner
 
@@ -11,16 +28,6 @@ Brume is a guided breathing companion. You pick a rhythm — or say how the
 moment is and we suggest one — and the session is just the breath and the
 clock. Afterwards you can put the moment into one honest sentence and copy or
 share it. No camera, no scores, no streaks, no account required.
-
-> **Status note (2026-11):** the original "camera-verified proof" concept is
-> dropped, not just unproven — the web app does not request or use the camera
-> at all. Results report recorded practice time only; credentials are not
-> minted or shown. `docs/STRATEGY.md` is kept for history.
->
-> **Tech migration (2026-10-17):** frontend moved to exact pinned versions —
-> React 19, Vite 8, Tailwind 4, wagmi 3, Capacitor 8 — see
-> [DEPENDENCIES.md](./DEPENDENCIES.md) for pins, exceptions, and verification
-> status.
 
 ## Core loop (retention engine)
 
@@ -49,7 +56,7 @@ revision of the check-in exists because the previous one graded the
 answer to its own question; the doctrine "nothing to get right, nothing
 to prove" rules out a classifier by definition.
 
-## Screens (v1 scope — 6, nothing more)
+## Screens (6, nothing more)
 
 | Screen | Notes |
 |---|---|
@@ -59,7 +66,11 @@ to prove" rules out a classifier by definition.
 | Decompress | Two-minute shoulder pause at a pond (tap Brume for a ripple — it never starts anything) → rest → Done, or Add a word → optional words card, shared only on request; quiet links to two room-play toys |
 | Post-session | Practice-time summary + words card (no score or verification marks) |
 | Progress | Sessions and minutes — plain facts, no streaks shown |
-| Paywall | RevenueCat; see below |
+
+Sign-in (`/auth`, email and password through Supabase) and Profile are
+optional doors, not a seventh screen — the app is complete signed out, and
+nothing is gated behind an account. There is no paywall and no tier label in
+the UI; see "Monetization" below.
 
 ### Shared mascot
 
@@ -115,15 +126,34 @@ releases it on unmount. Still ahead: contextual suggestions. The same three file
 web `BrumeMascot` wrapper and the MCP session widget — it covers mascot
 surfaces only; other screen animations are unchanged.
 
-## Monetization (HAMM evidence)
+## Monetization
 
-- **Free:** the full core loop — 5 core patterns and /decompress.
-- **Brume Premium** (`brume_premium` entitlement): 20+ patterns, deep session
-  insights, adaptive sessions, accountability buddies.
-  Monthly + annual, **7-day trial**. Judges get a promo code (submission requirement).
-- **Agent API** (`backend/mcp-server`): metered verification/coaching calls —
-  the two-sided monetization story: consumers pay via RevenueCat, agents pay per call.
-- Port existing plumbing: `revenuecat_config.py`, `revenueCatAuthIntegration.ts`.
+**Nothing is sold today.** The web app has no paywall, no tier label and no
+subscription route: they were cut on 2026-11-04 with the wallet, and
+`src/lib/__tests__/no-streaks.test.ts` and the copy tests keep the UI honest
+about not having a score to sell. `src/lib/monetization/` survives only for
+the Capacitor build, where `revenueCatService.initialize()` returns before
+touching the SDK on the web, so no sign-in reaches RevenueCat.
+
+The revenue surface that does exist is the **Anna Founding Builder program**
+(`docs/ANNA.md` §12.1): monthly grants paid on *qualified* MAU — users who
+actually ran the app's declared primary function in that calendar month —
+from $50/mo at 200 MAU to $5,000/mo at 20,000. The window runs to
+2027-03-31, each month its own cycle, and one meaningful improvement per
+month is required to keep receiving it.
+
+Deliberately not built, in order of how often it gets proposed:
+
+- **No agent API / metered "proof of practice."** That was the camera thesis
+  (`docs/STRATEGY.md`); a face in frame proves nothing, so there is nothing to
+  meter. Retired with the camera, not merely unscheduled.
+- **No premium tier on the web.** A solo developer does not out-content Calm,
+  and a paid tier would put a decision between someone and their two minutes.
+  Money is a decision for the day the retention bar comes back with five
+  yeses in it (`docs/EXPERIMENTS.md`), not something to sample earlier.
+- **No advertising, no analytics provider.** `trackEvent` still has no
+  provider; wiring one is the moment `PrivacyPolicy.tsx` starts describing
+  transmission that happens.
 
 ## Mascot Strategy & Competitive Insights
 
@@ -133,9 +163,13 @@ Key pillars:
 - **Current phase:** B2C web experiments only; nothing deployed to Cloudflare/ChatGPT until retention is proven — see [`docs/EXPERIMENTS.md`](./EXPERIMENTS.md).
 - **Actionable outcome bridge:** Like Shmoody's action plans, Brume delivers a concrete output—the Post-Session Words Card ("say it in a sentence without explaining it") and AI conversation preparation on Anna.
 
-## OneSignal Journeys (Keep Them Coming Back evidence)
+## OneSignal (Capacitor build only)
 
-**Wired client-side** (`src/lib/notifications/oneSignal.ts`, hooks in `App.tsx` init +
+**Status:** wired client-side and a guarded no-op on the web — with
+`VITE_ONESIGNAL_APP_ID` unset nothing initialises, and that is the shipped
+state. It belongs to the Capacitor shell, not to brumeapp.netlify.app.
+
+**Wired** (`src/lib/notifications/oneSignal.ts`, hooks in `App.tsx` init +
 `sessionStore.completeSession`). Permission is asked **in context** — after the first
 completed session, never on first open. SDK: `onesignal-cordova-plugin` (Capacitor).
 
@@ -149,21 +183,37 @@ completed session, never on first open. SDK: `onesignal-cordova-plugin` (Capacit
 
 **3. Buddy Accountability** needs a server leg (client can't securely notify another
 user): a small server leg calls OneSignal REST with the buddy's player id when a
-session completes. Post-release task — Journeys 1, 2, 4 carry the award story alone.
+session completes. Not built, and not scheduled — it is the kind of "keep them
+coming back" mechanism the retention experiments exist to test rather than assume.
 
 **Dashboard setup (no code):** create OneSignal app → add iOS/Android platforms →
 set `VITE_ONESIGNAL_APP_ID` → build the 3 Journeys above. `identifyUser()` /
 `resetNotificationUser()` helpers exist but are unwired until auth settles (works
-anonymously via tags meanwhile).
+anonymously via tags meanwhile). **No journey may be framed as a streak** — that is
+the product's stance, not a preference.
 
-## Cut list for v1 (Thiel-small)
+## Cut list — what is not in the product
 
-- ❌ Marketplace UI (buried — attestations stay as quiet credentials)
-- ❌ Multi-wallet onboarding prominence (wallet = optional, in Settings)
-- ❌ Instructor dashboard, wearables, extra chains
-- ✅ Keep: vision engine, emotional arc, Zen coach, offline PWA behavior
+Cut on 4–5 November 2026, and kept cut by tests rather than by memory:
 
-## Submission checklist (due Sep 30)
+- **Wallet, chain sign-in, Flow attestations, Lens posting/profile** — the whole
+  chain era. `src/lib/__tests__/no-wallet.test.ts` walks `src` and fails on an
+  import of a chain library. Sign-in is an email.
+- **The `/subscription` route, every tier label, the entire selling surface.**
+- **The camera and any verification of practice** — a face in frame proved nothing.
+- **Scores, streaks and the comeback mechanics built on them** — `no-streaks.test.ts`.
+- **The check-in classifier** (modes, rotating prompt deck, free-text margin) —
+  cut 2026-11-04; replaced by one question and a closed-set reason code.
+- **Instructor dashboard, wearables, extra chains, the NFT marketplace.**
+
+✅ **Kept:** the breath and the clock, the fourteen words, the device-local
+ledger, the travelling mascot, the room and its material, the Words Card, the
+landing, the PWA's offline behaviour, and the three shared contracts
+(`plan.js`, `preparation.js`, `mascot-engine.js`).
+
+## Submission checklist (historical — Shipaton window closed 30 Sep 2026)
+
+Kept because the assets it names still exist under `anna/listing/`:
 
 - [ ] App live on Google Play (target Sep 3) + iOS submitted
 - [ ] ≤2-min demo video (YouTube) — show: check-in word → breathing session → "put it into words"
@@ -172,11 +222,16 @@ anonymously via tags meanwhile).
 - [ ] Judge promo code / free trial
 - [ ] Devpost text: lead with the monopoly line + two-sided monetization
 
-## Open build questions
+## Shipaton-era open questions (closed — recorded as answered)
 
-1. Apple developer account active? (longest-lead item — confirm today)
-2. google-services.json for OneSignal push on Android (gradle already guards for it)
-3. Domain: `brumeapp.netlify.app` for landing + agent API docs
+1. ~~Apple developer account?~~ Never opened; the Capacitor shell stayed a shell.
+2. ~~`google-services.json` for OneSignal push~~ Moot: push is Capacitor-only and unset.
+3. ~~Domain~~ `brumeapp.netlify.app` serves the app; `api.brume.trustfall.xyz`
+   serves voice. No agent API docs, because there is no agent API.
+
+Current open decisions live in `docs/EXPERIMENTS.md` ("Open decisions") — chiefly
+whether the product is a companion or a session sold into hosts, which is E6's
+question to answer.
 
 ## Future ideas (parked, 2026-11-02)
 

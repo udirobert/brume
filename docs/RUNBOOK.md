@@ -1,5 +1,12 @@
 # Shipaton Console Runbook
 
+> **Status: historical (2026-08 → 2026-09-30).** The Shipaton console runbook:
+> Apple account, RevenueCat products, OneSignal journeys, and a camera
+> permission string. The window closed on 30 September 2026, and there is no
+> camera and no paywall left to submit. The operator notes that are still true
+> live in [`../AGENTS.md`](../AGENTS.md) ("Getting a change onto the box",
+> "The voice server") and in `netlify.toml`.
+
 > The dashboard-side tasks only a human with the accounts can do, in dependency order.
 > Code side is ready (branch `feat/brume`). Today: Aug 27. Public release target: **Sep 3**. Submission deadline: **Sep 30**.
 

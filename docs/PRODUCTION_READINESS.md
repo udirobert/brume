@@ -1,5 +1,11 @@
 # Production Readiness Checklist: Brume
 
+> **Status: historical (2026-08).** A pre-launch checklist for the chain-era
+> app — FastAPI vision analysis, wallet, subscriptions. Not a live runbook, and
+> several items were resolved by *removing* the feature rather than shipping it.
+> For what runs today, read [`../AGENTS.md`](../AGENTS.md) and
+> [`README.md`](./README.md).
+
 ## 🚀 Priority 1: Launch Foundations (Critical)
 
 ### 1. Environment & Infrastructure

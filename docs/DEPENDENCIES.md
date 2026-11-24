@@ -1,13 +1,25 @@
 # Dependencies & Toolchain
 
-Current frontend/toolchain state as of **2026-10-17**. The frontend was
-migrated to exact, pinned latest-compatible versions — no caret ranges or `latest`
-tags in `package.json`, so the manifest is the audited target.
+Current frontend/toolchain state as of **2026-11-24**. The frontend was
+migrated to exact, pinned latest-compatible versions on 2026-10-17 — no caret
+ranges or `latest` tags in `package.json`, so the manifest is the audited
+target. `package.json` is always the source of truth; this page explains the
+choices behind it.
+
+> **The chain era is gone (2026-11-05).** `@onflow/*`, `viem`, `@lens-*`,
+> `wagmi`'s consumers, `src/lib/crypto`, `src/lib/ai`, `src/lib/sharing`,
+> `cadence/` and `flow.json` were removed. `lucide-react`, `next-themes` and
+> `recharts` went with them. One leftover remains: **`wagmi@3.7.7` is still
+> declared in `package.json` and imported nowhere in `src/`** — the guard in
+> `src/lib/__tests__/no-wallet.test.ts` names it as forbidden. Dropping the
+> declaration is a small, safe tidy-up that nobody has done yet; until then it
+> installs without being used.
 
 ## Runtime requirements
 
 - **Node.js `>=24.15.0 <25`** (`engines` in `package.json`, `.nvmrc` = `24`)
-- **pnpm `12.14.0`** (`packageManager` field; `corepack enable` picks it up)
+- **pnpm `10.33.2`** (`packageManager` field; `corepack enable` picks it up,
+  and `netlify.toml` pins the same value for builds)
 
 ```bash
 pnpm install --frozen-lockfile
@@ -18,37 +30,35 @@ pnpm dev    # http://localhost:4556
 
 - All direct dependencies are **exact pins** resolved against npm `latest`
   at migration time. Upgrade deliberately, not via floating ranges.
-- `pnpm-workspace.yaml` is tracked and enforces pnpm 12's default
-  `minimumReleaseAge` gate. The only `minimumReleaseAgeExclude` entries are
-  the two exact pins `eslint@10.13.0` and `lucide-react@1.58.0` — exact
-  versions only, no wildcards. This migration did not use `--force` or
-  `legacy-peer-deps` to bypass compatibility checks.
-- The pnpm 12 lockfile is multi-document; always install with
-  `--frozen-lockfile`.
+- `pnpm-workspace.yaml` is tracked and applies pnpm's `minimumReleaseAge`
+  gate to every package. The only `minimumReleaseAgeExclude` entries are the
+  two exact pins `eslint@10.13.0` and `lucide-react@1.58.0` — exact versions
+  only, no wildcards. (`lucide-react` is no longer a dependency; its entry is
+  harmless and can be retired with the next lockfile change.)
+- The lockfile is multi-document; always install with `--frozen-lockfile`.
 
 ## Intentional exceptions to "latest"
 
 | Package | Pinned | Why |
 |---|---|---|
 | `typescript` | **6.0.3** | `typescript-eslint@8.71.2` peers `typescript >=4.8.4 <6.1.0`; TS 7.0.2 is outside that range |
-| `zod` | **3.25.76** | `@lens-protocol/metadata@2.1.0` peers `zod ^3` |
 | `@types/node` | **24.19.2** | matches the Node 24 runtime; `@types/node@26` tracks Node 26 |
-| `@lens-protocol/client` | `0.0.0-canary-20250430134539` | npm `latest` still resolves to this canary — it is **not** a stable GA release |
+| `zod` | **3.25.76** | pinned for `@lens-protocol/metadata`'s `zod ^3` peer — a reason that left with the chain cut. Now an upgrade candidate, not a constraint |
 
 ## Current major versions
 
-React/DOM **19.3.1** (+ `@types/react` 19.3.0, `react-is` 19.3.1 for the
-recharts 3 peer), Vite **8.3.4** + `@vitejs/plugin-react` **6.1.2**,
-Tailwind CSS **4.3.3** via `@tailwindcss/vite` with the legacy
-`@config` seam (`tailwind.config.ts` still loads), Vitest **5.0.5**,
-ESLint **10.13.0** + `typescript-eslint` 8.71.2, wagmi **3.7.7**
-(`@wagmi/core` 3.6.5, `@wagmi/connectors` 8.2.0, `viem` 2.57.7),
-React Router **7.18.4**, framer-motion **14.3.0**, recharts **3.10.1**,
-sonner **2.0.8**, Sentry **11.8.0**, `@supabase/supabase-js` 2.118.0,
-`@revenuecat/purchases-capacitor` **13.7.4**, Capacitor **8.5.3**.
+React/DOM **19.3.1** (+ `@types/react` 19.3.0), Vite **8.3.4** +
+`@vitejs/plugin-react` **6.1.2**, Tailwind CSS **4.3.3** via
+`@tailwindcss/vite` with the legacy `@config` seam (`tailwind.config.ts` still
+loads), Vitest **5.0.5**, ESLint **10.13.0** + `typescript-eslint` 8.71.2,
+React Router **7.18.4**, framer-motion **14.3.0**, sonner **2.0.8**, Sentry
+**11.8.0**, `@supabase/supabase-js` 2.118.0, `onesignal-cordova-plugin`
+**5.6.1**, `@revenuecat/purchases-capacitor` **13.7.4**, Capacitor **8.5.3**,
+Playwright **1.64.1** (browser QA).
 
-**32 unused direct declarations were removed** from `package.json`
-(including a direct `esbuild` entry — Vite may still use it transitively).
+**32 unused direct declarations were removed** from `package.json` at the
+migration (including a direct `esbuild` entry — Vite may still use it
+transitively).
 
 ## Native (Android)
 
@@ -61,70 +71,56 @@ native claim.
 
 ## Backend
 
-`backend/` (Python/FastAPI vision service) and the MCP server were **not**
-touched: no requirements/security refresh, no Google GenAI or MediaPipe
-migration. Those remain a separate pass and are **not verified here**.
+Three separate toolchains, deliberately not one:
 
-## Feature status after migration
+- **`backend/vision-service/`** — Python/FastAPI on Hetzner. Production voice
+  talks to it: `/api/tts`, `/api/stt`, `/api/stt-token`, metered by
+  `voice_guard.py`, `/health` public. The vision/AI-analysis endpoints still on
+  that box belong to the earlier product; **the web app calls neither**. It has
+  its own `requirements.txt`/Docker build and is not part of the root pnpm
+  workspace.
+- **`netlify/functions/`** — the TTS proxy and the anonymous metrics counter
+  (Netlify Blobs, no credential to configure). Same request/response contract as
+  the Hetzner service, so a build without `VITE_HETZNER_SERVICE_URL` degrades
+  rather than breaks.
+- **`mcp/`** — its own npm project (`mcp/package.json`, `npm test`), Node ESM,
+  zero runtime dependencies; it imports `anna/bundle/plan.js` from outside its
+  package on purpose.
 
-- Camera feedback is optional: JPEG frames go to the backend for MediaPipe
-  landmark/movement estimates — **not** on-device processing and **not**
-  breathing verification. Camera use requires an explicit opt-in click.
-- "Try hands-free preview" on the session setup screen is a labeled
-  **simulation** — no camera, no model, no live gesture detection yet.
-- Post-session and share cards show recorded duration ("practice time") —
-  no score, stillness, or verification marks. Credential minting is not
-  exposed from the post-session flow; legacy Flow/Lens plumbing remains in
-  the codebase but is not user-facing there.
-- Pause/resume control fixed (paused check now wins over lifecycle
-  `isActive`). The session timer runs on a monotonic active-time clock:
-  duration, rhythm phase, and cycle count all exclude paused wall-clock
-  time. Unit-verified via the frozen-clock fixtures; in browser smoke the
-  paused overlay showed a frozen "Paused" + MM:SS display and the
-  post-session screen reported active-floor seconds only.
-- **Foundation update (2026-10-17):** camera is now truly opt-in —
-  `useSession.initialize` no longer requests camera or starts vision;
-  `getUserMedia` is only invoked by the explicit "Enable camera" button
-  (verified: 0 camera requests on mount, demo open, and camera-free
-  start). Nested mode patterns are normalized to the flat
-  `BreathingPattern` the store requires (real 4/4/4/4 Box phases, no
-  silent defaults).
+No dependency refresh is claimed for any of them here.
 
-## Verification status
+## What the app does and does not do (2026-11-24)
 
-Recorded during the migration (logs on the migration machine only, not
-repo artifacts): unit tests pass (75-test baseline suite plus a later
-focused 8-test run — overlapping, not additive); `tsc --noEmit
---skipLibCheck` clean; `eslint .` 0 errors / 176 warnings; production
-build passes; `--frozen-lockfile` install coherent.
+- **No camera.** There is no camera path in `src/`: no `getUserMedia` for video,
+  no vision request, no hands-free simulation. `getUserMedia` appears once, for
+  **audio**, in `src/lib/voiceCheckin.ts`.
+- **The microphone is one sentence per press.** It streams to AssemblyAI only
+  while the press or the tap contract holds, matches the words against the
+  fourteen-feeling catalog, offers the nearest chip and drops the transcript.
+  Nothing is recorded; nothing reaches `checkinLedger.ts` or `track()`.
+- **Practice time only.** Post-session and share cards report recorded duration.
+  No score, no stillness, no verification mark, and no credential is minted or
+  shown — the Flow/Lens plumbing is gone from the app entirely.
+- **Pause/resume** runs on a monotonic active-time clock: duration, rhythm phase
+  and cycle count all exclude paused wall-clock time (frozen-clock fixtures).
+  The session shell sizes to `100dvh` so pause/breathe/end never slide behind a
+  mobile browser bar.
 
-Foundation slice (2026-10-17, separate round — not additive with the
-above): full suite **111 tests** passed at the mid-round gate; a later
-focused rework added 15 monotonic-clock, hook-ownership, camera opt-in,
-and completion-payload regression tests (all passing) plus the vision-
-teardown fix. `tsc` 0 errors; `eslint .` 0 errors / 182 warnings;
-production build passes. Browser smoke this round verified zero
-getUserMedia on mount/demo/camera-free start, a frozen "Paused" timer
-display, resume continuing the phase, and an active-time-only post-session
-result. Browser smoke covered
-settled desktop/mobile home, sign-in page, camera-free session start, the
-hands-free demo, and pause/resume button state. **Not covered:** signed-in
-wallet transactions, purchases, live camera, full-routine E2E, native
-builds. The `e2e/` Playwright fixtures predate current routes (e.g. login
-vs `/auth`) and were not run.
-
-Repeatable commands:
+## Verification
 
 ```bash
-pnpm exec vitest run                          # unit tests
-pnpm exec tsc --noEmit --skipLibCheck         # typecheck
-pnpm exec eslint . --max-warnings=500         # lint (CI budget)
-pnpm run build                                # production build
-pnpm test:e2e                                 # playwright (stale fixtures)
+pnpm vitest run                    # unit tests (Vitest + jsdom, no RTL/MSW)
+npx tsc --noEmit                   # typecheck
+pnpm lint                          # eslint
+pnpm run build                     # production build
+(cd anna && npm test)              # Anna bundle smoke + shared fixture
+(cd mcp && npm test)               # MCP contract + widget
 ```
 
-Tests use Vitest + `react-dom`/`act` + jsdom; React Testing Library and
-MSW are **not** installed — don't assume their APIs in new tests.
+Tests use Vitest with `react-dom`/`act` and jsdom; **React Testing Library and
+MSW are not installed** — don't assume their APIs in new tests. The `e2e/`
+Playwright fixtures predate the current routes (login vs `/auth`) and were not
+run; browser QA lives in `anna/test/browser-qa.mjs` instead.
 
 ## Anna App (`anna/`)
 

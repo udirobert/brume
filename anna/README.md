@@ -305,6 +305,12 @@ Consider BYOK in Anna for test traffic so it doesn't burn credits.
 
 ## Open items
 
+- **Review outcome (2026-11-14): v0.4.12 / tool 0.4.13 was rejected on
+  differentiation** — the reviewer said a general-purpose assistant produced
+  similar results, and asked for distinct ongoing coaching across conversations
+  before resubmitting, plus the self-run fresh-install Cloud Agent checklist
+  that was not run before that submit (`docs/ANNA.md` §12.41). Nothing has been
+  resubmitted since; the local work after it was web-only.
 - Diagnose the tool missing after the 0.3.1 install (needs quota/BYOK).
 - Voice cues and phone haptics: verify on a real device.
 - Harden `cleanReflection`/`clean_reflection` against models appending
@@ -313,7 +319,6 @@ Consider BYOK in Anna for test traffic so it doesn't burn credits.
 - Regenerate `listing/` assets with the mascot; upload logo/cover/
   screenshots in the Developer Console.
 - Fake-host harness for the binary smoke (answer storage reverse-RPCs).
-- Submit for review after a clean tier-3 run.
 
 Note: `anna/` has its own `package.json`/`package-lock.json` on purpose —
 do not add its dependencies to the repo-root manifests.

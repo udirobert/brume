@@ -1,5 +1,11 @@
 # Consolidation Registry — Brume v1
 
+> **Status: partly historical.** Written for the v1 cut, when the surfaces were
+> Flow/Lens/NFT features. Those are gone (2026-11-04) and the registry below is
+> the record of how they went. The principle at the top — *delete, don't bury* —
+> is still how this repo prefers to remove things, so read the method, not the
+> inventory.
+
 > Companion to `docs/STRATEGY.md` and `docs/BRUME.md`. Principle (updated in the
 > dead-code sweep): **delete, don't bury** — git history preserves everything, and
 > unreferenced code rots into type/lint noise. The v1 "bury, don't delete" stance

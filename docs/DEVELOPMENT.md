@@ -1,123 +1,158 @@
 # Development Guide
 
-Complete development guide for Brume - setup, roadmap, implementation, and testing.
+Setup, structure, and how to verify a change. What the product *is* lives in
+[`../README.md`](../README.md) and [`../AGENTS.md`](../AGENTS.md); what it is
+*allowed* to be lives in [`EXPERIMENTS.md`](./EXPERIMENTS.md).
+
+> **Read the history section at the bottom as history.** This page used to
+> document an AI-analysis roadmap, Flow/Lens wallet flows and camera
+> verification. None of those exist in the app. The material is kept verbatim
+> under "History" so the decisions stay legible, and everything above that line
+> is current.
 
 ## Quick Start
 
-### Development
-Requires **Node.js 24** (`>=24.15.0 <25`) and **pnpm 12.14.0** (`packageManager` field).
+**Node.js 24** (`>=24.15.0 <25`, `.nvmrc`) and **pnpm 10.33.2** (`corepack enable`
+reads `packageManager`).
+
 ```bash
 pnpm install --frozen-lockfile
-pnpm dev
+pnpm dev          # opens http://localhost:4556
 ```
 
-### Production Deployment
+Guest use works with no backend at all. The voice needs either the Hetzner
+service (`VITE_HETZNER_SERVICE_URL`) or the Netlify function, and falls back to
+the browser's own voice and speech recognition when neither answers.
+
+### Getting a change live
+
 ```bash
-# Check deployment status
-pnpm run deploy
+# The site — a push to main deploys Netlify (pnpm build, SPA fallback,
+# /api/tts and /api/metrics redirected to functions)
+git push origin main
 
-# Deploy vision service
-pnpm run deploy:vision
+# The Anna app — publish a version, then (owner only) submit for review
+cd anna && anna-app apps publish
 
-# Configure domain & SSL
-pnpm run deploy:domain
-
-# Configure firewall
-pnpm run deploy:firewall
+# The voice service — NOT deploy-hetzner.sh (root@ :22 times out and it
+# re-provisions a shared box). The four-file scp route is written out in
+# AGENTS.md, "Getting a change onto the box". Never docker-compose down.
 ```
 
-## Development Environment
+`pnpm run deploy` is a status check, not a deploy. `pnpm run deploy:vision`
+runs the stale provisioning script — don't.
 
-### Frontend Only (Recommended)
-```bash
-pnpm dev
-# Opens http://localhost:4556
-# Works with all core features + fallback AI
-```
+The MCP app (`mcp/`) is deliberately undeployed; see [`MCP-APP.md`](./MCP-APP.md).
 
-### Full Stack (Optional)
-The Python vision-service requirements are unchanged and predate the
-current security posture — refresh them before any production use.
-```bash
-# Terminal 1: Backend services
-cd backend/vision-service
-pip install -r requirements.txt
-MODEL_DOWNLOAD_ON_START=false python3 main.py
+## Environment
 
-# Terminal 2: Frontend
-pnpm dev
-```
-
-## Environment Variables
-
-Frontend startup, including guest use, requires the **public** Supabase
-values in `.env.local` (`src/config/environment.ts` validates them at startup):
+Copy `.env.example` to `.env.local`. It documents every variable, the ones that
+are deliberately absent, and why.
 
 ```bash
-# .env.local — publishable values only
+# .env.local — publishable values only; src/config/environment.ts validates these
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Optional: `VITE_HETZNER_SERVICE_URL`. Never put provider/service secret
-keys in `VITE_*` variables — anything prefixed ships to the client bundle;
-those keys belong to the backend.
+Server-side only, never with a `VITE_` prefix: `ASSEMBLYAI_API_KEY`,
+`VOICE_SHARED_SECRET` (server half) with `VITE_VOICE_KEY` (build half),
+`METRICS_READ_TOKEN`, `GITHUB_WEBHOOK_SECRET`. A `VITE_`-prefixed key is a
+published key.
 
-## Development Commands
+## Commands
 
 ```bash
-# Development
-pnpm dev            # Start dev server
-pnpm run preview    # Preview production build
+pnpm dev                                  # dev server, :4556
+pnpm run build                            # production build
+pnpm run lint                             # eslint
+npx tsc --noEmit                          # typecheck
+pnpm test                                 # vitest run
+pnpm exec vitest                          # watch mode
 
-# Building
-pnpm run build      # Production build
-
-# Quality
-pnpm run lint                            # ESLint
-pnpm exec eslint . --max-warnings=500    # CI lint invocation
-pnpm exec tsc --noEmit --skipLibCheck    # TypeScript check
-
-# Testing
-pnpm test             # Run tests (vitest run)
-pnpm exec vitest      # Watch mode
-pnpm test:e2e         # Playwright E2E (fixtures predate current routes)
-
-# Security
-pnpm run security     # Security check script
+cd anna && npm test                       # bundle smoke + shared fixture
+cd anna && anna-app validate --strict     # app manifest
+cd anna/executas/brume && python3 -m unittest test_plan   # Python parity
+cd mcp && npm test                        # MCP contract + widget
+cd backend/vision-service && python3 -m unittest test_voice_guard
 ```
 
-See [DEPENDENCIES.md](./DEPENDENCIES.md) for the pinned toolchain and
-current verification status.
+Browser QA: `cd anna && npm run test:browser` (fake host on :4618,
+`agent-browser`, session `brume-preparation-qa`). Prompt changes:
+`node scripts/prompt-check.mjs all` from `anna/` — Gemini 3 Flash, no Anna quota.
 
-## Project Structure
+`pnpm test:e2e` runs Playwright, whose fixtures predate the current routes
+(`login` vs `/auth`). Treat it as unrunnable until someone fixes it.
+
+## Project structure
 
 ```
 brume/
-├── src/
-│   ├── components/     # React components
-│   ├── lib/           # Utilities & services
-│   ├── stores/        # State management
-│   └── styles/        # CSS & themes
-├── backend/
-│   └── vision-service/ # Python backend
-├── docs/              # Documentation
-└── public/            # Static assets
+├── src/                        web app (React 19, Vite 8, Tailwind 4)
+│   ├── components/             atmosphere, checkin, companion, navigation, roomplay
+│   ├── lib/                    ledger, metrics wire, voice, motion, feelings, room
+│   ├── pages/                  Home, Onboarding, Session, Decompress,
+│   │                           PostSession, Progress, Profile, About, legal
+│   ├── stores/                 session state (only what the API callers use)
+│   └── styles/                 brume-controls.css, brume-checkin.css, brume-a11y.css
+├── anna/                       the Anna app (own npm project, isolated on purpose)
+│   ├── bundle/                 plan.js + preparation.js contracts, mascot, brand
+│   ├── executas/brume/         Python executa, manifest, fixtures
+│   ├── skills/                 the reset-offer skill
+│   └── test/                   smoke, unit tests, browser QA
+├── mcp/                        MCP server + worker + inlined widget (own npm project)
+├── backend/vision-service/     FastAPI voice service (TTS/STT + guard)
+├── netlify/functions/          TTS proxy, anonymous metrics counter
+├── android/, capacitor.config.ts   Capacitor shell — not the web product
+└── docs/                       living docs first, history marked
 ```
+
+## Three contracts that must stay in sync
+
+| Contract | Owners | Cover |
+|---|---|---|
+| `anna/bundle/plan.js` | Anna bundle, Python executa, MCP server | `anna/test/plan-cases.json` |
+| `anna/bundle/preparation.js` | the Anna window (fact vocabulary, entity + role gates, masking) | `faithfulness`, `fact_scan`, `deadline_day`, `mask_reference` fixtures |
+| `anna/bundle/mascot-engine.js` | Anna bundle, web `BrumeMascot`, MCP widget | `anna/test/mascot.mjs` |
+
+Change one and you change all three, in one commit.
+
+## Testing notes
+
+Vitest with `react-dom`/`act` and jsdom. **React Testing Library and MSW are not
+installed** — don't assume their APIs. The Anna bundle and `mcp/` use
+`node --test`, not Vitest. See [`TESTING.md`](./TESTING.md) for the tiers.
 
 ## Contributing
 
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/name`
-3. Make changes and test: `npm test`
-4. Submit pull request
+1. Branch from `main`.
+2. Make the change, and change the doc that would otherwise be wrong.
+3. Run the commands above for the surfaces you touched.
+4. Open a PR describing what you verified, not what you intended.
+
+New copy must pass `copy-claims.test.ts` (no health/medical/hormone/outcome
+claims, no scores or streaks); new events must be added to `src/lib/events.ts`,
+`WIRE` in `src/lib/metrics.ts`, the Netlify function's `ALLOWED` map and
+`PrivacyPolicy.tsx` in the same commit.
 
 ## Security
 
-- Never commit API keys
-- Use environment variables for secrets
-- Run security scan: `pnpm run security`
-- Report issues via GitHub Issues
+- Never commit keys. Local secrets live in gitignored env files
+  (`anna/.env.local`, root `.env*`); `.env.example` documents the names with
+  empty values.
+- `pnpm run security` / `pnpm run security:secrets` run the existing checks.
+- Report issues via GitHub Issues.
+
+---
+
+# History — the chain and vision era (2026-08 → 2026-11-04)
+
+Kept verbatim from the previous version of this page. It describes a product that
+required a camera, a wallet and an AI coach; all three were cut, and
+`src/lib/__tests__/no-wallet.test.ts` keeps the wallet from coming back. For the
+reasoning behind each cut, read [`../AGENTS.md`](../AGENTS.md) and
+[`EXPERIMENTS.md`](./EXPERIMENTS.md) ("Cut"); for the design of that era,
+[`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`STRATEGY.md`](./STRATEGY.md).
 
 ## AI Analysis System Roadmap
 

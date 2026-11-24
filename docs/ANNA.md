@@ -2284,3 +2284,57 @@ for a kind, save the card, answer *How did it go?*, write one line — then open
 **new chat**, prepare for the same kind, and the line is on the drafting screen,
 quoted as theirs. The card may quote it; the card may not invent a fact it does
 not contain. A different kind never sees it.
+
+### 12.46 Tier-3 run on Cloud Agent: the in-window half passes, the chat half is blocked by host `client_id` (2026-11-24)
+
+Ran the tier-3 checklist on the submitted 0.4.13 (version_id=2901) from the
+owner's signed-in console, on the SandBase BYOK key
+(`byok:sandbase/anthropic/claude-haiku-5.5`, Main Model, "Apps & plugins use my
+API Key by default" on — every chat and window `llm.complete` cost 0 Energy).
+Install was clean: "Deploying bundled tools…" finished, Executa 4/4 running.
+
+**Verified, each observed live, not from memory:**
+
+- In-window prepare (opened via the app's own window, Deadline kind):
+  Prepare stays off until the situation field is written; the deadline-day
+  question fired ("Which day should the card name, if any?") and was skipped;
+  the window's model call drafted the card — **the entity gate caught an
+  invented name in the pushback and blanked those lines** ("Pushback added a
+  name you didn't write…"). Every surviving line traces to the typed words
+  ("new deadline", "this week", manager→"you" flipped correctly). Saved card
+  quotes its source verbatim: *"Prepared from your words: 'My manager added a
+  new deadline this week on top of my other projects…'"*.
+- Follow-up + carry-over (the §12.45 claim): answered *How did it go?* once
+  with "We agreed to move the deadline to next week." Reopening prepare for
+  the same kind shows it on the drafting screen — *"Last time, in your words.
+  It carries into this card; drop it if it doesn't fit."* — with a
+  "Don't use it" escape. **The claim the cut rests on is confirmed live.**
+
+**The blocker, observed 3×:** `tool_papa_brume_htcxvfcr__brume_prepare` and
+`brume_reset` both return
+`{"success": false, "error": "client_id is required and must be a real online
+Matrix Agent ID … or simply omit the client_id argument so the host injects
+it automatically", "online_clients": [40+ agent ids]}`.
+The model omitted `client_id` (it is not in the declared schema, so it cannot
+be passed either — the args are stripped), and the host does not inject it.
+`get_default_client` fails too ("user_id is required"). Passing the cloud
+agent's real id (`agent_dcc86f05e19c45b3a4f9e9aa3ddd21fe`, confirmed online)
+changes nothing. So **no executa tool call can complete on the Cloud Agent
+right now** — the failure is in host dispatch, not the plugin (no `client_id`
+anywhere in `brume_plugin.py` or the manifest). DataBard's clean pass is
+consistent, not contradictory: its manifest has `required_executas: []`, so
+its flow never crosses the executa tool boundary — `open_app_view` (a host
+tool) works fine. This almost certainly explains the earlier session's
+"repeated calls, no clean session" admission, and is the most likely
+mechanism behind the previous rejection.
+
+**Checklist status vs README:** step 1 tools-deployed ✓ (trace shows
+`tool_papa_brume_htcxvfcr__brume_*`, never `exec_run`); steps 2–7 chat-path
+✗ blocked by the dispatch bug — unverifiable until Anna fixes host injection
+or the account's agent fleet is cleaned (40+ online `agent_` ids may be what
+makes the target ambiguous); step 2's window-side half and step 8 ✓ as above.
+
+**Next:** raise with Anna (the Chrome DevRel event is today — this is also a
+fair "where I got stuck"); if a platform answer says the tool must declare
+`client_id`, add it to `describe` and re-run; otherwise wait for the host
+fix and re-run steps 2–7.

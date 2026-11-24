@@ -267,7 +267,7 @@ class PrepareCard(unittest.TestCase):
     def test_the_tool_accepts_no_card_content_parameters(self):
         names = {p["name"] for t in bp.MANIFEST["tools"]
                  if t["name"] == "brume_prepare" for p in t["parameters"]}
-        self.assertEqual(names, {"situation", "goal", "key_point", "preserve"})
+        self.assertEqual(names, {"situation", "goal", "key_point", "preserve", "client_id"})
 
     def test_optional_fields_are_omitted_when_absent(self):
         out = bp.invoke_prepare({"situation": "A hard conversation."}, {})

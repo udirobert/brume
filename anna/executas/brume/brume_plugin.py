@@ -70,7 +70,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-VERSION = "0.4.13"
+VERSION = "0.4.14"
 TOOL_ID = "tool-papa-brume-htcxvfcr"
 
 # --- Pattern library (mirror of bundle/plan.js PATTERNS) -----------------
@@ -193,6 +193,8 @@ MANIFEST: dict[str, Any] = {
                  "description": "Their main point, if they stated one."},
                 {"name": "preserve", "type": "string", "required": False,
                  "description": "A boundary or relationship quality they explicitly want to protect, if stated."},
+                {"name": "client_id", "type": "string", "required": False,
+                 "description": "Optional. A real online Matrix Agent client ID (agent_…) to run this call on — pass the session's pinned/default agent ID when the host reports client_id is required. Omit otherwise and the host injects it."},
             ],
         },
         {
@@ -234,6 +236,8 @@ MANIFEST: dict[str, Any] = {
                  "description": "Deliver only roughly this many more seconds — use when re-invoking to change pace mid-break so the script covers just the remainder (partial cycles allowed). Overrides the planned length."},
                 {"name": "cycles", "type": "integer", "required": False,
                  "description": "Legacy override: exact breath cycles to deliver. Ignored when seconds is given."},
+                {"name": "client_id", "type": "string", "required": False,
+                 "description": "Optional. A real online Matrix Agent client ID (agent_…) to run this call on — pass the session's pinned/default agent ID when the host reports client_id is required. Omit otherwise and the host injects it."},
             ],
         },
         {
@@ -254,6 +258,8 @@ MANIFEST: dict[str, Any] = {
                  "description": "Only if the user said how they feel."},
                 {"name": "reflection", "type": "string", "required": False,
                  "description": "Your closing note, written as described above."},
+                {"name": "client_id", "type": "string", "required": False,
+                 "description": "Optional. A real online Matrix Agent client ID (agent_…) to run this call on — pass the session's pinned/default agent ID when the host reports client_id is required. Omit otherwise and the host injects it."},
             ],
         },
     ],
